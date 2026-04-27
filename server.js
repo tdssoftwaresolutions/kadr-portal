@@ -1,8 +1,10 @@
 const express = require('express')
 const path = require('path')
+const fs = require('fs')
 const app = express()
 const port = process.env.PORT || 3000
 const cookieParser = require('cookie-parser')
+const errorHandler = require('./middleware/errorHandler')
 const bodyParser = require('body-parser')
 require('dotenv').config()
 
@@ -13,22 +15,41 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
+// 1. API
 app.use('/api', require('./routes/apiRoutes'))
+app.use(errorHandler)
 
-// Serve static files from the 'public/home' directory (Static website at kadr.live)
-app.use(express.static(path.join(__dirname, 'public/home')))
+// 2. Static assets for admin (handle /img, /fonts, /js, /css at root for admin app)
+app.use('/img', express.static(path.join(__dirname, 'dist', 'img')))
+app.use('/fonts', express.static(path.join(__dirname, 'dist', 'fonts')))
+app.use('/js', express.static(path.join(__dirname, 'dist', 'js')))
+app.use('/css', express.static(path.join(__dirname, 'dist', 'css')))
 
-// Serve the Vue.js-based admin app from the 'dist' directory (Dynamic site at kadr.live/admin)
-app.use('/admin', express.static(path.join(__dirname, 'dist')))
+// 3. ADMIN - serve files if exist, otherwise Vue Router fallback
+app.use('/admin', (req, res, next) => {
+  // Get the path after /admin
+  const requestPath = req.url.split('?')[0] // Remove query params
+  const filePath = path.join(__dirname, 'dist', requestPath)
 
-// Fallback for all other routes (useful for client-side routing in Vue.js)
-app.get('/admin/*', (req, res) => {
+  // Check if it's a real file
+  try {
+    const stats = fs.statSync(filePath)
+    if (stats.isFile()) {
+      return res.sendFile(filePath)
+    }
+  } catch (e) {
+    // File doesn't exist, continue to Vue Router
+  }
+  // Not a real file, serve index.html for Vue Router
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
 
-// Catch-all route for static content (homepage)
+// 5. PUBLIC WEBSITE (scoped to root)
+app.use('/', express.static(path.join(__dirname, 'public/website')))
+
+// 6. Optional fallback for main site
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', req.url))
+  res.sendFile(path.join(__dirname, 'public/website', 'index.html'))
 })
 
 // Start the server

@@ -54,14 +54,24 @@
                           </div>
                         </template>
                       </iq-card>
-                      <iq-card v-if="selectedCase.case_sub_statuses && selectedCase.case_sub_statuses.id == 'pending_notice_payment'">
+                      <iq-card v-if="selectedCase.case_sub_statuses && selectedCase.case_sub_statuses.id == 'pending_notice_payment' && userid === selectedCase.user_cases_first_partyTouser?.id">
                         <template v-slot:headerTitle>
                           <h4 class="card-title">Payment</h4>
                           </template>
                           <template v-slot:body>
-                            <p>Please make a payment of Rs.1000/- to get started with your mediation</p>
+                            <p>Please make a payment of Rs.1000/- to send notice to the opposite party</p>
                             <p>Notice will be send to opposite party post payment</p>
                             <button @click="openPaymentModal" class="btn btn-primary">Make Payment</button>
+                          </template>
+                      </iq-card>
+                      <iq-card v-if="selectedCase.case_sub_statuses && selectedCase.case_sub_statuses.id == 'pending_mediation_payment' && userid === selectedCase.user_cases_first_partyTouser?.id">
+                        <template v-slot:headerTitle>
+                          <h4 class="card-title">Mediation Payment</h4>
+                          </template>
+                          <template v-slot:body>
+                            <p>Please make a payment of Rs.5000/- to start the mediation process</p>
+                            <p>Mediator will be assigned and first meeting scheduled post payment</p>
+                            <button @click="openMediationPaymentModal" class="btn btn-primary">Make Payment</button>
                           </template>
                       </iq-card>
                       <iq-card v-if="userStep == 5">
@@ -163,6 +173,50 @@
                               <button type="submit" class="btn btn-success  mt-2" style="width: 100%;">Pay Rs.1000/-</button>
                             </form>
                             <button @click="closePaymentModal" class="btn btn-secondary mt-2">Cancel</button>
+                          </div>
+                        </div>
+                        <div v-if="showMediationPaymentModal" class="modal-overlay">
+                          <div class="modal-content">
+                            <h2>Enter Mediation Payment Details</h2>
+                            <form @submit.prevent="processMediationPayment">
+                              <div class="mb-3">
+                                <label for="cardNumber">Card Number</label>
+                                <input
+                                  type="text"
+                                  id="cardNumber"
+                                  class="form-control"
+                                  placeholder="1234 5678 9012 3456"
+                                  maxlength="19"
+                                  required
+                                />
+                              </div>
+                              <div class="row">
+                                <div class="col-6 mb-3">
+                                  <label for="expiry">Expiry Date</label>
+                                  <input
+                                    type="text"
+                                    id="expiry"
+                                    class="form-control"
+                                    placeholder="MM/YY"
+                                    maxlength="5"
+                                    required
+                                  />
+                                </div>
+                                <div class="mb-3" style="margin-left:4rem;">
+                                  <label for="cvv">CVV</label>
+                                  <input
+                                    type="password"
+                                    id="cvv"
+                                    class="form-control"
+                                    placeholder="123"
+                                    maxlength="3"
+                                    required
+                                  />
+                                </div>
+                              </div>
+                              <button type="submit" class="btn btn-success  mt-2" style="width: 100%;">Pay Rs.5000/-</button>
+                            </form>
+                            <button @click="closeMediationPaymentModal" class="btn btn-secondary mt-2">Cancel</button>
                           </div>
                         </div>
                         <div v-if="showAadharModal" class="modal-overlay">
@@ -378,6 +432,13 @@ export default {
     closePaymentModal () {
       this.showPaymentModal = false
     },
+    openMediationPaymentModal () {
+      this.transactionId = `TXN${Math.floor(Math.random() * 1000000)}`
+      this.showMediationPaymentModal = true
+    },
+    closeMediationPaymentModal () {
+      this.showMediationPaymentModal = false
+    },
     async processPayment () {
       alert(
         `Payment Successful! Transaction ID: ${this.transactionId}`
@@ -389,7 +450,7 @@ export default {
         success: true,
         amount: 1000,
         currency: 'Rs',
-        reason: 'Mediation payment',
+        reason: 'Notice payment',
         paymentMethod: 'Credit Card',
         referenceId: '1298s7A'
       }
@@ -398,6 +459,28 @@ export default {
 
       } else {
         this.closePaymentModal()
+      }
+    },
+    async processMediationPayment () {
+      alert(
+        `Payment Successful! Transaction ID: ${this.transactionId}`
+      )
+      const payload = {
+        paymentId: this.transactionId,
+        clientId: this.userid,
+        caseId: this.selectedCase.id,
+        success: true,
+        amount: 5000,
+        currency: 'Rs',
+        reason: 'Mediation payment',
+        paymentMethod: 'Credit Card',
+        referenceId: '1298s7B'
+      }
+      const response = await this.$store.dispatch('setClientPayment', { payload })
+      if (response.error) {
+
+      } else {
+        this.closeMediationPaymentModal()
       }
     },
     onClickMeeting () {
@@ -464,6 +547,7 @@ export default {
       signaturePad: null,
       selectedCase: { data: true },
       showPaymentModal: false,
+      showMediationPaymentModal: false,
       transactionId: '',
       userStep: 2
     }

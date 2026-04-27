@@ -1,11 +1,11 @@
 [
     {
       "title": "Home",
-      "name": "sidebar.dashboard1",
+      "name": "sidebar.dashboard",
       "is_heading": false,
       "is_active": false,
       "link": {
-        "name": "dashboard1.home"
+        "name": "dashboard.home"
       },
       "class_name": "",
       "is_icon_class": false,

@@ -10,6 +10,7 @@ module.exports = {
   rules: {
     'no-console': 'off',
     'no-debugger': 'off',
+    'camelcase': 'off',
     // Disable multi-word component names rule
     'vue/multi-word-component-names': 'off',
 

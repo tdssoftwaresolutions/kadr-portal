@@ -556,12 +556,12 @@ export default {
       },
       items: [
         { page_name: '/Home', visitors: '4,569', unique_users: 340, bounce_rate: { percentage: '46,53%', arrow: 'ri-arrow-up-fill', color: 'success' } },
-        { page_name: '/Dashboard1/', visitors: '3,985', unique_users: 319, bounce_rate: { percentage: '46,53%', arrow: 'ri-arrow-down-fill', color: 'warning' } },
-        { page_name: '/Dashboard1/charts', visitors: '3,513', unique_users: 294, bounce_rate: { percentage: '36,49%', arrow: 'ri-arrow-down-fill', color: 'warning' } },
-        { page_name: '/Dashboard1/tables', visitors: '2,050', unique_users: 147, bounce_rate: { percentage: '50,87%', arrow: 'ri-arrow-up-fill', color: 'success' } },
-        { page_name: '/Dashboard1/profile', visitors: '1,795', unique_users: 190, bounce_rate: { percentage: '46,53%', arrow: 'ri-arrow-down-fill', color: 'danger' } },
-        { page_name: '/Dashboard1/pricing', visitors: '8,395', unique_users: 8190, bounce_rate: { percentage: '46,53%', arrow: 'ri-arrow-down-fill', color: 'danger' } },
-        { page_name: '/Dashboard1/Signup', visitors: '4,562', unique_users: 4190, bounce_rate: { percentage: '46,53%', arrow: 'ri-arrow-down-fill', color: 'danger' } }
+        { page_name: '/Dashboard/', visitors: '3,985', unique_users: 319, bounce_rate: { percentage: '46,53%', arrow: 'ri-arrow-down-fill', color: 'warning' } },
+        { page_name: '/Dashboard/charts', visitors: '3,513', unique_users: 294, bounce_rate: { percentage: '36,49%', arrow: 'ri-arrow-down-fill', color: 'warning' } },
+        { page_name: '/Dashboard/tables', visitors: '2,050', unique_users: 147, bounce_rate: { percentage: '50,87%', arrow: 'ri-arrow-up-fill', color: 'success' } },
+        { page_name: '/Dashboard/profile', visitors: '1,795', unique_users: 190, bounce_rate: { percentage: '46,53%', arrow: 'ri-arrow-down-fill', color: 'danger' } },
+        { page_name: '/Dashboard/pricing', visitors: '8,395', unique_users: 8190, bounce_rate: { percentage: '46,53%', arrow: 'ri-arrow-down-fill', color: 'danger' } },
+        { page_name: '/Dashboard/Signup', visitors: '4,562', unique_users: 4190, bounce_rate: { percentage: '46,53%', arrow: 'ri-arrow-down-fill', color: 'danger' } }
       ],
       usersList: [
         { name: 'Anna Sthesia', role: 'Admin', image: require('../../assets/images/user/01.jpg'), link: '', isActive: true },

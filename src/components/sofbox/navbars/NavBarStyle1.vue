@@ -40,7 +40,7 @@
 export default {
   name: 'NavBarStyle1',
   props: {
-    homeURL: { type: Object, default: () => ({ name: 'layout1.dashboard' }) },
+    homeURL: { type: Object, default: () => ({ name: 'layout.dashboard' }) },
     title: { type: String, default: 'Dashboard' },
     breadCrumb: { type: Array,
       default: () => ([
