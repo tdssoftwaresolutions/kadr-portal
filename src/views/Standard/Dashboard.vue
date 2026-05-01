@@ -2,8 +2,8 @@
   <div>
     <div class="dots" v-if="dashboardContent == null"> </div>
     <div v-else>
-      <dashboard-client v-if="user.type == 'CLIENT'" :user="user" :content="dashboardContent"/>
-      <dashboard-mediator v-else-if="user.type == 'MEDIATOR'" :user="user"  :content="dashboardContent"/>
+      <dashboard-client v-if="user.type == 'CLIENT'" :user="user" :content="dashboardContent" @refresh-dashboard="getDashboardContent(true)"/>
+      <dashboard-mediator v-else-if="user.type == 'MEDIATOR'" :user="user"  :content="dashboardContent" @refresh-dashboard="getDashboardContent(true)"/>
       <dashboard-admin v-else-if="user.type == 'ADMIN'" :user="user"  :content="dashboardContent"/>
     </div>
   </div>
@@ -42,8 +42,8 @@ export default {
       }
       return false
     },
-    async getDashboardContent () {
-      const response = await this.$store.dispatch('getDashboardContent')
+    async getDashboardContent (force = false) {
+      const response = await this.$store.dispatch('getDashboardContent', { force })
       if (!response.success) {
       } else {
         this.dashboardContent = response.data.dashboardContent

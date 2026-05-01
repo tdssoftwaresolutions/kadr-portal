@@ -48,15 +48,13 @@ export default {
     const requestId = queryParams.get('id')
     if (requestId) {
       const response = await this.$store.dispatch('getExistingUser', { token: requestId })
-      if (response.errorCode) {
-        this.showAlert(response.message, 'danger')
-      } else {
+      if (response.success) {
         this.step = 1
         this.userType = 'client'
         this.defaultUser = {
-          name: response.name,
-          email: response.email,
-          phone: response.phone_number
+          name: response.data.name,
+          email: response.data.email,
+          phone: response.data.phone_number
         }
       }
     }

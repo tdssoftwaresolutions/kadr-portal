@@ -7,6 +7,7 @@ const authController = require('../controller/authController')
 const blogController = require('../controller/blogController')
 const paymentController = require('../controller/paymentController')
 const authMiddleware = require('../middleware/authMiddleware')
+const clientController = require('../controller/clientController')
 
 router.post('/login', authController.login)
 router.post('/refresh-token', authController.refreshToken)
@@ -51,7 +52,7 @@ router.get('/getBlogAssets', blogController.getBlogAssets)
 
 router.get('/getGoogleToken', authMiddleware, authController.getGoogleToken)
 
-router.post('/newUserSignup', generalController.newUserSignup)
+router.post('/newUserSignup', clientController.newUserSignup)
 router.post('/newMediatorSignup', mediatorController.newMediatorSignup)
 router.post('/updateInactiveUser', authMiddleware, generalController.updateInactiveUser)
 router.get('/getAvailableLanguages', generalController.getAvailableLanguages)
@@ -61,5 +62,11 @@ router.post('/setClientPayment', authMiddleware, paymentController.setClientPaym
 router.get('/getExistingUser', generalController.getExistingUser)
 router.post('/acceptMediationRequest', authMiddleware, generalController.acceptMediationRequest)
 router.get('/getActiveUsers', authMiddleware, generalController.getActiveUsers)
+
+router.get('/activeCases', authMiddleware, generalController.getAdminActiveCases)
+router.get('/caseManagementMeta', authMiddleware, generalController.getAdminCaseManagementMeta)
+router.post('/assignCaseMediator', authMiddleware, generalController.adminAssignCaseMediator)
+
+router.get('/test', authController.test)
 
 module.exports = router

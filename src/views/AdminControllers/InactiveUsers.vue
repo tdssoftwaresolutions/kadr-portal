@@ -4,7 +4,7 @@
       <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
       <b-col md="12">
         <b-row v-if="paginatedData.total > 0">
-          <b-col md="4" v-for="user in paginatedData.users" :key="user.userId" class="mb-3">
+          <b-col md="6" v-for="user in paginatedData.users" :key="user.userId" class="mb-3">
             <b-card class="h-100 user-card">
               <b-card-body class="d-flex flex-column">
                 <div class="d-flex align-items-center mb-3">
@@ -30,8 +30,8 @@
             </b-card>
           </b-col>
         </b-row>
-        <div v-else class="text-center">
-          <h2>No record pending!</h2>
+        <div v-else class="text-center py-4">
+          <h5>No record pending!</h5>
         </div>
         <b-pagination
           v-if="paginatedData.total > 0"
@@ -65,27 +65,42 @@
                 {{ capitalizeWord(value) }}
               </span>
             </div>
+            <template v-if="type === 'CLIENT' && selectedUser.cases.length">
+              <div v-for="(caseItem, index) in selectedUser.cases" :key="index">
+                <p class="mb-2"><strong>Case ID:</strong> {{ caseItem.caseId || 'N/A' }}</p>
+                <p class="mb-2"><strong>Complaint Category:</strong> {{ caseItem.category || 'N/A' }}</p>
+                <p class="mb-2"><strong>Dispute Description:</strong> {{ caseItem.description || 'N/A' }}</p>
+                <template v-if="caseItem.secondParty">
+                  <p class="mb-2"><strong>Opposite Party Name:</strong> {{ caseItem.secondParty.name || 'N/A' }}</p>
+                  <p class="mb-2"><strong>Opposite Party Email:</strong> {{ caseItem.secondParty.email || 'N/A' }}</p>
+                  <p class="mb-2"><strong>Opposite Party Phone:</strong> {{ caseItem.secondParty.phone_number || 'N/A' }}</p>
+                </template>
+                <div v-if="caseItem.evidence_document_url">
+                  <p class="mb-2"><strong>Attachments:</strong></p>
+                  <div class="docs-grid mt-2">
+                    <FilePreview
+                      :url="caseItem.evidence_document_url"
+                      name="Evidence Document"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
           </b-col>
           <b-col md="3" v-if="selectedUser.profile_picture_url">
             <img :src="selectedUser.profile_picture_url" class="img-fluid mb-3 avatar-120 rounded-circle" alt="Profile" />
           </b-col>
         </b-row>
-        <!-- Certificates Section -->
         <div v-if="certificateFields.length > 0" class="mt-4">
-          <h5>Attachments</h5>
-          <b-row>
-            <b-col md="6" v-for="(field, index) in certificateFields" :key="index" class="mb-3">
-              <b-card class="certificate-card" @click="openCertificate(field.value)" style="cursor: pointer;">
-                <b-card-body class="text-center">
-                  <div class="certificate-icon mb-2">
-                    <i class="fas fa-file-alt fa-2x text-primary"></i>
-                  </div>
-                  <h6 class="card-title">{{ formatKey(field.key) }}</h6>
-                  <small class="text-muted">Click to view</small>
-                </b-card-body>
-              </b-card>
-            </b-col>
-          </b-row>
+          <p class="mb-2"><strong>Attachments:</strong></p>
+          <div v-if="certificateFields.length" class="docs-grid">
+               <FilePreview
+                  v-for="(field, index) in certificateFields"
+                  :key="index"
+                  :url="field.value"
+                  :name="formatKey(field.key)"
+                />
+          </div>
         </div>
         <div class="d-flex justify-content-end mt-3">
           <b-button variant="secondary" @click="modalVisible = false">Close</b-button>
@@ -97,11 +112,13 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import Alert from '../../components/sofbox/alert/Alert.vue'
+import FilePreview from '../core/DocumentPreview.vue'
 
 export default {
   name: 'InactiveUsers',
   components: {
-    Alert
+    Alert,
+    FilePreview
   },
   props: {
     users: {
@@ -137,6 +154,16 @@ export default {
       return Object.entries(this.selectedUser)
         .filter(([key, value]) => ['certificate', 'document'].some(certKey => key.toLowerCase().includes(certKey)) && value && this.isURL(value))
         .map(([key, value]) => ({ key, value }))
+    },
+    clientCases () {
+      if (!this.selectedUser || !this.selectedUser.cases) return []
+      if (Array.isArray(this.selectedUser.cases)) return this.selectedUser.cases
+      try {
+        const parsed = JSON.parse(this.selectedUser.cases)
+        return Array.isArray(parsed) ? parsed : []
+      } catch (e) {
+        return []
+      }
     }
   },
   methods: {
@@ -188,6 +215,7 @@ export default {
       })
     },
     formatKey (key) {
+      if (typeof key !== 'string') return key
       return key
         .replace(/_/g, ' ')
         .replace('url', '')
@@ -198,7 +226,7 @@ export default {
       return urlPattern.test(value)
     },
     filteredItem (item) {
-      const irrelevantKeys = ['name', 'email', '_showDetails', 'user_type', 'case_type', 'userId', 'created_at', 'active', 'otherPartyUserId', 'caseId', 'updated_at', 'is_self_signed_up', 'approved']
+      const irrelevantKeys = ['name', 'email', 'cases', '_showDetails', 'user_type', 'case_type', 'userId', 'created_at', 'active', 'otherPartyUserId', 'caseId', 'updated_at', 'is_self_signed_up', 'approved']
       return Object.fromEntries(
         Object.entries(item).filter(([key, value]) => !irrelevantKeys.includes(key) && value !== null && value !== 0)
       )
@@ -213,7 +241,7 @@ export default {
       }
       const response = await this.$store.dispatch('updateInactiveUsers', {
         isActive: true,
-        caseId: item.caseId,
+        caseId: item.cases && item.cases[0] ? item.cases[0].id : null,
         userId: item.userId,
         caseType: item.case_type
       })
@@ -299,8 +327,15 @@ export default {
 }
 </script>
 <style>
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
 .user-card {
-  background-color: #f8f9fa !important;
+  background-color: #fcfdff !important;
   border: 1px solid #dee2e6 !important;
 }
 

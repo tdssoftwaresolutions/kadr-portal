@@ -8,6 +8,7 @@ import AuthLayout from '../layouts/AuthLayout.vue'
 
 /** Admin */
 import AdminUsersListView from '../views/AdminControllers/AdminUsersListView.vue'
+import AdminCasesManagementView from '../views/AdminControllers/AdminCasesManagementView.vue'
 import GoogleAccountManagement from '../views/AdminControllers/GoogleAccountManagement.vue'
 /** Mediator */
 
@@ -23,7 +24,7 @@ import MyBlogs from '../views/Blog/MyBlogs.vue'
 
 import SignIn from '../views/AuthPages/SignIn.vue'
 import SignUp from '../views/AuthPages/SignUp.vue'
-import RecoverPassword from '../views/AuthPages/Default/RecoverPassword1'
+import RecoverPassword from '../views/AuthPages/RecoverPassword.vue'
 import ProfileEdit from '../views/Standard/ProfileEdit.vue'
 
 import ErrorPage from '../views/Pages/ErrorPage'
@@ -32,9 +33,9 @@ import Maintenance from '../views/Pages/Maintenance'
 import BlankPage from '../views/Pages/BlankPage'
 import FAQ from '../views/Pages/FAQ'
 import Invoice from '../views/Pages/Invoice'
-import Calendar from '../views/Apps/Calendar'
-import Calendar2 from '../views/Apps/Calendar2'
-import ECommerceListing from '../views/Apps/Ecommerce/Listing'
+import ClientCalendar from '../views/ClientControllers/Calendar.vue'
+import MediatorCalendar from '../views/MediatorControllers/Calendar.vue'
+import ECommerceListing from '../views/Apps/Ecommerce/Listing.vue'
 import EditableTable from '../views/Tables/EditableTable'
 
 Vue.use(VueRouter)
@@ -50,12 +51,12 @@ const appChildRoute = (prop) => [
   {
     path: 'calendar',
     name: prop + '.calendar',
-    component: Calendar
+    component: MediatorCalendar
   },
   {
     path: 'calendar2',
     name: prop + '.calendar2',
-    component: Calendar2
+    component: ClientCalendar
   },
   {
     path: 'e-commerce/listing',
@@ -68,6 +69,12 @@ const appChildRoute = (prop) => [
     name: prop + '.users',
     meta: { name: 'Admin Users List' },
     component: AdminUsersListView
+  },
+  {
+    path: 'cases',
+    name: prop + '.cases',
+    meta: { name: 'Case management' },
+    component: AdminCasesManagementView
   },
   {
     path: 'google_management',

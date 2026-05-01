@@ -40,6 +40,8 @@ model user {
   notes                          notes[]
   notifications                  notifications[]
   transactions                   transactions[]
+
+  @@index([user_type, active, created_at], map: "idx_user_type_active_created")
 }
 
 model cases {
@@ -50,12 +52,12 @@ model cases {
   first_party                   String?            @db.Char(36)
   second_party                  String?            @db.Char(36)
   caseId                        String?            @db.Char(50)
-  evidence_document_url         String?            @db.VarChar(255)
-  description                   String?            @db.Text
-  category                      String?            @db.VarChar(100)
   case_type                     String?            @db.VarChar(255)
   status                        String?            @db.VarChar(255)
   sub_status                    String?            @db.VarChar(255)
+  category                      String?            @db.VarChar(100)
+  description                   String?            @db.Text
+  evidence_document_url         String?            @db.VarChar(255)
   case_history                  case_history[]
   case_statuses                 case_statuses?     @relation(fields: [status], references: [id], onDelete: Cascade, map: "fk_cases_status")
   case_sub_statuses             case_sub_statuses? @relation(fields: [sub_status], references: [id], onDelete: Cascade, map: "fk_cases_sub_status")
@@ -70,6 +72,7 @@ model cases {
   @@index([second_party], map: "fk_second_party")
   @@index([status], map: "fk_cases_status")
   @@index([sub_status], map: "fk_cases_sub_status")
+  @@index([mediator, status], map: "idx_cases_mediator_status")
 }
 
 model caseIdTracker {
@@ -78,30 +81,43 @@ model caseIdTracker {
 }
 
 model events {
-  id                   String      @id @default(uuid()) @db.Char(36)
-  title                String      @db.VarChar(255)
-  description          String?     @db.Text
-  start_datetime       DateTime    @db.DateTime(0)
-  end_datetime         DateTime    @db.DateTime(0)
-  type                 events_type
-  meeting_link         String?     @db.VarChar(255)
-  google_calendar_link String?     @db.VarChar(255)
-  created_by           String?     @db.Char(36)
-  case_id              String?     @db.Char(36)
-  created_at           DateTime?   @default(now()) @db.Timestamp(0)
-  updated_at           DateTime?   @default(now()) @db.Timestamp(0)
-  cases                cases?      @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_case_id")
-  user                 user?       @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_created_by")
+  id                       String      @id @default(uuid()) @db.Char(36)
+  title                    String      @db.VarChar(255)
+  description              String?     @db.Text
+  start_datetime           DateTime    @db.DateTime(0)
+  end_datetime             DateTime    @db.DateTime(0)
+  type                     events_type
+  meeting_link             String?     @db.VarChar(255)
+  google_calendar_link     String?     @db.VarChar(255)
+  created_by               String?     @db.Char(36)
+  case_id                  String?     @db.Char(36)
+  created_at               DateTime?   @default(now()) @db.Timestamp(0)
+  updated_at               DateTime?   @default(now()) @db.Timestamp(0)
+  meeting_summary          String      @db.LongText
+  mediator_next_steps      String      @db.LongText
+  first_party_next_steps   String      @db.LongText
+  second_party_next_steps  String      @db.LongText
+  first_party_rating       Int?
+  second_party_rating      Int?
+  mediator_feedback_at     DateTime?   @db.DateTime(0)
+  first_party_feedback_at  DateTime?   @db.DateTime(0)
+  second_party_feedback_at DateTime?   @db.DateTime(0)
+  cases                    cases?      @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_case_id")
+  user                     user?       @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_created_by")
 
   @@index([case_id], map: "fk_case_id")
   @@index([created_by], map: "fk_created_by")
 }
 
 model otp_resets {
-  email      String    @id @db.VarChar(255)
   otp        Int?
-  created_at DateTime? @default(now()) @db.Timestamp(0)
-  expires_at DateTime  @db.Timestamp(0)
+  created_at DateTime?       @default(now()) @db.Timestamp(0)
+  expires_at DateTime        @db.Timestamp(0)
+  type       otp_resets_type
+  email      String?         @db.VarChar(255)
+  id         String          @id @default(dbgenerated("(uuid())")) @db.Char(36)
+
+  @@unique([email, type], name: "unique_email_type", map: "unique_email_type")
 }
 
 model available_languages {
@@ -205,6 +221,12 @@ model google_connect {
   google_auth_token String @db.LongText
 }
 
+model case_assignment_state {
+  id                    String    @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  last_assigned_user_id String?   @db.Char(36)
+  updated_at            DateTime? @default(now()) @db.Timestamp(0)
+}
+
 model notifications {
   id          String    @id @default(uuid()) @db.Char(36)
   user_id     String    @db.Char(36)
@@ -266,4 +288,9 @@ enum events_type {
 enum blogs_status {
   Draft
   Published
+}
+
+enum otp_resets_type {
+  MEDIATION
+  RESET_PASSWORD
 }

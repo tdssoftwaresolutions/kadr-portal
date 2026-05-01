@@ -18,6 +18,9 @@ const VERIFY_SIGNATURE_ENDPOINT = '/verify-signature'
 const AVAILABLE_LANGUAGES_ENDPOINT = '/getAvailableLanguages'
 const GET_INACTIVE_USERS_ENDPOINT = '/getInactiveUsers'
 const GET_ACTIVE_USERS_ENDPOINT = '/getActiveUsers'
+const GET_ADMIN_ACTIVE_CASES_ENDPOINT = '/activeCases'
+const GET_ADMIN_CASE_META_ENDPOINT = '/caseManagementMeta'
+const POST_ADMIN_ASSIGN_CASE_MEDIATOR_ENDPOINT = '/assignCaseMediator'
 const UPDATE_INACTIVE_USER_ENDPOINT = '/updateInactiveUser'
 const REFRESH_TOKEN_ENDPOINT = '/refresh-token'
 const SAVE_NOTE_ENDPOINT = '/saveNote'
@@ -36,6 +39,7 @@ const ACCEPT_MEDIATION_REQUEST = '/acceptMediationRequest'
 const GOOGLE_AUTH_ENDPOINT = '/authenticateWithGoogle'
 const GOOGLE_TOKEN_ENDPOINT = '/getGoogleToken'
 const SET_CLIENT_PAYMENT_ENDPOINT = '/setClientPayment'
+const SUBMIT_EVENT_FEEDBACK_ENDPOINT = '/submitEventFeedback'
 const debug = process.env.NODE_ENV !== 'production'
 const getDefaultState = () => {
   return {
@@ -393,6 +397,23 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
+      async submitMeetingFeedback ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(SUBMIT_EVENT_FEEDBACK_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
 
       async getUserData ({ commit, dispatch }) {
         try {
@@ -411,10 +432,10 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
-      async getDashboardContent ({ state, commit, dispatch }) {
+      async getDashboardContent ({ state, commit, dispatch }, { force = false } = {}) {
         try {
           dispatch('spinner/showSpinner')
-          if (state.dashboardContent) return state.dashboardContent
+          if (!force && state.dashboardContent) return state.dashboardContent
           const { data } = await apiClient.get(GET_DASHBOARD_CONTENT_ENDPOINT)
           if (!data.success) throw new Error(data.error.message)
           commit('setDashboardContent', data)
@@ -685,6 +706,55 @@ export default (router) => {
             success: false,
             error
           }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getAdminActiveCases ({ dispatch }, { page, mediatorId, firstPartyId, secondPartyId, status }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const params = new URLSearchParams()
+          params.set('page', String(page || 1))
+          if (mediatorId) params.set('mediatorId', mediatorId)
+          if (firstPartyId) params.set('firstPartyId', firstPartyId)
+          if (secondPartyId) params.set('secondPartyId', secondPartyId)
+          if (status) params.set('status', status)
+          const { data } = await apiClient.get(`${GET_ADMIN_ACTIVE_CASES_ENDPOINT}?${params.toString()}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getAdminCaseManagementMeta ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(GET_ADMIN_CASE_META_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async adminAssignCaseMediator ({ dispatch }, { caseId, mediatorId }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(POST_ADMIN_ASSIGN_CASE_MEDIATOR_ENDPOINT, { caseId, mediatorId })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Mediator updated', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
         } finally {
           dispatch('spinner/hideSpinner')
         }

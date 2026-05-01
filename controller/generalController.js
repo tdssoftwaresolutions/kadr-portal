@@ -21,7 +21,18 @@ module.exports = {
       if (user) {
         const events = await prisma.events.findMany({
           where: {
-            created_by: user.id
+            OR: [
+              { created_by: user.id },
+              {
+                cases: {
+                  OR: [
+                    { first_party: user.id },
+                    { second_party: user.id },
+                    { mediator: user.id }
+                  ]
+                }
+              }
+            ]
           },
           select: {
             id: true,
@@ -31,9 +42,21 @@ module.exports = {
             end_datetime: true,
             type: true,
             meeting_link: true,
+            meeting_summary: true,
+            mediator_next_steps: true,
+            first_party_next_steps: true,
+            second_party_next_steps: true,
+            first_party_rating: true,
+            second_party_rating: true,
+            mediator_feedback_at: true,
+            first_party_feedback_at: true,
+            second_party_feedback_at: true,
             cases: {
               select: {
                 id: true,
+                first_party: true,
+                second_party: true,
+                mediator: true,
                 caseId: true
               }
             }
@@ -94,7 +117,6 @@ module.exports = {
       })
 
       if (!user) throw createError(errorCodes.USER_NOT_FOUND)
-      console.log(type)
       switch (type) {
         case 'ADMIN': {
           const inactiveUsers = await helper.getUsers(false, prisma, 1, 'CLIENT', 'cases_cases_first_partyTouser')
@@ -199,6 +221,7 @@ module.exports = {
         phone_number: true
       }
     })
+    console.log(caseId)
     if (caseId) {
       let caseSubStatus = ''
       switch (caseType) {
@@ -212,6 +235,7 @@ module.exports = {
           caseSubStatus = CaseSubTypes.PENDING_NOTICE_PAYMENT
           break
       }
+      console.log(caseSubStatus)
       const newCase = await prisma.cases.update({
         where: {
           id: caseId
@@ -238,11 +262,18 @@ module.exports = {
       })
     }
     const htmlBody = `
-              <p>Thanks for registering on KADR.live. Your account is now active.</p>
-              <p>To login, use below credentials:</p>
-              <p>Username : ${updatedUser.email}</p>
-              <p>Password : ${generatedPassword} <p>`
-    await helper.sendEmail(updatedUser.name, updatedUser.email, 'Welcome to Kadr.live', htmlBody)
+      <p>Thanks for registering on KADR.live. Your account is now active.</p>
+      <p>To login, use below credentials:</p>
+      <p>Username : ${updatedUser.email}</p>
+      <p>Password : ${generatedPassword} <p>
+        <p style="text-align: center; margin: 20px 0;">
+        <a href="${process.env.BASE_URL}/admin/auth/sign-in"
+          style="background-color: #4CAF50; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+          Login to Your Account
+        </a>
+      </p>
+    `
+    await helper.sendEmail(updatedUser.name, updatedUser.email, 'Welcome aboard!', htmlBody)
     success(res, {}, 'User updated successfully')
   },
   newCase: async function (req, res, next) {
@@ -566,107 +597,6 @@ module.exports = {
       next(error)
     }
   },
-  newUserSignup: async function (req, res, next) {
-    try {
-      const { name, email, phone, city, state, pincode, description, category, preferredLanguage, evidenceContent, profilePictureContent, oppositeName, oppositeEmail, oppositePhone, existingUser } = req.body
-      let uploadedProfilePictureResponse = null
-      if (profilePictureContent) { uploadedProfilePictureResponse = await helper.deployToS3Bucket(profilePictureContent, `profile-picture-${uuidv4()}`) }
-      const userRequestData = {
-        name,
-        email,
-        phone_number: phone,
-        password_hash: '',
-        user_type: 'CLIENT',
-        active: false,
-        city,
-        state,
-        preferred_languages: JSON.stringify([preferredLanguage]),
-        profile_picture_url: uploadedProfilePictureResponse || '',
-        pincode,
-        is_self_signed_up: true
-      }
-      if (existingUser === true) {
-        const generatedPassword = helper.generateRandomPassword()
-        const hashPassword = await helper.hashPassword(generatedPassword)
-        userRequestData.is_self_signed_up = true
-        userRequestData.active = true
-        userRequestData.password_hash = hashPassword
-        await prisma.user.update({
-          where: {
-            email
-          },
-          data: userRequestData
-        })
-        const htmlBody = `
-              <p>Thanks for registering on KADR.live. Your account is now active.</p>
-              <p>To login, use below credentials:</p> 
-              <p>Username : ${email}</p> 
-              <p>Password : ${generatedPassword} <p>`
-        await helper.sendEmail(name, email, 'Welcome aboard!', htmlBody)
-        success(res, {}, 'You are all set! Please check your email for the next steps.')
-      } else {
-        let uploadedFileResponse = null
-        if (evidenceContent) uploadedFileResponse = await helper.deployToS3Bucket(evidenceContent, `evidence-${uuidv4()}`)
-        const user = await prisma.user.create({
-          data: userRequestData
-        })
-        const oppositePartyUser = await prisma.user.upsert({
-          where: {
-            email: oppositeEmail
-          },
-          update: {
-
-          },
-          create: {
-            name: oppositeName,
-            email: oppositeEmail,
-            phone_number: oppositePhone,
-            password_hash: '',
-            is_self_signed_up: false,
-            user_type: 'CLIENT',
-            active: false
-          }
-        })
-
-        const tracker = await prisma.caseIdTracker.findFirst()
-        let newCaseId = 1
-        if (tracker) {
-          newCaseId = tracker.lastCaseId + 1
-        }
-
-        await prisma.cases.create({
-          data: {
-            first_party: user.id,
-            second_party: oppositePartyUser.id,
-            evidence_document_url: uploadedFileResponse || '',
-            description,
-            category,
-            status: CaseTypes.NEW,
-            caseId: `KDR-${newCaseId}`
-          }
-        })
-
-        await prisma.caseIdTracker.upsert({
-          where: { id: 1 },
-          update: { lastCaseId: newCaseId },
-          create: { lastCaseId: newCaseId }
-        })
-        await helper.sendEmail(name, email, 'Welcome aboard!', '<p>Thanks for registering on KADR.live. Your account is under review, and you\'ll be notified once approved by the KADR team.</p>')
-
-        success(res, {}, 'Your account has been created successfully! Our team will review your details and get back to you shortly.')
-      }
-    } catch (error) {
-      try {
-        if (error.code === 'P2002' && error.meta.target.includes('email')) {
-          throw createError(errorCodes.YOU_USER_ALREADY_EXISTS)
-        } else {
-          throw createError(errorCodes.INVALID_REQUEST)
-        }
-      } catch (err) {
-        next(err)
-      }
-    }
-  },
   getUserData: async function (req, res, next) {
     try {
       const userData = {
@@ -734,7 +664,6 @@ module.exports = {
       })
       if (!caseRecord) throw createError(errorCodes.CASE_NOT_FOUND)
 
-      // Fetch all events for this case, including related event_feedback
       const events = await prisma.events.findMany({
         where: { case_id: caseId },
         select: {
@@ -746,37 +675,17 @@ module.exports = {
           type: true,
           meeting_link: true,
           google_calendar_link: true,
-          event_feedback_id: true,
-          event_feedback_events_event_feedback_idToevent_feedback: {
-            select: {
-              id: true,
-              first_party_present: true,
-              second_party_present: true,
-              summary_of_meeting: true,
-              created_at: true,
-              updated_at: true
-            }
-          }
+          meeting_summary: true,
+          mediator_next_steps: true,
+          first_party_next_steps: true,
+          second_party_next_steps: true,
+          first_party_rating: true,
+          second_party_rating: true,
+          mediator_feedback_at: true,
+          first_party_feedback_at: true,
+          second_party_feedback_at: true
         }
       })
-
-      let agreement = null
-      if (caseRecord.case_agreement) {
-        agreement = await prisma.case_agreement_tracking.findUnique({
-          where: {
-            id: caseRecord.case_agreement
-          },
-          select: {
-            id: true,
-            agreed_terms: true,
-            signature_mediator: true,
-            first_party_signature: true,
-            second_party_signature: true,
-            created_at: true,
-            updated_at: true
-          }
-        })
-      }
 
       success(res, {
         caseId,
@@ -784,7 +693,7 @@ module.exports = {
         sub_status: caseRecord.sub_status,
         mediator: caseRecord.user_cases_mediatorTouser,
         events,
-        agreement
+        agreement: null
       })
     } catch (error) {
       next(error)
@@ -868,23 +777,200 @@ module.exports = {
   },
   submitEventFeedback: async function (req, res, next) {
     try {
-      const { event_feedback, event_id } = req.body
-      if (!event_feedback || !event_id) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      const {
+        event_id,
+        meeting_summary,
+        mediator_next_steps,
+        first_party_next_steps,
+        second_party_next_steps,
+        first_party_rating,
+        second_party_rating
+      } = req.body
+      if (!event_id) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
 
-      const feedbackRecord = await prisma.event_feedback.create({
-        data: {
-          first_party_present: event_feedback.first_party_present,
-          second_party_present: event_feedback.second_party_present,
-          summary_of_meeting: event_feedback.summary
+      const event = await prisma.events.findUnique({
+        where: { id: event_id },
+        select: {
+          id: true,
+          type: true,
+          case_id: true,
+          end_datetime: true,
+          meeting_summary: true,
+          mediator_next_steps: true,
+          first_party_rating: true,
+          second_party_rating: true,
+          cases: {
+            select: {
+              id: true,
+              mediator: true,
+              first_party: true,
+              second_party: true
+            }
+          }
         }
       })
+      if (!event || !event.cases) throw createError(errorCodes.NOT_FOUND)
+      if (event.type !== 'KADR' || !event.case_id) {
+        throw createError(errorCodes.INVALID_REQUEST)
+      }
+      if (new Date(event.end_datetime) >= new Date()) {
+        throw createError(errorCodes.INVALID_REQUEST)
+      }
+
+      const uid = req.user.id
+      const userType = req.user.type
+      const c = event.cases
+      const data = {}
+
+      if (userType === 'MEDIATOR' && c.mediator === uid) {
+        if (meeting_summary === undefined && mediator_next_steps === undefined) {
+          throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+        }
+        if (meeting_summary !== undefined) data.meeting_summary = meeting_summary
+        if (mediator_next_steps !== undefined) data.mediator_next_steps = mediator_next_steps
+        const mergedSummary = data.meeting_summary !== undefined ? data.meeting_summary : event.meeting_summary
+        const mergedSteps = data.mediator_next_steps !== undefined ? data.mediator_next_steps : event.mediator_next_steps
+        if (mergedSummary && String(mergedSummary).trim() && mergedSteps && String(mergedSteps).trim()) {
+          data.mediator_feedback_at = new Date()
+        }
+      } else if (userType === 'CLIENT' && c.first_party === uid) {
+        if (first_party_rating === undefined || first_party_rating === null) {
+          throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+        }
+        const r = Number(first_party_rating)
+        if (!Number.isInteger(r) || r < 1 || r > 5) throw createError(errorCodes.INVALID_REQUEST)
+        data.first_party_rating = r
+        if (first_party_next_steps !== undefined) data.first_party_next_steps = first_party_next_steps
+        data.first_party_feedback_at = new Date()
+      } else if (userType === 'CLIENT' && c.second_party === uid) {
+        if (second_party_rating === undefined || second_party_rating === null) {
+          throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+        }
+        const r = Number(second_party_rating)
+        if (!Number.isInteger(r) || r < 1 || r > 5) throw createError(errorCodes.INVALID_REQUEST)
+        data.second_party_rating = r
+        if (second_party_next_steps !== undefined) data.second_party_next_steps = second_party_next_steps
+        data.second_party_feedback_at = new Date()
+      } else {
+        throw createError(errorCodes.FORBIDDEN)
+      }
 
       await prisma.events.update({
         where: { id: event_id },
-        data: { event_feedback_id: feedbackRecord.id }
+        data
       })
 
-      success(res, {}, 'Event feedback submitted successfully')
+      success(res, {}, 'Meeting feedback saved successfully')
+    } catch (error) {
+      next(error)
+    }
+  },
+  getAdminActiveCases: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const page = parseInt(req.query.page, 10) || 1
+      const filters = {
+        mediatorId: req.query.mediatorId || null,
+        firstPartyId: req.query.firstPartyId || null,
+        secondPartyId: req.query.secondPartyId || null,
+        status: req.query.status || null
+      }
+      const [casesWithEvents, total] = await Promise.all([
+        helper.getAdminActiveCases(prisma, page, filters),
+        helper.getAdminActiveCasesCount(prisma, filters)
+      ])
+      success(res, {
+        casesWithEvents,
+        total,
+        page,
+        perPage: 10
+      })
+    } catch (error) {
+      next(error)
+    }
+  },
+  getAdminCaseManagementMeta: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const meta = await helper.getAdminCaseFilterMeta(prisma)
+      success(res, { meta })
+    } catch (error) {
+      next(error)
+    }
+  },
+  adminAssignCaseMediator: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const { caseId, mediatorId } = req.body
+      if (!caseId || !mediatorId) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+
+      const [caseRecord, mediatorUser] = await Promise.all([
+        prisma.cases.findUnique({
+          where: { id: caseId },
+          select: {
+            id: true,
+            caseId: true,
+            first_party: true,
+            second_party: true,
+            status: true,
+            user_cases_first_partyTouser: { select: { name: true, email: true } },
+            user_cases_second_partyTouser: { select: { name: true, email: true } }
+          }
+        }),
+        prisma.user.findUnique({
+          where: { id: mediatorId },
+          select: { id: true, user_type: true, name: true, email: true, active: true }
+        })
+      ])
+
+      if (!caseRecord) throw createError(errorCodes.CASE_NOT_FOUND)
+      if (!mediatorUser || mediatorUser.user_type !== 'MEDIATOR') throw createError(errorCodes.NOT_FOUND)
+      if (!mediatorUser.active) throw createError(errorCodes.USER_NOT_ACTIVE)
+
+      const activeStatuses = [CaseTypes.NEW, CaseTypes.IN_PROGRESS]
+      if (!activeStatuses.includes(caseRecord.status)) {
+        throw createError(errorCodes.INVALID_REQUEST)
+      }
+
+      await prisma.cases.update({
+        where: { id: caseId },
+        data: {
+          mediator: mediatorId,
+          status: CaseTypes.IN_PROGRESS,
+          sub_status: CaseSubTypes.MEDIATOR_ASSIGNED
+        }
+      })
+
+      const label = caseRecord.caseId || 'your case'
+      const title = 'Mediator assigned to your case'
+      const description = `A dispute resolution expert (${mediatorUser.name}) has been assigned to case ${label}.`
+      const notifications = []
+      if (caseRecord.first_party) {
+        notifications.push(
+          prisma.notifications.create({
+            data: { user_id: caseRecord.first_party, title, description }
+          })
+        )
+      }
+      if (caseRecord.second_party) {
+        notifications.push(
+          prisma.notifications.create({
+            data: { user_id: caseRecord.second_party, title, description }
+          })
+        )
+      }
+      notifications.push(
+        prisma.notifications.create({
+          data: {
+            user_id: mediatorId,
+            title: 'New case assignment',
+            description: `You have been assigned to case ${label}.`
+          }
+        })
+      )
+      await Promise.all(notifications)
+
+      success(res, {}, 'Mediator assigned successfully.')
     } catch (error) {
       next(error)
     }

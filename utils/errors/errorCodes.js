@@ -114,6 +114,14 @@ const ERROR_CODES = {
   CASE_NOT_FOUND: {
     errorCode: 'E307',
     message: 'Case not found'
+  },
+  NO_ACTIVE_MEDIATOR: {
+    errorCode: 'E308',
+    message: 'No active mediators found'
+  },
+  ADMIN_NOTIFIED_FOR_MEDIATOR: {
+    errorCode: 'E309',
+    message: 'No mediator available, admin notified'
   }
 }
 

@@ -8,8 +8,8 @@
         "name": "dashboard.home"
       },
       "class_name": "",
-      "is_icon_class": false,
-      "icon": "ri-home-4-line"
+      "is_icon_class": true,
+      "icon": "ri-home-5-line"
     },
     {
       "title": "My Calendar",
@@ -20,8 +20,8 @@
         "name": "app.calendar"
       },
       "class_name": "",
-      "is_icon_class": false,
-      "icon": "ri-home-4-line"
+      "is_icon_class": true,
+      "icon": "ri-calendar-event-line"
     },
     {
       "title": "My Blogs",
@@ -32,8 +32,8 @@
         "name": "blog.list"
       },
       "class_name": "",
-      "is_icon_class": false,
-      "icon": "ri-home-4-line"
+      "is_icon_class": true,
+      "icon": "ri-article-line"
     },
     {
       "title": "My Documents",
@@ -44,8 +44,8 @@
         "name": "app.e-commerce.index"
       },
       "class_name": "",
-      "is_icon_class": false,
-      "icon": "ri-home-4-line"
+      "is_icon_class": true,
+      "icon": "ri-folder-2-line"
     },
     {
       "title": "Billing",
@@ -56,8 +56,8 @@
         "name": "table.editable"
       },
       "class_name": "",
-      "is_icon_class": false,
-      "icon": "ri-home-4-line"
+      "is_icon_class": true,
+      "icon": "ri-bank-card-line"
     }
   ]
   

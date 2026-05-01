@@ -51,12 +51,12 @@ class Helper {
   static getTodaysEvents (casesWithEvents, personalEvents) {
     const caseEvents = casesWithEvents.flatMap(caseItem => {
       return (caseItem.events)
-        .filter(event => {
+        ?.filter(event => {
           const date = new Date()
           return new Date(event.start_datetime).toISOString().split('T')[0] === new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0]
         })
         .map(event => ({
-          type: 'ROUSE',
+          type: 'KADR',
           caseNumber: caseItem?.caseId,
           startDate: event.start_datetime,
           endDate: event.end_datetime,
@@ -160,6 +160,7 @@ class Helper {
         category: true,
         case_type: true,
         caseId: true,
+        created_at: true,
         evidence_document_url: true,
         case_statuses: {
           select: {
@@ -203,7 +204,7 @@ class Helper {
         },
         events: {
           orderBy: {
-            created_at: 'desc'
+            start_datetime: 'desc'
           },
           select: {
             id: true,
@@ -212,7 +213,16 @@ class Helper {
             start_datetime: true,
             end_datetime: true,
             type: true,
-            meeting_link: true
+            meeting_link: true,
+            meeting_summary: true,
+            mediator_next_steps: true,
+            first_party_next_steps: true,
+            second_party_next_steps: true,
+            first_party_rating: true,
+            second_party_rating: true,
+            mediator_feedback_at: true,
+            first_party_feedback_at: true,
+            second_party_feedback_at: true
           }
         },
         case_history: {
@@ -609,6 +619,8 @@ class Helper {
         caseItem.case_history.map(history => [history.case_event_id, history.created_at])
       )
 
+      console.log(caseItem)
+
       // Find the sequence number of the current event
       let currentSequence = null
       caseEvents.forEach(event => {
@@ -882,12 +894,24 @@ class Helper {
         mediator: true,
         first_party: true,
         second_party: true,
+        created_at: true,
         caseId: true,
-        status: true,
-        sub_status: true,
         case_type: true,
         description: true,
+        evidence_document_url: true,
         category: true,
+        case_statuses: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        case_sub_statuses: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
         user_cases_first_partyTouser: {
           select: {
             id: true,
@@ -913,6 +937,39 @@ class Helper {
             id: true,
             name: true,
             email: true
+          }
+        },
+        events: {
+          orderBy: {
+            start_datetime: 'desc'
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            start_datetime: true,
+            end_datetime: true,
+            type: true,
+            meeting_link: true,
+            meeting_summary: true,
+            mediator_next_steps: true,
+            first_party_next_steps: true,
+            second_party_next_steps: true,
+            first_party_rating: true,
+            second_party_rating: true,
+            mediator_feedback_at: true,
+            first_party_feedback_at: true,
+            second_party_feedback_at: true
+          }
+        },
+        case_history: {
+          orderBy: {
+            created_at: 'desc'
+          },
+          select: {
+            id: true,
+            case_event_id: true,
+            created_at: true
           }
         }
       }
@@ -1051,6 +1108,14 @@ class Helper {
                   email: true,
                   phone_number: true
                 }
+              },
+              user_cases_first_partyTouser: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  phone_number: true
+                }
               }
             }
           }
@@ -1068,27 +1133,29 @@ class Helper {
     ])
 
     inactiveUsers = inactiveUsers.map(user => {
-      const caseData = user[relationField][0] || {}
-      const otherPartyDate = user[relationField][0]?.user_cases_second_partyTouser || {}
-      const caseId = caseData.id
+      const caseData = user[relationField] || []
       const userId = user.id
-      const otherPartyUserId = otherPartyDate.id
-      const other_party_name = otherPartyDate.name
-      const other_party_email = otherPartyDate.email
-      const other_party_phone = otherPartyDate.phone_number
       const flatUser = {
-        ...otherPartyDate,
-        ...caseData,
         ...user,
-        caseId,
         userId,
-        otherPartyUserId,
-        other_party_name,
-        other_party_email,
-        other_party_phone
+        cases: caseData.map(caseItem => {
+          const flattenedCase = { ...caseItem }
+          if (caseItem.user_cases_first_partyTouser) {
+            flattenedCase.firstParty = caseItem.user_cases_first_partyTouser
+          }
+
+          if (caseItem.user_cases_second_partyTouser) {
+            flattenedCase.secondParty = caseItem.user_cases_second_partyTouser
+          }
+
+          // Remove unnecessary nested properties
+          delete flattenedCase.user_cases_second_partyTouser
+          delete flattenedCase.user_cases_first_partyTouser
+          return flattenedCase
+        })
       }
+
       delete flatUser[relationField]
-      delete flatUser.user_cases_second_partyTouser
       delete flatUser.id
       return flatUser
     })
@@ -1401,7 +1468,7 @@ class Helper {
     `
   }
 
-  static async sendEmail (customerName, emailId, subject = 'Mail from Rouse Avenue Mediaton Center', content) {
+  static async sendEmail (customerName, emailId, subject = 'Mail from Kadr.live', content) {
     try {
       // Create a transporter
       const transporter = nodemailer.createTransport({
@@ -1598,6 +1665,174 @@ class Helper {
       </body>
     </html>
     `
+  }
+
+  static adminActiveCaseStatusesFilter () {
+    return {
+      OR: [
+        { status: CaseTypes.NEW },
+        { status: CaseTypes.IN_PROGRESS }
+      ]
+    }
+  }
+
+  static buildAdminCasesWhere (filters) {
+    const { mediatorId, firstPartyId, secondPartyId, status } = filters || {}
+    const and = [this.adminActiveCaseStatusesFilter()]
+    if (mediatorId === '__unassigned__') {
+      and.push({ mediator: null })
+    } else if (mediatorId) {
+      and.push({ mediator: mediatorId })
+    }
+    if (firstPartyId) and.push({ first_party: firstPartyId })
+    if (secondPartyId) and.push({ second_party: secondPartyId })
+    if (status) and.push({ status })
+    return { AND: and }
+  }
+
+  static async getAdminActiveCasesCount (prisma, filters) {
+    const where = this.buildAdminCasesWhere(filters)
+    return prisma.cases.count({ where })
+  }
+
+  static async getAdminActiveCases (prisma, page, filters) {
+    const perPage = 10
+    const skip = (page - 1) * perPage
+    const where = this.buildAdminCasesWhere(filters)
+    return prisma.cases.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip,
+      take: perPage,
+      select: {
+        id: true,
+        caseId: true,
+        description: true,
+        category: true,
+        case_type: true,
+        evidence_document_url: true,
+        created_at: true,
+        updated_at: true,
+        status: true,
+        sub_status: true,
+        mediator: true,
+        first_party: true,
+        second_party: true,
+        case_statuses: {
+          select: { id: true, name: true }
+        },
+        case_sub_statuses: {
+          select: { id: true, name: true }
+        },
+        user_cases_first_partyTouser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone_number: true,
+            city: true,
+            state: true
+          }
+        },
+        user_cases_second_partyTouser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone_number: true,
+            city: true,
+            state: true
+          }
+        },
+        user_cases_mediatorTouser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone_number: true,
+            city: true,
+            state: true,
+            profile_picture_url: true,
+            preferred_languages: true,
+            preferred_area_of_practice: true
+          }
+        },
+        events: {
+          orderBy: { start_datetime: 'desc' },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            start_datetime: true,
+            end_datetime: true,
+            type: true,
+            meeting_link: true,
+            google_calendar_link: true,
+            meeting_summary: true,
+            mediator_next_steps: true,
+            first_party_next_steps: true,
+            second_party_next_steps: true,
+            first_party_rating: true,
+            second_party_rating: true,
+            mediator_feedback_at: true,
+            first_party_feedback_at: true,
+            second_party_feedback_at: true
+          }
+        },
+        case_history: {
+          orderBy: { created_at: 'asc' },
+          select: {
+            created_at: true,
+            case_events: {
+              select: { title: true, description: true, sequence: true }
+            }
+          }
+        }
+      }
+    })
+  }
+
+  static async getAdminCaseFilterMeta (prisma) {
+    const active = this.adminActiveCaseStatusesFilter()
+    const [mediators, firstParties, secondParties, statuses] = await Promise.all([
+      prisma.user.findMany({
+        where: { user_type: 'MEDIATOR', active: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          city: true,
+          state: true,
+          profile_picture_url: true,
+          preferred_languages: true,
+          preferred_area_of_practice: true
+        },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.user.findMany({
+        where: {
+          cases_cases_first_partyTouser: { some: active }
+        },
+        select: { id: true, name: true, email: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.user.findMany({
+        where: {
+          cases_cases_second_partyTouser: { some: active }
+        },
+        select: { id: true, name: true, email: true },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.case_statuses.findMany({
+        where: {
+          id: { in: [CaseTypes.NEW, CaseTypes.IN_PROGRESS] }
+        },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' }
+      })
+    ])
+    return { mediators, firstParties, secondParties, statuses }
   }
 }
 

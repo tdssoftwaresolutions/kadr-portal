@@ -1,125 +1,131 @@
 <template>
-    <b-container fluid>
-      <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
-      <Spinner :isVisible="loading" />
-      <b-row>
-        <b-col lg="3" md="12">
-          <iq-card class="iq-profile-card text-center">
-            <template v-slot:body>
-              <div class="iq-team text-center p-0">
-                <img v-if="content.user.profile_picture_url" :src="content.user.profile_picture_url" class="img-fluid mb-3 avatar-120 rounded-circle" alt="" style="object-fit: cover;"/>
-                <img v-else :src="require('../../assets/images/user/1.jpg')" class="img-fluid mb-3 avatar-120 rounded-circle" alt=""/>
-                <h4 class="mb-0">Welcome {{ user.name }}</h4>
-                <p class="d-inline-block w-100">{{ user.email }}</p>
+  <b-container fluid class="dashboard-client-page">
+    <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
+    <Spinner :isVisible="loading" />
+
+    <div class="hero-card">
+      <div class="hero-profile">
+        <img
+          v-if="content.user && content.user.profile_picture_url"
+          :src="content.user.profile_picture_url"
+          class="hero-avatar"
+          alt="Profile picture"
+        >
+        <img
+          v-else
+          :src="require('../../assets/images/user/1.jpg')"
+          class="hero-avatar"
+          alt="Profile picture"
+        >
+        <div class="hero-user-meta">
+          <h3>Welcome back, {{ user.name }}</h3>
+          <p>{{ user.email }}</p>
+        </div>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-card">
+          <span class="stat-label">Assigned Cases</span>
+          <span class="stat-value">{{ totalCases }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Meetings Today</span>
+          <span class="stat-value">{{ todaysEvents.length }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Global Notes</span>
+          <span class="stat-value">{{ notes.length }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="workspace-grid">
+      <iq-card class="workspace-card">
+        <template v-slot:headerTitle>
+          <h4 class="card-title">Today's Schedule</h4>
+        </template>
+        <template v-slot:body>
+          <div v-if="todaysEvents.length" class="list-scroll">
+            <template v-for="(event, index) in todaysEvents" >
+              <div
+                :key="index"
+                v-if="event != null"
+                class="schedule-item">
+                <div class="schedule-main" >
+                  <i class="ri-checkbox-blank-circle-fill schedule-dot" :style="{ color: kadrEventColor }" v-if="event.type == 'KADR'"></i>
+                  <i class="ri-checkbox-blank-circle-fill schedule-dot" :style="{ color: personalEventColor }" v-else></i>
+                  <div class="schedule-text" v-if="event.type == 'KADR'">
+                    <h6>Case #{{ event.caseId || event.caseNumber || '-' }}</h6>
+                    <p>{{ event.caseFirstPartyName || event.firstPartyName || '-' }} vs {{ event.caseSecondPartyName || event.secondPartyName || '-' }}</p>
+                    <span>{{ formatDate(event.start_datetime || event.startDate) }} - {{ formatDate(event.end_datetime || event.endDate) }}</span>
+                  </div>
+                   <div class="schedule-text" v-else>
+                    <h6>{{event.title}}</h6>
+                    <p>{{ event.description }}</p>
+                    <span>{{ formatDate(event.start_datetime || event.startDate) }} - {{ formatDate(event.end_datetime || event.endDate) }}</span>
+                  </div>
+                </div>
+                <a
+                  v-if="event.meeting_link || event.meetingLink"
+                  :href="event.meeting_link || event.meetingLink"
+                  target="_blank"
+                  class="btn btn-primary btn-sm"
+                >
+                  Join
+                </a>
               </div>
             </template>
-          </iq-card>
-          <iq-card>
-            <template v-slot:headerTitle>
-              <h4 class="card-title">Today's Schedule</h4>
-            </template>
-            <template v-slot:body>
-              <ul class="m-0 p-0 today-schedule" style="overflow-y: scroll;max-height: 300px;">
-                <li class="d-flex align-items-center justify-content-between" v-for="(event, index) in content.todaysEvent" :key="index">
-                  <div class="d-flex align-items-center">
-                    <div class="schedule-icon">
-                      <i class="ri-checkbox-blank-circle-fill" :style="{ color: kadrEventColor }" v-if="event.type == 'KADR'"></i>
-                      <i class="ri-checkbox-blank-circle-fill" :style="{ color: personalEventColor }" v-else></i>
-                    </div>
-                    <div class="schedule-text" v-if="event.type == 'KADR'">
-                      <span  style="font-weight: bold">Case #{{ event.caseNumber }}</span>
-                      <span>{{ event.firstPartyName }} vs {{ event.secondPartyName }}</span>
-                      <span>
-                        {{ formatDate(event.startDate) }} to {{ formatDate(event.endDate) }}
-                      </span>
-                    </div>
-                    <div class="schedule-text" v-else>
-                      <span  style="font-weight: bold">{{ event.title }}</span>
-                      <span>
-                        {{ formatDate(event.startDate) }} to {{ formatDate(event.endDate) }}
-                      </span>
-                    </div>
-                  </div>
-                  <a v-if="event.meetingLink != ''" :href="event.meetingLink"
-                    target="_blank"
-                    class="btn btn-primary btn-sm" >
-                    Join Meeting
-                </a>
-                </li>
-              </ul>
-            </template>
-          </iq-card>
-        </b-col>
-        <b-col lg="4" md="12">
-          <iq-card>
-            <template v-slot:headerTitle>
-              <h4 class="card-title">My Notes</h4>
-            </template>
-            <template v-slot:headerAction>
-              <a href="#" class="btn btn-primary" @click="onClickNewAdd('','')">
-                  Add New
-              </a>
-            </template>
-            <template v-slot:body>
-              <div style="height: 400px;overflow-x: scroll; ">
-                <div class="textarea-wrapper" v-for="(note, index) in notes" :key="index">
-                  <textarea class="sticky-note" v-model="note.content" @input="onContentChange(index)" :data-index="index"></textarea>
-                  <button v-if="note.isModified" class="save-btn" aria-label="Save" @click="onClickSave(index)">
-                    <i class="fas fa-save"></i>
+          </div>
+          <div v-else class="empty-data">No meetings scheduled for today.</div>
+        </template>
+      </iq-card>
+
+      <iq-card class="workspace-card">
+        <template v-slot:headerTitle>
+          <h4 class="card-title">Global Notes</h4>
+        </template>
+        <template v-slot:headerAction>
+          <button type="button" class="btn btn-primary btn-sm" @click="onClickNewAdd('', '')">
+            Add Note
+          </button>
+        </template>
+        <template v-slot:body>
+          <div class="list-scroll">
+            <div v-if="notes.length" class="notes-grid">
+              <div class="note-card" v-for="(note, index) in notes" :key="`global-${index}`">
+                <textarea
+                  class="note-input"
+                  v-model="note.content"
+                  @input="onContentChange(index)"
+                  :data-index="index"
+                  placeholder="Write global mediator notes..."
+                ></textarea>
+                <div class="note-actions">
+                  <button
+                    v-if="note.isModified"
+                    class="btn btn-sm btn-success"
+                    @click="onClickSave(index)"
+                  >
+                    Save
                   </button>
-                  <button class="delete-btn" aria-label="Delete" @click="onClickDelete(index)">
-                    <i class="fas fa-trash-alt"></i>
+                  <button class="btn btn-sm btn-outline-danger" @click="onClickDelete(index)">
+                    Delete
                   </button>
                 </div>
               </div>
-            </template>
-          </iq-card>
-        </b-col>
-        <b-col lg="5" md="12">
-          <iq-card class-name="overflow-hidden" body-class="pb-0">
-            <template v-slot:body>
-              <div class="rounded-circle iq-card-icon iq-bg-primary"><i class="ri-exchange-dollar-fill"></i></div>
-              <span class="float-right line-height-6">Current Month's Income</span>
-              <div class="clearfix"></div>
-              <div class="text-center">
-                <h2 class="mb-0"><span class="counter">Rs.</span><span>65k</span></h2>
-                <p class="mb-0 text-secondary line-height"><i class="ri-arrow-up-line text-success ms-1"></i><span class="text-success">10%</span> Increased</p>
-              </div>
-            </template>
-            <ApexChart element="chart-1" :chartOption="chart1"/>
-          </iq-card>
-          <iq-card class-name="overflow-hidden" body-class="pb-0">
-            <template v-slot:body>
-              <div class="rounded-circle iq-card-icon iq-bg-danger"><i class="ri-shopping-cart-line"></i></div>
-              <span class="float-right line-height-6">Number of Cases Resolved</span>
-              <div class="clearfix"></div>
-              <div class="text-center">
-                <h2 class="mb-0"><span class="counter">30</span><span></span></h2>
-                <p class="mb-0 text-secondary line-height"><i class="ri-arrow-down-line text-danger ms-1"></i><span class="text-danger">10%</span> Increased</p>
-              </div>
-            </template>
-            <ApexChart element="chart-4" :chartOption="chart4"/>
-          </iq-card>
-        </b-col>
-      </b-row>
-      <b-row>
-        <b-col lg="12" md="12">
-          <iq-card>
-            <template v-slot:headerTitle>
-              <h4 class="card-title">My Cases</h4>
-            </template>
-            <template v-slot:body>
-              <my-cases :cases="content.myCases"></my-cases>
-            </template>
-          </iq-card>
-        </b-col>
-      </b-row>
-    </b-container>
+            </div>
+            <div v-else class="empty-data">No global notes yet. Add one to keep quick references.</div>
+          </div>
+        </template>
+      </iq-card>
+    </div>
+
+    <my-cases :cases="content.myCases" :user-id="user.id" @refresh-dashboard="$emit('refresh-dashboard')"></my-cases>
+  </b-container>
 </template>
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import Spinner from '../../components/sofbox/spinner/spinner.vue'
-import MyCases from '../Tables/MyCases.vue'
+import MyCases from './MyCases.vue'
 const PERSONAL_EVENT_COLOR = 'rgb(244, 81, 30)'
 const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
 
@@ -131,6 +137,14 @@ export default {
   },
   components: {
     Alert, Spinner, MyCases
+  },
+  computed: {
+    totalCases () {
+      return this.content?.myCases?.total || this.content?.myCases?.casesWithEvents?.length || 0
+    },
+    todaysEvents () {
+      return this.content?.todaysEvent || []
+    }
   },
   methods: {
     formatDate (dateString) {
@@ -216,138 +230,221 @@ export default {
       },
       loading: false,
       notes: [],
-      chart1: {
-        chart: {
-          height: 80,
-          type: 'area',
-          sparkline: {
-            enabled: true
-          },
-          group: 'sparklines'
-
-        },
-        dataLabels: {
-          enabled: false
-        },
-        stroke: {
-          width: 3,
-          curve: 'smooth'
-        },
-        fill: {
-          type: 'gradient',
-          gradient: {
-            shadeIntensity: 1,
-            opacityFrom: 0.5,
-            opacityTo: 0
-          }
-        },
-        series: [{
-          name: 'series1',
-          data: [60, 15, 50, 30, 70]
-        }],
-        colors: ['#0084ff'],
-
-        xaxis: {
-          type: 'datetime',
-          categories: ['2018-08-19T00:00:00', '2018-09-19T01:30:00', '2018-10-19T02:30:00', '2018-11-19T01:30:00', '2018-12-19T01:30:00']
-        },
-        tooltip: {
-          x: {
-            format: 'dd/MM/yy HH:mm'
-          }
-        }
-      },
-      chart4: {
-        chart: {
-          height: 80,
-          type: 'area',
-          sparkline: {
-            enabled: true
-          },
-          group: 'sparklines'
-
-        },
-        dataLabels: {
-          enabled: false
-        },
-        stroke: {
-          width: 3,
-          curve: 'smooth'
-        },
-        fill: {
-          type: 'gradient',
-          gradient: {
-            shadeIntensity: 1,
-            opacityFrom: 0.5,
-            opacityTo: 0
-          }
-        },
-        series: [{
-          name: 'series1',
-          data: [75, 30, 60, 35, 60]
-        }],
-        colors: ['#e64141'],
-        xaxis: {
-          type: 'datetime',
-          categories: ['2018-08-19T00:00:00', '2018-09-19T01:30:00', '2018-10-19T02:30:00', '2018-11-19T01:30:00', '2018-12-19T01:30:00']
-        },
-        tooltip: {
-          x: {
-            format: 'dd/MM/yy HH:mm'
-          }
-        }
-      }
+      chart1: null,
+      chart4: null
     }
   }
 }
 </script>
 <style scoped>
-.textarea-wrapper {
-  position: relative;
-  display: inline-block;
+.dashboard-client-page {
+  background: #f4f6fb;
+}
+
+.hero-card {
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(120deg, #2b4ecf 0%, #5e7df7 100%);
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.hero-profile {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.hero-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  object-fit: cover;
+}
+
+.hero-user-meta h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color:white;
+  font-size: 20px;
+}
+
+.hero-user-meta p {
+  margin: 0.25rem 0 0;
+  opacity: 0.9;
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 0.75rem;
   width: 100%;
+  max-width: 460px;
 }
 
-.delete-btn, .save-btn {
-  position: absolute;
-  right: 5px;
-  background: transparent;
-  border: none;
-  font-size: 24px; /* Icon size */
-  color: #f00; /* Red color for delete button */
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%; /* Round button for a circular appearance */
-  transition: background 0.3s ease;
+.stat-card {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
 }
 
-.delete-btn {
-  top: 5px; /* Position delete button at the top right */
+.stat-label {
+  font-size: 0.78rem;
+  opacity: 0.88;
 }
 
-.save-btn {
-  top: 40px; /* Position save button below the delete button */
-  color: #4CAF50; /* Green color for the save button */
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
-textarea {
-  font: 17px 'Gloria Hallelujah', cursive;
-  line-height: 1.5;
-  border: 0;
-  border-radius: 3px;
-  background: linear-gradient(#F9EFAF, #F7E98D);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow-x: hidden;
+.workspace-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.workspace-card {
+  border-radius: 14px;
+}
+
+.notes-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.note-card {
+  border: 1px solid #ebedf5;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #fafcff;
+}
+
+.note-input {
+  width: 100%;
+  min-height: 120px;
+  border: 1px solid #d8dff1;
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  resize: vertical;
+}
+
+.note-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.list-scroll {
+  max-height: 320px;
   overflow-y: auto;
-  transition: box-shadow 0.5s ease;
-  max-width: 520px;
-  max-height: 250px;
-  width: 100%;
-  height: 150px;
-  padding-right: 2rem;
-  padding-left: 0.5rem;
-  padding-top: 0.4rem;
-  padding-bottom: 0.4rem;
+  padding-right: 0.25rem;
 }
 
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  border: 1px solid #ebedf5;
+  border-radius: 10px;
+  margin-bottom: 0.7rem;
+}
+
+.schedule-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.schedule-dot {
+  margin-top: 0.2rem;
+}
+
+.schedule-text h6 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.schedule-text p {
+  margin: 0.15rem 0;
+  color: #4a5472;
+}
+
+.schedule-text span {
+  color: #6f7894;
+  font-size: 0.86rem;
+}
+
+.notification-item {
+  padding: 0.85rem;
+  border: 1px solid #ebedf5;
+  border-radius: 10px;
+  margin-bottom: 0.7rem;
+}
+
+.notification-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.notification-head h6 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.notification-head small {
+  color: #6f7894;
+  font-weight: 600;
+}
+
+.notification-item p {
+  margin: 0.4rem 0 0;
+  color: #4a5472;
+}
+
+.empty-data {
+  text-align: center;
+  color: #7c86a7;
+  padding: 1.4rem 0.6rem;
+  border: 1px dashed #d8dded;
+  border-radius: 10px;
+}
+
+@media (max-width: 991px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-stats {
+    max-width: none;
+  }
+}
+
+@media (max-width: 575px) {
+  .dashboard-client-page {
+    padding: 0.5rem;
+  }
+
+  .hero-card {
+    padding: 1rem;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

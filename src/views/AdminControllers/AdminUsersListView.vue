@@ -11,7 +11,7 @@
               <!-- Active Clients Tab -->
               <b-tab :title="'Clients ('+activeClientsData.total+')'"  active>
                 <b-row v-if="activeClientsData.total > 0">
-                  <b-col md="4" v-for="user in activeClientsData.users" :key="`client-${user.userId || user.email}`" class="mb-3">
+                  <b-col md="6" v-for="user in activeClientsData.users" :key="`client-${user.userId || user.email}`" class="mb-3">
                     <b-card class="h-100 user-card">
                       <b-card-body class="d-flex flex-column">
                         <div class="d-flex align-items-center mb-3">
@@ -48,7 +48,7 @@
               <!-- Active Mediators Tab -->
               <b-tab  :title="'Dispute Resolution Experts ('+activeMediatorsData.total+')'">
                 <b-row v-if="activeMediatorsData.total > 0">
-                  <b-col md="4" v-for="user in activeMediatorsData.users" :key="`mediator-${user.userId || user.email}`" class="mb-3">
+                  <b-col md="6" v-for="user in activeMediatorsData.users" :key="`mediator-${user.userId || user.email}`" class="mb-3">
                     <b-card class="h-100 user-card">
                       <b-card-body class="d-flex flex-column">
                         <div class="d-flex align-items-center mb-3">
@@ -112,22 +112,17 @@
             <img :src="selectedUser.profile_image || selectedUser.profile_picture_url" class="img-fluid rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;" alt="Profile" />
           </b-col>
         </b-row>
-        <div v-if="certificateFields.length > 0" class="mt-4">
-          <h5>Attachments</h5>
-          <b-row>
-            <b-col md="6" v-for="(field, index) in certificateFields" :key="index" class="mb-3">
-              <b-card class="certificate-card" @click="openCertificate(field.value)" style="cursor: pointer;">
-                <b-card-body class="text-center">
-                  <div class="certificate-icon mb-2">
-                    <i class="fas fa-file-alt fa-2x text-primary"></i>
-                  </div>
-                  <h6 class="card-title">{{ formatKey(field.key) }}</h6>
-                  <small class="text-muted">Click to view</small>
-                </b-card-body>
-              </b-card>
-            </b-col>
-          </b-row>
-        </div>
+        <section v-if="certificateFields.length" >
+          <strong>Documents</strong>
+          <div class="docs-grid">
+              <FilePreview
+              v-for="(doc, index) in certificateFields"
+              :key="doc.value"
+              :url="doc.value"
+              :name="formatKey(doc.key)"
+            />
+          </div>
+        </section>
         <div class="d-flex justify-content-end mt-3">
           <b-button variant="secondary" @click="modalVisible = false">Close</b-button>
         </div>
@@ -138,9 +133,13 @@
 
 <script>
 import { sofbox } from '../../config/pluginInit'
+import FilePreview from '../core/DocumentPreview.vue'
 
 export default {
   name: 'UserList',
+  components: {
+    FilePreview
+  },
   mounted () {
     sofbox.index()
     this.fetchActiveUsers(1) // Fetch both clients and mediators for page 1 on load
@@ -249,7 +248,7 @@ export default {
       return urlPattern.test(value)
     },
     filteredItem (item) {
-      const irrelevantKeys = ['name', 'email', '_showDetails', 'userId', 'created_at', 'active', 'otherPartyUserId', 'caseId', 'google_token', 'user_type', 'updated_at', 'is_self_signed_up', 'name', 'email', 'profile_image', 'profile_picture_url']
+      const irrelevantKeys = ['name', 'email', 'cases', '_showDetails', 'userId', 'created_at', 'active', 'otherPartyUserId', 'caseId', 'google_token', 'user_type', 'updated_at', 'is_self_signed_up', 'name', 'email', 'profile_image', 'profile_picture_url']
       return Object.fromEntries(
         Object.entries(item).filter(([key, value]) => !irrelevantKeys.includes(key) && value !== null && value !== 0)
       )
@@ -286,9 +285,47 @@ export default {
   }
 }
 </script>
-<style>
+<style scoped>
+
+.section-card {
+  border: 1px solid #ebeffa;
+  border-radius: 12px;
+  padding: 0.9rem;
+}
+
+.section-head h5 {
+  margin: 0;
+}
+
+.section-head small {
+  color: #6d7693;
+}
+
+.section-icon {
+  font-size: 1rem;
+  color: #d94430;
+}
+
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.action-required-section .section-head h5,
+.documents-section .section-head h5 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+::v-deep .card-header {
+  background-color: unset !important;
+  border-bottom: unset !important;
+}
 .user-card {
-  background-color: #f8f9fa;
+  background-color: #fcfdff;
   border: 1px solid #dee2e6;
 }
 

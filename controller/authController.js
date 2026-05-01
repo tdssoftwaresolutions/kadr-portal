@@ -5,6 +5,7 @@ const helper = require('../utils/helper')
 const errorCodes = require('../utils/errors/errorCodes')
 const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
+const CaseAssignmentService = require('../utils/caseAssignment')
 
 module.exports = {
   login: async function (req, res, next) {
@@ -215,11 +216,12 @@ module.exports = {
           email,
           active: true,
           user_type: {
-            not: 'CLIENT'
+            not: 'ADMIN'
           }
         },
         select: {
-          id: true
+          id: true,
+          name: true
         }
       })
       if (!user) throw createError(errorCodes.INVALID_REQUEST)
@@ -248,33 +250,17 @@ module.exports = {
         }
       })
       const htmlBody = `
-        <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #dddddd; border-radius: 6px; padding: 30px;">
-            <h2 style="color: #333333; font-size: 22px; margin-bottom: 20px;">Password Reset Request</h2>
-            <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-              Hello,
-            </p>
-            <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-              We have received a request to reset the password for your account on <strong>Rouse Avenue Mediation Center</strong>.
-            </p>
-            <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-              To proceed, please use the following One-Time Password (OTP) on our platform to complete your password reset:
-            </p>
-            <div style="margin: 20px 0; padding: 12px; background-color: #f0f4ff; border-left: 4px solid #3c78d8; font-size: 18px; font-weight: bold; color: #2a2a2a;">
-              ${otp}
-            </div>
-            <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-              If you did not request this password reset, please ignore this email. Your account remains secure.
-            </p>
-            <p style="font-size: 14px; color: #888888; margin-top: 30px; border-top: 1px solid #eeeeee; padding-top: 15px;">
-              Regards,<br />
-              Team Rouse Avenue Mediation Center
-            </p>
-          </div>
+        <p>
+          We have received a request to reset the password for your account on <strong>Kadr.live</strong>.
+        </p>
+        <p>
+          To proceed, please use the following One-Time Password (OTP) on our platform to complete your password reset:
+        </p>
+        <div style="margin: 20px 0; padding: 12px; background-color: #f0f4ff; border-left: 4px solid #3c78d8; font-size: 18px; font-weight: bold; color: #2a2a2a;">
+          ${otp}
         </div>
       `
-
-      await helper.sendEmail('Password Reset Request – Rouse Avenue Mediation Center', email, htmlBody)
+      await helper.sendEmail(user.name, email, 'Password Reset Request – Kadr.live', htmlBody)
       success(res, next)
     } catch (error) {
       next(error)
@@ -299,12 +285,15 @@ module.exports = {
       if (otpReset.expires_at < new Date()) throw createError(errorCodes.OTP_EXPIRED)
 
       const hashPassword = await helper.hashPassword(password)
-      await prisma.user.updateMany({
+      const user = await prisma.user.update({
         where: {
           email: emailAddress
         },
         data: {
           password_hash: hashPassword
+        },
+        select: {
+          name: true
         }
       })
       await prisma.otp_resets.deleteMany({
@@ -312,7 +301,26 @@ module.exports = {
           email: emailAddress
         }
       })
+      const htmlBody = `
+          <p>Your password has been successfully reset for your account on <strong>kADR.live</strong>.</p>
+          <p>You can now log in using your new password.</p>
+      `
+      await helper.sendEmail(user.name, emailAddress, 'Password Reset Successful - Kadr.live', htmlBody)
       success(res, {}, 'Password reset successfully!')
+    } catch (error) {
+      next(error)
+    }
+  },
+  test: async function (req, res, next) {
+    try {
+      const service = new CaseAssignmentService({ prisma })
+      const response = await service.assign({
+        caseId: 'KDR-12234',
+        clientLanguage: 'bn',
+        clientState: 'DELHI',
+        category: 'MEDIATION'
+      })
+      success(res, response)
     } catch (error) {
       next(error)
     }
