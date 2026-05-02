@@ -1,15 +1,15 @@
 [
     {
       "title": "Home",
-      "name": "sidebar.dashboard1",
+      "name": "sidebar.dashboard",
       "is_heading": false,
       "is_active": false,
       "link": {
-        "name": "dashboard1.home"
+        "name": "dashboard.home"
       },
       "class_name": "",
-      "is_icon_class": false,
-      "icon": "ri-home-4-line"
+      "is_icon_class": true,
+      "icon": "ri-home-5-line"
     },
     {
       "title": "Clients & Experts",
@@ -20,8 +20,20 @@
         "name": "app.users"
       },
       "class_name": "",
-      "is_icon_class": false,
-      "icon": "ri-home-4-line"
+      "is_icon_class": true,
+      "icon": "ri-group-line"
+    },
+    {
+      "title": "Case management",
+      "name": "app.cases",
+      "is_heading": false,
+      "is_active": false,
+      "link": {
+        "name": "app.cases"
+      },
+      "class_name": "",
+      "is_icon_class": true,
+      "icon": "ri-briefcase-line"
     }
   ]
   

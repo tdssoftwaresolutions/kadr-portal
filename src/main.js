@@ -38,7 +38,6 @@ Vue.config.productionTip = false
 Vue.use(VuejsDatatableFactory)
 
 const store = createStore(router)
-console.log('Vue app is mounting...')
 const vm = new Vue({
   router,
   store,

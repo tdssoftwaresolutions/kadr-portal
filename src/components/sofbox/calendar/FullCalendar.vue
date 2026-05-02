@@ -59,6 +59,14 @@ export default {
   },
   mounted () {
   },
+  watch: {
+    calendarEvents: {
+      deep: true,
+      handler (next) {
+        this.calendarOptions.events = Array.isArray(next) ? [...next] : []
+      }
+    }
+  },
   computed: {
 
   },
