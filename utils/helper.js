@@ -1023,16 +1023,22 @@ class Helper {
         },
         useGlobalEndpoint: false
       })
+      let mimeType, fileBuffer, extension, fullFileName
 
       const matches = base64Content.match(/^data:(.+);base64,(.+)$/)
-      if (!matches || matches.length !== 3) {
-        throw new Error('Invalid base64 string')
+      if (matches && matches.length === 3) {
+        // Data URI format
+        mimeType = matches[1]
+        fileBuffer = Buffer.from(matches[2], 'base64')
+        extension = mimeType.split('/')[1]
+        fullFileName = `${fileName}.${extension}`
+      } else {
+        // Raw base64 (assume PDF)
+        mimeType = 'application/pdf'
+        fileBuffer = Buffer.from(base64Content, 'base64')
+        extension = 'pdf'
+        fullFileName = `${fileName}.${extension}`
       }
-
-      const mimeType = matches[1]
-      const fileBuffer = Buffer.from(matches[2], 'base64')
-      const extension = mimeType.split('/')[1]
-      const fullFileName = `${Date.now()}-${fileName}.${extension}`
 
       const params = {
         Bucket: 'kadrapp-files-402961398131-us-east-1-an',
@@ -1404,7 +1410,7 @@ class Helper {
     const data = qs.stringify({
       To: `+91${toNumber}`,
       From: process.env.TWILIO_SENDER_NUMBER,
-      Body: `Your OTP for identity verification on RAMC is ${otp}. Please enter this code to continue. Do not share it with anyone.`
+      Body: `Your OTP for identity verification on KDR is ${otp}. Please enter this code to continue. Do not share it with anyone.`
     })
 
     try {

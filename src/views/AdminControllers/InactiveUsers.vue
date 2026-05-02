@@ -30,9 +30,11 @@
             </b-card>
           </b-col>
         </b-row>
-        <div v-else class="text-center py-4">
-          <h5>No record pending!</h5>
-        </div>
+        <section v-else class="empty-state">
+          <i class="fas fa-folder-open fa-3x"></i>
+          <h4>No record pending</h4>
+          <p>There are currently no items awaiting your approval. Please check back later.</p>
+        </section>
         <b-pagination
           v-if="paginatedData.total > 0"
           v-model="currentPage"
@@ -351,6 +353,20 @@ export default {
 .certificate-card {
   transition: all 0.3s ease;
   border: 2px solid #e9ecef;
+}
+
+.empty-state {
+  background: #fff;
+  border: 1px dashed #d7deef;
+  border-radius: 12px;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #5f6988;
+}
+
+.empty-state i {
+  color: #a3acc7;
+  margin-bottom: 0.7rem;
 }
 
 .certificate-card:hover {

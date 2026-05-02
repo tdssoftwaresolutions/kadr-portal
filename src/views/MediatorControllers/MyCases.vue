@@ -106,12 +106,7 @@
               <article class="action-card warning">
                 <h6><i class="fas fa-random action-card-icon"></i>Close Case</h6>
                 <p>Update internal tracking stage to move to close stage.</p>
-                <div class="status-move-row">
-                  <select v-model="selectedWorkflowStatus" class="form-select form-select-sm">
-                    <option v-for="option in workflowStatusOptions" :key="option" :value="option">{{ option }}</option>
-                  </select>
-                  <button class="btn btn-sm btn-light" @click="applyWorkflowStatus">Apply</button>
-                </div>
+                <button class="btn btn-sm btn-primary" @click="applyWorkflowStatus">Apply</button>
               </article>
             </div>
           </section>
@@ -205,6 +200,64 @@
       <p>Assigned mediator cases will appear here with complete case context and actions.</p>
     </section>
 
+     <b-modal size="xl" id="resolve-modal" v-model="showResolveModal" title="Mark Case as Resolved" hide-footer>
+      <form @submit.prevent="submitResolve">
+        <div class="form-group mb-3">
+          <label>Status</label>
+          <div class="resolve-status-selector">
+            <button
+              type="button"
+              :class="['resolve-status-btn', { active: resolveStatus === 'closed_success', success: resolveStatus === 'closed_success' }]"
+              @click="setResolveStatus('closed_success')"
+            >
+              Success
+            </button>
+            <button
+              type="button"
+              :class="['resolve-status-btn', { active: resolveStatus === 'closed_no_success', failed: resolveStatus === 'closed_no_success' }]"
+              @click="setResolveStatus('closed_no_success')"
+            >
+              Failed
+            </button>
+          </div>
+        </div>
+        <div class="form-group mb-3">
+          <label>Agreed terms</label>
+          <vue2-tinymce-editor v-model="resolveForm.agreementText" :options="options"></vue2-tinymce-editor>
+        </div>
+        <div class="form-group mb-3">
+          <label>Signature:</label>
+          <div class="signature-type-selector">
+            <button
+              type="button"
+              :class="{ active: signatureType === 'digital' }"
+              @click="setSignatureType('digital')">
+              Digital Signature
+            </button>
+            <button
+              type="button"
+              :class="{ active: signatureType === 'manual' }"
+              @click="setSignatureType('manual')">
+              Sign Manually
+            </button>
+          </div>
+          <div v-if="signatureType === 'digital'" class="digital-signature-box full-width">
+            <span class="cursive-signature">{{ resolveUserInitials }}</span>
+          </div>
+          <div v-else-if="signatureType === 'manual'" class="manual-signature">
+            <canvas ref="signaturePad" class="signature-canvas"></canvas>
+            <button type="button" @click="clearResolveSignature" class="btn btn-secondary" style="margin: 0px;width: 100%;">
+              Clear <i class="ri-refresh-line"></i>
+            </button>
+          </div>
+        </div>
+        <div class="text-right" style="margin-top: 24px; display: flex; gap: 16px; justify-content: flex-end;">
+          <b-button variant="secondary" @click="showResolveModal = false" type="button">Cancel</b-button>
+          <b-button type="submit" variant="primary">Save</b-button>
+        </div>
+      </form>
+    </b-modal>
+
     <b-modal
       size="lg"
       id="schedule-meeting-modal"
@@ -272,6 +325,9 @@ import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import VueMaterialDateTimePicker from 'vue-material-date-time-picker'
 import FilePreview from '../core/DocumentPreview.vue'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
+import SignaturePad from 'signature_pad'
+import { Vue2TinymceEditor } from 'vue2-tinymce-editor'
+
 import {
   isPastKadrCaseMeeting,
   mediatorNeedsMeetingFeedback
@@ -280,7 +336,7 @@ import {
 export default {
   name: 'MyCases',
   components: {
-    Alert, Spinner, VueMaterialDateTimePicker, FilePreview, MeetingFeedbackModal
+    Alert, Spinner, VueMaterialDateTimePicker, FilePreview, MeetingFeedbackModal, Vue2TinymceEditor
   },
   props: {
     cases: {
@@ -288,6 +344,10 @@ export default {
       required: true
     },
     userId: {
+      type: String,
+      default: ''
+    },
+    userName: {
       type: String,
       default: ''
     }
@@ -308,6 +368,14 @@ export default {
     }
   },
   computed: {
+    resolveUserInitials () {
+      // Use the mediator's name or fallback
+      return (this.userName)
+        .split(' ')
+        .map((name) => name[0])
+        .join('')
+        .toUpperCase()
+    },
     myCases () {
       return this.paginatedData.casesWithEvents || []
     },
@@ -348,6 +416,67 @@ export default {
     }
   },
   methods: {
+    async submitResolve () {
+      if (this.signatureType === 'manual') {
+        if (this.signaturePad && !this.signaturePad.isEmpty()) this.resolveForm.signature = this.signaturePad.toDataURL()
+        else return this.showAlert('Please provide a manual signature.', 'danger')
+      } else this.resolveForm.signature = this.resolveUserInitials
+
+      if (!this.resolveForm.agreementText.trim()) return this.showAlert('Please enter what both parties agreed.', 'danger')
+      const payload = {
+        caseId: this.resolveForm.caseId,
+        resolveStatus: this.resolveStatus,
+        agreementText: this.resolveForm.agreementText,
+        signature: this.resolveForm.signature
+      }
+      const response = await this.$store.dispatch('markCaseResolved', payload)
+      if (response.success) {
+        this.showAlert(response.message, 'success')
+        this.showResolveModal = false
+        if (this.paginatedData && this.paginatedData.casesWithEvents) {
+          this.paginatedData.casesWithEvents = this.paginatedData.casesWithEvents.filter(
+            c => c.id !== this.resolveForm.caseId
+          )
+          if (typeof this.paginatedData.total === 'number') this.paginatedData.total = Math.max(0, this.paginatedData.total - 1)
+        }
+      }
+    },
+    setResolveStatus (status) {
+      this.resolveStatus = status
+    },
+    setSignatureType (type) {
+      this.signatureType = type
+      if (type === 'manual') {
+        this.$nextTick(() => {
+          this.initializeSignaturePad()
+        })
+      }
+    },
+    initializeSignaturePad () {
+      this.$nextTick(() => {
+        const canvas = this.$refs.signaturePad
+        if (!canvas) return
+        this.adjustCanvasSize(canvas)
+        this.signaturePad = new SignaturePad(canvas, {
+          backgroundColor: 'rgb(255, 255, 255)',
+          penColor: 'rgb(0, 0, 0)'
+        })
+      })
+    },
+    adjustCanvasSize (canvas) {
+      if (!canvas) return
+      const ratio = Math.max(window.devicePixelRatio || 1, 1)
+      if (canvas.offsetWidth && canvas.offsetHeight) {
+        canvas.width = canvas.offsetWidth * ratio
+        canvas.height = canvas.offsetHeight * ratio
+        canvas.getContext('2d').scale(ratio, ratio)
+      }
+    },
+    clearResolveSignature () {
+      if (this.signaturePad) {
+        this.signaturePad.clear()
+      }
+    },
     selectCase (caseItem) {
       this.selectedCase = caseItem
     },
@@ -424,7 +553,20 @@ export default {
       }
     },
     applyWorkflowStatus () {
-      this.showAlert(`Status moved to "${this.selectedWorkflowStatus}" in your workspace view.`, 'success')
+      this.resolveForm = {
+        bothAgreed: true,
+        agreementText: '',
+        signature: '',
+        caseId: this.selectedCase.id
+      }
+      this.signatureType = 'digital'
+      this.resolveStatus = 'closed_success'
+      this.showResolveModal = true
+      this.$nextTick(() => {
+        if (this.signatureType === 'manual') {
+          this.initializeSignaturePad()
+        }
+      })
     },
     getCaseNoteKey () {
       return `mediator_case_note_${this.selectedCase.id || 'draft'}`
@@ -479,6 +621,76 @@ export default {
   },
   data () {
     return {
+      options: {
+        height: 400,
+        plugins: [
+          'autosave lists link image table media fullscreen color preview',
+          'paste charmap hr anchor insertdatetime wordcount'
+        ],
+        toolbar: [
+          'undo redo | formatselect | fontselect fontsizeselect | bold italic underline strikethrough |',
+          'forecolor backcolor | alignleft aligncenter alignright alignjustify |',
+          'bullist numlist outdent indent | table | link image media | fullscreen preview | restoredraft'
+        ].join(' '),
+        menubar: 'file edit view insert format tools table help',
+        branding: false,
+        image_title: true,
+        automatic_uploads: true,
+        autosave_interval: '20s',
+        autosave_retention: '30m',
+        file_picker_types: 'image',
+        file_picker_callback: (callback, value, meta) => {
+          const ref = this
+          if (meta.filetype === 'image') {
+            ref.loading = true
+            const input = document.createElement('input')
+            input.setAttribute('type', 'file')
+            input.setAttribute('accept', 'image/*')
+            input.onchange = function () {
+              const file = input.files[0]
+              const maxFileSizeMB = 1
+              const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024
+              if (file.size > maxFileSizeBytes) {
+                ref.showAlert(`The file size exceeds the ${maxFileSizeMB} MB limit.`, 'danger')
+                ref.loading = false
+                return
+              }
+              const reader = new FileReader()
+              reader.onload = function (e) {
+                callback(e.target.result, { alt: file.name })
+                ref.loading = false
+              }
+              reader.onerror = function () {
+                ref.showAlert('Failed to load the file. Please try again.', 'danger')
+                ref.loading = false
+              }
+              reader.readAsDataURL(file)
+            }
+            input.click()
+          }
+        },
+        media_live_embeds: true,
+        setup: function (editor) {
+          editor.addShortcut('ctrl+s', 'Save', function () {
+          })
+        },
+        image_caption: true,
+        image_dimensions: true,
+        media_alt_source: true,
+        media_poster: true,
+        spellchecker_dialog: true,
+        browser_spellcheck: true,
+        contextmenu: false,
+        content_style: `
+          body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+          }
+        `,
+        wordcount_countregex: /[\w\u2019\x27-]+/g,
+        wordcount_cleanregex: /<\/?[a-z][^>]*>/g
+      },
       selectedCase: {},
       selectedWorkflowStatus: 'Case Review',
       workflowStatusOptions: ['Closed - Mediation Successful', 'Closed - Mediation Unsuccessful'],
@@ -496,6 +708,7 @@ export default {
         })()
       },
       paginatedData: {},
+      signatureType: 'digital',
       feedbackModalVisible: false,
       feedbackEvent: null,
       feedbackSubmitting: false,
@@ -505,7 +718,16 @@ export default {
         timeout: 5000,
         type: 'primary'
       },
-      loading: false
+      showResolveModal: false,
+      resolveForm: {
+        bothAgreed: true,
+        agreementText: '',
+        signature: '',
+        caseId: null
+      },
+      loading: false,
+      resolveStatus: 'closed_success',
+      resolveSignaturePad: null
     }
   }
 }
@@ -536,6 +758,109 @@ export default {
   gap: 0.6rem;
   overflow-x: auto;
   padding-bottom: 0.5rem;
+}
+
+.signature-type-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.signature-type-selector button {
+  padding: 8px 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s, color 0.3s;
+  color: black; /* Default text color for non-selected buttons */
+}
+
+.signature-type-selector button.active {
+  background-color: #2c6faf;
+  color: white;
+  border-color: #2c6faf;
+}
+
+.signature-type-selector button:hover {
+  background-color: #d9e6f2;
+}
+.signature-btn {
+  padding: 8px 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s, color 0.3s;
+  color: black;
+}
+.signature-btn.active {
+  background-color: #2c6faf;
+  color: white;
+  border-color: #2c6faf;
+}
+.signature-btn:hover {
+  background-color: #d9e6f2;
+}
+.digital-signature-box {
+  border: 1px solid #ccc;
+  width: 100%;
+  height: 150px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  text-align: center;
+}
+.digital-signature-box.full-width {
+  width: 100%;
+}
+.cursive-signature {
+  font-family: Cursive;
+  font-size: 24px;
+  color: #2c6faf;
+}
+.manual-signature {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.signature-canvas {
+  border: 1px solid #ccc;
+  width: 100%;
+  height: 150px;
+  margin-top: 10px;
+  cursor: crosshair;
+}
+.resolve-status-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.resolve-status-btn {
+  padding: 8px 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s, color 0.3s;
+  color: black;
+}
+.resolve-status-btn.active.success {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+.resolve-status-btn.active.failed {
+  background-color: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+.resolve-status-btn:hover {
+  background-color: #d9e6f2;
 }
 
 .case-pill {

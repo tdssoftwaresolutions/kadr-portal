@@ -119,7 +119,7 @@
       </iq-card>
     </div>
 
-    <my-cases :cases="content.myCases" :user-id="user.id" @refresh-dashboard="$emit('refresh-dashboard')"></my-cases>
+    <my-cases :cases="content.myCases" :user-name="user.name" :user-id="user.id" @refresh-dashboard="$emit('refresh-dashboard')"></my-cases>
   </b-container>
 </template>
 <script>

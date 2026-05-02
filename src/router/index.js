@@ -18,6 +18,8 @@ import GoogleAccountManagement from '../views/AdminControllers/GoogleAccountMana
 import Dashboard from '../views/Standard/Dashboard.vue'
 
 /** Auth & User Management */
+import AgreementSignature from '../views/ClientControllers/AgreementSignature.vue'
+import Signature from '../views/ClientControllers/Signature.vue'
 
 /** Blog */
 import MyBlogs from '../views/Blog/MyBlogs.vue'
@@ -57,6 +59,11 @@ const appChildRoute = (prop) => [
     path: 'calendar2',
     name: prop + '.calendar2',
     component: ClientCalendar
+  },
+  {
+    path: 'signature',
+    name: 'signature',
+    component: Signature
   },
   {
     path: 'e-commerce/listing',
@@ -174,6 +181,11 @@ const routes = [
     name: 'table',
     component: StandardLayout,
     children: tableChildRoute('table')
+  },
+  {
+    path: '/agreement-signature',
+    name: 'agreement-signature',
+    component: AgreementSignature
   },
   {
     path: '/auth',

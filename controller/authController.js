@@ -118,10 +118,21 @@ module.exports = {
             case_agreement_id: true,
             cases: {
               select: {
-                first_party: true,
-                second_party: true,
-                plaintiff_phone: true,
-                respondent_phone: true
+                id: true,
+                user_cases_first_partyTouser: {
+                  select: {
+                    id: true,
+                    name: true,
+                    phone_number: true
+                  }
+                },
+                user_cases_second_partyTouser: {
+                  select: {
+                    id: true,
+                    name: true,
+                    phone_number: true
+                  }
+                }
               }
             }
           }
@@ -133,7 +144,11 @@ module.exports = {
       let phoneNumber = null
 
       if (signatureTracking.case_id != null) {
-        if (signatureTracking.cases.first_party === signatureTracking.user_id) { phoneNumber = signatureTracking.cases.plaintiff_phone } else if (signatureTracking.cases.second_party === signatureTracking.user_id) { phoneNumber = signatureTracking.cases.respondent_phone }
+        if (signatureTracking.cases.user_cases_first_partyTouser.id === signatureTracking.user_id) {
+          phoneNumber = signatureTracking.cases.user_cases_first_partyTouser.phone_number
+        } else if (signatureTracking.cases.user_cases_second_partyTouser.id === signatureTracking.user_id) {
+          phoneNumber = signatureTracking.cases.user_cases_second_partyTouser.phone_number
+        }
       } else if (signatureTracking.case_agreement_id != null) {
         const caseRecord = await prisma.cases.findFirst({
           where: {
@@ -142,15 +157,32 @@ module.exports = {
             }
           },
           select: {
-            first_party: true,
-            second_party: true,
-            plaintiff_phone: true,
-            respondent_phone: true
+            user_cases_first_partyTouser: {
+              select: {
+                id: true,
+                name: true,
+                phone_number: true
+              }
+            },
+            user_cases_second_partyTouser: {
+              select: {
+                id: true,
+                name: true,
+                phone_number: true
+              }
+            }
           }
         })
-        if (caseRecord.first_party === signatureTracking.user_id) { phoneNumber = caseRecord.plaintiff_phone } else if (caseRecord.second_party === signatureTracking.user_id) { phoneNumber = caseRecord.respondent_phone }
+        console.log(caseRecord)
+        console.log(signatureTracking)
+        if (caseRecord.user_cases_first_partyTouser.id === signatureTracking.user_id) {
+          phoneNumber = caseRecord.user_cases_first_partyTouser.phone_number
+        } else if (caseRecord.user_cases_second_partyTouser.id === signatureTracking.user_id) {
+          phoneNumber = caseRecord.user_cases_second_partyTouser.phone_number
+        }
       }
 
+      console.log(phoneNumber)
       if (!phoneNumber) throw createError(errorCodes.INVALID_REQUEST)
 
       const otp = Math.floor(100000 + Math.random() * 900000)

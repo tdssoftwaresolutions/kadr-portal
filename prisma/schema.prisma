@@ -45,34 +45,38 @@ model user {
 }
 
 model cases {
-  id                            String             @id @default(uuid()) @db.Char(36)
-  created_at                    DateTime?          @default(now()) @db.Timestamp(0)
-  updated_at                    DateTime?          @default(now()) @db.Timestamp(0)
-  mediator                      String?            @db.Char(36)
-  first_party                   String?            @db.Char(36)
-  second_party                  String?            @db.Char(36)
-  caseId                        String?            @db.Char(50)
-  case_type                     String?            @db.VarChar(255)
-  status                        String?            @db.VarChar(255)
-  sub_status                    String?            @db.VarChar(255)
-  category                      String?            @db.VarChar(100)
-  description                   String?            @db.Text
-  evidence_document_url         String?            @db.VarChar(255)
+  id                            String                   @id @default(uuid()) @db.Char(36)
+  created_at                    DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at                    DateTime?                @default(now()) @db.Timestamp(0)
+  mediator                      String?                  @db.Char(36)
+  first_party                   String?                  @db.Char(36)
+  second_party                  String?                  @db.Char(36)
+  caseId                        String?                  @db.Char(50)
+  case_type                     String?                  @db.VarChar(255)
+  status                        String?                  @db.VarChar(255)
+  sub_status                    String?                  @db.VarChar(255)
+  category                      String?                  @db.VarChar(100)
+  description                   String?                  @db.Text
+  evidence_document_url         String?                  @db.VarChar(255)
+  case_agreement                String?                  @db.Char(36)
   case_history                  case_history[]
-  case_statuses                 case_statuses?     @relation(fields: [status], references: [id], onDelete: Cascade, map: "fk_cases_status")
-  case_sub_statuses             case_sub_statuses? @relation(fields: [sub_status], references: [id], onDelete: Cascade, map: "fk_cases_sub_status")
-  user_cases_first_partyTouser  user?              @relation("cases_first_partyTouser", fields: [first_party], references: [id], onUpdate: Restrict, map: "fk_client_1")
-  user_cases_second_partyTouser user?              @relation("cases_second_partyTouser", fields: [second_party], references: [id], onUpdate: Restrict, map: "fk_client_2")
-  user_cases_mediatorTouser     user?              @relation("cases_mediatorTouser", fields: [mediator], references: [id], onUpdate: Restrict, map: "fk_mediator")
+  case_agreement_tracking       case_agreement_tracking? @relation(fields: [case_agreement], references: [id], map: "fk_case_agreement")
+  case_statuses                 case_statuses?           @relation(fields: [status], references: [id], onDelete: Cascade, map: "fk_cases_status")
+  case_sub_statuses             case_sub_statuses?       @relation(fields: [sub_status], references: [id], onDelete: Cascade, map: "fk_cases_sub_status")
+  user_cases_first_partyTouser  user?                    @relation("cases_first_partyTouser", fields: [first_party], references: [id], onUpdate: Restrict, map: "fk_client_1")
+  user_cases_second_partyTouser user?                    @relation("cases_second_partyTouser", fields: [second_party], references: [id], onUpdate: Restrict, map: "fk_client_2")
+  user_cases_mediatorTouser     user?                    @relation("cases_mediatorTouser", fields: [mediator], references: [id], onUpdate: Restrict, map: "fk_mediator")
   events                        events[]
   transactions                  transactions[]
 
+  signature_tracking signature_tracking[] 
   @@index([mediator], map: "fk_mediator")
   @@index([first_party], map: "fk_first_party")
   @@index([second_party], map: "fk_second_party")
   @@index([status], map: "fk_cases_status")
   @@index([sub_status], map: "fk_cases_sub_status")
   @@index([mediator, status], map: "idx_cases_mediator_status")
+  @@index([case_agreement], map: "fk_case_agreement")
 }
 
 model caseIdTracker {
@@ -93,10 +97,10 @@ model events {
   case_id                  String?     @db.Char(36)
   created_at               DateTime?   @default(now()) @db.Timestamp(0)
   updated_at               DateTime?   @default(now()) @db.Timestamp(0)
-  meeting_summary          String      @db.LongText
-  mediator_next_steps      String      @db.LongText
-  first_party_next_steps   String      @db.LongText
-  second_party_next_steps  String      @db.LongText
+  meeting_summary          String?     @db.LongText
+  mediator_next_steps      String?     @db.LongText
+  first_party_next_steps   String?     @db.LongText
+  second_party_next_steps  String?     @db.LongText
   first_party_rating       Int?
   second_party_rating      Int?
   mediator_feedback_at     DateTime?   @db.DateTime(0)
@@ -272,6 +276,39 @@ model case_sub_statuses {
   cases         cases[]
 
   @@index([status_id], map: "fk_case_sub_statuses_status")
+}
+
+model case_agreement_tracking {
+  id                              String    @unique(map: "unique_id") @default(dbgenerated("(uuid())")) @db.Char(36)
+  agreed_terms                    String?   @db.Text
+  signature_mediator              String?   @db.LongText
+  first_party_signature           String?   @db.LongText
+  second_party_signature          String?   @db.LongText
+  created_at                      DateTime  @default(now()) @db.Timestamp(0)
+  updated_at                      DateTime  @default(now()) @db.Timestamp(0)
+  mediation_agreement_link        String?   @db.Text
+  first_party_signature_datetime  DateTime? @db.DateTime(0)
+  second_party_signature_datetime DateTime? @db.DateTime(0)
+  cases                           cases[]
+  signature_tracking signature_tracking[] 
+}
+
+model signature_tracking {
+  id                String    @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  user_id           String    @db.Char(36)
+  case_id           String?   @db.Char(36)
+  signed            Boolean?  @default(false)
+  signature_expiry  DateTime  @db.DateTime(0)
+  created_at        DateTime? @default(now()) @db.DateTime(0)
+  updated_at        DateTime? @default(now()) @db.DateTime(0)
+  case_agreement_id String?   @db.Char(36)
+
+  case_agreement_tracking case_agreement_tracking? @relation(fields: [case_agreement_id], references: [id])
+  cases      cases?   @relation(fields:[case_id],references:[id])
+
+  @@index([case_agreement_id], map: "fk_case_agreement")
+  @@index([case_id], map: "fk_signature_case")
+  @@index([user_id], map: "fk_signature_user")
 }
 
 enum user_user_type {

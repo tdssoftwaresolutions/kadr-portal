@@ -79,10 +79,11 @@
                 </b-card>
               </b-col>
             </b-row>
-            <div v-else class="text-center py-4">
-              <h5>No cases match the current filters.</h5>
-            </div>
-
+            <section v-else class="empty-state">
+              <i class="fas fa-folder-open fa-3x"></i>
+              <h4>No record found</h4>
+              <p>There are currently no cases matching the current filters</p>
+            </section>
             <b-pagination
               v-if="totalCases > 0"
               v-model="currentPage"

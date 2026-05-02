@@ -14,6 +14,9 @@ const NEW_MEDIATOR_SIGNUP_ENDPOINT = '/newMediatorSignup'
 const IS_EMAIL_EXIST_ENDPOINT = '/isEmailExist'
 const LOGOUT_ENDPOINT = '/logout'
 const GET_USER_DATA_ENDPOINT = '/getUserData'
+const MARK_CASE_RESOLVED = '/markCaseResolved'
+const SUBMIT_SIGNATURE = '/submitSignature'
+const GET_SIGNATURE_REQUEST_DETAILS = '/getSignatureRequestDetails'
 const VERIFY_SIGNATURE_ENDPOINT = '/verify-signature'
 const AVAILABLE_LANGUAGES_ENDPOINT = '/getAvailableLanguages'
 const GET_INACTIVE_USERS_ENDPOINT = '/getInactiveUsers'
@@ -24,8 +27,10 @@ const POST_ADMIN_ASSIGN_CASE_MEDIATOR_ENDPOINT = '/assignCaseMediator'
 const UPDATE_INACTIVE_USER_ENDPOINT = '/updateInactiveUser'
 const REFRESH_TOKEN_ENDPOINT = '/refresh-token'
 const SAVE_NOTE_ENDPOINT = '/saveNote'
+const SUBMIT_AGREEMENT_SIGNATURE = '/submitAgreementSignature'
 const GET_DASHBOARD_CONTENT_ENDPOINT = '/getDashboardContent'
 const DELETE_NOTE_ENDPOINT = '/deleteNote'
+const GET_AGREEMENT_DETAILS_FOR_SIGNATURE = '/getAgreementDetailsForSignature'
 const GET_EXISTING_USER_ENDPOINT = '/getExistingUser'
 const UPDATE_USER_PROFILE = '/updateUserProfile'
 const GET_CALENDAR_INIT_ENDPOINT = '/getCalendarInit'
@@ -40,6 +45,8 @@ const GOOGLE_AUTH_ENDPOINT = '/authenticateWithGoogle'
 const GOOGLE_TOKEN_ENDPOINT = '/getGoogleToken'
 const SET_CLIENT_PAYMENT_ENDPOINT = '/setClientPayment'
 const SUBMIT_EVENT_FEEDBACK_ENDPOINT = '/submitEventFeedback'
+const SEND_OTP = '/sendOtp'
+const VERIFY_OTP = '/verifyOTP'
 const debug = process.env.NODE_ENV !== 'production'
 const getDefaultState = () => {
   return {
@@ -156,6 +163,58 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
+
+      async sendOtp ({ commit, dispatch }, { recordId }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(SEND_OTP, { id: recordId })
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async verifyOtp ({ commit, dispatch }, { requestId, otp }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(VERIFY_OTP, { requestId, otp })
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getAgreementDetailsForSignature ({ commit, dispatch }, { requestId }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(`${GET_AGREEMENT_DETAILS_FOR_SIGNATURE}?id=${encodeURIComponent(requestId)}`)
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
       async resetPassword ({ commit, dispatch }, { emailAddress }) {
         try {
           dispatch('spinner/showSpinner')
@@ -198,6 +257,23 @@ export default (router) => {
               'Authorization': token
             }
           })
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async markCaseResolved ({ commit, dispatch }, { caseId, resolveStatus, agreementText, signature }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(MARK_CASE_RESOLVED, { caseId, resolveStatus, agreementText, signature })
           if (!data.success) throw new Error(data.error.message)
           return data
         } catch (error) {
@@ -384,6 +460,57 @@ export default (router) => {
         try {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(NEW_CALENDAR_EVENT_ENDPOINT, { ...event })
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async submitAgreementSignature ({ commit, dispatch }, { signature, requestId }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(SUBMIT_AGREEMENT_SIGNATURE, { signature, requestId })
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async submitSignature ({ commit, dispatch }, { signature, requestId }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(SUBMIT_SIGNATURE, { signature, requestId })
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getSignatureRequestDetails ({ commit, dispatch }, { requestId }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(`${GET_SIGNATURE_REQUEST_DETAILS}?requestId=${encodeURIComponent(requestId)}`)
           if (!data.success) throw new Error(data.error.message)
           return data
         } catch (error) {
