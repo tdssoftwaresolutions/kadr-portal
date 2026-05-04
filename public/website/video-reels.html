@@ -11,7 +11,7 @@
   --b900:#1A0A00;--b800:#2C1205;--b700:#4A2010;--b600:#6B3218;--b500:#8C4820;--b400:#B46028;--b300:#D48040;
   --b200:#E8B888;--b100:#F8EAD8;--s500:#2D7A6A;--s300:#68BFB0;--g400:#D4A830;
   --font-display:'Playfair Display',Georgia,serif;--font-body:'DM Sans',system-ui,sans-serif;
-  --nav-h:56px;
+  --kadr-header-h:56px;
   --reel-ease:cubic-bezier(0.32, 0.72, 0, 1);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -50,7 +50,7 @@ body{font-family:var(--font-body);background:#000;color:#e8e0d8;font-size:14px}
 /* Full-viewport reel stage (below nav) */
 .reels-shell{
   position:fixed;
-  top:var(--nav-h);
+  top:var(--kadr-header-h);
   left:0;right:0;bottom:0;
   background:#050403;
   z-index:50;
@@ -272,35 +272,13 @@ span.copy-en,span.copy-hi{display:inline}
 }
 
 @media (max-width:768px){
-  .site-nav{padding:10px 14px;gap:8px}
-  :root{--nav-h:52px}
+  :root{--kadr-header-h:52px}
 }
 </style>
+<link rel="stylesheet" href="css/site-responsive.css"/>
 </head>
-<body class="lang-en">
-<nav class="site-nav" style="display:none">
-  <div class="nav-logo-text"><div class="nav-logo-mark">🌿</div><div class="nav-logo-name">kADR<span>Online Mediation</span></div></div>
-  <a class="site-nav-link copy-en" onclick="navigateTo('index.html')">Home</a>
-  <a class="site-nav-link copy-hi" onclick="navigateTo('index.html')">Home</a>
-  <a class="site-nav-link copy-en" onclick="navigateTo('how_it_works.html')">How It Works</a>
-  <a class="site-nav-link copy-hi" onclick="navigateTo('how_it_works.html')">Kaise Kaam Karta Hai</a>
-  <a class="site-nav-link" onclick="navigateTo('case_studies.html')">Case Studies</a>
-  <a class="site-nav-link copy-en" onclick="navigateTo('pricings.html')">Pricing</a>
-  <a class="site-nav-link copy-hi" onclick="navigateTo('pricings.html')">Pricing</a>
-  <a class="site-nav-link copy-en" onclick="navigateTo('resources.html')">Blog</a>
-  <a class="site-nav-link copy-hi" onclick="navigateTo('resources.html')">Blog</a>
-  <a class="site-nav-link copy-en" onclick="navigateTo('video-reels.html')" style="font-weight:600;color:#fff">Reels</a>
-  <a class="site-nav-link copy-hi" onclick="navigateTo('video-reels.html')" style="font-weight:600;color:#fff">Reels</a>
-  <div class="lang-toggle">
-    <button type="button" class="lt-btn active" onclick="setLanguage('en', event)">EN</button>
-    <button type="button" class="lt-btn" onclick="setLanguage('hi', event)">हि</button>
-  </div>
-  <div class="nav-ctas">
-    <button type="button" class="btn btn-outline-white btn-sm" id="loginBtn" onclick="goToLogin()">Login</button>
-    <button type="button" class="btn btn-gold copy-en btn-sm" onclick="goToLogin()">Start Case →</button>
-    <button type="button" class="btn btn-gold copy-hi btn-sm" onclick="goToLogin()">Case Shuru Karo →</button>
-  </div>
-</nav>
+<body class="lang-en kadr-reels-page">
+<header id="kadr-site-header" data-kadr-active="reels" data-kadr-minimal></header>
 
 <div class="reels-shell">
   <div id="reelsFeed" class="reels-feed" aria-label="Video reels feed"></div>
@@ -612,15 +590,7 @@ async function fetchBatch() {
 
 window.addEventListener('DOMContentLoaded', function () {
   var savedLang = localStorage.getItem('language') || 'en';
-  document.body.className = 'lang-' + savedLang;
-  document.querySelectorAll('.lt-btn').forEach(function (btn) { btn.classList.remove('active'); });
-  if (savedLang === 'hi') {
-    var btns = document.querySelectorAll('.lt-btn');
-    if (btns[1]) btns[1].classList.add('active');
-  } else if (document.querySelector('.lt-btn')) document.querySelector('.lt-btn').classList.add('active');
-
-  var token = getCookie('accessToken');
-  if (token) document.getElementById('loginBtn').textContent = 'My Account';
+  document.body.className = 'lang-' + savedLang + ' kadr-reels-page';
 
   feedEl.addEventListener('scroll', onFeedScroll, { passive: true });
   feedEl.addEventListener('wheel', onWheelDiscrete, { passive: false });
@@ -634,5 +604,7 @@ window.addEventListener('DOMContentLoaded', function () {
   fetchBatch();
 });
 </script>
+<div id="kadr-site-footer" data-kadr-minimal></div>
+<script src="js/site-chrome.js" defer></script>
 </body>
 </html>

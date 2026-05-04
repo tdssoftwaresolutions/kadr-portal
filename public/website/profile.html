@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>KADR.live — Mediator profile</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&amp;family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&amp;family=DM+Serif+Display:ital@0;1&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --b900:#1A0A00;--b800:#2C1205;--b700:#4A2010;--b600:#6B3218;--b500:#8C4820;--b400:#B46028;--b300:#D48040;--b200:#E8B888;--b100:#F8EAD8;--b50:#FDF5EC;
+  --s700:#1A4A3E;--s500:#2D7A6A;--s400:#3A9A86;--s100:#D8F0EC;
+  --g500:#B48A20;--g400:#D4A830;
+  --cream:#FAF0E0;--text-primary:#1A0A00;--text-body:#3D2010;--text-muted:#7A5A40;--text-light:#B09070;--border:#E8D4C0;--border-light:#F2E8DA;
+  --shadow-md:0 4px 16px rgba(42,16,0,.08),0 2px 6px rgba(42,16,0,.05);
+  --r-md:12px;--r-lg:16px;--r-xl:24px;
+  --font-display:'Playfair Display',Georgia,serif;--font-body:'DM Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{font-family:var(--font-body);background:var(--cream);color:var(--text-body);font-size:15px}
+.tag{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.tag-brown{background:var(--b100);color:var(--b700)}
+.tag-sage{background:var(--s100);color:var(--s700)}
+.sec-h2{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--b800);line-height:1.15}
+.sec-sub{font-size:15px;line-height:1.6;color:var(--text-muted)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:var(--r-md);font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--font-body);transition:all .2s}
+.btn-outline-brown{background:transparent;border:1.5px solid var(--b400);color:var(--b600)}
+.btn-outline-brown:hover{background:var(--b50);border-color:var(--b500)}
+</style>
+<link rel="stylesheet" href="css/site-responsive.css"/>
+</head>
+<body class="lang-en kadr-profile-page">
+<header id="kadr-site-header" data-kadr-active="blog"></header>
+
+<div class="mediator-profile-hero">
+  <div class="mediator-profile-hero-inner">
+    <div class="mediator-profile-avatar-wrap" id="profileAvatarWrap">
+      <div class="mediator-profile-avatar-fallback" id="profileAvatarFallback">M</div>
+      <img class="mediator-profile-avatar-img" id="profileAvatarImg" alt="" style="display:none"/>
+    </div>
+    <h1 class="mediator-profile-name" id="profileName">Loading…</h1>
+    <p class="mediator-profile-tagline copy-en">Mediator on KADR.live</p>
+    <p class="mediator-profile-tagline copy-hi">KADR.live par mediator</p>
+  </div>
+</div>
+
+<div class="section mediator-profile-body">
+  <section class="profile-section" aria-labelledby="blogsHeading">
+    <h2 class="sec-h2" id="blogsHeading"><span class="copy-en">Published articles</span><span class="copy-hi">Prakashit lekh</span></h2>
+    <p class="sec-sub profile-section-intro"><span class="copy-en">Blog posts</span><span class="copy-hi">Blog posts</span></p>
+    <div class="profile-blog-grid" id="profileBlogs"></div>
+  </section>
+
+  <section class="profile-section profile-section--reels" aria-labelledby="reelsHeading">
+    <h2 class="sec-h2" id="reelsHeading"><span class="copy-en">Video reels</span><span class="copy-hi">Video reels</span></h2>
+    <p class="sec-sub profile-section-intro"><span class="copy-en">Short videos</span><span class="copy-hi">Chhote video</span></p>
+    <div class="profile-reel-grid" id="profileReels"></div>
+  </section>
+
+  <div style="text-align:center;margin-top:40px">
+    <button type="button" class="btn btn-outline-brown" onclick="navigateTo('resources')"><span class="copy-en">← Back to Blog</span><span class="copy-hi">← Blog</span></button>
+  </div>
+</div>
+
+<div id="kadr-site-footer"></div>
+
+<script src="js/site-chrome.js" defer></script>
+<script>
+var API_URL = '/api';
+
+function escHtml (s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderBlogs (blogs) {
+  var el = document.getElementById('profileBlogs');
+  if (!blogs || !blogs.length) {
+    el.innerHTML = '<p class="sec-sub"><span class="copy-en">No published articles yet.</span><span class="copy-hi">Abhi koi article publish nahi.</span></p>';
+    return;
+  }
+  el.innerHTML = blogs.map(function (b) {
+    var cats = (b.categories && b.categories.length)
+      ? b.categories.map(function (c) { return '<span class="tag tag-brown">' + escHtml(c.name) + '</span>'; }).join(' ')
+      : '';
+    return (
+      '<a class="profile-blog-card" href="blog-detail?id=' + encodeURIComponent(b.id) + '">' +
+      '<div class="profile-blog-card-title">' + escHtml(b.title) + '</div>' +
+      '<p class="profile-blog-card-excerpt">' + escHtml(b.excerpt || '') + '</p>' +
+      '<div class="profile-blog-card-meta">' + cats +
+      '<span>' + new Date(b.created_at).toLocaleDateString() + '</span></div></a>'
+    );
+  }).join('');
+}
+
+function renderReels (reels) {
+  var el = document.getElementById('profileReels');
+  if (!reels || !reels.length) {
+    el.innerHTML = '<p class="sec-sub"><span class="copy-en">No video reels yet.</span><span class="copy-hi">Abhi video reels nahi.</span></p>';
+    return;
+  }
+  el.innerHTML = reels.map(function (r) {
+    var vid = r.youtube_video_id;
+    var inner = vid
+      ? '<div class="profile-reel-thumb" style="background-image:url(https://img.youtube.com/vi/' + encodeURIComponent(vid) + '/mqdefault.jpg)"><span class="profile-reel-play">▶</span></div>'
+      : '<div class="profile-reel-thumb profile-reel-thumb--empty">Video</div>';
+    return (
+      '<a class="profile-reel-card" href="' + escHtml(r.youtube_url || '#') + '" target="_blank" rel="noopener noreferrer">' +
+      inner +
+      '<div class="profile-reel-card-body"><div class="profile-reel-card-title">' + escHtml(r.title) + '</div>' +
+      '<p class="profile-reel-card-desc">' + escHtml((r.description || '').slice(0, 120)) + '</p>' +
+      '<span class="profile-reel-card-date">' + new Date(r.created_at).toLocaleDateString() + '</span></div></a>'
+    );
+  }).join('');
+}
+
+async function loadProfile () {
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get('id');
+  if (!id) {
+    document.getElementById('profileName').textContent = 'Profile not found';
+    document.getElementById('profileBlogs').innerHTML = '<p class="sec-sub">Missing profile id.</p>';
+    document.getElementById('profileReels').innerHTML = '';
+    return;
+  }
+  try {
+    var res = await fetch(API_URL + '/getPublicMediatorProfile?id=' + encodeURIComponent(id));
+    var json = await res.json();
+    if (!json.success || !json.data || !json.data.mediator) {
+      var msg = (json.error && json.error.message) || json.message || 'Profile not found';
+      document.getElementById('profileName').textContent = msg;
+      document.getElementById('profileBlogs').innerHTML = '';
+      document.getElementById('profileReels').innerHTML = '';
+      return;
+    }
+    var m = json.data.mediator;
+    document.getElementById('profileName').textContent = m.name;
+    document.title = m.name + ' — KADR.live';
+    var img = document.getElementById('profileAvatarImg');
+    var fb = document.getElementById('profileAvatarFallback');
+    if (m.profile_picture_url) {
+      img.src = m.profile_picture_url;
+      img.alt = m.name;
+      img.style.display = 'block';
+      fb.style.display = 'none';
+      img.onerror = function () {
+        img.style.display = 'none';
+        fb.style.display = 'flex';
+        fb.textContent = (m.name || 'M').charAt(0).toUpperCase();
+      };
+    } else {
+      fb.textContent = (m.name || 'M').charAt(0).toUpperCase();
+      fb.style.display = 'flex';
+      img.style.display = 'none';
+    }
+    renderBlogs(json.data.blogs || []);
+    renderReels(json.data.reels || []);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('profileName').textContent = 'Could not load profile';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', loadProfile);
+</script>
+</body>
+</html>

@@ -643,7 +643,9 @@ html, body {
 .view, .page {
   display: block !important;
 }
-</style></head>
+</style>
+<link rel="stylesheet" href="css/site-responsive.css"/>
+</head>
 <body class="lang-en" style="overflow:auto; height:auto;">
 <!-- ═══ TOPBAR ═══ -->
 
@@ -666,35 +668,7 @@ html, body {
 <div class="bs-link copy-en">Learn more →</div>
 <div class="bs-link copy-hi">Jaano aur →</div>
 </div>
-<!-- SITE NAV -->
-<nav class="site-nav">
-<div class="nav-logo-text">
-<div class="nav-logo-mark">🌿</div>
-<div class="nav-logo-name">
-        kADR
-        <span class="copy-en">Online Mediation</span>
-<span class="copy-hi">Online Mediation</span>
-</div>
-</div>
-<a class="site-nav-link copy-en" onclick="navigateTo('index.html')">Home</a>
-<a class="site-nav-link copy-hi" onclick="navigateTo('index.html')">Home</a>
-<a class="site-nav-link copy-en" onclick="navigateTo('how_it_works.html')">How It Works</a>
-<a class="site-nav-link copy-hi" onclick="navigateTo('how_it_works.html')">Kaise Kaam Karta Hai</a>
-<a class="site-nav-link" onclick="navigateTo('case_studies.html')">Case Studies</a>
-<a class="site-nav-link copy-en" onclick="navigateTo('pricings.html')">Pricing</a>
-<a class="site-nav-link copy-hi" onclick="navigateTo('pricings.html')">Pricing</a>
-<a class="site-nav-link copy-en" onclick="navigateTo('index.html')">For Organisations</a>
-<a class="site-nav-link copy-hi" onclick="navigateTo('index.html')">Organisations Ke Liye</a>
-<a class="site-nav-link copy-en" onclick="navigateTo('resources.html')">Blog</a>
-<a class="site-nav-link copy-hi" onclick="navigateTo('resources.html')">Blog</a>
-<div class="lang-toggle"><button class="lt-btn active" onclick="setLanguage('en')">EN</button><button class="lt-btn" onclick="setLanguage('hi')">हि</button></div>
-<div class="nav-ctas">
-<button class="btn btn-outline-white btn-sm copy-en" onclick="goToLogin()">Login</button>
-<button class="btn btn-outline-white btn-sm copy-hi" onclick="goToLogin()">Login</button>
-<button class="btn btn-gold copy-en" onclick="goToLogin()">Start Your Case →</button>
-<button class="btn btn-gold copy-hi" onclick="goToLogin()">Case Shuru Karo →</button>
-</div>
-</nav>
+<header id="kadr-site-header" data-kadr-active="home"></header>
 <!-- HERO -->
 <div class="hero">
 <div class="hero-inner">
@@ -966,9 +940,9 @@ html, body {
 </div>
 </div>
 <!-- B2B SECTION -->
-<div class="section brown-dark">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;max-width:1168px;margin:0 auto">
-<div>
+<div class="section brown-dark" id="kadr-organisations">
+<div class="kadr-org-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;max-width:1168px;margin:0 auto">
+<div class="kadr-org-copy">
 <div class="sec-kicker white copy-en">For Organisations</div>
 <div class="sec-kicker white copy-hi">Organisations Ke Liye</div>
 <div class="sec-h2 white copy-en">Apne Members Ko Dein<br/>Professional Mediation</div>
@@ -978,7 +952,7 @@ html, body {
 <button class="btn btn-gold copy-en">Explore Partner Programme →</button>
 <button class="btn btn-gold copy-hi">Partner Programme Dekho →</button>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<div class="kadr-org-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
 <div class="org-card"><div class="org-icon">🏛️</div><div class="org-title copy-en">Trade Associations</div><div class="org-title copy-hi">Trade Associations</div><div class="org-desc copy-en">Neutral channel for member disputes</div><div class="org-desc copy-hi">Members ke disputes ke liye neutral channel</div></div>
 <div class="org-card"><div class="org-icon">💍</div><div class="org-title copy-en">Marriage Bureaus</div><div class="org-title copy-hi">Marriage Bureaus</div><div class="org-desc copy-en">Pre &amp; post-marriage mediation</div><div class="org-desc copy-hi">Shaadi ke pehle aur baad mediation</div></div>
 <div class="org-card"><div class="org-icon">🏘️</div><div class="org-title copy-en">RWAs &amp; Communities</div><div class="org-title copy-hi">RWAs aur Communities</div><div class="org-desc copy-en">Community harmony disputes</div><div class="org-desc copy-hi">Society disputes ke liye</div></div>
@@ -1037,56 +1011,10 @@ html, body {
 <div class="ht"><span class="ht-icon">🇮🇳</span>Made in India</div>
 </div>
 </div>
-<!-- FOOTER -->
-<div class="footer">
-<div class="ft-grid">
-<div>
-<div class="ft-logo"><div class="ft-logo-mark">🌿</div><div class="ft-logo-text">k<span>ADR</span>.live</div></div>
-<div class="ft-desc copy-en">India's private online mediation platform. Affordable, confidential, and legally valid dispute resolution — backed by India's legal framework for private mediation and designed in alignment with the Mediation Act 2023.</div>
-<div class="ft-desc copy-hi">India ka online private mediation platform. Affordable, confidential, aur legally valid — India ke legal framework ke saath aligned.</div>
-<div class="ft-contact">📧 contact@kadr.live<br/>📞 +91 [Number]<br/>💬 WhatsApp: +91 [Number]<br/>📍 Delhi, India</div>
-</div>
-<div><div class="ft-h copy-en">Platform</div><div class="ft-h copy-hi">Platform</div><a class="ft-link copy-en">How It Works</a><a class="ft-link copy-hi">Kaise Kaam Karta Hai</a><a class="ft-link">Case Studies</a><a class="ft-link">Pricing</a><a class="ft-link copy-en">Case Login</a><a class="ft-link copy-hi">Case Login</a></div>
-</div>
-</div>
+<div id="kadr-site-footer"></div>
 <!-- /browser -->
 </div><!-- /page-home -->
 
-<script>
-// Navigation functions for website pages
-function navigateTo(page) {
-    window.location.href = page;
-}
-
-function goToLogin() {
-    const adminUrl = localStorage.getItem('adminUrl') || '/admin';
-    window.location.href = adminUrl  ;
-}
-
-function setLanguage(lang) {
-    document.body.className = 'lang-' + lang;
-    document.querySelectorAll('.lt-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    localStorage.setItem('language', lang);
-}
-
-// Load saved language on page load
-window.addEventListener('DOMContentLoaded', function() {
-    const savedLang = localStorage.getItem('language') || 'en';
-    document.body.className = 'lang-' + savedLang;
-    
-    // Check login status
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
-    
-    const token = getCookie('accessToken');
-    const loginBtn = document.querySelector('.nav-ctas .btn-outline-white');
-    if (loginBtn && token) {
-        loginBtn.textContent = 'My Account';
-    }
-});
-</script>
+<script src="js/site-chrome.js" defer></script>
+</body>
+</html>

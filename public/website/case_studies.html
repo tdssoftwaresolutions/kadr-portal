@@ -643,7 +643,9 @@ html, body {
 .view, .page {
   display: block !important;
 }
-</style></head>
+</style>
+<link rel="stylesheet" href="css/site-responsive.css"/>
+</head>
 <body class="lang-en" style="overflow:auto; height:auto;">
 <!-- ═══ TOPBAR ═══ -->
 
@@ -654,7 +656,7 @@ html, body {
 <!-- ─ PAGE: CASE STUDIES ─ -->
 <div class="page" id="page-cases">
 
-<nav class="site-nav"><div class="nav-logo-text"><div class="nav-logo-mark">🌿</div><div class="nav-logo-name">kADR<span class="copy-en">Online Mediation</span><span class="copy-hi">Online Mediation</span></div></div><a class="site-nav-link copy-en" onclick="navigateTo('index.html')">Home</a><a class="site-nav-link copy-hi" onclick="navigateTo('index.html')">Home</a><a class="site-nav-link copy-en" onclick="navigateTo('how_it_works.html')">How It Works</a><a class="site-nav-link copy-hi" onclick="navigateTo('how_it_works.html')">Kaise Kaam Karta Hai</a><a class="site-nav-link" onclick="navigateTo('case_studies.html')" style="font-weight:600;color:#fff">Case Studies</a><a class="site-nav-link copy-en" onclick="navigateTo('pricings.html')">Pricing</a><a class="site-nav-link copy-hi" onclick="navigateTo('pricings.html')">Pricing</a><a class="site-nav-link copy-en" onclick="navigateTo('index.html')">For Organisations</a><a class="site-nav-link copy-hi" onclick="navigateTo('index.html')">Organisations Ke Liye</a><a class="site-nav-link copy-en" onclick="navigateTo('resources.html')">Blog</a><a class="site-nav-link copy-hi" onclick="navigateTo('resources.html')">Blog</a><div class="lang-toggle"><button class="lt-btn active" onclick="setLanguage('en')">EN</button><button class="lt-btn" onclick="setLanguage('hi')">हि</button></div><div class="nav-ctas"><button class="btn btn-outline-white btn-sm copy-en" id="loginBtn" onclick="goToLogin()">Login</button><button class="btn btn-outline-white btn-sm copy-hi" id="loginBtn" onclick="goToLogin()">Login</button><button class="btn btn-gold copy-en" onclick="goToLogin()">Start Your Case →</button><button class="btn btn-gold copy-hi" onclick="goToLogin()">Case Shuru Karo →</button></div></nav>
+<header id="kadr-site-header" data-kadr-active="cases"></header>
 <div style="background:linear-gradient(145deg,var(--b800),#1A3D30);padding:72px 56px;text-align:center">
 <div class="sec-kicker white copy-en" style="justify-content:center">Real Stories</div>
 <div class="sec-kicker white copy-hi" style="justify-content:center">Asli Kahaniyan</div>
@@ -696,45 +698,11 @@ html, body {
 <div class="copy-en" style="text-align:center;margin-top:14px;font-size:11px;color:var(--text-light)">All cases anonymised. Details changed to protect privacy. Published with participant consent.</div>
 <div class="copy-hi" style="text-align:center;margin-top:14px;font-size:11px;color:var(--text-light)">Sabhi cases anonymised hain. Privacy ke liye details change ki gayi hain. Participants ki permission se publish kiya.</div>
 </div>
-<div class="footer" style="padding:24px 56px"><div class="ft-bottom" style="border:none;padding:0"><div class="ft-copy">© 2026 KADR.live</div></div></div>
+<div id="kadr-site-footer"></div>
 
 </div>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script>
-function navigateTo(page) {
-    window.location.href = page;
-}
-
-function goToLogin() {
-    const adminUrl = localStorage.getItem('adminUrl') || '/admin';
-    window.location.href = adminUrl  ;
-}
-
-function setLanguage(lang) {
-    document.body.className = 'lang-' + lang;
-    document.querySelectorAll('.lt-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    localStorage.setItem('language', lang);
-}
-
-// Load saved language on page load
-window.addEventListener('DOMContentLoaded', function() {
-    const savedLang = localStorage.getItem('language') || 'en';
-    document.body.className = 'lang-' + savedLang;
-    
-    // Check login status
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
-    
-    const token = getCookie('accessToken');
-    const loginBtn = document.querySelector('#loginBtn');
-    if (loginBtn && token) {
-        loginBtn.textContent = 'My Account';
-    }
-});
-</script>
+<script src="js/site-chrome.js" defer></script>
+</body>
+</html>

@@ -41,6 +41,7 @@ model user {
   notes                          notes[]
   notifications                  notifications[]
   transactions                   transactions[]
+  blog_comments                  blog_comments[]
 
   @@index([user_type, active, created_at], map: "idx_user_type_active_created")
 }
@@ -206,9 +207,26 @@ model blogs {
   status          blogs_status      @default(Draft)
   blog_categories blog_categories[]
   blog_tags       blog_tags[]
+  blog_comments   blog_comments[]
   user            user              @relation(fields: [author_id], references: [id], onUpdate: Restrict, map: "fk_author_id")
 
   @@index([author_id], map: "fk_author_id")
+}
+
+model blog_comments {
+  id           String   @id @default(uuid()) @db.Char(36)
+  blog_id      String   @db.Char(36)
+  user_id      String?  @db.Char(36)
+  message      String   @db.VarChar(2000)
+  rating       Int
+  author_label String?  @db.VarChar(120)
+  created_at   DateTime @default(now()) @db.DateTime(0)
+  blogs        blogs    @relation(fields: [blog_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_blog_comments_blog")
+  user         user?    @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_blog_comments_user")
+
+  @@index([blog_id], map: "idx_blog_comments_blog")
+  @@index([user_id], map: "idx_blog_comments_user")
+  @@map("blog_comments")
 }
 
 model categories {
