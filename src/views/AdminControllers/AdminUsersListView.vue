@@ -107,22 +107,44 @@
                 {{ capitalizeWord(value) }}
               </span>
             </div>
+            <section v-if="certificateFields.length" >
+              <strong>Documents</strong>
+              <div class="docs-grid">
+                  <FilePreview
+                  v-for="(doc, index) in certificateFields"
+                  :key="doc.value"
+                  :url="doc.value"
+                  :name="formatKey(doc.key)"
+                />
+              </div>
+            </section>
+            <template v-if="selectedUser.cases && selectedUser.cases.length > 0">
+              <strong >Cases:</strong>
+              <div v-for="(caseItem, index) in selectedUser.cases" :key="index" style="border:1px solid #e6d6d6;padding:5px;margin:10px 3px;border-radius: 15px;">
+                <p class="mb-2"><strong>Case ID:</strong> {{ caseItem.caseId || 'N/A' }}</p>
+                <p class="mb-2"><strong>Complaint Category:</strong> {{ caseItem.category || 'N/A' }}</p>
+                <p class="mb-2"><strong>Dispute Description:</strong> {{ caseItem.description || 'N/A' }}</p>
+                <template v-if="caseItem.secondParty">
+                  <p class="mb-2"><strong>Opposite Party Name:</strong> {{ caseItem.secondParty.name || 'N/A' }}</p>
+                  <p class="mb-2"><strong>Opposite Party Email:</strong> {{ caseItem.secondParty.email || 'N/A' }}</p>
+                  <p class="mb-2"><strong>Opposite Party Phone:</strong> {{ caseItem.secondParty.phone_number || 'N/A' }}</p>
+                </template>
+                <div v-if="caseItem.evidence_document_url">
+                  <p class="mb-2"><strong>Attachments:</strong></p>
+                  <div class="docs-grid mt-2">
+                    <FilePreview
+                      :url="caseItem.evidence_document_url"
+                      name="Evidence Document"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
           </b-col>
           <b-col md="3" v-if="selectedUser.profile_image || selectedUser.profile_picture_url">
             <img :src="selectedUser.profile_image || selectedUser.profile_picture_url" class="img-fluid rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;" alt="Profile" />
           </b-col>
         </b-row>
-        <section v-if="certificateFields.length" >
-          <strong>Documents</strong>
-          <div class="docs-grid">
-              <FilePreview
-              v-for="(doc, index) in certificateFields"
-              :key="doc.value"
-              :url="doc.value"
-              :name="formatKey(doc.key)"
-            />
-          </div>
-        </section>
         <div class="d-flex justify-content-end mt-3">
           <b-button variant="secondary" @click="modalVisible = false">Close</b-button>
         </div>
@@ -248,7 +270,7 @@ export default {
       return urlPattern.test(value)
     },
     filteredItem (item) {
-      const irrelevantKeys = ['name', 'email', 'cases', '_showDetails', 'userId', 'created_at', 'active', 'otherPartyUserId', 'caseId', 'google_token', 'user_type', 'updated_at', 'is_self_signed_up', 'name', 'email', 'profile_image', 'profile_picture_url']
+      const irrelevantKeys = ['name', 'email', 'cases', '_showDetails', 'userId', 'created_at', 'active', 'otherPartyUserId', 'caseId', 'google_token', 'user_type', 'updated_at', 'is_self_signed_up', 'profile_image', 'profile_picture_url']
       return Object.fromEntries(
         Object.entries(item).filter(([key, value]) => !irrelevantKeys.includes(key) && value !== null && value !== 0)
       )

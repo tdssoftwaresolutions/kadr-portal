@@ -23,6 +23,7 @@ import Signature from '../views/ClientControllers/Signature.vue'
 
 /** Blog */
 import MyBlogs from '../views/Blog/MyBlogs.vue'
+import MyVideoReels from '../views/MediatorControllers/MyVideoReels.vue'
 
 import SignIn from '../views/AuthPages/SignIn.vue'
 import SignUp from '../views/AuthPages/SignUp.vue'
@@ -96,6 +97,14 @@ const blogChildRoutes = (prop) => [
     path: 'list',
     name: prop + '.list',
     component: MyBlogs
+  }
+]
+
+const reelsChildRoutes = (prop) => [
+  {
+    path: 'list',
+    name: prop + '.list',
+    component: MyVideoReels
   }
 ]
 
@@ -198,6 +207,12 @@ const routes = [
     name: 'blog',
     component: StandardLayout,
     children: blogChildRoutes('blog')
+  },
+  {
+    path: '/reels',
+    name: 'reels',
+    component: StandardLayout,
+    children: reelsChildRoutes('reels')
   },
   {
     path: '/pages',

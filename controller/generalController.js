@@ -485,32 +485,119 @@ module.exports = {
   newCalendarEvent: async function (req, res, next) {
     try {
       const { title, description, start, end, type, caseId } = req.body
-      const [lCase] = await Promise.all([
-        caseId == null
-          ? {}
-          : prisma.cases.findUnique({
+
+      let meetingLink = ''
+
+      if (type !== 'personal') {
+        const [lCase] = await Promise.all([
+          prisma.cases.findUnique({
             where: {
               id: caseId
             },
             select: {
+              caseId: true,
               user_cases_first_partyTouser: {
                 select: {
-                  email: true
+                  email: true,
+                  name: true
                 }
               },
               user_cases_second_partyTouser: {
                 select: {
-                  email: true
+                  email: true,
+                  name: true
+                }
+              },
+              user_cases_mediatorTouser: {
+                select: {
+                  email: true,
+                  name: true
                 }
               }
             }
           })
-      ])
-      let attendees = [{ email: req.user.email }]
-      if (lCase.user_cases_first_partyTouser) { attendees.push({ email: lCase?.user_cases_first_partyTouser?.email }) }
-      if (lCase.user_cases_second_partyTouser) { attendees.push({ email: lCase?.user_cases_second_partyTouser?.email }) }
+        ])
+        let attendees = [{ email: req.user.email }]
+        if (lCase.user_cases_first_partyTouser) { attendees.push({ email: lCase?.user_cases_first_partyTouser?.email }) }
+        if (lCase.user_cases_second_partyTouser) { attendees.push({ email: lCase?.user_cases_second_partyTouser?.email }) }
+        if (lCase.user_cases_mediatorTouser) { attendees.push({ email: lCase?.user_cases_mediatorTouser?.email }) }
 
-      const zoomMeeting = await helper.scheduleMeeting(title, description, start, attendees)
+        const zoomMeeting = await helper.scheduleMeeting(title, description, start, attendees)
+        meetingLink = zoomMeeting.meetingLink
+
+        const google_calendar_link = helper.generateGoogleCalendarLink({
+          title,
+          description,
+          start,
+          end,
+          link: meetingLink,
+          caseNumber: lCase.caseId
+        })
+
+        const meetingInviteBody = `
+          <p>You have a new meeting scheduled. Please find the details below:</p>
+          <table style="width:100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold; width: 180px;">Meeting Title:</td>
+              <td style="padding: 8px 0;">${title}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Meeting Type:</td>
+              <td style="padding: 8px 0;">${type.toUpperCase()}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Date & Time:</td>
+              <td style="padding: 8px 0;">${helper.formatMeetingRangeIST(start, end)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Case Number:</td>
+              <td style="padding: 8px 0;">${lCase.caseId}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: bold;">Description:</td>
+              <td style="padding: 8px 0;">${description}</td>
+            </tr>
+          </table>
+          <p style="margin-top:20px;">
+            <a href="${google_calendar_link}" 
+              style="display:inline-block;padding:10px 16px;background:#0b57d0;color:#fff;text-decoration:none;border-radius:4px;">
+              Add to Google Calendar
+            </a>
+          </p>
+          <p style="margin-top: 20px;">
+            You can join the meeting using the link below:
+          </p>
+          <p>
+            <a href="${meetingLink}" 
+              style="display: inline-block; padding: 10px 16px; background-color: #1a73e8; color: #ffffff; text-decoration: none; border-radius: 4px;">
+              Join Meeting
+            </a>
+          </p>
+          <p>If the button above doesn’t work, copy and paste this link into your browser:</p>
+          <p style="word-break: break-all;">${meetingLink}</p>
+          <p>We look forward to your participation.</p>
+        `
+
+        const attachments = [
+          {
+            filename: 'meeting-invite.ics',
+            content: helper.generateICS({
+              uid: `${Date.now()}@kadr.live`,
+              title,
+              description,
+              start,
+              end,
+              link: meetingLink,
+              caseNumber: lCase.caseId
+            }),
+            contentType: 'text/calendar; method=REQUEST'
+          }
+        ]
+
+        helper.sendEmail(lCase.user_cases_first_partyTouser?.name, lCase.user_cases_first_partyTouser?.email, `New Meeting invite - Case ${lCase.caseId}`, meetingInviteBody, attachments)
+        helper.sendEmail(lCase.user_cases_second_partyTouser?.name, lCase.user_cases_second_partyTouser?.email, `New Meeting invite - Case ${lCase.caseId}`, meetingInviteBody, attachments)
+        helper.sendEmail(lCase.user_cases_mediatorTouser?.name, lCase.user_cases_mediatorTouser?.email, `New Meeting invite - Case ${lCase.caseId}`, meetingInviteBody, attachments)
+      }
 
       await prisma.events.create({
         data: {
@@ -519,14 +606,13 @@ module.exports = {
           start_datetime: start,
           end_datetime: end,
           type: type.toUpperCase(),
-          meeting_link: zoomMeeting.meetingLink,
+          meeting_link: meetingLink,
           created_by: req.user.id,
           case_id: caseId
         }
       })
-
       success(res, {
-        meetLink: zoomMeeting.meetingLink
+        meetLink: meetingLink
       }, 'Event created successfully')
     } catch (err) {
       next(err)

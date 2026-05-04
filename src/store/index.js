@@ -40,6 +40,9 @@ const GET_MY_BLOGS_ENDPOINT = '/getMyBlogs'
 const SAVE_BLOG_ENDPOINT = '/saveBlog'
 const DELETE_BLOG_ENDPOINT = '/deleteBlog'
 const GET_BLOG_ASSETS = '/getBlogAssets'
+const GET_MY_VIDEO_REELS_ENDPOINT = '/getMyVideoReels'
+const SAVE_VIDEO_REEL_ENDPOINT = '/saveVideoReel'
+const DELETE_VIDEO_REEL_ENDPOINT = '/deleteVideoReel'
 const ACCEPT_MEDIATION_REQUEST = '/acceptMediationRequest'
 const GOOGLE_AUTH_ENDPOINT = '/authenticateWithGoogle'
 const GOOGLE_TOKEN_ENDPOINT = '/getGoogleToken'
@@ -757,6 +760,57 @@ export default (router) => {
         try {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.delete(`${DELETE_BLOG_ENDPOINT}/${blogId}`)
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMyVideoReels ({ commit, dispatch }, { page }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(`${GET_MY_VIDEO_REELS_ENDPOINT}?page=${encodeURIComponent(page)}`)
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveVideoReel ({ commit, dispatch }, { reel }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(SAVE_VIDEO_REEL_ENDPOINT, { reel })
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteVideoReel ({ commit, dispatch }, reelId) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${DELETE_VIDEO_REEL_ENDPOINT}/${reelId}`)
           if (!data.success) throw new Error(data.error.message)
           return data
         } catch (error) {
