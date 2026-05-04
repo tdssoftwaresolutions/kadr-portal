@@ -456,12 +456,22 @@ class Helper {
     })
   }
 
-  static async getTop3LatestBlogs (prisma) {
+  static async getTop3LatestBlogs (prisma, excludeBlogId) {
+    const where = {
+      status: 'Published',
+      ...(excludeBlogId
+        ? { id: { not: excludeBlogId } }
+        : {})
+    }
     return prisma.blogs.findMany({
+      where,
       orderBy: {
         created_at: 'desc'
       },
-      take: 3
+      take: 3,
+      include: {
+        user: true
+      }
     })
   }
 
@@ -495,7 +505,8 @@ class Helper {
     if (search) {
       filters.OR = [
         { content: { contains: search } },
-        { title: { contains: search } }
+        { title: { contains: search } },
+        { user: { name: { contains: search } } }
       ]
     }
     if (category) {
@@ -588,7 +599,8 @@ class Helper {
     if (search) {
       filters.OR = [
         { content: { contains: search } },
-        { title: { contains: search } }
+        { title: { contains: search } },
+        { user: { name: { contains: search } } }
       ]
     }
     if (category) {
@@ -1362,11 +1374,20 @@ class Helper {
   }
 
   static async checkTokenAndFetch (req, res) {
-    const token = req.headers.authorization
+    let token = req.headers.authorization
+    if (!token && req.headers.cookie) {
+      const m = String(req.headers.cookie).match(/(?:^|;\s*)accessToken=([^;]+)/)
+      if (m) {
+        try {
+          token = 'Bearer ' + decodeURIComponent(m[1].trim())
+        } catch (e) {
+          token = 'Bearer ' + m[1].trim()
+        }
+      }
+    }
 
     if (!token) {
-      req.error = { status: 401, message: errorCodes.NO_TOKEN_PROVIDED }
-      return
+      return { status: 401, message: errorCodes.NO_TOKEN_PROVIDED }
     }
 
     const tokenWithoutBearer = token.startsWith('Bearer ') ? token.slice(7, token.length) : token

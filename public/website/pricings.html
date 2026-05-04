@@ -643,7 +643,9 @@ html, body {
 .view, .page {
   display: block !important;
 }
-</style></head>
+</style>
+<link rel="stylesheet" href="css/site-responsive.css"/>
+</head>
 <body class="lang-en" style="overflow:auto; height:auto;">
 <!-- ═══ TOPBAR ═══ -->
 
@@ -654,7 +656,7 @@ html, body {
 <!-- ─ PAGE: PRICING ─ -->
 <div class="page" id="page-pricing">
 
-<nav class="site-nav"><div class="nav-logo-text"><div class="nav-logo-mark">🌿</div><div class="nav-logo-name">kADR<span class="copy-en">Online Mediation</span><span class="copy-hi">Online Mediation</span></div></div><a class="site-nav-link copy-en" onclick="navigateTo('index.html')">Home</a><a class="site-nav-link copy-hi" onclick="navigateTo('index.html')">Home</a><a class="site-nav-link copy-en" onclick="navigateTo('how_it_works.html')">How It Works</a><a class="site-nav-link copy-hi" onclick="navigateTo('how_it_works.html')">Kaise Kaam Karta Hai</a><a class="site-nav-link" onclick="navigateTo('case_studies.html')">Case Studies</a><a class="site-nav-link copy-en" onclick="navigateTo('pricings.html')" style="font-weight:600;color:#fff">Pricing</a><a class="site-nav-link copy-hi" onclick="navigateTo('pricings.html')" style="font-weight:600;color:#fff">Pricing</a><a class="site-nav-link copy-en" onclick="navigateTo('index.html')">For Organisations</a><a class="site-nav-link copy-hi" onclick="navigateTo('index.html')">Organisations Ke Liye</a><a class="site-nav-link copy-en" onclick="navigateTo('resources.html')">Blog</a><a class="site-nav-link copy-hi" onclick="navigateTo('resources.html')">Blog</a><div class="lang-toggle"><button class="lt-btn active" onclick="setLanguage('en')">EN</button><button class="lt-btn" onclick="setLanguage('hi')">हि</button></div><div class="nav-ctas"><button class="btn btn-outline-white btn-sm copy-en" id="loginBtn" onclick="goToLogin()">Login</button><button class="btn btn-outline-white btn-sm copy-hi" id="loginBtn" onclick="goToLogin()">Login</button><button class="btn btn-gold copy-en" onclick="goToLogin()">Start Your Case →</button><button class="btn btn-gold copy-hi" onclick="goToLogin()">Case Shuru Karo →</button></div></nav>
+<header id="kadr-site-header" data-kadr-active="pricing"></header>
 <div style="background:linear-gradient(145deg,var(--b800),var(--b700));padding:72px 56px;text-align:center">
 <div class="sec-kicker white copy-en" style="justify-content:center">Transparent Pricing</div>
 <div class="sec-kicker white copy-hi" style="justify-content:center">Seedhi Baat, Saaf Hisaab</div>
@@ -728,45 +730,11 @@ html, body {
 <div class="faq-item open" onclick="this.classList.toggle('open')"><div class="faq-q"><span class="copy-en">Who pays — the person filing or both parties?</span><span class="copy-hi">Kaun pay karta hai — file karne wala ya dono?</span><div class="faq-toggle">+</div></div><div class="faq-a copy-en">By default, the filing party pays. Split billing (both parties pay half) is available on request before the case begins.</div><div class="faq-a copy-hi">Default mein file karne wali party pay karti hai. Split billing — dono half-half — request pe available hai case shuru hone se pehle.</div></div>
 <div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q"><span class="copy-en">What if mediation fails — do I get a refund?</span><span class="copy-hi">Agar mediation fail ho — refund milega?</span><div class="faq-toggle">+</div></div><div class="faq-a copy-en">The fee covers the process, not the outcome. If mediation was conducted in good faith, no refund is issued. You receive a Non-Settlement Report.</div><div class="faq-a copy-hi">Fee process ke liye hai, outcome ke liye nahi. Agar mediation good faith se hui, refund nahi milega. Non-Settlement Report milegi.</div></div>
 </div>
-<div class="footer" style="padding:24px 56px"><div class="ft-bottom" style="border:none;padding:0"><div class="ft-copy">© 2026 KADR.live</div></div></div>
+<div id="kadr-site-footer"></div>
 
 </div>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script>
-function navigateTo(page) {
-    window.location.href = page;
-}
-
-function goToLogin() {
-    const adminUrl = localStorage.getItem('adminUrl') || '/admin';
-    window.location.href = adminUrl  ;
-}
-
-function setLanguage(lang) {
-    document.body.className = 'lang-' + lang;
-    document.querySelectorAll('.lt-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    localStorage.setItem('language', lang);
-}
-
-// Load saved language on page load
-window.addEventListener('DOMContentLoaded', function() {
-    const savedLang = localStorage.getItem('language') || 'en';
-    document.body.className = 'lang-' + savedLang;
-    
-    // Check login status
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
-    
-    const token = getCookie('accessToken');
-    const loginBtn = document.querySelector('#loginBtn');
-    if (loginBtn && token) {
-        loginBtn.textContent = 'My Account';
-    }
-});
-</script>
+<script src="js/site-chrome.js" defer></script>
+</body>
+</html>
