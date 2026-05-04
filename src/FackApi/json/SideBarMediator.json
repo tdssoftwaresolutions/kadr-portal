@@ -36,6 +36,18 @@
       "icon": "ri-article-line"
     },
     {
+      "title": "Video reels",
+      "name": "reels.list",
+      "is_heading": false,
+      "is_active": false,
+      "link": {
+        "name": "reels.list"
+      },
+      "class_name": "",
+      "is_icon_class": true,
+      "icon": "ri-movie-2-line"
+    },
+    {
       "title": "My Documents",
       "name": "app.e-commerce.index",
       "is_heading": false,

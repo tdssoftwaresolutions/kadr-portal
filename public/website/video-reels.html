@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>KADR.live — Video reels</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&amp;family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&amp;family=DM+Serif+Display:ital@0;1&amp;display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --b900:#1A0A00;--b800:#2C1205;--b700:#4A2010;--b600:#6B3218;--b500:#8C4820;--b400:#B46028;--b300:#D48040;
+  --b200:#E8B888;--b100:#F8EAD8;--s500:#2D7A6A;--s300:#68BFB0;--g400:#D4A830;
+  --font-display:'Playfair Display',Georgia,serif;--font-body:'DM Sans',system-ui,sans-serif;
+  --nav-h:56px;
+  --reel-ease:cubic-bezier(0.32, 0.72, 0, 1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;touch-action:pan-y}
+body{font-family:var(--font-body);background:#000;color:#e8e0d8;font-size:14px}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--font-body);transition:all .2s}
+.btn-outline-white{background:transparent;border:1.5px solid rgba(255,255,255,.35);color:#fff}
+.btn-outline-white:hover{background:rgba(255,255,255,.08)}
+.btn-gold{background:var(--g400);color:var(--b800)}
+.btn-sm{padding:8px 16px;font-size:12px}
+
+.site-nav{
+  background:var(--b800);
+  padding:0 24px 0 40px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
+  min-height:var(--nav-h);
+  position:fixed;
+  top:0;left:0;right:0;
+  z-index:200;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.nav-logo-text{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:17px;font-weight:700;color:#fff}
+.nav-logo-mark{width:30px;height:30px;background:var(--b400);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px}
+.nav-logo-name span{color:var(--b300);font-style:normal}
+.site-nav-link{color:rgba(255,255,255,.65);text-decoration:none;font-size:12px;font-weight:500;cursor:pointer;transition:color .15s;white-space:nowrap}
+.site-nav-link:hover{color:#fff}
+.lang-toggle{display:flex;border:1px solid rgba(255,255,255,.2);border-radius:6px;overflow:hidden;margin-left:auto}
+.lt-btn{padding:4px 9px;font-size:10px;font-weight:700;color:rgba(255,255,255,.45);border:none;background:transparent;font-family:var(--font-body);cursor:pointer}
+.lt-btn.active{background:rgba(255,255,255,.18);color:#fff}
+.nav-ctas{display:flex;align-items:center;gap:8px}
+
+/* Full-viewport reel stage (below nav) */
+.reels-shell{
+  position:fixed;
+  top:var(--nav-h);
+  left:0;right:0;bottom:0;
+  background:#050403;
+  z-index:50;
+}
+.reels-feed{
+  height:100%;
+  width:100%;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scroll-snap-type:y mandatory;
+  scroll-behavior:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+.reels-feed::-webkit-scrollbar{display:none;width:0;height:0}
+
+.reel-slide{
+  height:100%;
+  min-height:100%;
+  max-height:100%;
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
+  display:grid;
+  grid-template-columns:minmax(220px,0.9fr) minmax(0,auto) minmax(220px,0.9fr);
+  grid-template-rows:1fr;
+  background:#000;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+
+.reel-meta-col{
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  align-items:flex-end; /* 👈 key change */
+  padding:28px 16px 36px 24px; /* reduce right padding */
+}
+
+.reel-meta{
+  text-align:right;           /* 👈 align text */
+  max-width:340px;
+  margin-left:auto;           /* 👈 push block to right */
+}
+
+.reel-meta .reel-link{
+  color:var(--b300);
+  font-size:11px;
+  word-break:break-all;
+  text-decoration:none;
+  display:block;
+  margin-bottom:10px;
+  opacity:.9;
+  line-height:1.35;
+}
+.reel-meta .reel-link:hover{text-decoration:underline;color:var(--b200)}
+.reel-meta h2{
+  font-family:var(--font-display);
+  font-size:clamp(18px,1.35vw,24px);
+  font-weight:700;
+  color:#fff;
+  margin:0 0 10px;
+  line-height:1.2;
+  letter-spacing:-.02em;
+}
+.reel-meta p{
+  font-size:13px;
+  color:rgba(255,255,255,.68);
+  line-height:1.55;
+  margin:0 0 12px;
+  display:-webkit-box;
+  -webkit-line-clamp:5;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.reel-meta .reel-author{
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--s300);
+}
+
+.reel-video-col{
+  height:100%;
+  min-height:0;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#000;
+  position:relative;
+}
+.reel-video-wrap{
+  height:100%;
+  width:auto;
+  max-width:100%;
+  aspect-ratio:9/16;
+  max-height:100%;
+  background:#000;
+  position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06),0 24px 80px rgba(0,0,0,.65);
+}
+.reel-video-inner{position:absolute;inset:0}
+.reel-video-inner iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
+.reel-spacer-col{
+  background:linear-gradient(270deg,#0a0806 0%,#0c0a08 100%);
+  border-left:1px solid rgba(255,255,255,.06);
+  min-width:0;
+}
+
+.reels-hint{
+  position:absolute;
+  top:14px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:30;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.35);
+  pointer-events:none;
+  user-select:none;
+}
+
+.reels-status{
+  position:absolute;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:40;
+  text-align:center;
+  font-size:12px;
+  color:rgba(255,255,255,.45);
+  max-width:90vw;
+  pointer-events:none;
+}
+.reels-status.loading{color:var(--b300)}
+
+.reels-empty{
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:32px;
+  color:rgba(255,255,255,.45);
+  font-size:15px;
+  max-width:400px;
+  margin:0 auto;
+}
+
+body.lang-en .copy-hi{display:none!important}
+body.lang-hi .copy-en{display:none!important}
+.copy-en,.copy-hi{display:block}
+span.copy-en,span.copy-hi{display:inline}
+
+@media (max-width:900px){
+  .reel-slide{
+    grid-template-columns:1fr;
+    grid-template-rows:1fr auto;
+  }
+  .reel-meta{
+    text-align:left;
+    margin-left:0;
+    display:flex;
+    flex-direction:column;
+    width: 100%;
+    gap:6px;
+  }
+
+  /* Title + Author row */
+  .reel-meta-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .reel-meta h2{
+    font-size:16px;
+    margin:0;
+    flex:1;
+  }
+
+  .reel-author{
+    font-size:11px;
+    white-space:nowrap;
+    color:var(--s300);
+  }
+
+  /* Description */
+  .reel-meta p{
+    font-size:12px;
+    margin:0;
+    display:-webkit-box;
+    -webkit-line-clamp:2;  /* 👈 limit to 2 lines */
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .reel-meta-col{
+    grid-row:2;
+    order:2;
+    justify-content:flex-end;
+    padding:20px 20px 28px;
+    border-right:none;
+    border-top:1px solid rgba(255,255,255,.08);
+    background:rgba(8,6,4,.97);
+  }
+  .reel-video-col{
+    grid-row:1;
+    order:1;
+    min-height:0;
+  }
+  .reel-spacer-col{display:none}
+  .reel-meta{max-width:none}
+}
+
+@media (max-width:768px){
+  .site-nav{padding:10px 14px;gap:8px}
+  :root{--nav-h:52px}
+}
+</style>
+</head>
+<body class="lang-en">
+<nav class="site-nav" style="display:none">
+  <div class="nav-logo-text"><div class="nav-logo-mark">🌿</div><div class="nav-logo-name">kADR<span>Online Mediation</span></div></div>
+  <a class="site-nav-link copy-en" onclick="navigateTo('index.html')">Home</a>
+  <a class="site-nav-link copy-hi" onclick="navigateTo('index.html')">Home</a>
+  <a class="site-nav-link copy-en" onclick="navigateTo('how_it_works.html')">How It Works</a>
+  <a class="site-nav-link copy-hi" onclick="navigateTo('how_it_works.html')">Kaise Kaam Karta Hai</a>
+  <a class="site-nav-link" onclick="navigateTo('case_studies.html')">Case Studies</a>
+  <a class="site-nav-link copy-en" onclick="navigateTo('pricings.html')">Pricing</a>
+  <a class="site-nav-link copy-hi" onclick="navigateTo('pricings.html')">Pricing</a>
+  <a class="site-nav-link copy-en" onclick="navigateTo('resources.html')">Blog</a>
+  <a class="site-nav-link copy-hi" onclick="navigateTo('resources.html')">Blog</a>
+  <a class="site-nav-link copy-en" onclick="navigateTo('video-reels.html')" style="font-weight:600;color:#fff">Reels</a>
+  <a class="site-nav-link copy-hi" onclick="navigateTo('video-reels.html')" style="font-weight:600;color:#fff">Reels</a>
+  <div class="lang-toggle">
+    <button type="button" class="lt-btn active" onclick="setLanguage('en', event)">EN</button>
+    <button type="button" class="lt-btn" onclick="setLanguage('hi', event)">हि</button>
+  </div>
+  <div class="nav-ctas">
+    <button type="button" class="btn btn-outline-white btn-sm" id="loginBtn" onclick="goToLogin()">Login</button>
+    <button type="button" class="btn btn-gold copy-en btn-sm" onclick="goToLogin()">Start Case →</button>
+    <button type="button" class="btn btn-gold copy-hi btn-sm" onclick="goToLogin()">Case Shuru Karo →</button>
+  </div>
+</nav>
+
+<div class="reels-shell">
+  <div id="reelsFeed" class="reels-feed" aria-label="Video reels feed"></div>
+  <div id="reelsStatus" class="reels-status" style="display:none"></div>
+</div>
+
+<script>
+const API_URL = '/api';
+const BATCH_LIMIT = 6;
+const WHEEL_THRESHOLD = 48;
+const STEP_LOCK_MS = 420;
+let page = 1;
+let hasMore = true;
+let loading = false;
+let seenIds = new Set();
+let activeSlide = null;
+const feedEl = document.getElementById('reelsFeed');
+const statusEl = document.getElementById('reelsStatus');
+let stepLocked = false;
+let wheelAccum = 0;
+let wheelDecayTimer = null;
+let isFirstVideoPlayed = false;
+
+function getCookie(name) {
+  const value = '; ' + document.cookie;
+  const parts = value.split('; ' + name + '=');
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+function navigateTo(pageName) {
+  window.location.href = pageName;
+}
+
+function goToLogin() {
+  const adminUrl = localStorage.getItem('adminUrl') || '/admin';
+  window.location.href = adminUrl;
+}
+
+function setLanguage(lang, ev) {
+  document.body.className = 'lang-' + lang;
+  document.querySelectorAll('.lt-btn').forEach(function (btn) { btn.classList.remove('active'); });
+  var t = ev && ev.target;
+  if (t) t.classList.add('active');
+  localStorage.setItem('language', lang);
+}
+
+function extractYoutubeVideoId(input) {
+  if (!input || typeof input !== 'string') return null;
+  var trimmed = input.trim();
+  var patterns = [
+    /(?:youtube\.com\/watch\?[^#]*[&?]v=)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+  ];
+  for (var i = 0; i < patterns.length; i++) {
+    var m = trimmed.match(patterns[i]);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function setStatus(text, isLoading) {
+  if (!text) {
+    statusEl.style.display = 'none';
+    return;
+  }
+  statusEl.style.display = 'block';
+  statusEl.textContent = text;
+  statusEl.className = 'reels-status' + (isLoading ? ' loading' : '');
+}
+
+function getSlideHeight() {
+  return feedEl.clientHeight || 1;
+}
+
+function getSlideCount() {
+  return feedEl.querySelectorAll('.reel-slide').length;
+}
+
+function getCurrentIndex() {
+  var h = getSlideHeight();
+  return Math.round(feedEl.scrollTop / h);
+}
+
+function goToSlideIndex(targetIdx, afterScroll) {
+  var h = getSlideHeight();
+  var count = getSlideCount();
+  if (count === 0) return;
+  var idx = Math.max(0, Math.min(targetIdx, count - 1));
+  feedEl.scrollTo({ top: idx * h, behavior: 'auto' });
+  if (typeof afterScroll === 'function') {
+    requestAnimationFrame(function () { afterScroll(idx); });
+  }
+}
+
+function stepReel(direction) {
+  if (stepLocked) return;
+  var count = getSlideCount();
+  if (count === 0) return;
+  var idx = getCurrentIndex();
+  var next = idx + direction;
+  if (next < 0) return;
+  if (next >= count) {
+    if (hasMore && !loading) fetchBatch();
+    return;
+  }
+  stepLocked = true;
+  goToSlideIndex(next);
+  setTimeout(function () { stepLocked = false; }, STEP_LOCK_MS);
+}
+
+function onWheelDiscrete(e) {
+  var slides = feedEl.querySelectorAll('.reel-slide');
+  if (slides.length === 0) return;
+  e.preventDefault();
+  if (stepLocked) return;
+  var dy = e.deltaY;
+  if (Math.abs(e.deltaX) > Math.abs(dy)) dy = e.deltaX;
+  wheelAccum += dy;
+  clearTimeout(wheelDecayTimer);
+  wheelDecayTimer = setTimeout(function () { wheelAccum = 0; }, 220);
+  if (Math.abs(wheelAccum) < WHEEL_THRESHOLD) return;
+  var dir = wheelAccum > 0 ? 1 : -1;
+  wheelAccum = 0;
+  stepReel(dir);
+}
+
+function normalizeScrollPosition() {
+  var slides = feedEl.querySelectorAll('.reel-slide');
+  if (slides.length === 0) return;
+  var h = getSlideHeight();
+  var idx = Math.round(feedEl.scrollTop / h);
+  var max = slides.length - 1;
+  idx = Math.max(0, Math.min(idx, max));
+  var target = idx * h;
+  if (Math.abs(feedEl.scrollTop - target) > 2) {
+    feedEl.scrollTo({ top: target, behavior: 'auto' });
+  }
+}
+
+var scrollSettleTimer = null;
+function onFeedScroll() {
+  clearTimeout(scrollSettleTimer);
+  scrollSettleTimer = setTimeout(normalizeScrollPosition, 140);
+
+  if (loading || !hasMore) return;
+  var el = feedEl;
+  var slides = el.querySelectorAll('.reel-slide');
+  if (slides.length === 0) return;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) fetchBatch();
+}
+
+function onGlobalKeyDown(e) {
+  var tag = (e.target && e.target.tagName) || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
+  if (getSlideCount() === 0) return;
+  if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+    e.preventDefault();
+    stepReel(1);
+  } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+    e.preventDefault();
+    stepReel(-1);
+  }
+}
+
+function pauseSlide(slide) {
+  var inner = slide.querySelector('.reel-video-inner');
+  if (!inner) return;
+  var iframe = inner.querySelector('iframe');
+  if (iframe) {
+    iframe.src = 'about:blank';
+    iframe.removeAttribute('data-src');
+  }
+}
+
+function playInner(inner, videoId) {
+  var shouldMute = !isFirstVideoPlayed;
+  var src = 'https://www.youtube-nocookie.com/embed/' + videoId + '?rel=0&modestbranding=1&playsinline=1&autoplay=1'
+  + (shouldMute ? '&mute=1' : '&mute=0');
+  var iframe = inner.querySelector('iframe');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+    iframe.setAttribute('title', 'KADR video reel');
+    inner.appendChild(iframe);
+  }
+  if (iframe.getAttribute('data-src') !== src) {
+    iframe.src = src;
+    iframe.setAttribute('data-src', src);
+  }
+  if (!isFirstVideoPlayed) {
+    isFirstVideoPlayed = false;
+  }
+}
+
+function setActiveSlide(slide, videoId) {
+  if (activeSlide && activeSlide !== slide) pauseSlide(activeSlide);
+  activeSlide = slide;
+  var inner = slide.querySelector('.reel-video-inner');
+  if (inner && videoId) playInner(inner, videoId);
+}
+
+var slideObserver = null;
+function observeNewSlides() {
+  if (!window.IntersectionObserver) return;
+  if (!slideObserver) {
+    slideObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.5) return;
+        var slide = entry.target;
+        var vid = slide.getAttribute('data-videoid');
+        if (vid) setActiveSlide(slide, vid);
+      });
+    }, { root: feedEl, threshold: [0.4, 0.55, 0.72] });
+  }
+  feedEl.querySelectorAll('.reel-slide:not([data-obs])').forEach(function (el) {
+    el.setAttribute('data-obs', '1');
+    slideObserver.observe(el);
+  });
+}
+
+function renderReelItem(reel) {
+  var vid = extractYoutubeVideoId(reel.youtube_url);
+  var slide = document.createElement('div');
+  slide.className = 'reel-slide';
+  slide.setAttribute('data-id', reel.id);
+  if (vid) slide.setAttribute('data-videoid', vid);
+
+  var metaCol = document.createElement('div');
+  metaCol.className = 'reel-meta-col';
+  var meta = document.createElement('div');
+  meta.className = 'reel-meta';
+
+  var h = document.createElement('h2');
+  h.textContent = reel.title || 'Untitled';
+
+  var p = document.createElement('p');
+  p.textContent = reel.description || '';
+
+  var author = document.createElement('div');
+  author.className = 'reel-author';
+  author.textContent = 'By ' + (reel.creator_name || 'Mediator');
+
+  var header = document.createElement('div');
+  header.className = 'reel-meta-header';
+
+  header.appendChild(h);
+  header.appendChild(author);
+
+  meta.appendChild(header);
+  meta.appendChild(p);
+  metaCol.appendChild(meta);
+
+  var videoCol = document.createElement('div');
+  videoCol.className = 'reel-video-col';
+  var wrap = document.createElement('div');
+  wrap.className = 'reel-video-wrap';
+  var inner = document.createElement('div');
+  inner.className = 'reel-video-inner';
+  wrap.appendChild(inner);
+  videoCol.appendChild(wrap);
+
+  var spacer = document.createElement('div');
+  spacer.className = 'reel-spacer-col';
+  spacer.setAttribute('aria-hidden', 'true');
+
+  slide.appendChild(metaCol);
+  slide.appendChild(videoCol);
+  slide.appendChild(spacer);
+
+  feedEl.appendChild(slide);
+}
+
+async function fetchBatch() {
+  if (loading || !hasMore) return;
+  loading = true;
+  setStatus('Loading more…', true);
+  try {
+    var res = await fetch(API_URL + '/getPublicVideoReels?page=' + encodeURIComponent(page) + '&limit=' + encodeURIComponent(BATCH_LIMIT));
+    var json = await res.json();
+    if (!json.success) throw new Error((json.error && json.error.message) || 'Failed to load');
+
+    var reels = json.data.reels || [];
+    hasMore = !!json.data.hasMore;
+
+    reels.forEach(function (reel) {
+      if (seenIds.has(reel.id)) return;
+      seenIds.add(reel.id);
+      renderReelItem(reel);
+    });
+
+    if (page === 1 && reels.length === 0) {
+      feedEl.innerHTML = '<div class="reels-empty">No reels published yet. Please check back soon.</div>';
+    }
+
+    page += 1;
+    observeNewSlides();
+    setStatus('', false);
+  } catch (e) {
+    console.error(e);
+    setStatus('Could not load videos. Try again later.', false);
+  } finally {
+    loading = false;
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  var savedLang = localStorage.getItem('language') || 'en';
+  document.body.className = 'lang-' + savedLang;
+  document.querySelectorAll('.lt-btn').forEach(function (btn) { btn.classList.remove('active'); });
+  if (savedLang === 'hi') {
+    var btns = document.querySelectorAll('.lt-btn');
+    if (btns[1]) btns[1].classList.add('active');
+  } else if (document.querySelector('.lt-btn')) document.querySelector('.lt-btn').classList.add('active');
+
+  var token = getCookie('accessToken');
+  if (token) document.getElementById('loginBtn').textContent = 'My Account';
+
+  feedEl.addEventListener('scroll', onFeedScroll, { passive: true });
+  feedEl.addEventListener('wheel', onWheelDiscrete, { passive: false });
+  document.addEventListener('keydown', onGlobalKeyDown);
+
+  window.addEventListener('resize', function () {
+    var idx = getCurrentIndex();
+    goToSlideIndex(idx);
+  });
+
+  fetchBatch();
+});
+</script>
+</body>
+</html>

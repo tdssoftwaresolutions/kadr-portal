@@ -224,19 +224,83 @@ module.exports = {
           }
         })
       }
+
+      const google_calendar_link = helper.generateGoogleCalendarLink({
+        title,
+        description,
+        start: meetingStart,
+        end: meetingEnd,
+        link: scheduledMeeting?.meetingLink,
+        caseNumber: caseDetails.caseId
+      })
+      const attachments = [
+        {
+          filename: 'meeting-invite.ics',
+          content: helper.generateICS({
+            uid: `${Date.now()}@kadr.live`,
+            title,
+            description,
+            start: meetingStart,
+            end: meetingEnd,
+            link: scheduledMeeting?.meetingLink,
+            caseNumber: caseDetails.caseId
+          }),
+          contentType: 'text/calendar; method=REQUEST'
+        }
+      ]
+
+      const meetingBody = `
+          <table style="width:100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; width: 180px;">Meeting Title:</td>
+            <td style="padding: 8px 0;">${title}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold;">Date & Time:</td>
+            <td style="padding: 8px 0;">${helper.formatMeetingRangeIST(meetingStart, meetingEnd)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold;">Case Number:</td>
+            <td style="padding: 8px 0;">${caseDetails.caseId}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold;">Description:</td>
+            <td style="padding: 8px 0;">${description}</td>
+          </tr>
+        </table>
+        <p style="margin-top:20px;">
+          <a href="${google_calendar_link}" 
+            style="display:inline-block;padding:10px 16px;background:#0b57d0;color:#fff;text-decoration:none;border-radius:4px;">
+            Add to Google Calendar
+          </a>
+        </p>
+        <p style="margin-top: 20px;">
+          You can join the meeting using the link below:
+        </p>
+        <p>
+          <a href="${scheduledMeeting?.meetingLink}" 
+            style="display: inline-block; padding: 10px 16px; background-color: #1a73e8; color: #ffffff; text-decoration: none; border-radius: 4px;">
+            Join Meeting
+          </a>
+        </p>
+        <p>If the button above doesn’t work, copy and paste this link into your browser:</p>
+        <p style="word-break: break-all;">${scheduledMeeting?.meetingLink}</p>
+        <p>We look forward to your participation.</p>
+      `
+
       await helper.sendEmail(caseDetails.user_cases_first_partyTouser.name, caseDetails.user_cases_first_partyTouser.email, 'Mediator assigned and meeting scheduled',
           `
       <p>We have recieved your payment of ${currency || 'INR'}.${amount}/- with reference #id ${referenceId} for starting the mediation on <strong>Kadr.live</strong> </p>
-      <p>A Mediator has been assigned to your case and the first meeting has been scheduled. Please find the meeting details below:</p>
-      <p><strong>Meeting Link:</strong> <a href="${scheduledMeeting?.meetingLink}" target="_blank">Join Meeting</a></p>
-      <p><strong>Meeting Time:</strong> ${meetingStart.toLocaleString()}</p>
-      `
+      <p>A Mediator has been assigned to your case and a new meeting scheduled. Please find the details below: </p>
+      ${meetingBody}
+      `, attachments
       )
 
       await helper.sendEmail(caseDetails.user_cases_second_partyTouser.name, caseDetails.user_cases_second_partyTouser.email, 'Mediator assigned and meeting scheduled',
-        `<p>A Mediator has been assigned to your case and the first meeting has been scheduled. Please find the meeting details below:</p>
-      <p><strong>Meeting Link:</strong> <a href="${scheduledMeeting?.meetingLink}" target="_blank">Join Meeting</a></p>
-      <p><strong>Meeting Time:</strong> ${meetingStart.toLocaleString()}</p>`
+        `
+      <p>A Mediator has been assigned to your case and a new meeting scheduled. Please find the details below: </p>
+      ${meetingBody}
+      `, attachments
       )
     }
     success(res, { message: 'Payment recorded successfully' })

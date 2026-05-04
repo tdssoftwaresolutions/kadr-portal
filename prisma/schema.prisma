@@ -33,6 +33,7 @@ model user {
   llb_certificate_url            String?         @db.VarChar(255)
   profile_picture_url            String?         @db.VarChar(255)
   blogs                          blogs[]
+  mediator_video_reels           MediatorVideoReel[]
   cases_cases_first_partyTouser  cases[]         @relation("cases_first_partyTouser")
   cases_cases_second_partyTouser cases[]         @relation("cases_second_partyTouser")
   cases_cases_mediatorTouser     cases[]         @relation("cases_mediatorTouser")
@@ -179,6 +180,20 @@ model blog_tags {
 
   @@id([blog_id, tag_id])
   @@index([tag_id], map: "tag_id")
+}
+
+model MediatorVideoReel {
+  id          String   @id @default(uuid()) @db.Char(36)
+  user_id     String   @db.Char(36)
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  youtube_url String   @db.VarChar(500)
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  updated_at  DateTime @default(now()) @updatedAt @db.DateTime(0)
+  user        user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_video_reel_user")
+
+  @@index([user_id], map: "idx_mediator_video_reel_user")
+  @@map("mediator_video_reels")
 }
 
 model blogs {

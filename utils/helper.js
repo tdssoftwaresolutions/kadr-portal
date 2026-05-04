@@ -1474,7 +1474,30 @@ class Helper {
     `
   }
 
-  static async sendEmail (customerName, emailId, subject = 'Mail from Kadr.live', content) {
+  static toICSDate (date) {
+    return new Date(date)
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .split('.')[0] + 'Z'
+  }
+
+  static generateGoogleCalendarLink ({
+    title,
+    description,
+    start,
+    end,
+    link,
+    caseNumber
+  }) {
+    const format = (d) =>
+      new Date(d).toISOString().replace(/[-:]|\.\d{3}/g, '')
+
+    const dates = `${format(start)}/${format(end)}`
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dates}&details=${encodeURIComponent(`${description}\nCase: ${caseNumber}\nJoin: ${link}`)}&location=${encodeURIComponent('Online Meeting')}&location=${encodeURIComponent('Online Meeting')}`
+  }
+
+  static async sendEmail (customerName, emailId, subject = 'Mail from Kadr.live', content, attachments = []) {
     try {
       // Create a transporter
       const transporter = nodemailer.createTransport({
@@ -1492,7 +1515,8 @@ class Helper {
         from: process.env.EMAIL_USER, // Sender's email address
         to: emailId, // Recipient's email address
         subject, // Subject line
-        html: htmlBody
+        html: htmlBody,
+        attachments
       }
 
       // Send the email
@@ -1535,6 +1559,63 @@ class Helper {
     } else {
       return `<div style="margin-top:40px;border-bottom:1px solid #000;display:inline-block;padding:4px 20px">${signature}</div>`
     }
+  }
+
+  static formatMeetingRangeIST (startDatetime, endDatetime) {
+    const start = new Date(startDatetime)
+    const end = new Date(endDatetime)
+
+    const optionsDate = {
+      timeZone: 'Asia/Kolkata',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }
+
+    const optionsTime = {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }
+
+    const dateStr = new Intl.DateTimeFormat('en-IN', optionsDate).format(start)
+    const startTime = new Intl.DateTimeFormat('en-IN', optionsTime).format(start)
+    const endTime = new Intl.DateTimeFormat('en-IN', optionsTime).format(end)
+
+    return `${dateStr}, ${startTime} - ${endTime}`
+  }
+
+  static generateICS ({
+    uid,
+    title,
+    description,
+    start,
+    end,
+    link,
+    caseNumber
+  }) {
+    return [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Kadr.live//Meeting Invite//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:REQUEST',
+
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${this.toICSDate(new Date())}`,
+      `DTSTART:${this.toICSDate(start)}`,
+      `DTEND:${this.toICSDate(end)}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:${description}\\nCase Number: ${caseNumber}\\nJoin: ${link}`,
+      'LOCATION:Online Meeting',
+      'STATUS:CONFIRMED',
+      'SEQUENCE:0',
+      'END:VEVENT',
+
+      'END:VCALENDAR'
+    ].join('\r\n')
   }
 
   static formatDateTimeToIST (datetime) {
@@ -1684,7 +1765,7 @@ class Helper {
 
   static buildAdminCasesWhere (filters) {
     const { mediatorId, firstPartyId, secondPartyId, status } = filters || {}
-    const and = [this.adminActiveCaseStatusesFilter()]
+    const and = []
     if (mediatorId === '__unassigned__') {
       and.push({ mediator: null })
     } else if (mediatorId) {
@@ -1831,9 +1912,6 @@ class Helper {
         orderBy: { name: 'asc' }
       }),
       prisma.case_statuses.findMany({
-        where: {
-          id: { in: [CaseTypes.NEW, CaseTypes.IN_PROGRESS] }
-        },
         select: { id: true, name: true },
         orderBy: { name: 'asc' }
       })
