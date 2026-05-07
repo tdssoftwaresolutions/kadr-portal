@@ -25,6 +25,11 @@ const GET_ADMIN_ACTIVE_CASES_ENDPOINT = '/activeCases'
 const GET_ADMIN_CASE_META_ENDPOINT = '/caseManagementMeta'
 const POST_ADMIN_ASSIGN_CASE_MEDIATOR_ENDPOINT = '/assignCaseMediator'
 const UPDATE_INACTIVE_USER_ENDPOINT = '/updateInactiveUser'
+const ADMIN_BLOG_TAXONOMY_ENDPOINT = '/blog-taxonomy'
+const ADMIN_BLOG_CATEGORIES_ENDPOINT = '/blog-categories'
+const ADMIN_BLOG_TAGS_ENDPOINT = '/blog-tags'
+const ADMIN_USERS_ENDPOINT = '/users'
+const ADMIN_USERS_ACTIVE_ENDPOINT = '/users/active'
 const REFRESH_TOKEN_ENDPOINT = '/refresh-token'
 const SAVE_NOTE_ENDPOINT = '/saveNote'
 const SUBMIT_AGREEMENT_SIGNATURE = '/submitAgreementSignature'
@@ -598,10 +603,10 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
-      async updateInactiveUsers ({ commit, dispatch }, { isActive, caseId, userId, caseType }) {
+      async updateInactiveUsers ({ commit, dispatch }, { isActive, caseId, userId, caseType, sendWelcomeEmail = true }) {
         try {
           dispatch('spinner/showSpinner')
-          const { data } = await apiClient.post(UPDATE_INACTIVE_USER_ENDPOINT, { isActive, caseId, userId, caseType })
+          const { data } = await apiClient.post(UPDATE_INACTIVE_USER_ENDPOINT, { isActive, caseId, userId, caseType, sendWelcomeEmail })
           if (!data.success) throw new Error(data.error.message)
           return data
         } catch (error) {
@@ -670,10 +675,12 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
-      async getActiveUsers ({ commit, dispatch }, { page, type }) {
+      async getActiveUsers ({ commit, dispatch }, { page, type, includeInactive = false }) {
         try {
           dispatch('spinner/showSpinner')
-          const params = type ? `?page=${encodeURIComponent(page)}&type=${encodeURIComponent(type)}` : `?page=${encodeURIComponent(page)}`
+          const params = type
+            ? `?page=${encodeURIComponent(page)}&type=${encodeURIComponent(type)}&includeInactive=${encodeURIComponent(includeInactive)}`
+            : `?page=${encodeURIComponent(page)}&includeInactive=${encodeURIComponent(includeInactive)}`
           const { data } = await apiClient.get(`${GET_ACTIVE_USERS_ENDPOINT}${params}`)
           if (!data.success) throw new Error(data.error.message)
           return data
@@ -934,6 +941,160 @@ export default (router) => {
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getAdminBlogTaxonomy ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(ADMIN_BLOG_TAXONOMY_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async createBlogCategory ({ dispatch }, { name }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_BLOG_CATEGORIES_ENDPOINT, { name })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async updateBlogCategory ({ dispatch }, { id, name }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(ADMIN_BLOG_CATEGORIES_ENDPOINT, { id, name })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteBlogCategory ({ dispatch }, { id }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${ADMIN_BLOG_CATEGORIES_ENDPOINT}/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async createBlogTag ({ dispatch }, { name }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_BLOG_TAGS_ENDPOINT, { name })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async updateBlogTag ({ dispatch }, { id, name }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(ADMIN_BLOG_TAGS_ENDPOINT, { id, name })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteBlogTag ({ dispatch }, { id }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${ADMIN_BLOG_TAGS_ENDPOINT}/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getAdminUsers ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(ADMIN_USERS_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async createAdminUser ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_USERS_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async updateAdminUser ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(ADMIN_USERS_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async setAdminUserActive ({ dispatch }, { userId, active }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_USERS_ACTIVE_ENDPOINT, { userId, active })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
           dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
           return { success: false, error }
         } finally {

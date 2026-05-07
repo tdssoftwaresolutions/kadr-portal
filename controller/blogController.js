@@ -5,6 +5,148 @@ const { success, error } = require('../utils/responses')
 const striptags = require('striptags')
 
 module.exports = {
+  getAdminBlogTaxonomy: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const [categories, tags] = await Promise.all([
+        prisma.categories.findMany({
+          orderBy: { name: 'asc' },
+          include: {
+            _count: {
+              select: { blog_categories: true }
+            }
+          }
+        }),
+        prisma.tags.findMany({
+          orderBy: { name: 'asc' },
+          include: {
+            _count: {
+              select: { blog_tags: true }
+            }
+          }
+        })
+      ])
+      success(res, { categories, tags })
+    } catch (e) {
+      next(e)
+    }
+  },
+  createBlogCategory: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const name = (req.body?.name || '').trim()
+      if (!name) {
+        return error(res, { message: 'Category name is required' }, 400)
+      }
+      const category = await prisma.categories.create({
+        data: { name }
+      })
+      success(res, { category }, 'Category created successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  updateBlogCategory: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const { id, name } = req.body || {}
+      const nextName = (name || '').trim()
+      if (!id || !nextName) {
+        return error(res, { message: 'Category id and name are required' }, 400)
+      }
+      const category = await prisma.categories.update({
+        where: { id },
+        data: { name: nextName }
+      })
+      success(res, { category }, 'Category updated successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  deleteBlogCategory: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const id = req.params.id
+      if (!id) return error(res, { message: 'Category id is required' }, 400)
+      const linksCount = await prisma.blog_categories.count({
+        where: { category_id: id }
+      })
+      if (linksCount > 0) {
+        return error(res, { message: 'Category is linked to blogs and cannot be deleted' }, 400)
+      }
+      await prisma.categories.delete({
+        where: { id }
+      })
+      success(res, {}, 'Category deleted successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  createBlogTag: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const name = (req.body?.name || '').trim()
+      if (!name) {
+        return error(res, { message: 'Tag name is required' }, 400)
+      }
+      const tag = await prisma.tags.create({
+        data: { name }
+      })
+      success(res, { tag }, 'Tag created successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  updateBlogTag: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const { id, name } = req.body || {}
+      const nextName = (name || '').trim()
+      if (!id || !nextName) {
+        return error(res, { message: 'Tag id and name are required' }, 400)
+      }
+      const tag = await prisma.tags.update({
+        where: { id },
+        data: { name: nextName }
+      })
+      success(res, { tag }, 'Tag updated successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  deleteBlogTag: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const id = req.params.id
+      if (!id) return error(res, { message: 'Tag id is required' }, 400)
+      const linksCount = await prisma.blog_tags.count({
+        where: { tag_id: id }
+      })
+      if (linksCount > 0) {
+        return error(res, { message: 'Tag is linked to blogs and cannot be deleted' }, 400)
+      }
+      await prisma.tags.delete({
+        where: { id }
+      })
+      success(res, {}, 'Tag deleted successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
   saveBlog: async function (req, res) {
     const { blog, status } = req.body
     const { id, email, name } = req.user

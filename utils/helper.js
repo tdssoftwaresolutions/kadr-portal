@@ -1068,17 +1068,19 @@ class Helper {
     }
   }
 
-  static async getUsers (isActive, prisma, page, type, relationField) {
+  static async getUsers (isActive, prisma, page, type, relationField, includeInactive = false) {
     const perPage = 10
 
     // Calculate the number of items to skip
     const skip = (page - 1) * perPage
 
+    const activeCondition = includeInactive ? {} : { active: isActive }
+
     let [inactiveUsers, totalInactiveUsers] = await prisma.$transaction([
       prisma.user.findMany({
         where: {
           AND: [
-            { active: isActive },
+            activeCondition,
             { is_self_signed_up: true },
             { user_type: type }
           ]
@@ -1142,7 +1144,7 @@ class Helper {
       prisma.user.count({
         where: {
           AND: [
-            { active: isActive },
+            activeCondition,
             { is_self_signed_up: true },
             { user_type: type }
           ]

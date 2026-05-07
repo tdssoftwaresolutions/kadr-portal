@@ -10,6 +10,8 @@ import AuthLayout from '../layouts/AuthLayout.vue'
 import AdminUsersListView from '../views/AdminControllers/AdminUsersListView.vue'
 import AdminCasesManagementView from '../views/AdminControllers/AdminCasesManagementView.vue'
 import GoogleAccountManagement from '../views/AdminControllers/GoogleAccountManagement.vue'
+import AdminBlogTaxonomyView from '../views/AdminControllers/AdminBlogTaxonomyView.vue'
+import AdminManagementView from '../views/AdminControllers/AdminManagementView.vue'
 /** Mediator */
 
 /** Client  */
@@ -89,6 +91,18 @@ const appChildRoute = (prop) => [
     name: prop + '.google_management',
     meta: { name: 'Google Account Management' },
     component: GoogleAccountManagement
+  },
+  {
+    path: 'blog-taxonomy',
+    name: prop + '.blog-taxonomy',
+    meta: { name: 'Blog Taxonomy' },
+    component: AdminBlogTaxonomyView
+  },
+  {
+    path: 'admins',
+    name: prop + '.admins',
+    meta: { name: 'Admin Management' },
+    component: AdminManagementView
   }
 ]
 

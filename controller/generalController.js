@@ -204,16 +204,22 @@ module.exports = {
     success(res, { availableLanguages })
   },
   updateInactiveUser: async function (req, res) {
-    const { isActive, caseId, userId, caseType } = req.body
-    const generatedPassword = helper.generateRandomPassword()
-    const hashPassword = await helper.hashPassword(generatedPassword)
+    if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+    const { isActive, caseId, userId, caseType, sendWelcomeEmail = true } = req.body
+    const shouldSendWelcomeEmail = Boolean(sendWelcomeEmail) && Boolean(isActive)
+    let generatedPassword = null
+    let hashPassword = null
+    if (shouldSendWelcomeEmail) {
+      generatedPassword = helper.generateRandomPassword()
+      hashPassword = await helper.hashPassword(generatedPassword)
+    }
     const updatedUser = await prisma.user.update({
       where: {
         id: userId
       },
       data: {
         active: isActive,
-        password_hash: hashPassword
+        ...(hashPassword ? { password_hash: hashPassword } : {})
       },
       select: {
         name: true,
@@ -261,19 +267,21 @@ module.exports = {
         }
       })
     }
-    const htmlBody = `
-      <p>Thanks for registering on KADR.live. Your account is now active.</p>
-      <p>To login, use below credentials:</p>
-      <p>Username : ${updatedUser.email}</p>
-      <p>Password : ${generatedPassword} <p>
-        <p style="text-align: center; margin: 20px 0;">
-        <a href="${process.env.BASE_URL}/admin/auth/sign-in"
-          style="background-color: #4CAF50; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
-          Login to Your Account
-        </a>
-      </p>
-    `
-    await helper.sendEmail(updatedUser.name, updatedUser.email, 'Welcome aboard!', htmlBody)
+    if (shouldSendWelcomeEmail) {
+      const htmlBody = `
+        <p>Thanks for registering on KADR.live. Your account is now active.</p>
+        <p>To login, use below credentials:</p>
+        <p>Username : ${updatedUser.email}</p>
+        <p>Password : ${generatedPassword} <p>
+          <p style="text-align: center; margin: 20px 0;">
+          <a href="${process.env.BASE_URL}/admin/auth/sign-in"
+            style="background-color: #4CAF50; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+            Login to Your Account
+          </a>
+        </p>
+      `
+      await helper.sendEmail(updatedUser.name, updatedUser.email, 'Welcome aboard!', htmlBody)
+    }
     success(res, {}, 'User updated successfully')
   },
   newCase: async function (req, res, next) {
@@ -620,18 +628,20 @@ module.exports = {
   },
   getActiveUsers: async function (req, res) {
     try {
-      const { page = 1, type } = req.query
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const { page = 1, type, includeInactive = 'false' } = req.query
+      const withInactive = String(includeInactive).toLowerCase() === 'true'
 
       if (type) {
         // Fetch data for a specific user type
         const relationField = type === 'CLIENT' ? 'cases_cases_first_partyTouser' : 'cases_cases_mediatorTouser'
-        const activeUsers = await helper.getUsers(true, prisma, page, type, relationField)
+        const activeUsers = await helper.getUsers(true, prisma, page, type, relationField, withInactive)
         res.json({ success: true, users: activeUsers.users, total: activeUsers.total })
       } else {
         // Fetch both clients and mediators
         const [activeClients, activeMediators] = await Promise.all([
-          helper.getUsers(true, prisma, page, 'CLIENT', 'cases_cases_first_partyTouser'),
-          helper.getUsers(true, prisma, page, 'MEDIATOR', 'cases_cases_mediatorTouser')
+          helper.getUsers(true, prisma, page, 'CLIENT', 'cases_cases_first_partyTouser', withInactive),
+          helper.getUsers(true, prisma, page, 'MEDIATOR', 'cases_cases_mediatorTouser', withInactive)
         ])
 
         const combinedUsers = [...activeClients.users, ...activeMediators.users]
@@ -698,12 +708,14 @@ module.exports = {
           id: true,
           profile_picture_url: true,
           phone_number: true,
-          name: true
+          name: true,
+          master: true
         }
       })
       userData.photo = user.profile_picture_url || ''
       userData.phone = user.phone_number || ''
       userData.name = user.name || ''
+      userData.master = Boolean(user.master)
 
       const signature = helper.signResponseData(userData)
 
@@ -721,6 +733,130 @@ module.exports = {
       if (!helper.verifySignature(userData, signature)) throw createError(errorCodes.UNAUTHORIZED)
 
       success(res, { valid: true })
+    } catch (error) {
+      next(error)
+    }
+  },
+  getAdminUsers: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const admins = await prisma.user.findMany({
+        where: {
+          user_type: 'ADMIN'
+        },
+        orderBy: {
+          created_at: 'desc'
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          active: true,
+          created_at: true,
+          master: true
+        }
+      })
+      success(res, { admins })
+    } catch (error) {
+      next(error)
+    }
+  },
+  createAdminUser: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const requester = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { id: true, master: true, name: true }
+      })
+      if (!requester?.master) throw createError(errorCodes.FORBIDDEN)
+      const { name, email, phone_number, master = false } = req.body
+      if (!name || !email) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      const generatedPassword = helper.generateRandomPassword()
+      const hashPassword = await helper.hashPassword(generatedPassword)
+      const admin = await prisma.user.create({
+        data: {
+          name,
+          email,
+          phone_number: phone_number || null,
+          user_type: 'ADMIN',
+          active: true,
+          is_self_signed_up: false,
+          password_hash: hashPassword,
+          master: Boolean(master)
+        },
+        select: { id: true, name: true, email: true, phone_number: true, active: true, master: true, created_at: true }
+      })
+      const htmlBody = `
+        <p>Welcome to KADR.live admin platform.</p>
+        <p>Your account has been created by ${requester.name || 'KADR Team'}.</p>
+        <p>Use these credentials to login:</p>
+        <p>Username : ${admin.email}</p>
+        <p>Password : ${generatedPassword}</p>
+        <p style="text-align: center; margin: 20px 0;">
+          <a href="${process.env.BASE_URL}/admin/auth/sign-in"
+            style="background-color: #4CAF50; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
+            Login to Your Account
+          </a>
+        </p>
+      `
+      await helper.sendEmail(admin.name, admin.email, 'Welcome aboard!', htmlBody)
+      success(res, { admin }, 'Admin user created successfully')
+    } catch (error) {
+      next(error)
+    }
+  },
+  updateAdminUser: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const requester = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { id: true, master: true }
+      })
+      if (!requester?.master) throw createError(errorCodes.FORBIDDEN)
+      const { userId, name, email, phone_number, master } = req.body
+      if (!userId || !name || !email) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      const target = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, user_type: true }
+      })
+      if (!target || target.user_type !== 'ADMIN') throw createError(errorCodes.NOT_FOUND)
+      const admin = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name,
+          email,
+          phone_number: phone_number || null,
+          ...(master !== undefined ? { master: Boolean(master) } : {})
+        },
+        select: { id: true, name: true, email: true, phone_number: true, active: true, master: true, created_at: true }
+      })
+      success(res, { admin }, 'Admin user updated successfully')
+    } catch (error) {
+      next(error)
+    }
+  },
+  setAdminActiveStatus: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const requester = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { id: true, master: true }
+      })
+      if (!requester?.master) throw createError(errorCodes.FORBIDDEN)
+      const { userId, active } = req.body
+      if (!userId || typeof active !== 'boolean') throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      const target = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, user_type: true, master: true }
+      })
+      if (!target || target.user_type !== 'ADMIN') throw createError(errorCodes.NOT_FOUND)
+      if (target.id === requester.id && active === false) throw createError(errorCodes.INVALID_REQUEST)
+      await prisma.user.update({
+        where: { id: userId },
+        data: { active }
+      })
+      success(res, {}, `Admin user ${active ? 'activated' : 'inactivated'} successfully`)
     } catch (error) {
       next(error)
     }

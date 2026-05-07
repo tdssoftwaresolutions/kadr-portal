@@ -32,6 +32,7 @@ model user {
   preferred_languages            String?         @db.LongText
   llb_certificate_url            String?         @db.VarChar(255)
   profile_picture_url            String?         @db.VarChar(255)
+  master                         Boolean         @default(false)
   blogs                          blogs[]
   mediator_video_reels           MediatorVideoReel[]
   cases_cases_first_partyTouser  cases[]         @relation("cases_first_partyTouser")

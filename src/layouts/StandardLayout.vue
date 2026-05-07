@@ -17,6 +17,18 @@
         </transition>
       </div>
     </div>
+    <nav v-if="user && mobileNavItems.length" class="mobile-bottom-nav" aria-label="Mobile navigation">
+      <router-link
+        v-for="item in mobileNavItems"
+        :key="item.name"
+        :to="item.link"
+        class="mobile-bottom-nav-item"
+        :class="{ active: isNavItemActive(item) }"
+      >
+        <i v-if="item.is_icon_class" :class="item.icon"></i>
+        <span style="text-align: center;">{{ item.title }}</span>
+      </router-link>
+    </nav>
     <FooterStyle1>
       <template v-slot:left>
         <li class="list-inline-item"><a href="#">Privacy Policy</a></li>
@@ -64,6 +76,13 @@ export default {
       userProfile: profile,
       logo,
       user: null
+    }
+  },
+  computed: {
+    mobileNavItems () {
+      return (this.sidebar || [])
+        .filter(item => !item.is_heading && item.link)
+        .slice(0, 5)
     }
   },
   methods: {
@@ -114,12 +133,63 @@ export default {
         this.$cookies.remove('accessToken')
         this.$router.push({ path: '/auth/sign-in' })
       }
+    },
+    isNavItemActive (item) {
+      return this.$route && item.link && this.$route.name === item.link.name
     }
   }
 }
 </script>
 <style>
   @import url("../assets/css/custom.css");
+
+  body.compact-sidebar {
+    overflow-x: hidden;
+  }
+
+  body.compact-sidebar .wrapper,
+  body.compact-sidebar .content-page {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1040;
+    display: none;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+    background: #ffffff;
+    border-top: 1px solid #e6ebf5;
+    box-shadow: 0 -8px 24px rgba(20, 44, 75, 0.1);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-bottom-nav-item {
+    min-height: 62px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: #5f6b7a;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .mobile-bottom-nav-item i {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .mobile-bottom-nav-item.active {
+    color: #0084ff;
+    background: linear-gradient(180deg, rgba(229, 241, 255, 0.8) 0%, rgba(245, 250, 255, 0.8) 100%);
+  }
 
   @media (min-width: 992px) {
     body.compact-sidebar .content-page,
@@ -132,6 +202,16 @@ export default {
       padding-top: 24px;
       padding-left: 28px;
       padding-right: 24px;
+    }
+  }
+
+  @media (max-width: 991px) {
+    .mobile-bottom-nav {
+      display: grid;
+    }
+
+    .content-page {
+      padding-bottom: calc(78px + env(safe-area-inset-bottom));
     }
   }
 </style>

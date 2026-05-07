@@ -86,8 +86,8 @@
       '<button type="button" class="kadr-menu-toggle" aria-label="Open menu" aria-expanded="false" id="kadrMenuToggle">☰</button>'
 
     let tagline =
-      '<span class="kadr-reels-tagline copy-en">Swipe for more reels</span>' +
-      '<span class="kadr-reels-tagline copy-hi">Reels ke liye swipe karein</span>'
+      '<span class="kadr-reels-tagline copy-en"></span>' +
+      '<span class="kadr-reels-tagline copy-hi"></span>'
 
     if (minimal) {
       return (
