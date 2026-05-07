@@ -10,6 +10,7 @@ const os = require('os')
 const { createError } = require('../utils/errors')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { success } = require('../utils/responses')
+const { ensureInvoiceForCase } = require('../services/invoice/invoiceService')
 
 module.exports = {
   submitSignature: async function (req, res, next) {
@@ -298,7 +299,10 @@ module.exports = {
 
         const tempDir = os.tmpdir()
         const tempPdfPath = path.join(tempDir, `mediation_document_${uuidv4()}.pdf`)
-        const browser = await puppeteer.launch()
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        })
         const page = await browser.newPage()
         await page.setContent(html, { waitUntil: 'networkidle0' })
         await page.pdf({
@@ -329,6 +333,8 @@ module.exports = {
           caseId: caseRecord.caseId,
           agreementUrl: updateData.mediation_agreement_link
         })
+
+        await ensureInvoiceForCase(caseRecord.id)
       }
 
       await prisma.case_agreement_tracking.update({

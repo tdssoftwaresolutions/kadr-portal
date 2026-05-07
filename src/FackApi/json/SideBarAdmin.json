@@ -48,6 +48,30 @@
       "icon": "ri-price-tag-3-line"
     },
     {
+      "title": "Payments & Invoices",
+      "name": "app.invoices",
+      "is_heading": false,
+      "is_active": false,
+      "link": {
+        "name": "app.invoices"
+      },
+      "class_name": "",
+      "is_icon_class": true,
+      "icon": "ri-file-list-3-line"
+    },
+    {
+      "title": "Settings",
+      "name": "app.settings",
+      "is_heading": false,
+      "is_active": false,
+      "link": {
+        "name": "app.settings"
+      },
+      "class_name": "",
+      "is_icon_class": true,
+      "icon": "ri-settings-4-line"
+    },
+    {
       "title": "Admin management",
       "name": "app.admins",
       "is_heading": false,

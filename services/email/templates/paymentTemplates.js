@@ -31,5 +31,16 @@ module.exports = {
   mediatorAssignedMeetingScheduled: ({ paidMessage, meetingBodyHtml }) => ({
     subject: 'Mediator assigned and meeting scheduled',
     bodyHtml: `${paidMessage || ''}<p>A mediator has been assigned and a meeting is scheduled. Details below:</p>${meetingBodyHtml}`
+  }),
+  mediatorInvoicePaymentDone: ({ invoiceNumber, caseId, netPayable }) => ({
+    subject: 'Invoice payment completed',
+    bodyHtml: `
+      <p>Your invoice payment has been marked as completed by the admin team.</p>
+      <table style="border-collapse:collapse;width:100%;max-width:600px;">
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Invoice Number</strong></td><td style="padding:8px;border:1px solid #ddd;">${invoiceNumber}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Case</strong></td><td style="padding:8px;border:1px solid #ddd;">${caseId}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Amount Paid</strong></td><td style="padding:8px;border:1px solid #ddd;">INR ${netPayable}</td></tr>
+      </table>
+    `
   })
 }

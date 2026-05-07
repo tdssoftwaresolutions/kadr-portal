@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid')
 const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
+const { getOrCreateSettings, settingsToMap } = require('../services/invoice/invoiceService')
 
 module.exports = {
   getCalendarInit: async function (req, res, next) {
@@ -119,9 +120,13 @@ module.exports = {
       if (!user) throw createError(errorCodes.USER_NOT_FOUND)
       switch (type) {
         case 'ADMIN': {
-          const inactiveUsers = await helper.getUsers(false, prisma, 1, 'CLIENT', 'cases_cases_first_partyTouser')
-          const inactiveMediators = await helper.getUsers(false, prisma, 1, 'MEDIATOR', 'cases_cases_mediatorTouser')
-          const counts = await prisma.$transaction([
+          const startOfToday = new Date()
+          startOfToday.setHours(0, 0, 0, 0)
+          const endOfToday = new Date()
+          endOfToday.setHours(23, 59, 59, 999)
+          const [inactiveUsers, inactiveMediators, totalCases, clientUsers, mediatorUsers, todaysCaseMeetings] = await Promise.all([
+            helper.getUsers(false, prisma, 1, 'CLIENT', 'cases_cases_first_partyTouser'),
+            helper.getUsers(false, prisma, 1, 'MEDIATOR', 'cases_cases_mediatorTouser'),
             prisma.cases.count(),
             prisma.user.count({
               where: {
@@ -134,11 +139,48 @@ module.exports = {
                 user_type: 'MEDIATOR',
                 active: true
               }
+            }),
+            prisma.events.findMany({
+              where: {
+                case_id: {
+                  not: null
+                },
+                start_datetime: {
+                  gte: startOfToday,
+                  lte: endOfToday
+                }
+              },
+              orderBy: {
+                start_datetime: 'asc'
+              },
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                start_datetime: true,
+                end_datetime: true,
+                type: true,
+                meeting_link: true,
+                cases: {
+                  select: {
+                    id: true,
+                    caseId: true,
+                    case_type: true,
+                    user_cases_first_partyTouser: {
+                      select: {
+                        name: true
+                      }
+                    },
+                    user_cases_second_partyTouser: {
+                      select: {
+                        name: true
+                      }
+                    }
+                  }
+                }
+              }
             })
           ])
-          const totalCases = counts[0]
-          const clientUsers = counts[1]
-          const mediatorUsers = counts[2]
           dashboardContent.inactive_users = inactiveUsers
           dashboardContent.inactive_mediators = inactiveMediators
           dashboardContent.count = {
@@ -146,6 +188,20 @@ module.exports = {
             clients: clientUsers,
             mediators: mediatorUsers
           }
+          dashboardContent.todaysEvent = todaysCaseMeetings.map((event) => ({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            start_datetime: event.start_datetime,
+            end_datetime: event.end_datetime,
+            type: event.type,
+            meeting_link: event.meeting_link,
+            caseId: event.cases?.caseId,
+            caseType: event.cases?.case_type,
+            caseFirstPartyName: event.cases?.user_cases_first_partyTouser?.name,
+            caseSecondPartyName: event.cases?.user_cases_second_partyTouser?.name,
+            case_id: event.cases?.id
+          }))
           break
         }
 
@@ -327,6 +383,9 @@ module.exports = {
       if (tracker) {
         newCaseId = tracker.lastCaseId + 1
       }
+      const settingsRows = await getOrCreateSettings()
+      const settingsMap = settingsToMap(settingsRows)
+      const defaultCommission = Number(settingsMap.mediator_commission || 5)
 
       const newCaseRecord = await prisma.cases.create({
         data: {
@@ -343,6 +402,7 @@ module.exports = {
           hearing_date: new Date(hearingDate),
           institution_date: new Date(institutionDate),
           mediation_date_time: new Date(mediationDateTime),
+          mediator_commission: defaultCommission,
           referral_judge_signature: referralJudgeSignature,
           plaintiff_phone: plaintiffPhone,
           plaintiff_advocate: plaintiffAdvocate,
@@ -420,6 +480,43 @@ module.exports = {
         case 'ADMIN': {
           break
         }
+      }
+    } catch (error) {
+      next(error)
+    }
+  },
+  getPastMediations: async function (req, res, next) {
+    try {
+      const { id, type } = req.user
+      const { page } = req.query
+      const currentPage = Number(page) || 1
+      const pastStatuses = helper.getPastCaseStatuses()
+
+      if (!id || !type) throw createError(errorCodes.UNAUTHORIZED)
+
+      switch (type) {
+        case 'MEDIATOR': {
+          const [casesWithEvents, casesCount] = await Promise.all([
+            helper.getMediatorCases(prisma, id, currentPage, pastStatuses),
+            helper.getMediatorCasesCount(prisma, id, pastStatuses)
+          ])
+          success(res, {
+            casesWithEvents, total: casesCount, page: currentPage, perPage: 10
+          })
+          break
+        }
+        case 'CLIENT': {
+          const [casesWithEvents, casesCount] = await Promise.all([
+            helper.getJudgeCases(prisma, id, currentPage, pastStatuses),
+            helper.getJudgeCasesCount(prisma, id, pastStatuses)
+          ])
+          success(res, {
+            casesWithEvents, total: casesCount, page: currentPage, perPage: 10
+          })
+          break
+        }
+        default:
+          throw createError(errorCodes.UNAUTHORIZED)
       }
     } catch (error) {
       next(error)
@@ -1057,6 +1154,7 @@ module.exports = {
             first_party: true,
             second_party: true,
             status: true,
+            mediator_commission: true,
             user_cases_first_partyTouser: { select: { name: true, email: true } },
             user_cases_second_partyTouser: { select: { name: true, email: true } }
           }
@@ -1075,11 +1173,14 @@ module.exports = {
       if (!activeStatuses.includes(caseRecord.status)) {
         throw createError(errorCodes.INVALID_REQUEST)
       }
+      const settingsRows = await getOrCreateSettings()
+      const settingsMap = settingsToMap(settingsRows)
 
       await prisma.cases.update({
         where: { id: caseId },
         data: {
           mediator: mediatorId,
+          mediator_commission: caseRecord.mediator_commission || Number(settingsMap.mediator_commission || 5),
           status: CaseTypes.IN_PROGRESS,
           sub_status: CaseSubTypes.MEDIATOR_ASSIGNED
         }

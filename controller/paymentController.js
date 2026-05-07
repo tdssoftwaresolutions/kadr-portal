@@ -4,6 +4,7 @@ const helper = require('../utils/helper')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { success } = require('../utils/responses')
 const CaseAssignmentService = require('../utils/caseAssignment')
+const { getOrCreateSettings, settingsToMap } = require('../services/invoice/invoiceService')
 
 module.exports = {
   setClientPayment: async function (req, res) {
@@ -144,11 +145,14 @@ module.exports = {
         clientState: caseDetails.user_cases_first_partyTouser.state,
         category: caseDetails.category
       })
+      const settingsRows = await getOrCreateSettings()
+      const settingsMap = settingsToMap(settingsRows)
       // Assign mediator to case
       await prisma.cases.update({
         where: { id: caseId },
         data: {
           mediator: response.assignedTo.id,
+          mediator_commission: Number(settingsMap.mediator_commission || 5),
           sub_status: CaseSubTypes.MEDIATOR_ASSIGNED
         }
       })

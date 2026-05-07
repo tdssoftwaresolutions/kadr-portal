@@ -12,12 +12,15 @@ import AdminCasesManagementView from '../views/AdminControllers/AdminCasesManage
 import GoogleAccountManagement from '../views/AdminControllers/GoogleAccountManagement.vue'
 import AdminBlogTaxonomyView from '../views/AdminControllers/AdminBlogTaxonomyView.vue'
 import AdminManagementView from '../views/AdminControllers/AdminManagementView.vue'
+import AdminSettingsView from '../views/AdminControllers/AdminSettingsView.vue'
 /** Mediator */
+import InvoicesView from '../views/MediatorControllers/InvoicesView.vue'
 
 /** Client  */
 
 /** Dashboards View */
 import Dashboard from '../views/Standard/Dashboard.vue'
+import PastMediationsView from '../views/Standard/PastMediationsView.vue'
 
 /** Auth & User Management */
 import AgreementSignature from '../views/ClientControllers/AgreementSignature.vue'
@@ -53,6 +56,12 @@ const childRoutes = (prop) => [
   }
 ]
 const appChildRoute = (prop) => [
+  {
+    path: 'past-mediations',
+    name: prop + '.past-mediations',
+    meta: { name: 'Past Mediations' },
+    component: PastMediationsView
+  },
   {
     path: 'calendar',
     name: prop + '.calendar',
@@ -103,6 +112,18 @@ const appChildRoute = (prop) => [
     name: prop + '.admins',
     meta: { name: 'Admin Management' },
     component: AdminManagementView
+  },
+  {
+    path: 'settings',
+    name: prop + '.settings',
+    meta: { name: 'Settings' },
+    component: AdminSettingsView
+  },
+  {
+    path: 'invoices',
+    name: prop + '.invoices',
+    meta: { name: 'Payments & Invoices' },
+    component: InvoicesView
   }
 ]
 

@@ -19,6 +19,14 @@ const oauth2Client = new google.auth.OAuth2(
 )
 
 class Helper {
+  static getActiveCaseStatuses () {
+    return [CaseTypes.NEW, CaseTypes.IN_PROGRESS]
+  }
+
+  static getPastCaseStatuses () {
+    return [CaseTypes.FAILED, CaseTypes.CANCELLED, CaseTypes.CLOSED_NO_SUCCESS, CaseTypes.CLOSED_SUCCESS]
+  }
+
   static generateRandomPassword (length = 12) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     let password = ''
@@ -36,14 +44,13 @@ class Helper {
     return `${process.env.BASE_URL}/admin/auth/sign-up?id=${token}`
   }
 
-  static async getMediatorCasesCount (prisma, mediatorId) {
+  static async getMediatorCasesCount (prisma, mediatorId, statuses = Helper.getActiveCaseStatuses()) {
     return prisma.cases.count({
       where: {
         mediator: mediatorId,
-        OR: [
-          { status: CaseTypes.NEW },
-          { status: CaseTypes.IN_PROGRESS }
-        ]
+        status: {
+          in: statuses
+        }
       }
     })
   }
@@ -669,14 +676,13 @@ class Helper {
     })
   }
 
-  static async getJudgeCasesCount (prisma, judgeId) {
+  static async getJudgeCasesCount (prisma, judgeId, statuses = Helper.getActiveCaseStatuses()) {
     return prisma.cases.count({
       where: {
         judge: judgeId,
-        OR: [
-          { status: CaseTypes.NEW },
-          { status: CaseTypes.IN_PROGRESS }
-        ]
+        status: {
+          in: statuses
+        }
       }
     })
   }
@@ -806,7 +812,7 @@ class Helper {
     })
   }
 
-  static async getJudgeCases (prisma, judgeId, page) {
+  static async getJudgeCases (prisma, judgeId, page, statuses = Helper.getActiveCaseStatuses()) {
     const perPage = 10
 
     // Calculate the number of items to skip
@@ -815,10 +821,9 @@ class Helper {
     return prisma.cases.findMany({
       where: {
         judge: judgeId,
-        OR: [
-          { status: CaseTypes.NEW },
-          { status: CaseTypes.IN_PROGRESS }
-        ]
+        status: {
+          in: statuses
+        }
       },
       orderBy: {
         created_at: 'desc'
@@ -880,7 +885,7 @@ class Helper {
     })
   }
 
-  static async getMediatorCases (prisma, mediatorId, page) {
+  static async getMediatorCases (prisma, mediatorId, page, statuses = Helper.getActiveCaseStatuses()) {
     // const today = new Date()
     // const startOfToday = new Date(today.setHours(0, 0, 0, 0))
     // const endOfToday = new Date(today.setHours(23, 59, 59, 999))
@@ -891,10 +896,9 @@ class Helper {
     return prisma.cases.findMany({
       where: {
         mediator: mediatorId,
-        OR: [
-          { status: CaseTypes.NEW },
-          { status: CaseTypes.IN_PROGRESS }
-        ]
+        status: {
+          in: statuses
+        }
       },
       orderBy: {
         created_at: 'desc'
@@ -1783,6 +1787,7 @@ class Helper {
         updated_at: true,
         status: true,
         sub_status: true,
+        mediator_commission: true,
         mediator: true,
         first_party: true,
         second_party: true,

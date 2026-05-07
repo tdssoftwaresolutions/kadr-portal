@@ -67,6 +67,9 @@
                     <p class="mb-2" v-if="c.case_type">
                       <strong>Type:</strong> {{ c.case_type }}
                     </p>
+                    <p class="mb-2">
+                      <strong>Mediator commission:</strong> {{ Number(c.mediator_commission || 0).toFixed(2) }}%
+                    </p>
                     <div class="mt-auto d-flex flex-wrap justify-content-end">
                       <b-button variant="outline-primary" size="sm" class="mr-1 mb-1" @click="openDetailModal(c)">
                         View details
@@ -120,6 +123,13 @@
           </span>
           <span v-else class="text-muted">Not assigned</span>
         </p>
+        <div class="border rounded p-2 mb-3 bg-light">
+          <p class="mb-2"><strong>Case commission (%)</strong></p>
+          <div class="d-flex align-items-center">
+            <b-form-input v-model.number="selectedCaseCommission" type="number" min="0" step="0.01" style="max-width: 220px;" />
+            <b-button size="sm" variant="primary" class="ml-2" @click="saveCaseCommission">Update</b-button>
+          </div>
+        </div>
 
         <p class="mb-2"><strong>Meetings:</strong> </p>
         <div v-if="!selectedCase.events || selectedCase.events.length === 0" class="text-muted small mb-3">No meetings scheduled yet.</div>
@@ -302,7 +312,8 @@ export default {
       caseForAssign: null,
       mediatorSearch: '',
       selectedMediatorId: null,
-      meetingFields: []
+      meetingFields: [],
+      selectedCaseCommission: 0
     }
   },
   computed: {
@@ -465,6 +476,7 @@ export default {
     },
     openDetailModal (c) {
       this.selectedCase = c
+      this.selectedCaseCommission = Number(c.mediator_commission || 0)
       this.detailModalVisible = true
     },
     openAssignModal (c) {
@@ -487,6 +499,17 @@ export default {
         this.assignModalVisible = false
         await this.fetchCases()
         await this.loadMeta()
+      }
+    },
+    async saveCaseCommission () {
+      if (!this.selectedCase) return
+      const res = await this.$store.dispatch('updateCaseMediatorCommission', {
+        caseId: this.selectedCase.id,
+        mediator_commission: this.selectedCaseCommission
+      })
+      if (res.success) {
+        this.selectedCase.mediator_commission = this.selectedCaseCommission
+        this.fetchCases()
       }
     }
   }

@@ -43,6 +43,8 @@ model user {
   notifications                  notifications[]
   transactions                   transactions[]
   blog_comments                  blog_comments[]
+  mediator_bank_accounts         mediator_bank_accounts[]
+  mediator_invoices              mediator_invoices[]
 
   @@index([user_type, active, created_at], map: "idx_user_type_active_created")
 }
@@ -56,6 +58,7 @@ model cases {
   second_party                  String?                  @db.Char(36)
   caseId                        String?                  @db.Char(50)
   case_type                     String?                  @db.VarChar(255)
+  mediator_commission           Decimal?                 @db.Decimal(5, 2)
   status                        String?                  @db.VarChar(255)
   sub_status                    String?                  @db.VarChar(255)
   category                      String?                  @db.VarChar(100)
@@ -71,6 +74,7 @@ model cases {
   user_cases_mediatorTouser     user?                    @relation("cases_mediatorTouser", fields: [mediator], references: [id], onUpdate: Restrict, map: "fk_mediator")
   events                        events[]
   transactions                  transactions[]
+  mediator_invoices             mediator_invoices[]
 
   signature_tracking signature_tracking[] 
   @@index([mediator], map: "fk_mediator")
@@ -80,6 +84,61 @@ model cases {
   @@index([sub_status], map: "fk_cases_sub_status")
   @@index([mediator, status], map: "idx_cases_mediator_status")
   @@index([case_agreement], map: "fk_case_agreement")
+}
+
+model admin_settings {
+  id         String    @id @default(uuid()) @db.Char(36)
+  label      String    @db.VarChar(255)
+  key        String    @unique(map: "uq_admin_settings_key") @db.VarChar(120)
+  value      String    @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  updated_at DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+}
+
+model mediator_bank_accounts {
+  id                String    @id @default(uuid()) @db.Char(36)
+  mediator_id       String    @db.Char(36)
+  bank_name         String    @db.VarChar(255)
+  account_holder    String    @db.VarChar(255)
+  account_number    String    @db.VarChar(50)
+  ifsc_code         String    @db.VarChar(20)
+  branch_name       String?   @db.VarChar(255)
+  upi_id            String?   @db.VarChar(120)
+  created_at        DateTime? @default(now()) @db.Timestamp(0)
+  updated_at        DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  user              user      @relation(fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_bank_mediator")
+
+  @@unique([mediator_id], map: "uq_mediator_bank_mediator")
+  @@index([mediator_id], map: "idx_mediator_bank_mediator")
+}
+
+model mediator_invoices {
+  id                      String                  @id @default(uuid()) @db.Char(36)
+  case_id                 String                  @db.Char(36)
+  mediator_id             String                  @db.Char(36)
+  invoice_month           DateTime                @db.Date
+  invoice_number          String                  @unique(map: "uq_mediator_invoice_number") @db.VarChar(80)
+  mediation_amount        Decimal                 @db.Decimal(10, 2)
+  commission_percentage   Decimal                 @db.Decimal(5, 2)
+  gst_percentage          Decimal                 @db.Decimal(5, 2)
+  tax_percentage          Decimal                 @db.Decimal(5, 2)
+  commission_amount       Decimal                 @db.Decimal(10, 2)
+  gst_amount              Decimal                 @db.Decimal(10, 2)
+  tax_amount              Decimal                 @db.Decimal(10, 2)
+  net_payable             Decimal                 @db.Decimal(10, 2)
+  status                  mediator_invoices_status @default(PENDING)
+  paid_at                 DateTime?               @db.DateTime(0)
+  paid_by                 String?                 @db.Char(36)
+  notes                   String?                 @db.VarChar(500)
+  created_at              DateTime?               @default(now()) @db.Timestamp(0)
+  updated_at              DateTime?               @default(now()) @updatedAt @db.Timestamp(0)
+  cases                   cases                   @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_invoice_case")
+  user                    user                    @relation(fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_invoice_user")
+
+  @@index([case_id], map: "idx_mediator_invoice_case")
+  @@index([mediator_id], map: "idx_mediator_invoice_mediator")
+  @@index([invoice_month], map: "idx_mediator_invoice_month")
+  @@index([status], map: "idx_mediator_invoice_status")
 }
 
 model caseIdTracker {
@@ -364,4 +423,9 @@ enum blogs_status {
 enum otp_resets_type {
   MEDIATION
   RESET_PASSWORD
+}
+
+enum mediator_invoices_status {
+  PENDING
+  PAID
 }

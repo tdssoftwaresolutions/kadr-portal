@@ -12,6 +12,18 @@
       "icon": "ri-home-5-line"
     },
     {
+      "title": "Past Mediations",
+      "name": "app.past-mediations",
+      "is_heading": false,
+      "is_active": false,
+      "link": {
+        "name": "app.past-mediations"
+      },
+      "class_name": "",
+      "is_icon_class": true,
+      "icon": "ri-archive-line"
+    },
+    {
       "title": "My Calendar",
       "name": "app.calendar",
       "is_heading": false,
@@ -48,28 +60,16 @@
       "icon": "ri-movie-2-line"
     },
     {
-      "title": "My Documents",
-      "name": "app.e-commerce.index",
+      "title": "Invoices",
+      "name": "app.invoices",
       "is_heading": false,
       "is_active": false,
       "link": {
-        "name": "app.e-commerce.index"
+        "name": "app.invoices"
       },
       "class_name": "",
       "is_icon_class": true,
-      "icon": "ri-folder-2-line"
-    },
-    {
-      "title": "Billing",
-      "name": "table.editable",
-      "is_heading": false,
-      "is_active": false,
-      "link": {
-        "name": "table.editable"
-      },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-bank-card-line"
+      "icon": "ri-file-list-3-line"
     }
   ]
   

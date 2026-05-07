@@ -33,7 +33,45 @@
           <span class="stat-label">Cases</span>
           <span class="stat-value">{{ content.count.cases }}</span>
         </div>
+        <div class="stat-card">
+          <span class="stat-label">Meetings Today</span>
+          <span class="stat-value">{{ todaysEvents.length }}</span>
+        </div>
       </div>
+    </div>
+    <div class="workspace-grid">
+      <iq-card class="workspace-card">
+        <template v-slot:headerTitle>
+          <h4 class="card-title">Today's Schedule</h4>
+        </template>
+        <template v-slot:body>
+          <div v-if="todaysEvents.length" class="list-scroll">
+            <div
+              v-for="(event, index) in todaysEvents"
+              :key="`admin-today-event-${index}`"
+              class="schedule-item"
+            >
+              <div class="schedule-main">
+                <i class="ri-checkbox-blank-circle-fill schedule-dot" :style="{ color: kadrEventColor }"></i>
+                <div class="schedule-text">
+                  <h6>Case #{{ event.caseId || '-' }}</h6>
+                  <p>{{ event.caseFirstPartyName || '-' }} vs {{ event.caseSecondPartyName || '-' }}</p>
+                  <span>{{ formatDate(event.start_datetime) }} - {{ formatDate(event.end_datetime) }}</span>
+                </div>
+              </div>
+              <a
+                v-if="event.meeting_link"
+                :href="event.meeting_link"
+                target="_blank"
+                class="btn btn-primary btn-sm"
+              >
+                Join
+              </a>
+            </div>
+          </div>
+          <div v-else class="empty-data">No meetings scheduled for today.</div>
+        </template>
+      </iq-card>
     </div>
     <b-row  class="cases-workspace">
       <b-col sm="12"  class="cases-overview">
@@ -58,6 +96,7 @@
 </template>
 <script>
 import InactiveUsers from '../AdminControllers/InactiveUsers.vue'
+const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
 
 export default {
   name: 'DashboardAdmin',
@@ -68,8 +107,24 @@ export default {
   components: {
     InactiveUsers
   },
+  computed: {
+    todaysEvents () {
+      return this.content?.todaysEvent || []
+    }
+  },
+  methods: {
+    formatDate (dateString) {
+      const date = new Date(dateString)
+      return date.toLocaleString('en-US', {
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true
+      })
+    }
+  },
   data () {
     return {
+      kadrEventColor: KADR_EVENT_COLOR
     }
   }
 }
@@ -150,10 +205,10 @@ img.summary-image-top {
 
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
   gap: 0.75rem;
   width: 100%;
-  max-width: 460px;
+  max-width: 620px;
 }
 
 .stat-card {
