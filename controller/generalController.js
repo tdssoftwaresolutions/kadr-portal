@@ -268,19 +268,12 @@ module.exports = {
       })
     }
     if (shouldSendWelcomeEmail) {
-      const htmlBody = `
-        <p>Thanks for registering on KADR.live. Your account is now active.</p>
-        <p>To login, use below credentials:</p>
-        <p>Username : ${updatedUser.email}</p>
-        <p>Password : ${generatedPassword} <p>
-          <p style="text-align: center; margin: 20px 0;">
-          <a href="${process.env.BASE_URL}/admin/auth/sign-in"
-            style="background-color: #4CAF50; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
-            Login to Your Account
-          </a>
-        </p>
-      `
-      await helper.sendEmail(updatedUser.name, updatedUser.email, 'Welcome aboard!', htmlBody)
+      await helper.sendTemplatedEmail('welcomeCredentials', updatedUser.email, {
+        recipientName: updatedUser.name,
+        email: updatedUser.email,
+        password: generatedPassword,
+        loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
+      })
     }
     success(res, {}, 'User updated successfully')
   },
@@ -367,36 +360,13 @@ module.exports = {
 
       const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, firstPartyId, newCaseRecord.id, null)
 
-      const htmlBody = `
-      <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #dddddd; border-radius: 6px; padding: 30px;">
-          <h2 style="color: #333333; font-size: 22px; margin-bottom: 20px;">Signature Verification Request</h2>
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            Hi ${party1},
-          </p>
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            A mediation request in the matter of <strong>${party1} vs ${party2}</strong> (Case No. <strong>ROUSE-MED-${newCaseId}</strong>) has been initiated by <strong>Rouse Avenue Court</strong>. You are identified as the <strong>first party</strong> in this mediation case.
-          </p>
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            To proceed further, we kindly request you to review the case and provide your signature for verification.
-          </p>
-          <div style="margin: 25px 0;">
-            <a href="${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}"
-               style="display: inline-block; background-color: #3c78d8; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 4px; font-size: 16px;">
-              Review & Sign Now
-            </a>
-          </div>
-          <p style="font-size: 16px; color: #444444;">
-            If you believe this message was sent to you in error, please contact our support team immediately.
-          </p>
-          <p style="font-size: 14px; color: #888888; margin-top: 30px; border-top: 1px solid #eeeeee; padding-top: 15px;">
-            Regards,<br />
-            Team Rouse Avenue Mediation Center
-          </p>
-        </div>
-      </div>
-    `
-      await helper.sendEmail('Action Required – Signature Verification for Mediation Request', party1Email, htmlBody)
+      await helper.sendTemplatedEmail('signatureVerificationRequest', party1Email, {
+        recipientName: party1,
+        caseId: `ROUSE-MED-${newCaseId}`,
+        caseTitle: `${party1} vs ${party2}`,
+        signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
+        partyRole: 'first party'
+      })
 
       success(res, {}, 'New case created successfully!')
     } catch (error) {
@@ -542,50 +512,6 @@ module.exports = {
           caseNumber: lCase.caseId
         })
 
-        const meetingInviteBody = `
-          <p>You have a new meeting scheduled. Please find the details below:</p>
-          <table style="width:100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 14px; color: #333;">
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; width: 180px;">Meeting Title:</td>
-              <td style="padding: 8px 0;">${title}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Meeting Type:</td>
-              <td style="padding: 8px 0;">${type.toUpperCase()}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Date & Time:</td>
-              <td style="padding: 8px 0;">${helper.formatMeetingRangeIST(start, end)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Case Number:</td>
-              <td style="padding: 8px 0;">${lCase.caseId}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Description:</td>
-              <td style="padding: 8px 0;">${description}</td>
-            </tr>
-          </table>
-          <p style="margin-top:20px;">
-            <a href="${google_calendar_link}" 
-              style="display:inline-block;padding:10px 16px;background:#0b57d0;color:#fff;text-decoration:none;border-radius:4px;">
-              Add to Google Calendar
-            </a>
-          </p>
-          <p style="margin-top: 20px;">
-            You can join the meeting using the link below:
-          </p>
-          <p>
-            <a href="${meetingLink}" 
-              style="display: inline-block; padding: 10px 16px; background-color: #1a73e8; color: #ffffff; text-decoration: none; border-radius: 4px;">
-              Join Meeting
-            </a>
-          </p>
-          <p>If the button above doesn’t work, copy and paste this link into your browser:</p>
-          <p style="word-break: break-all;">${meetingLink}</p>
-          <p>We look forward to your participation.</p>
-        `
-
         const attachments = [
           {
             filename: 'meeting-invite.ics',
@@ -602,9 +528,36 @@ module.exports = {
           }
         ]
 
-        helper.sendEmail(lCase.user_cases_first_partyTouser?.name, lCase.user_cases_first_partyTouser?.email, `New Meeting invite - Case ${lCase.caseId}`, meetingInviteBody, attachments)
-        helper.sendEmail(lCase.user_cases_second_partyTouser?.name, lCase.user_cases_second_partyTouser?.email, `New Meeting invite - Case ${lCase.caseId}`, meetingInviteBody, attachments)
-        helper.sendEmail(lCase.user_cases_mediatorTouser?.name, lCase.user_cases_mediatorTouser?.email, `New Meeting invite - Case ${lCase.caseId}`, meetingInviteBody, attachments)
+        helper.sendTemplatedEmail('meetingInvite', lCase.user_cases_first_partyTouser?.email, {
+          recipientName: lCase.user_cases_first_partyTouser?.name,
+          caseId: lCase.caseId,
+          title,
+          meetingType: type.toUpperCase(),
+          description,
+          scheduleRange: helper.formatMeetingRangeIST(start, end),
+          googleCalendarLink: google_calendar_link,
+          meetingLink
+        }, attachments)
+        helper.sendTemplatedEmail('meetingInvite', lCase.user_cases_second_partyTouser?.email, {
+          recipientName: lCase.user_cases_second_partyTouser?.name,
+          caseId: lCase.caseId,
+          title,
+          meetingType: type.toUpperCase(),
+          description,
+          scheduleRange: helper.formatMeetingRangeIST(start, end),
+          googleCalendarLink: google_calendar_link,
+          meetingLink
+        }, attachments)
+        helper.sendTemplatedEmail('meetingInvite', lCase.user_cases_mediatorTouser?.email, {
+          recipientName: lCase.user_cases_mediatorTouser?.name,
+          caseId: lCase.caseId,
+          title,
+          meetingType: type.toUpperCase(),
+          description,
+          scheduleRange: helper.formatMeetingRangeIST(start, end),
+          googleCalendarLink: google_calendar_link,
+          meetingLink
+        }, attachments)
       }
 
       await prisma.events.create({
@@ -787,20 +740,13 @@ module.exports = {
         },
         select: { id: true, name: true, email: true, phone_number: true, active: true, master: true, created_at: true }
       })
-      const htmlBody = `
-        <p>Welcome to KADR.live admin platform.</p>
-        <p>Your account has been created by ${requester.name || 'KADR Team'}.</p>
-        <p>Use these credentials to login:</p>
-        <p>Username : ${admin.email}</p>
-        <p>Password : ${generatedPassword}</p>
-        <p style="text-align: center; margin: 20px 0;">
-          <a href="${process.env.BASE_URL}/admin/auth/sign-in"
-            style="background-color: #4CAF50; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
-            Login to Your Account
-          </a>
-        </p>
-      `
-      await helper.sendEmail(admin.name, admin.email, 'Welcome aboard!', htmlBody)
+      await helper.sendTemplatedEmail('welcomeCredentials', admin.email, {
+        recipientName: admin.name,
+        email: admin.email,
+        password: generatedPassword,
+        loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`,
+        createdBy: requester.name || 'KADR Team'
+      })
       success(res, { admin }, 'Admin user created successfully')
     } catch (error) {
       next(error)
@@ -961,20 +907,12 @@ module.exports = {
       console.log(agreementRecord.id)
       const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.user_cases_first_partyTouser.id, null, agreementRecord.id)
 
-      const htmlBody = `
-      <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-        Congratulations! The mediation initiated at <strong>Kadr.live</strong> (Case No. <strong>${caseRecord.caseId}</strong>) has been successfully resolved. You are identified as the <strong>first party</strong> in this mediation case.
-      </p>
-      <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-        To complete the process, we require your signature on the final agreement.
-      </p>
-      <div style="margin: 25px 0;">
-        <a href="${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}"
-            style="display: inline-block; background-color: #3c78d8; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 4px; font-size: 16px;">
-          Review & Sign Final Agreement
-        </a>
-    `
-      await helper.sendEmail(caseRecord.user_cases_first_partyTouser.name, caseRecord.user_cases_first_partyTouser.email, 'Final Step – Signature Required for Mediation Agreement', htmlBody)
+      await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_first_partyTouser.email, {
+        recipientName: caseRecord.user_cases_first_partyTouser.name,
+        caseId: caseRecord.caseId,
+        signUrl: `${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}`,
+        partyRole: 'first party'
+      })
 
       success(res, {}, 'Case marked as resolved!')
     } catch (error) {

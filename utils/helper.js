@@ -1,6 +1,5 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const nodemailer = require('nodemailer')
 const crypto = require('crypto')
 const errorCodes = require('./errors/errorCodes')
 const { google } = require('googleapis')
@@ -9,6 +8,7 @@ const qs = require('qs')
 const path = require('path')
 const fs = require('fs')
 const axios = require('axios')
+const EmailService = require('../services/email/emailService')
 
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3')
 
@@ -1457,44 +1457,10 @@ class Helper {
   }
 
   static async createEmail (customerName, content) {
-    return `
-      <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 30px;">
-        
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-          
-          <!-- Header / Branding -->
-          <div style="background-color: #3c78d8; padding: 15px 20px; color: #ffffff;">
-            <h2 style="margin: 0; font-size: 20px;">Kadr.live</h2>
-          </div>
-
-          <!-- Body -->
-          <div style="padding: 25px;">
-            
-            <p style="font-size: 16px; color: #444;">
-              Hi ${customerName},
-            </p>
-
-            <div style="font-size: 16px; color: #444; line-height: 1.6;">
-              ${content}
-            </div>
-
-          </div>
-
-          <!-- Footer -->
-          <div style="background-color: #fafafa; padding: 20px; font-size: 14px; color: #777; border-top: 1px solid #eee;">
-            <p>
-              If you believe this message was sent to you in error, please contact our support team.
-            </p>
-
-            <p style="margin-top: 15px;">
-              Regards,<br/>
-              <strong>Team Kadr</strong>
-            </p>
-          </div>
-
-        </div>
-      </div>
-    `
+    return EmailService.renderLayout({
+      greeting: customerName ? `Hi ${customerName},` : 'Hello,',
+      bodyHtml: content || ''
+    })
   }
 
   static toICSDate (date) {
@@ -1522,36 +1488,28 @@ class Helper {
 
   static async sendEmail (customerName, emailId, subject = 'Mail from Kadr.live', content, attachments = []) {
     try {
-      // Create a transporter
-      const transporter = nodemailer.createTransport({
-        host: 'smtp.hostinger.com', // Replace with your SMTP server
-        port: 465, // Use 587 for TLS or 465 for SSL
-        secure: true, // True for SSL, false for TLS
-        auth: {
-          user: process.env.EMAIL_USER, // Your full email address
-          pass: process.env.EMAIL_PASSWORD // Your email password
-        }
-      })
-      const htmlBody = await this.createEmail(customerName, content)
-      // Email details
-      const mailOptions = {
-        from: process.env.EMAIL_USER, // Sender's email address
-        to: emailId, // Recipient's email address
-        subject, // Subject line
-        html: htmlBody,
+      const info = await EmailService.sendTemplate({
+        templateName: 'legacyCustomContent',
+        to: emailId,
+        variables: {
+          recipientName: customerName,
+          content,
+          subject
+        },
         attachments
-      }
-
-      // Send the email
-      const info = await transporter.sendMail(mailOptions)
-      console.log('Email sent to : ' + emailId + ' -- ' + info.response)
+      })
+      console.log('Email sent to : ' + emailId)
 
       // Send a response to the client
-      return { message: 'Email sent successfully', info: info.response }
+      return { message: 'Email sent successfully', info }
     } catch (error) {
       console.error('Error sending email:', error)
       return { message: 'Failed to send email', error }
     }
+  }
+
+  static async sendTemplatedEmail (templateName, to, variables = {}, attachments = []) {
+    return EmailService.sendTemplate({ templateName, to, variables, attachments })
   }
 
   static async createSignatureTrackingRecord (prisma, userId, caseId, caseAgreementId) {

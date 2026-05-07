@@ -1,6 +1,7 @@
 const express = require('express')
 const cookieParser = require('cookie-parser')
 require('dotenv').config()
+const { scheduleDailyReminderJob } = require('./services/scheduler/dailyReminderScheduler')
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -16,4 +17,5 @@ app.use(require('./middleware/errorHandler'))
 
 app.listen(port, () => {
   console.log(`API running on ${port}`)
+  scheduleDailyReminderJob()
 })

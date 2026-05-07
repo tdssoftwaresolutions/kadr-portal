@@ -169,11 +169,11 @@ module.exports = {
       }))
     }
     if (status === 'Published') {
-      const htmlBody = `
-                <p>Your blog <b>${savedBlog.title}</b> is now live!</p>
-                <p>To view your blog, click <a href="${process.env.BASE_URL}/blog-detail?id=${savedBlog.id}">here</a>.</p>
-                <p>Thank you for sharing your thoughts with the community!</p>`
-      await helper.sendEmail(name, email, `Your blog '${savedBlog.title}' is now live!`, htmlBody)
+      await helper.sendTemplatedEmail('blogPublished', email, {
+        recipientName: name,
+        title: savedBlog.title,
+        blogUrl: `${process.env.BASE_URL}/blog-detail?id=${savedBlog.id}`
+      })
     }
     success(res, { blog: formattedBlog }, 'Blog saved successfully')
   },

@@ -115,9 +115,9 @@ class CaseAssignmentService {
     })
 
     // Assuming you already have email helper
-    await Helper.sendEmail('Team', [...admins.map(a => a.email)], 'Mediator Not Available - Need manual intervention',
-       `<p>No mediator could be auto-assigned for case <strong>${caseData.caseId}</strong>. Please assign manually from admin panel.</p>`
-    )
+    await Helper.sendTemplatedEmail('mediatorManualAssignmentRequired', [...admins.map(a => a.email)], {
+      caseId: caseData.caseId
+    })
   }
 
   safeJsonParse (value) {

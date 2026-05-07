@@ -281,18 +281,10 @@ module.exports = {
           type: 'RESET_PASSWORD'
         }
       })
-      const htmlBody = `
-        <p>
-          We have received a request to reset the password for your account on <strong>Kadr.live</strong>.
-        </p>
-        <p>
-          To proceed, please use the following One-Time Password (OTP) on our platform to complete your password reset:
-        </p>
-        <div style="margin: 20px 0; padding: 12px; background-color: #f0f4ff; border-left: 4px solid #3c78d8; font-size: 18px; font-weight: bold; color: #2a2a2a;">
-          ${otp}
-        </div>
-      `
-      await helper.sendEmail(user.name, email, 'Password Reset Request – Kadr.live', htmlBody)
+      await helper.sendTemplatedEmail('passwordResetOtp', email, {
+        recipientName: user.name,
+        otp
+      })
       success(res, next)
     } catch (error) {
       next(error)
@@ -333,11 +325,9 @@ module.exports = {
           email: emailAddress
         }
       })
-      const htmlBody = `
-          <p>Your password has been successfully reset for your account on <strong>kADR.live</strong>.</p>
-          <p>You can now log in using your new password.</p>
-      `
-      await helper.sendEmail(user.name, emailAddress, 'Password Reset Successful - Kadr.live', htmlBody)
+      await helper.sendTemplatedEmail('passwordResetSuccess', emailAddress, {
+        recipientName: user.name
+      })
       success(res, {}, 'Password reset successfully!')
     } catch (error) {
       next(error)

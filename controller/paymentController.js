@@ -60,52 +60,23 @@ module.exports = {
 
       const uniqueSignUpLink = helper.generateUniqueSignUpLink(caseDetails.user_cases_second_partyTouser.id)
 
-      const htmlBody = `
-      <p>We have recieved a mediation request on <strong>Kadr.live</strong> from ${caseDetails.user_cases_first_partyTouser.name}</p>
-      <p style="margin-top: 20px;"><strong>Case Details:</strong></p>
-      <table style="border-collapse: collapse; width: 100%; max-width: 600px;">
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Case ID</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${caseDetails.caseId}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Case Type</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${caseDetails.case_type}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Category</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${caseDetails.category}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Description</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">${caseDetails.description}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px; border: 1px solid #ddd;"><strong>Evidence</strong></td>
-          <td style="padding: 8px; border: 1px solid #ddd;">
-            <a href="${caseDetails.evidence_document_url}" target="_blank">View Documents</a>
-          </td>
-        </tr>
-      </table>
-      <p style="margin-top: 20px;">
-        To proceed and start the process, please register using the link below:
-      </p>
-      <p style="text-align: center; margin: 20px 0;">
-        <a href="${uniqueSignUpLink}" 
-          style="background-color: #4CAF50; color: #fff; padding: 10px 18px; text-decoration: none; border-radius: 4px; display: inline-block;">
-          Register Now
-        </a>
-      </p>`
-      await helper.sendEmail(caseDetails.user_cases_second_partyTouser.name, caseDetails.user_cases_second_partyTouser.email, 'Mediation Request on Kadr.live', htmlBody)
+      await helper.sendTemplatedEmail('paymentNoticeToSecondParty', caseDetails.user_cases_second_partyTouser.email, {
+        recipientName: caseDetails.user_cases_second_partyTouser.name,
+        firstPartyName: caseDetails.user_cases_first_partyTouser.name,
+        caseId: caseDetails.caseId,
+        caseType: caseDetails.case_type,
+        category: caseDetails.category,
+        description: caseDetails.description,
+        evidenceUrl: caseDetails.evidence_document_url,
+        registerUrl: uniqueSignUpLink
+      })
 
-      await helper.sendEmail(caseDetails.user_cases_first_partyTouser.name, caseDetails.user_cases_first_partyTouser.email, 'Mediation Initiated on Kadr.live',
-        `
-      <p>We have recieved your payment of ${currency || 'INR'}.${amount}/- with reference #id ${referenceId} for initiating mediation and sending notice to other party through <strong>Kadr.live</strong> </p>
-      <p style="margin-top: 20px;">
-        Notice has been sent to other party and once they accept, you'll receive a confirmation email and the process will start.
-      </p>
-      `
-      )
+      await helper.sendTemplatedEmail('paymentInitiatedByFirstParty', caseDetails.user_cases_first_partyTouser.email, {
+        recipientName: caseDetails.user_cases_first_partyTouser.name,
+        currency: currency || 'INR',
+        amount,
+        referenceId
+      })
 
       await prisma.cases.update({
         where: {
@@ -142,15 +113,13 @@ module.exports = {
         }
       })
 
-      await helper.sendEmail(caseDetails.user_cases_first_partyTouser.name, caseDetails.user_cases_first_partyTouser.email, 'Opposite party has accepted the mediation request',
-        `<p>Opposite party has accepted the mediation request, please go ahead and make the payment to start the mediation process and for mediator to be assigned.</p></p>
-`
-      )
+      await helper.sendTemplatedEmail('mediationAcceptanceFirstParty', caseDetails.user_cases_first_partyTouser.email, {
+        recipientName: caseDetails.user_cases_first_partyTouser.name
+      })
 
-      await helper.sendEmail(caseDetails.user_cases_second_partyTouser.name, caseDetails.user_cases_second_partyTouser.email, 'You have accepted the mediation request',
-        `<p>You have accepted the mediation request. Waiting for first party to make the payment to start the mediation and mediator to be assigned.</p></p>
-`
-      )
+      await helper.sendTemplatedEmail('mediationAcceptanceSecondParty', caseDetails.user_cases_second_partyTouser.email, {
+        recipientName: caseDetails.user_cases_second_partyTouser.name
+      })
       // Add case history
       const caseEvent = await prisma.case_events.findFirst({
         where: {
@@ -288,20 +257,16 @@ module.exports = {
         <p>We look forward to your participation.</p>
       `
 
-      await helper.sendEmail(caseDetails.user_cases_first_partyTouser.name, caseDetails.user_cases_first_partyTouser.email, 'Mediator assigned and meeting scheduled',
-          `
-      <p>We have recieved your payment of ${currency || 'INR'}.${amount}/- with reference #id ${referenceId} for starting the mediation on <strong>Kadr.live</strong> </p>
-      <p>A Mediator has been assigned to your case and a new meeting scheduled. Please find the details below: </p>
-      ${meetingBody}
-      `, attachments
-      )
+      await helper.sendTemplatedEmail('mediatorAssignedMeetingScheduled', caseDetails.user_cases_first_partyTouser.email, {
+        recipientName: caseDetails.user_cases_first_partyTouser.name,
+        paidMessage: `<p>We have received your payment of ${currency || 'INR'}.${amount}/- with reference #${referenceId} for starting mediation.</p>`,
+        meetingBodyHtml: meetingBody
+      }, attachments)
 
-      await helper.sendEmail(caseDetails.user_cases_second_partyTouser.name, caseDetails.user_cases_second_partyTouser.email, 'Mediator assigned and meeting scheduled',
-        `
-      <p>A Mediator has been assigned to your case and a new meeting scheduled. Please find the details below: </p>
-      ${meetingBody}
-      `, attachments
-      )
+      await helper.sendTemplatedEmail('mediatorAssignedMeetingScheduled', caseDetails.user_cases_second_partyTouser.email, {
+        recipientName: caseDetails.user_cases_second_partyTouser.name,
+        meetingBodyHtml: meetingBody
+      }, attachments)
     }
     success(res, { message: 'Payment recorded successfully' })
   }

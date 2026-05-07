@@ -179,7 +179,10 @@ Issued by: Rouse Avenue Mediation Court`
       })
 
       await helper.addLanguagesToDatabase(preferredLanguages, prisma)
-      await helper.sendEmail(name, email, 'Thanks for registering on Kadr.live!', 'Thanks for registering on Kadr.live as a Dispute Resolution Expert. Your account is under review, and you\'ll be notified once approved by the Kadr team.')
+      await helper.sendTemplatedEmail('registrationUnderReview', email, {
+        recipientName: name,
+        roleLabel: 'Dispute Resolution Expert'
+      })
 
       success(res, {}, 'User created successfully! Your account is under review, and you\'ll be notified once approved by the Kadr team.')
     } catch (error) {
