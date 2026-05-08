@@ -10,9 +10,6 @@
             <p class="text-muted">Configure settings records using label, key, and value.</p>
             <b-form @submit.prevent="saveSettings">
               <b-table :items="settings" :fields="fields" small responsive>
-                <template #cell(label)="row">
-                  <b-form-input v-model="row.item.label" required />
-                </template>
                 <template #cell(value)="row">
                   <b-form-input v-model="row.item.value" required />
                 </template>
