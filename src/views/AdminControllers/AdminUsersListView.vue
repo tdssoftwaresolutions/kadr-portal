@@ -7,6 +7,11 @@
             <h4 class="card-title">Clients & Experts</h4>
           </template>
           <template v-slot:body>
+            <div class="d-flex justify-content-end mb-3">
+              <b-form-checkbox v-model="showInactive" switch @change="onToggleInactive">
+                Show inactive users
+              </b-form-checkbox>
+            </div>
             <b-tabs card>
               <!-- Active Clients Tab -->
               <b-tab :title="'Clients ('+activeClientsData.total+')'"  active>
@@ -26,6 +31,14 @@
                         <p v-if="user.preferred_languages || user.preferred_language" class="mb-3"><strong>Language:</strong> {{ getFullLanguages(user.preferred_languages || user.preferred_language) }}</p>
                         <div class="mt-auto text-right">
                           <b-button variant="outline-primary" size="sm" @click="openModal(user)">View Details</b-button>
+                          <b-button
+                            size="sm"
+                            class="ml-2"
+                            :variant="user.active ? 'outline-danger' : 'outline-success'"
+                            @click="toggleUserActive(user)"
+                          >
+                            {{ user.active ? 'Inactivate' : 'Activate' }}
+                          </b-button>
                         </div>
                       </b-card-body>
                     </b-card>
@@ -64,6 +77,14 @@
                         <p v-if="user.preferred_languages || user.preferred_language" class="mb-3"><strong>Language:</strong> {{ getFullLanguages(user.preferred_languages || user.preferred_language) }}</p>
                         <div class="mt-auto text-right">
                           <b-button variant="outline-primary" size="sm" @click="openModal(user)">View Details</b-button>
+                          <b-button
+                            size="sm"
+                            class="ml-2"
+                            :variant="user.active ? 'outline-danger' : 'outline-success'"
+                            @click="toggleUserActive(user)"
+                          >
+                            {{ user.active ? 'Inactivate' : 'Activate' }}
+                          </b-button>
                         </div>
                       </b-card-body>
                     </b-card>
@@ -172,6 +193,7 @@ export default {
       activeClientsPage: 1,
       activeMediatorsPage: 1,
       perPage: 10,
+      showInactive: false,
       activeClientsData: { users: [], total: 0 },
       activeMediatorsData: { users: [], total: 0 },
       modalVisible: false,
@@ -221,8 +243,8 @@ export default {
         if (!type) {
           // Fetch both clients and mediators for page 1 on load
           const [clientsResponse, mediatorsResponse] = await Promise.all([
-            this.$store.dispatch('getActiveUsers', { page: 1, type: 'CLIENT' }),
-            this.$store.dispatch('getActiveUsers', { page: 1, type: 'MEDIATOR' })
+            this.$store.dispatch('getActiveUsers', { page: 1, type: 'CLIENT', includeInactive: this.showInactive }),
+            this.$store.dispatch('getActiveUsers', { page: 1, type: 'MEDIATOR', includeInactive: this.showInactive })
           ])
 
           if (clientsResponse.success) {
@@ -234,7 +256,7 @@ export default {
           }
         } else {
           // Fetch data for a specific user type on pagination
-          const response = await this.$store.dispatch('getActiveUsers', { page, type })
+          const response = await this.$store.dispatch('getActiveUsers', { page, type, includeInactive: this.showInactive })
           if (response.success) {
             if (type === 'CLIENT') {
               this.activeClientsData = response
@@ -247,6 +269,22 @@ export default {
         }
       } catch (error) {
         console.error('Error fetching active users:', error)
+      }
+    },
+    onToggleInactive () {
+      this.activeClientsPage = 1
+      this.activeMediatorsPage = 1
+      this.fetchActiveUsers(1)
+    },
+    async toggleUserActive (user) {
+      const targetStatus = !user.active
+      const response = await this.$store.dispatch('updateInactiveUsers', {
+        isActive: targetStatus,
+        userId: user.userId,
+        sendWelcomeEmail: false
+      })
+      if (response.success) {
+        this.fetchActiveUsers(user.user_type === 'CLIENT' ? this.activeClientsPage : this.activeMediatorsPage, user.user_type)
       }
     },
     formatDate (dateString) {

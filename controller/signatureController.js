@@ -10,6 +10,7 @@ const os = require('os')
 const { createError } = require('../utils/errors')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { success } = require('../utils/responses')
+const { ensureInvoiceForCase } = require('../services/invoice/invoiceService')
 
 module.exports = {
   submitSignature: async function (req, res, next) {
@@ -75,22 +76,13 @@ module.exports = {
 
       if (sendRequestToSecondParty === true) {
         const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.second_party, caseRecord.id, null)
-        const htmlBody = `
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            A mediation request  in the matter of <strong>${caseRecord.user_cases_first_partyTouser.name} vs ${caseRecord.user_cases_second_partyTouser.name}</strong> (Case No. <strong>${caseRecord.caseId}</strong>) has been initiated by <strong>Rouse Avenue Court</strong>. You are identified as the <strong>second party</strong> in this mediation case.
-          </p>
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            To proceed further, we kindly request you to review the case and provide your signature for verification.
-          </p>
-          <div style="margin: 25px 0;">
-            <a href="${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}"
-                style="display: inline-block; background-color: #3c78d8; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 4px; font-size: 16px;">
-              Review & Sign Now
-            </a>
-          </div>
-      `
-
-        await helper.sendEmail(caseRecord.user_cases_second_partyTouser.name, caseRecord.user_cases_second_partyTouser.email, 'Action Required – Signature Verification for Mediation Request', htmlBody)
+        await helper.sendTemplatedEmail('signatureVerificationRequest', caseRecord.user_cases_second_partyTouser.email, {
+          recipientName: caseRecord.user_cases_second_partyTouser.name,
+          caseId: caseRecord.caseId,
+          caseTitle: `${caseRecord.user_cases_first_partyTouser.name} vs ${caseRecord.user_cases_second_partyTouser.name}`,
+          signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
+          partyRole: 'second party'
+        })
       }
 
       await prisma.cases.update({
@@ -265,22 +257,12 @@ module.exports = {
       if (sendRequestToSecondParty === true) {
         const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.user_cases_second_partyTouser.id, null, signatureTracking.case_agreement_id)
 
-        const htmlBody = `
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            Congratulations! The mediation initiated at <strong>Kadr.live</strong> (Case No. <strong>${caseRecord.caseId}</strong>) has been successfully resolved. You are identified as the <strong>second party</strong> in this mediation case.
-          </p>
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            To complete the process, we require your signature on the final agreement.
-          </p>
-          <div style="margin: 25px 0;">
-            <a href="${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}"
-                style="display: inline-block; background-color: #3c78d8; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 4px; font-size: 16px;">
-              Review & Sign Final Agreement
-            </a>
-          </div>
-      `
-
-        await helper.sendEmail(caseRecord.user_cases_second_partyTouser.name, caseRecord.user_cases_second_partyTouser.email, 'Final Step – Signature Required for Mediation Agreement', htmlBody)
+        await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_second_partyTouser.email, {
+          recipientName: caseRecord.user_cases_second_partyTouser.name,
+          caseId: caseRecord.caseId,
+          signUrl: `${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}`,
+          partyRole: 'second party'
+        })
       }
 
       if (generateAgeement === true) {
@@ -317,7 +299,10 @@ module.exports = {
 
         const tempDir = os.tmpdir()
         const tempPdfPath = path.join(tempDir, `mediation_document_${uuidv4()}.pdf`)
-        const browser = await puppeteer.launch()
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        })
         const page = await browser.newPage()
         await page.setContent(html, { waitUntil: 'networkidle0' })
         await page.pdf({
@@ -333,23 +318,23 @@ module.exports = {
         updateData.mediation_agreement_link = await helper.deployToS3Bucket(pdfBase64, `case-agreement-${uuidv4()}`)
         fs.unlinkSync(tempPdfPath)
 
-        const htmlBody = `
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            This is regarding the mediation case <strong>#${caseRecord.caseId}</strong> between <strong>${caseRecord.user_cases_first_partyTouser.name}</strong> vs <strong>${caseRecord.user_cases_second_partyTouser.name}</strong>.
-          </p>
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            Please find below the link to the signed agreement for your reference:
-          </p>
-          <div style="margin: 25px 0;">
-            <a href="${updateData.mediation_agreement_link}"
-                style="display: inline-block; background-color: #3c78d8; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 4px; font-size: 16px;">
-              View Signed Agreement
-            </a>
-          </div>
-      `
-        await helper.sendEmail(caseRecord.user_cases_second_partyTouser.name, caseRecord.user_cases_second_partyTouser.email, 'Signed Agreement – Rouse Avenue Mediation Center', htmlBody)
-        await helper.sendEmail(caseRecord.user_cases_first_partyTouser.name, caseRecord.user_cases_first_partyTouser.email, 'Signed Agreement – Rouse Avenue Mediation Center', htmlBody)
-        await helper.sendEmail(caseRecord.user_cases_mediatorTouser.name, caseRecord.user_cases_mediatorTouser.email, 'Signed Agreement – Rouse Avenue Mediation Center', htmlBody)
+        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_second_partyTouser.email, {
+          recipientName: caseRecord.user_cases_second_partyTouser.name,
+          caseId: caseRecord.caseId,
+          agreementUrl: updateData.mediation_agreement_link
+        })
+        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_first_partyTouser.email, {
+          recipientName: caseRecord.user_cases_first_partyTouser.name,
+          caseId: caseRecord.caseId,
+          agreementUrl: updateData.mediation_agreement_link
+        })
+        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_mediatorTouser.email, {
+          recipientName: caseRecord.user_cases_mediatorTouser.name,
+          caseId: caseRecord.caseId,
+          agreementUrl: updateData.mediation_agreement_link
+        })
+
+        await ensureInvoiceForCase(caseRecord.id)
       }
 
       await prisma.case_agreement_tracking.update({

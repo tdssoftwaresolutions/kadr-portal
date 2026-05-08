@@ -24,7 +24,22 @@ const GET_ACTIVE_USERS_ENDPOINT = '/getActiveUsers'
 const GET_ADMIN_ACTIVE_CASES_ENDPOINT = '/activeCases'
 const GET_ADMIN_CASE_META_ENDPOINT = '/caseManagementMeta'
 const POST_ADMIN_ASSIGN_CASE_MEDIATOR_ENDPOINT = '/assignCaseMediator'
+const GET_SETTINGS_ENDPOINT = '/settings'
+const POST_SETTINGS_ENDPOINT = '/settings'
+const POST_CASE_COMMISSION_ENDPOINT = '/cases/commission'
+const GET_INVOICES_ENDPOINT = '/invoices'
+const GET_TRANSACTIONS_ENDPOINT = '/transactions'
+const POST_SYNC_INVOICES_ENDPOINT = '/invoices/sync'
+const POST_MARK_INVOICE_PAID_ENDPOINT = '/invoices/mark-paid'
+const GET_INVOICE_PDF_ENDPOINT = '/invoices'
+const GET_MEDIATOR_BANK_ACCOUNT_ENDPOINT = '/mediator-bank-account'
+const POST_MEDIATOR_BANK_ACCOUNT_ENDPOINT = '/mediator-bank-account'
 const UPDATE_INACTIVE_USER_ENDPOINT = '/updateInactiveUser'
+const ADMIN_BLOG_TAXONOMY_ENDPOINT = '/blog-taxonomy'
+const ADMIN_BLOG_CATEGORIES_ENDPOINT = '/blog-categories'
+const ADMIN_BLOG_TAGS_ENDPOINT = '/blog-tags'
+const ADMIN_USERS_ENDPOINT = '/users'
+const ADMIN_USERS_ACTIVE_ENDPOINT = '/users/active'
 const REFRESH_TOKEN_ENDPOINT = '/refresh-token'
 const SAVE_NOTE_ENDPOINT = '/saveNote'
 const SUBMIT_AGREEMENT_SIGNATURE = '/submitAgreementSignature'
@@ -36,6 +51,7 @@ const UPDATE_USER_PROFILE = '/updateUserProfile'
 const GET_CALENDAR_INIT_ENDPOINT = '/getCalendarInit'
 const NEW_CALENDAR_EVENT_ENDPOINT = '/newCalendarEvent'
 const GET_MY_CASES_ENDPOINT = '/getMyCases'
+const GET_PAST_MEDIATIONS_ENDPOINT = '/getPastMediations'
 const GET_MY_BLOGS_ENDPOINT = '/getMyBlogs'
 const SAVE_BLOG_ENDPOINT = '/saveBlog'
 const DELETE_BLOG_ENDPOINT = '/deleteBlog'
@@ -138,6 +154,10 @@ export default (router) => {
       },
       setCalendarInit (state, data) {
         state.calendarInit = data
+      },
+      invalidateDashboardCaches (state) {
+        state.dashboardContent = null
+        state.calendarInit = null
       }
     },
     actions: {
@@ -278,6 +298,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(MARK_CASE_RESOLVED, { caseId, resolveStatus, agreementText, signature })
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -345,6 +366,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(VERIFY_SIGNATURE_ENDPOINT, { signature, userData })
           if (!data.success) throw new Error(data.error.message)
+          commit('setUser', userData)
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -362,6 +384,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(ACCEPT_MEDIATION_REQUEST, { caseId })
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -430,6 +453,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(SET_CLIENT_PAYMENT_ENDPOINT, { ...payload })
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -464,6 +488,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(NEW_CALENDAR_EVENT_ENDPOINT, { ...event })
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -527,11 +552,12 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
-      async submitMeetingFeedback ({ dispatch }, payload) {
+      async submitMeetingFeedback ({ commit, dispatch }, payload) {
         try {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(SUBMIT_EVENT_FEEDBACK_ENDPOINT, payload)
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -598,10 +624,10 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
-      async updateInactiveUsers ({ commit, dispatch }, { isActive, caseId, userId, caseType }) {
+      async updateInactiveUsers ({ commit, dispatch }, { isActive, caseId, userId, caseType, sendWelcomeEmail = true }) {
         try {
           dispatch('spinner/showSpinner')
-          const { data } = await apiClient.post(UPDATE_INACTIVE_USER_ENDPOINT, { isActive, caseId, userId, caseType })
+          const { data } = await apiClient.post(UPDATE_INACTIVE_USER_ENDPOINT, { isActive, caseId, userId, caseType, sendWelcomeEmail })
           if (!data.success) throw new Error(data.error.message)
           return data
         } catch (error) {
@@ -670,10 +696,12 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
-      async getActiveUsers ({ commit, dispatch }, { page, type }) {
+      async getActiveUsers ({ commit, dispatch }, { page, type, includeInactive = false }) {
         try {
           dispatch('spinner/showSpinner')
-          const params = type ? `?page=${encodeURIComponent(page)}&type=${encodeURIComponent(type)}` : `?page=${encodeURIComponent(page)}`
+          const params = type
+            ? `?page=${encodeURIComponent(page)}&type=${encodeURIComponent(type)}&includeInactive=${encodeURIComponent(includeInactive)}`
+            : `?page=${encodeURIComponent(page)}&includeInactive=${encodeURIComponent(includeInactive)}`
           const { data } = await apiClient.get(`${GET_ACTIVE_USERS_ENDPOINT}${params}`)
           if (!data.success) throw new Error(data.error.message)
           return data
@@ -692,6 +720,23 @@ export default (router) => {
         try {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.get(`${GET_MY_CASES_ENDPOINT}?page=${encodeURIComponent(page)}`)
+          if (!data.success) throw new Error(data.error.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return {
+            success: false,
+            error
+          }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getPastMediations ({ commit, dispatch }, { page }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(`${GET_PAST_MEDIATIONS_ENDPOINT}?page=${encodeURIComponent(page)}`)
           if (!data.success) throw new Error(data.error.message)
           return data
         } catch (error) {
@@ -934,6 +979,321 @@ export default (router) => {
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getAdminSettings ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(GET_SETTINGS_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminSettings ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(POST_SETTINGS_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Settings saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async updateCaseMediatorCommission ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(POST_CASE_COMMISSION_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Commission updated', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getInvoices ({ dispatch }, { mediatorId, range, status } = {}) {
+        try {
+          dispatch('spinner/showSpinner')
+          const params = new URLSearchParams()
+          if (mediatorId) params.set('mediatorId', mediatorId)
+          if (range) params.set('range', range)
+          if (status) params.set('status', status)
+          const query = params.toString()
+          const { data } = await apiClient.get(query ? `${GET_INVOICES_ENDPOINT}?${query}` : GET_INVOICES_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getTransactions ({ dispatch }, { range } = {}) {
+        try {
+          dispatch('spinner/showSpinner')
+          const query = range ? `?range=${encodeURIComponent(range)}` : ''
+          const { data } = await apiClient.get(`${GET_TRANSACTIONS_ENDPOINT}${query}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async syncInvoices ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(POST_SYNC_INVOICES_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Invoices synced', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async markInvoicePaid ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(POST_MARK_INVOICE_PAID_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Invoice marked paid', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async downloadInvoicePdf ({ dispatch }, { invoiceId, invoiceNumber }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const response = await apiClient.get(`${GET_INVOICE_PDF_ENDPOINT}/${encodeURIComponent(invoiceId)}/pdf`, {
+            responseType: 'blob'
+          })
+          const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+          const link = document.createElement('a')
+          link.href = url
+          link.setAttribute('download', `${invoiceNumber || 'invoice'}.pdf`)
+          document.body.appendChild(link)
+          link.click()
+          link.remove()
+          window.URL.revokeObjectURL(url)
+          return { success: true }
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMediatorBankAccount ({ dispatch }, { mediatorId } = {}) {
+        try {
+          dispatch('spinner/showSpinner')
+          const url = mediatorId ? `${GET_MEDIATOR_BANK_ACCOUNT_ENDPOINT}?mediatorId=${encodeURIComponent(mediatorId)}` : GET_MEDIATOR_BANK_ACCOUNT_ENDPOINT
+          const { data } = await apiClient.get(url)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveMediatorBankAccount ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(POST_MEDIATOR_BANK_ACCOUNT_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Bank account saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getAdminBlogTaxonomy ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(ADMIN_BLOG_TAXONOMY_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async createBlogCategory ({ dispatch }, { name }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_BLOG_CATEGORIES_ENDPOINT, { name })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async updateBlogCategory ({ dispatch }, { id, name }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(ADMIN_BLOG_CATEGORIES_ENDPOINT, { id, name })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteBlogCategory ({ dispatch }, { id }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${ADMIN_BLOG_CATEGORIES_ENDPOINT}/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async createBlogTag ({ dispatch }, { name }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_BLOG_TAGS_ENDPOINT, { name })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async updateBlogTag ({ dispatch }, { id, name }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(ADMIN_BLOG_TAGS_ENDPOINT, { id, name })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteBlogTag ({ dispatch }, { id }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${ADMIN_BLOG_TAGS_ENDPOINT}/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getAdminUsers ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(ADMIN_USERS_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async createAdminUser ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_USERS_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async updateAdminUser ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(ADMIN_USERS_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async setAdminUserActive ({ dispatch }, { userId, active }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_USERS_ACTIVE_ENDPOINT, { userId, active })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.response?.data?.message || error.message || 'Something went wrong'
           dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
           return { success: false, error }
         } finally {

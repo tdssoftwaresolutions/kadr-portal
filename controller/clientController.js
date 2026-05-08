@@ -40,23 +40,12 @@ module.exports = {
           },
           data: userRequestData
         })
-        const htmlBody = `
-              <p>Thanks for registering on Kadr.live. Your account is now active.</p>
-              <p>To login, use below credentials:</p> 
-              <p>Username : ${email}</p> 
-              <p>Password : ${generatedPassword} <p>
-              <p style="margin-top: 20px;">
-                Click the button below to login:
-              </p>
-
-              <p style="text-align: center; margin: 20px 0;">
-                <a href="${process.env.BASE_URL}/admin/auth/sign-in"
-                  style="background-color: #4CAF50; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
-                  Login to Your Account
-                </a>
-              </p>
-        `
-        await helper.sendEmail(name, email, 'Welcome aboard!', htmlBody)
+        await helper.sendTemplatedEmail('welcomeCredentials', email, {
+          recipientName: name,
+          email,
+          password: generatedPassword,
+          loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
+        })
         success(res, {}, 'You are all set! Please check your email for the next steps.')
       } else {
         let uploadedFileResponse = null
@@ -105,7 +94,9 @@ module.exports = {
           update: { lastCaseId: newCaseId },
           create: { lastCaseId: newCaseId }
         })
-        await helper.sendEmail(name, email, 'Thanks for registering on Kadr.live!', '<p>Thanks for registering on Kadr.live. Your account is under review, and you\'ll be notified once approved by the KADR team.</p>')
+        await helper.sendTemplatedEmail('registrationUnderReview', email, {
+          recipientName: name
+        })
 
         success(res, {}, 'Your account has been created successfully! Our team will review your details and get back to you shortly.')
       }

@@ -779,8 +779,9 @@ function renderBlogGrid () {
     const tagStr = blog.tags && blog.tags.length
       ? blog.tags.map(function (t) { return escHtml(t.name) }).join(' · ')
       : '';
+    const blogUrl = blog.url ? escHtml(blog.url): '#'
     return (
-      '<article class=\"blog-list-card\" role=\"link\" tabindex=\"0\" data-id=\"' + escHtml(blog.id) + '\">' +
+      '<article class=\"blog-list-card\" role=\"link\" tabindex=\"0\" data-url=\"' + blogUrl + '\">' +
       '<div class=\"blog-list-title\">' + escHtml(blog.title) + '</div>' +
       '<div class=\"blog-list-excerpt\">' + excerpt + '</div>' +
       '<div class=\"blog-list-meta\"><span class=\"tag tag-brown\" style=\"margin:0\">' + cat + '</span>' +
@@ -791,10 +792,10 @@ function renderBlogGrid () {
     );
   }).join('');
   grid.querySelectorAll('.blog-list-card').forEach(function (el) {
-    var id = el.getAttribute('data-id');
-    el.addEventListener('click', function () { viewBlogDetail(id); });
+    var link = el.getAttribute('data-url') || el.getAttribute('data-id');
+    el.addEventListener('click', function () { viewBlogDetail(link); });
     el.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') viewBlogDetail(id);
+      if (e.key === 'Enter') viewBlogDetail(link);
     });
   });
 }
@@ -860,8 +861,9 @@ function goToPage (page) {
   loadBlogs();
 }
 
-function viewBlogDetail (blogId) {
-  window.location.href = 'blog-detail?id=' + blogId;
+function viewBlogDetail (blogLink) {
+  if (!blogLink) return;
+  window.location.href = blogLink;
 }
 
 window.addEventListener('DOMContentLoaded', function () {

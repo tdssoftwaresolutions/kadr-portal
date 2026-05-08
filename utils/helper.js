@@ -1,6 +1,5 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const nodemailer = require('nodemailer')
 const crypto = require('crypto')
 const errorCodes = require('./errors/errorCodes')
 const { google } = require('googleapis')
@@ -9,6 +8,7 @@ const qs = require('qs')
 const path = require('path')
 const fs = require('fs')
 const axios = require('axios')
+const EmailService = require('../services/email/emailService')
 
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3')
 
@@ -19,6 +19,14 @@ const oauth2Client = new google.auth.OAuth2(
 )
 
 class Helper {
+  static getActiveCaseStatuses () {
+    return [CaseTypes.NEW, CaseTypes.IN_PROGRESS]
+  }
+
+  static getPastCaseStatuses () {
+    return [CaseTypes.FAILED, CaseTypes.CANCELLED, CaseTypes.CLOSED_NO_SUCCESS, CaseTypes.CLOSED_SUCCESS]
+  }
+
   static generateRandomPassword (length = 12) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
     let password = ''
@@ -36,14 +44,13 @@ class Helper {
     return `${process.env.BASE_URL}/admin/auth/sign-up?id=${token}`
   }
 
-  static async getMediatorCasesCount (prisma, mediatorId) {
+  static async getMediatorCasesCount (prisma, mediatorId, statuses = Helper.getActiveCaseStatuses()) {
     return prisma.cases.count({
       where: {
         mediator: mediatorId,
-        OR: [
-          { status: CaseTypes.NEW },
-          { status: CaseTypes.IN_PROGRESS }
-        ]
+        status: {
+          in: statuses
+        }
       }
     })
   }
@@ -267,8 +274,90 @@ class Helper {
     })
   }
 
+  static generateBlogSlug (title) {
+    const sanitized = String(title || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    return sanitized || 'blog'
+  }
+
+  static escapeHtml (value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
+
+  static async resolveBlogUrl (prisma, slug, blogId) {
+    let candidate = `blog/${slug}`
+    let suffix = 1
+    while (await prisma.blogs.findFirst({
+      where: {
+        url: candidate,
+        ...(blogId ? { id: { not: blogId } } : {})
+      }
+    })) {
+      suffix += 1
+      candidate = `blog/${slug}-${suffix}`
+    }
+    return candidate
+  }
+
+  static async writeStaticBlogPage (blog, previousUrl) {
+    const templatePath = path.join(__dirname, '..', 'blog.sample')
+    const outputFileName = blog.url ? `${blog.url}.html` : `blog/${Helper.generateBlogSlug(blog.title)}.html`
+    const outputFilePath = path.join(__dirname, '..', 'public', 'website', outputFileName)
+    const outputFolder = path.dirname(outputFilePath)
+    await fs.promises.mkdir(outputFolder, { recursive: true })
+    const template = await fs.promises.readFile(templatePath, 'utf8')
+
+    const authorName = Helper.escapeHtml(blog.user?.name || '')
+    const authorLink = blog.author_id
+      ? `<a class="blog-author-link" href="/profile?id=${Helper.escapeHtml(blog.author_id)}">${authorName}</a>`
+      : `<strong>${authorName}</strong>`
+
+    const metaParts = [authorLink, new Date(blog.created_at).toLocaleDateString()]
+    if (blog.blog_categories && blog.blog_categories.length) {
+      metaParts.push(
+        blog.blog_categories.map((bt) => `<span class="tag tag-brown">${Helper.escapeHtml(bt.categories.name)}</span>`).join(' ')
+      )
+    }
+    if (blog.blog_tags && blog.blog_tags.length) {
+      metaParts.push(
+        blog.blog_tags.map((bt) => `<span class="tag tag-sage">${Helper.escapeHtml(bt.tags.name)}</span>`).join(' ')
+      )
+    }
+
+    if (previousUrl && previousUrl !== outputFileName) {
+      const oldFilePath = path.join(__dirname, '..', 'public', 'website', previousUrl + '.html')
+      await fs.promises.unlink(oldFilePath).catch(() => {})
+    }
+
+    const fileContent = template
+      .replace(/__BLOG_TITLE__/g, Helper.escapeHtml(blog.title))
+      .replace(/__BLOG_META__/g, metaParts.join(' · '))
+      .replace(/__BLOG_CONTENT__/g, blog.content || '')
+      .replace(/__BLOG_ID__/g, Helper.escapeHtml(blog.id))
+
+    await fs.promises.writeFile(outputFilePath, fileContent, 'utf8')
+  }
+
   static async saveBlog (prisma, blogData, authorId, status) {
     let savedBlog
+    let previousUrl = null
+    if (blogData.id) {
+      const existingBlog = await prisma.blogs.findUnique({
+        where: { id: blogData.id },
+        select: { url: true }
+      })
+      previousUrl = existingBlog?.url || null
+    }
     await prisma.$transaction(async (prisma) => {
       const blog = await prisma.blogs.upsert({
         where: {
@@ -394,10 +483,11 @@ class Helper {
         }
       }
 
-      // Fetch the saved blog with populated categories and tags
+      // Fetch the saved blog with populated categories, tags, and author
       savedBlog = await prisma.blogs.findUnique({
         where: { id: blog.id },
         include: {
+          user: true,
           blog_categories: {
             include: {
               categories: true
@@ -411,6 +501,49 @@ class Helper {
         }
       })
     })
+
+    const slug = Helper.generateBlogSlug(savedBlog.title)
+
+    // Check if this slug already exists in redirect_blogs and delete it
+    await prisma.redirect_blogs.deleteMany({
+      where: { new_url: `blog/${slug}` }
+    }).catch(() => {})
+
+    const nextUrl = await Helper.resolveBlogUrl(prisma, slug, savedBlog.id)
+    if (nextUrl !== savedBlog.url) {
+      // Store the redirect from old URL to new URL if old URL exists
+      if (previousUrl && previousUrl !== nextUrl) {
+        await prisma.redirect_blogs.upsert({
+          where: { old_url: previousUrl },
+          update: { new_url: nextUrl },
+          create: {
+            blog_id: savedBlog.id,
+            old_url: previousUrl,
+            new_url: nextUrl
+          }
+        }).catch(() => {})
+      }
+
+      savedBlog = await prisma.blogs.update({
+        where: { id: savedBlog.id },
+        data: { url: nextUrl },
+        include: {
+          user: true,
+          blog_categories: {
+            include: {
+              categories: true
+            }
+          },
+          blog_tags: {
+            include: {
+              tags: true
+            }
+          }
+        }
+      })
+    }
+
+    await Helper.writeStaticBlogPage(savedBlog, previousUrl)
     return savedBlog
   }
 
@@ -434,6 +567,20 @@ class Helper {
       await prisma.blog_tags.deleteMany({
         where: { blog_id: blogId }
       })
+      await prisma.blog_comments.deleteMany({
+        where: { blog_id: blogId }
+      })
+
+      // Delete HTML file if blog has a URL
+      if (blog.url) {
+        const filePath = path.join(__dirname, '..', 'public', 'website', blog.url + '.html')
+        await fs.promises.unlink(filePath).catch(() => {})
+      }
+
+      // Delete redirect entries for this blog
+      await prisma.redirect_blogs.deleteMany({
+        where: { blog_id: blogId }
+      }).catch(() => {})
 
       // Delete the blog
       await prisma.blogs.delete({
@@ -669,14 +816,13 @@ class Helper {
     })
   }
 
-  static async getJudgeCasesCount (prisma, judgeId) {
+  static async getJudgeCasesCount (prisma, judgeId, statuses = Helper.getActiveCaseStatuses()) {
     return prisma.cases.count({
       where: {
         judge: judgeId,
-        OR: [
-          { status: CaseTypes.NEW },
-          { status: CaseTypes.IN_PROGRESS }
-        ]
+        status: {
+          in: statuses
+        }
       }
     })
   }
@@ -806,7 +952,7 @@ class Helper {
     })
   }
 
-  static async getJudgeCases (prisma, judgeId, page) {
+  static async getJudgeCases (prisma, judgeId, page, statuses = Helper.getActiveCaseStatuses()) {
     const perPage = 10
 
     // Calculate the number of items to skip
@@ -815,10 +961,9 @@ class Helper {
     return prisma.cases.findMany({
       where: {
         judge: judgeId,
-        OR: [
-          { status: CaseTypes.NEW },
-          { status: CaseTypes.IN_PROGRESS }
-        ]
+        status: {
+          in: statuses
+        }
       },
       orderBy: {
         created_at: 'desc'
@@ -880,7 +1025,7 @@ class Helper {
     })
   }
 
-  static async getMediatorCases (prisma, mediatorId, page) {
+  static async getMediatorCases (prisma, mediatorId, page, statuses = Helper.getActiveCaseStatuses()) {
     // const today = new Date()
     // const startOfToday = new Date(today.setHours(0, 0, 0, 0))
     // const endOfToday = new Date(today.setHours(23, 59, 59, 999))
@@ -891,10 +1036,9 @@ class Helper {
     return prisma.cases.findMany({
       where: {
         mediator: mediatorId,
-        OR: [
-          { status: CaseTypes.NEW },
-          { status: CaseTypes.IN_PROGRESS }
-        ]
+        status: {
+          in: statuses
+        }
       },
       orderBy: {
         created_at: 'desc'
@@ -1068,17 +1212,19 @@ class Helper {
     }
   }
 
-  static async getUsers (isActive, prisma, page, type, relationField) {
+  static async getUsers (isActive, prisma, page, type, relationField, includeInactive = false) {
     const perPage = 10
 
     // Calculate the number of items to skip
     const skip = (page - 1) * perPage
 
+    const activeCondition = includeInactive ? {} : { active: isActive }
+
     let [inactiveUsers, totalInactiveUsers] = await prisma.$transaction([
       prisma.user.findMany({
         where: {
           AND: [
-            { active: isActive },
+            activeCondition,
             { is_self_signed_up: true },
             { user_type: type }
           ]
@@ -1142,7 +1288,7 @@ class Helper {
       prisma.user.count({
         where: {
           AND: [
-            { active: isActive },
+            activeCondition,
             { is_self_signed_up: true },
             { user_type: type }
           ]
@@ -1455,44 +1601,10 @@ class Helper {
   }
 
   static async createEmail (customerName, content) {
-    return `
-      <div style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 30px;">
-        
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-          
-          <!-- Header / Branding -->
-          <div style="background-color: #3c78d8; padding: 15px 20px; color: #ffffff;">
-            <h2 style="margin: 0; font-size: 20px;">Kadr.live</h2>
-          </div>
-
-          <!-- Body -->
-          <div style="padding: 25px;">
-            
-            <p style="font-size: 16px; color: #444;">
-              Hi ${customerName},
-            </p>
-
-            <div style="font-size: 16px; color: #444; line-height: 1.6;">
-              ${content}
-            </div>
-
-          </div>
-
-          <!-- Footer -->
-          <div style="background-color: #fafafa; padding: 20px; font-size: 14px; color: #777; border-top: 1px solid #eee;">
-            <p>
-              If you believe this message was sent to you in error, please contact our support team.
-            </p>
-
-            <p style="margin-top: 15px;">
-              Regards,<br/>
-              <strong>Team Kadr</strong>
-            </p>
-          </div>
-
-        </div>
-      </div>
-    `
+    return EmailService.renderLayout({
+      greeting: customerName ? `Hi ${customerName},` : 'Hello,',
+      bodyHtml: content || ''
+    })
   }
 
   static toICSDate (date) {
@@ -1520,36 +1632,28 @@ class Helper {
 
   static async sendEmail (customerName, emailId, subject = 'Mail from Kadr.live', content, attachments = []) {
     try {
-      // Create a transporter
-      const transporter = nodemailer.createTransport({
-        host: 'smtp.hostinger.com', // Replace with your SMTP server
-        port: 465, // Use 587 for TLS or 465 for SSL
-        secure: true, // True for SSL, false for TLS
-        auth: {
-          user: process.env.EMAIL_USER, // Your full email address
-          pass: process.env.EMAIL_PASSWORD // Your email password
-        }
-      })
-      const htmlBody = await this.createEmail(customerName, content)
-      // Email details
-      const mailOptions = {
-        from: process.env.EMAIL_USER, // Sender's email address
-        to: emailId, // Recipient's email address
-        subject, // Subject line
-        html: htmlBody,
+      const info = await EmailService.sendTemplate({
+        templateName: 'legacyCustomContent',
+        to: emailId,
+        variables: {
+          recipientName: customerName,
+          content,
+          subject
+        },
         attachments
-      }
-
-      // Send the email
-      const info = await transporter.sendMail(mailOptions)
-      console.log('Email sent to : ' + emailId + ' -- ' + info.response)
+      })
+      console.log('Email sent to : ' + emailId)
 
       // Send a response to the client
-      return { message: 'Email sent successfully', info: info.response }
+      return { message: 'Email sent successfully', info }
     } catch (error) {
       console.error('Error sending email:', error)
       return { message: 'Failed to send email', error }
     }
+  }
+
+  static async sendTemplatedEmail (templateName, to, variables = {}, attachments = []) {
+    return EmailService.sendTemplate({ templateName, to, variables, attachments })
   }
 
   static async createSignatureTrackingRecord (prisma, userId, caseId, caseAgreementId) {
@@ -1823,6 +1927,7 @@ class Helper {
         updated_at: true,
         status: true,
         sub_status: true,
+        mediator_commission: true,
         mediator: true,
         first_party: true,
         second_party: true,

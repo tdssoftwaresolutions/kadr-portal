@@ -2,8 +2,12 @@
   <div class="cases-workspace">
     <section v-if="myCases.length" class="cases-overview">
       <div class="overview-head">
-        <h4>Active Case Workspace</h4>
-        <p>Track progress, required actions, meetings, mediator assignment, and case closure tasks.</p>
+        <h4>{{ isPastView ? 'Past Mediation Workspace' : 'Active Case Workspace' }}</h4>
+        <p>
+          {{ isPastView
+            ? 'Review previous mediations with full case details, documents, meetings, and timeline.'
+            : 'Track progress, required actions, meetings, mediator assignment, and case closure tasks.' }}
+        </p>
       </div>
 
       <div class="case-selector" v-if="myCases.length > 1">
@@ -58,7 +62,7 @@
             </strong>
           </section>
 
-          <section class="section-card action-required-section">
+          <section v-if="!isPastView" class="section-card action-required-section">
             <div class="section-head">
               <h5>
                 <i class="fas fa-exclamation-circle section-icon"></i>
@@ -213,9 +217,13 @@
 
     <section v-else class="empty-state">
       <i class="fas fa-folder-open fa-3x"></i>
-      <h4>No Active Cases</h4>
-      <p>You do not have an in-progress case yet. Once raised, it will appear here with full tracking details.</p>
-      <button class="btn btn-primary">File New Case</button>
+      <h4>{{ isPastView ? 'No Past Mediations' : 'No Active Cases' }}</h4>
+      <p>
+        {{ isPastView
+          ? 'No completed, cancelled, or failed mediation cases are available right now.'
+          : 'You do not have an in-progress case yet. Once raised, it will appear here with full tracking details.' }}
+      </p>
+      <button v-if="!isPastView" class="btn btn-primary">File New Case</button>
     </section>
 
     <div v-if="showPaymentModal" class="modal-overlay" @click="showPaymentModal = false">
@@ -302,6 +310,10 @@ export default {
     userid: {
       type: String,
       required: true
+    },
+    isPastView: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
@@ -363,6 +375,7 @@ export default {
       return 'secondary'
     },
     actionCards () {
+      if (this.isPastView) return []
       const actions = []
       const isSecondParty = this.userid === this.selectedCase.user_cases_second_partyTouser?.id
       const isFirstParty = this.userid === this.selectedCase.user_cases_first_partyTouser?.id
@@ -488,6 +501,7 @@ export default {
       return String(event.type || 'KADR').toUpperCase() === 'KADR'
     },
     showClientFeedbackButton (event) {
+      if (this.isPastView) return false
       if (!this.isKadrMeeting(event)) return false
       return clientNeedsMeetingFeedback(event, this.userid, this.selectedCase)
     },
@@ -586,8 +600,7 @@ export default {
         if (response.success) {
           this.showPaymentModal = false
           this.resetPaymentData()
-          // Update case status locally or refresh
-          this.$emit('case-updated')
+          this.$emit('refresh-dashboard')
         }
       } catch (error) {
         console.error('Payment failed:', error)
@@ -619,7 +632,7 @@ export default {
       try {
         // Process signature
         this.showAgreementModal = false
-        this.$emit('case-updated')
+        this.$emit('refresh-dashboard')
       } catch (error) {
         console.error('Failed to submit agreement:', error)
       } finally {

@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid')
 const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
+const { getOrCreateSettings, settingsToMap } = require('../services/invoice/invoiceService')
 
 module.exports = {
   getCalendarInit: async function (req, res, next) {
@@ -119,9 +120,13 @@ module.exports = {
       if (!user) throw createError(errorCodes.USER_NOT_FOUND)
       switch (type) {
         case 'ADMIN': {
-          const inactiveUsers = await helper.getUsers(false, prisma, 1, 'CLIENT', 'cases_cases_first_partyTouser')
-          const inactiveMediators = await helper.getUsers(false, prisma, 1, 'MEDIATOR', 'cases_cases_mediatorTouser')
-          const counts = await prisma.$transaction([
+          const startOfToday = new Date()
+          startOfToday.setHours(0, 0, 0, 0)
+          const endOfToday = new Date()
+          endOfToday.setHours(23, 59, 59, 999)
+          const [inactiveUsers, inactiveMediators, totalCases, clientUsers, mediatorUsers, todaysCaseMeetings] = await Promise.all([
+            helper.getUsers(false, prisma, 1, 'CLIENT', 'cases_cases_first_partyTouser'),
+            helper.getUsers(false, prisma, 1, 'MEDIATOR', 'cases_cases_mediatorTouser'),
             prisma.cases.count(),
             prisma.user.count({
               where: {
@@ -134,11 +139,48 @@ module.exports = {
                 user_type: 'MEDIATOR',
                 active: true
               }
+            }),
+            prisma.events.findMany({
+              where: {
+                case_id: {
+                  not: null
+                },
+                start_datetime: {
+                  gte: startOfToday,
+                  lte: endOfToday
+                }
+              },
+              orderBy: {
+                start_datetime: 'asc'
+              },
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                start_datetime: true,
+                end_datetime: true,
+                type: true,
+                meeting_link: true,
+                cases: {
+                  select: {
+                    id: true,
+                    caseId: true,
+                    case_type: true,
+                    user_cases_first_partyTouser: {
+                      select: {
+                        name: true
+                      }
+                    },
+                    user_cases_second_partyTouser: {
+                      select: {
+                        name: true
+                      }
+                    }
+                  }
+                }
+              }
             })
           ])
-          const totalCases = counts[0]
-          const clientUsers = counts[1]
-          const mediatorUsers = counts[2]
           dashboardContent.inactive_users = inactiveUsers
           dashboardContent.inactive_mediators = inactiveMediators
           dashboardContent.count = {
@@ -146,6 +188,20 @@ module.exports = {
             clients: clientUsers,
             mediators: mediatorUsers
           }
+          dashboardContent.todaysEvent = todaysCaseMeetings.map((event) => ({
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            start_datetime: event.start_datetime,
+            end_datetime: event.end_datetime,
+            type: event.type,
+            meeting_link: event.meeting_link,
+            caseId: event.cases?.caseId,
+            caseType: event.cases?.case_type,
+            caseFirstPartyName: event.cases?.user_cases_first_partyTouser?.name,
+            caseSecondPartyName: event.cases?.user_cases_second_partyTouser?.name,
+            case_id: event.cases?.id
+          }))
           break
         }
 
@@ -204,16 +260,22 @@ module.exports = {
     success(res, { availableLanguages })
   },
   updateInactiveUser: async function (req, res) {
-    const { isActive, caseId, userId, caseType } = req.body
-    const generatedPassword = helper.generateRandomPassword()
-    const hashPassword = await helper.hashPassword(generatedPassword)
+    if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+    const { isActive, caseId, userId, caseType, sendWelcomeEmail = true } = req.body
+    const shouldSendWelcomeEmail = Boolean(sendWelcomeEmail) && Boolean(isActive)
+    let generatedPassword = null
+    let hashPassword = null
+    if (shouldSendWelcomeEmail) {
+      generatedPassword = helper.generateRandomPassword()
+      hashPassword = await helper.hashPassword(generatedPassword)
+    }
     const updatedUser = await prisma.user.update({
       where: {
         id: userId
       },
       data: {
         active: isActive,
-        password_hash: hashPassword
+        ...(hashPassword ? { password_hash: hashPassword } : {})
       },
       select: {
         name: true,
@@ -261,19 +323,14 @@ module.exports = {
         }
       })
     }
-    const htmlBody = `
-      <p>Thanks for registering on KADR.live. Your account is now active.</p>
-      <p>To login, use below credentials:</p>
-      <p>Username : ${updatedUser.email}</p>
-      <p>Password : ${generatedPassword} <p>
-        <p style="text-align: center; margin: 20px 0;">
-        <a href="${process.env.BASE_URL}/admin/auth/sign-in"
-          style="background-color: #4CAF50; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">
-          Login to Your Account
-        </a>
-      </p>
-    `
-    await helper.sendEmail(updatedUser.name, updatedUser.email, 'Welcome aboard!', htmlBody)
+    if (shouldSendWelcomeEmail) {
+      await helper.sendTemplatedEmail('welcomeCredentials', updatedUser.email, {
+        recipientName: updatedUser.name,
+        email: updatedUser.email,
+        password: generatedPassword,
+        loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
+      })
+    }
     success(res, {}, 'User updated successfully')
   },
   newCase: async function (req, res, next) {
@@ -326,6 +383,9 @@ module.exports = {
       if (tracker) {
         newCaseId = tracker.lastCaseId + 1
       }
+      const settingsRows = await getOrCreateSettings()
+      const settingsMap = settingsToMap(settingsRows)
+      const defaultCommission = Number(settingsMap.mediator_commission || 5)
 
       const newCaseRecord = await prisma.cases.create({
         data: {
@@ -342,6 +402,7 @@ module.exports = {
           hearing_date: new Date(hearingDate),
           institution_date: new Date(institutionDate),
           mediation_date_time: new Date(mediationDateTime),
+          mediator_commission: defaultCommission,
           referral_judge_signature: referralJudgeSignature,
           plaintiff_phone: plaintiffPhone,
           plaintiff_advocate: plaintiffAdvocate,
@@ -359,36 +420,13 @@ module.exports = {
 
       const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, firstPartyId, newCaseRecord.id, null)
 
-      const htmlBody = `
-      <div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #dddddd; border-radius: 6px; padding: 30px;">
-          <h2 style="color: #333333; font-size: 22px; margin-bottom: 20px;">Signature Verification Request</h2>
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            Hi ${party1},
-          </p>
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            A mediation request in the matter of <strong>${party1} vs ${party2}</strong> (Case No. <strong>ROUSE-MED-${newCaseId}</strong>) has been initiated by <strong>Rouse Avenue Court</strong>. You are identified as the <strong>first party</strong> in this mediation case.
-          </p>
-          <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-            To proceed further, we kindly request you to review the case and provide your signature for verification.
-          </p>
-          <div style="margin: 25px 0;">
-            <a href="${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}"
-               style="display: inline-block; background-color: #3c78d8; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 4px; font-size: 16px;">
-              Review & Sign Now
-            </a>
-          </div>
-          <p style="font-size: 16px; color: #444444;">
-            If you believe this message was sent to you in error, please contact our support team immediately.
-          </p>
-          <p style="font-size: 14px; color: #888888; margin-top: 30px; border-top: 1px solid #eeeeee; padding-top: 15px;">
-            Regards,<br />
-            Team Rouse Avenue Mediation Center
-          </p>
-        </div>
-      </div>
-    `
-      await helper.sendEmail('Action Required – Signature Verification for Mediation Request', party1Email, htmlBody)
+      await helper.sendTemplatedEmail('signatureVerificationRequest', party1Email, {
+        recipientName: party1,
+        caseId: `ROUSE-MED-${newCaseId}`,
+        caseTitle: `${party1} vs ${party2}`,
+        signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
+        partyRole: 'first party'
+      })
 
       success(res, {}, 'New case created successfully!')
     } catch (error) {
@@ -442,6 +480,43 @@ module.exports = {
         case 'ADMIN': {
           break
         }
+      }
+    } catch (error) {
+      next(error)
+    }
+  },
+  getPastMediations: async function (req, res, next) {
+    try {
+      const { id, type } = req.user
+      const { page } = req.query
+      const currentPage = Number(page) || 1
+      const pastStatuses = helper.getPastCaseStatuses()
+
+      if (!id || !type) throw createError(errorCodes.UNAUTHORIZED)
+
+      switch (type) {
+        case 'MEDIATOR': {
+          const [casesWithEvents, casesCount] = await Promise.all([
+            helper.getMediatorCases(prisma, id, currentPage, pastStatuses),
+            helper.getMediatorCasesCount(prisma, id, pastStatuses)
+          ])
+          success(res, {
+            casesWithEvents, total: casesCount, page: currentPage, perPage: 10
+          })
+          break
+        }
+        case 'CLIENT': {
+          const [casesWithEvents, casesCount] = await Promise.all([
+            helper.getJudgeCases(prisma, id, currentPage, pastStatuses),
+            helper.getJudgeCasesCount(prisma, id, pastStatuses)
+          ])
+          success(res, {
+            casesWithEvents, total: casesCount, page: currentPage, perPage: 10
+          })
+          break
+        }
+        default:
+          throw createError(errorCodes.UNAUTHORIZED)
       }
     } catch (error) {
       next(error)
@@ -534,50 +609,6 @@ module.exports = {
           caseNumber: lCase.caseId
         })
 
-        const meetingInviteBody = `
-          <p>You have a new meeting scheduled. Please find the details below:</p>
-          <table style="width:100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 14px; color: #333;">
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold; width: 180px;">Meeting Title:</td>
-              <td style="padding: 8px 0;">${title}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Meeting Type:</td>
-              <td style="padding: 8px 0;">${type.toUpperCase()}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Date & Time:</td>
-              <td style="padding: 8px 0;">${helper.formatMeetingRangeIST(start, end)}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Case Number:</td>
-              <td style="padding: 8px 0;">${lCase.caseId}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-weight: bold;">Description:</td>
-              <td style="padding: 8px 0;">${description}</td>
-            </tr>
-          </table>
-          <p style="margin-top:20px;">
-            <a href="${google_calendar_link}" 
-              style="display:inline-block;padding:10px 16px;background:#0b57d0;color:#fff;text-decoration:none;border-radius:4px;">
-              Add to Google Calendar
-            </a>
-          </p>
-          <p style="margin-top: 20px;">
-            You can join the meeting using the link below:
-          </p>
-          <p>
-            <a href="${meetingLink}" 
-              style="display: inline-block; padding: 10px 16px; background-color: #1a73e8; color: #ffffff; text-decoration: none; border-radius: 4px;">
-              Join Meeting
-            </a>
-          </p>
-          <p>If the button above doesn’t work, copy and paste this link into your browser:</p>
-          <p style="word-break: break-all;">${meetingLink}</p>
-          <p>We look forward to your participation.</p>
-        `
-
         const attachments = [
           {
             filename: 'meeting-invite.ics',
@@ -594,9 +625,36 @@ module.exports = {
           }
         ]
 
-        helper.sendEmail(lCase.user_cases_first_partyTouser?.name, lCase.user_cases_first_partyTouser?.email, `New Meeting invite - Case ${lCase.caseId}`, meetingInviteBody, attachments)
-        helper.sendEmail(lCase.user_cases_second_partyTouser?.name, lCase.user_cases_second_partyTouser?.email, `New Meeting invite - Case ${lCase.caseId}`, meetingInviteBody, attachments)
-        helper.sendEmail(lCase.user_cases_mediatorTouser?.name, lCase.user_cases_mediatorTouser?.email, `New Meeting invite - Case ${lCase.caseId}`, meetingInviteBody, attachments)
+        helper.sendTemplatedEmail('meetingInvite', lCase.user_cases_first_partyTouser?.email, {
+          recipientName: lCase.user_cases_first_partyTouser?.name,
+          caseId: lCase.caseId,
+          title,
+          meetingType: type.toUpperCase(),
+          description,
+          scheduleRange: helper.formatMeetingRangeIST(start, end),
+          googleCalendarLink: google_calendar_link,
+          meetingLink
+        }, attachments)
+        helper.sendTemplatedEmail('meetingInvite', lCase.user_cases_second_partyTouser?.email, {
+          recipientName: lCase.user_cases_second_partyTouser?.name,
+          caseId: lCase.caseId,
+          title,
+          meetingType: type.toUpperCase(),
+          description,
+          scheduleRange: helper.formatMeetingRangeIST(start, end),
+          googleCalendarLink: google_calendar_link,
+          meetingLink
+        }, attachments)
+        helper.sendTemplatedEmail('meetingInvite', lCase.user_cases_mediatorTouser?.email, {
+          recipientName: lCase.user_cases_mediatorTouser?.name,
+          caseId: lCase.caseId,
+          title,
+          meetingType: type.toUpperCase(),
+          description,
+          scheduleRange: helper.formatMeetingRangeIST(start, end),
+          googleCalendarLink: google_calendar_link,
+          meetingLink
+        }, attachments)
       }
 
       await prisma.events.create({
@@ -620,18 +678,20 @@ module.exports = {
   },
   getActiveUsers: async function (req, res) {
     try {
-      const { page = 1, type } = req.query
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const { page = 1, type, includeInactive = 'false' } = req.query
+      const withInactive = String(includeInactive).toLowerCase() === 'true'
 
       if (type) {
         // Fetch data for a specific user type
         const relationField = type === 'CLIENT' ? 'cases_cases_first_partyTouser' : 'cases_cases_mediatorTouser'
-        const activeUsers = await helper.getUsers(true, prisma, page, type, relationField)
+        const activeUsers = await helper.getUsers(true, prisma, page, type, relationField, withInactive)
         res.json({ success: true, users: activeUsers.users, total: activeUsers.total })
       } else {
         // Fetch both clients and mediators
         const [activeClients, activeMediators] = await Promise.all([
-          helper.getUsers(true, prisma, page, 'CLIENT', 'cases_cases_first_partyTouser'),
-          helper.getUsers(true, prisma, page, 'MEDIATOR', 'cases_cases_mediatorTouser')
+          helper.getUsers(true, prisma, page, 'CLIENT', 'cases_cases_first_partyTouser', withInactive),
+          helper.getUsers(true, prisma, page, 'MEDIATOR', 'cases_cases_mediatorTouser', withInactive)
         ])
 
         const combinedUsers = [...activeClients.users, ...activeMediators.users]
@@ -698,12 +758,14 @@ module.exports = {
           id: true,
           profile_picture_url: true,
           phone_number: true,
-          name: true
+          name: true,
+          master: true
         }
       })
       userData.photo = user.profile_picture_url || ''
       userData.phone = user.phone_number || ''
       userData.name = user.name || ''
+      userData.master = Boolean(user.master)
 
       const signature = helper.signResponseData(userData)
 
@@ -721,6 +783,123 @@ module.exports = {
       if (!helper.verifySignature(userData, signature)) throw createError(errorCodes.UNAUTHORIZED)
 
       success(res, { valid: true })
+    } catch (error) {
+      next(error)
+    }
+  },
+  getAdminUsers: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const admins = await prisma.user.findMany({
+        where: {
+          user_type: 'ADMIN'
+        },
+        orderBy: {
+          created_at: 'desc'
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          active: true,
+          created_at: true,
+          master: true
+        }
+      })
+      success(res, { admins })
+    } catch (error) {
+      next(error)
+    }
+  },
+  createAdminUser: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const requester = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { id: true, master: true, name: true }
+      })
+      if (!requester?.master) throw createError(errorCodes.FORBIDDEN)
+      const { name, email, phone_number, master = false } = req.body
+      if (!name || !email) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      const generatedPassword = helper.generateRandomPassword()
+      const hashPassword = await helper.hashPassword(generatedPassword)
+      const admin = await prisma.user.create({
+        data: {
+          name,
+          email,
+          phone_number: phone_number || null,
+          user_type: 'ADMIN',
+          active: true,
+          is_self_signed_up: false,
+          password_hash: hashPassword,
+          master: Boolean(master)
+        },
+        select: { id: true, name: true, email: true, phone_number: true, active: true, master: true, created_at: true }
+      })
+      await helper.sendTemplatedEmail('welcomeCredentials', admin.email, {
+        recipientName: admin.name,
+        email: admin.email,
+        password: generatedPassword,
+        loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`,
+        createdBy: requester.name || 'KADR Team'
+      })
+      success(res, { admin }, 'Admin user created successfully')
+    } catch (error) {
+      next(error)
+    }
+  },
+  updateAdminUser: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const requester = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { id: true, master: true }
+      })
+      if (!requester?.master) throw createError(errorCodes.FORBIDDEN)
+      const { userId, name, email, phone_number, master } = req.body
+      if (!userId || !name || !email) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      const target = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, user_type: true }
+      })
+      if (!target || target.user_type !== 'ADMIN') throw createError(errorCodes.NOT_FOUND)
+      const admin = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name,
+          email,
+          phone_number: phone_number || null,
+          ...(master !== undefined ? { master: Boolean(master) } : {})
+        },
+        select: { id: true, name: true, email: true, phone_number: true, active: true, master: true, created_at: true }
+      })
+      success(res, { admin }, 'Admin user updated successfully')
+    } catch (error) {
+      next(error)
+    }
+  },
+  setAdminActiveStatus: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const requester = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { id: true, master: true }
+      })
+      if (!requester?.master) throw createError(errorCodes.FORBIDDEN)
+      const { userId, active } = req.body
+      if (!userId || typeof active !== 'boolean') throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      const target = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, user_type: true, master: true }
+      })
+      if (!target || target.user_type !== 'ADMIN') throw createError(errorCodes.NOT_FOUND)
+      if (target.id === requester.id && active === false) throw createError(errorCodes.INVALID_REQUEST)
+      await prisma.user.update({
+        where: { id: userId },
+        data: { active }
+      })
+      success(res, {}, `Admin user ${active ? 'activated' : 'inactivated'} successfully`)
     } catch (error) {
       next(error)
     }
@@ -825,20 +1004,12 @@ module.exports = {
       console.log(agreementRecord.id)
       const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.user_cases_first_partyTouser.id, null, agreementRecord.id)
 
-      const htmlBody = `
-      <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-        Congratulations! The mediation initiated at <strong>Kadr.live</strong> (Case No. <strong>${caseRecord.caseId}</strong>) has been successfully resolved. You are identified as the <strong>first party</strong> in this mediation case.
-      </p>
-      <p style="font-size: 16px; color: #444444; line-height: 1.5;">
-        To complete the process, we require your signature on the final agreement.
-      </p>
-      <div style="margin: 25px 0;">
-        <a href="${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}"
-            style="display: inline-block; background-color: #3c78d8; color: #ffffff; text-decoration: none; padding: 12px 20px; border-radius: 4px; font-size: 16px;">
-          Review & Sign Final Agreement
-        </a>
-    `
-      await helper.sendEmail(caseRecord.user_cases_first_partyTouser.name, caseRecord.user_cases_first_partyTouser.email, 'Final Step – Signature Required for Mediation Agreement', htmlBody)
+      await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_first_partyTouser.email, {
+        recipientName: caseRecord.user_cases_first_partyTouser.name,
+        caseId: caseRecord.caseId,
+        signUrl: `${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}`,
+        partyRole: 'first party'
+      })
 
       success(res, {}, 'Case marked as resolved!')
     } catch (error) {
@@ -983,6 +1154,7 @@ module.exports = {
             first_party: true,
             second_party: true,
             status: true,
+            mediator_commission: true,
             user_cases_first_partyTouser: { select: { name: true, email: true } },
             user_cases_second_partyTouser: { select: { name: true, email: true } }
           }
@@ -1001,11 +1173,14 @@ module.exports = {
       if (!activeStatuses.includes(caseRecord.status)) {
         throw createError(errorCodes.INVALID_REQUEST)
       }
+      const settingsRows = await getOrCreateSettings()
+      const settingsMap = settingsToMap(settingsRows)
 
       await prisma.cases.update({
         where: { id: caseId },
         data: {
           mediator: mediatorId,
+          mediator_commission: caseRecord.mediator_commission || Number(settingsMap.mediator_commission || 5),
           status: CaseTypes.IN_PROGRESS,
           sub_status: CaseSubTypes.MEDIATOR_ASSIGNED
         }

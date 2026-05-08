@@ -5,6 +5,148 @@ const { success, error } = require('../utils/responses')
 const striptags = require('striptags')
 
 module.exports = {
+  getAdminBlogTaxonomy: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const [categories, tags] = await Promise.all([
+        prisma.categories.findMany({
+          orderBy: { name: 'asc' },
+          include: {
+            _count: {
+              select: { blog_categories: true }
+            }
+          }
+        }),
+        prisma.tags.findMany({
+          orderBy: { name: 'asc' },
+          include: {
+            _count: {
+              select: { blog_tags: true }
+            }
+          }
+        })
+      ])
+      success(res, { categories, tags })
+    } catch (e) {
+      next(e)
+    }
+  },
+  createBlogCategory: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const name = (req.body?.name || '').trim()
+      if (!name) {
+        return error(res, { message: 'Category name is required' }, 400)
+      }
+      const category = await prisma.categories.create({
+        data: { name }
+      })
+      success(res, { category }, 'Category created successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  updateBlogCategory: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const { id, name } = req.body || {}
+      const nextName = (name || '').trim()
+      if (!id || !nextName) {
+        return error(res, { message: 'Category id and name are required' }, 400)
+      }
+      const category = await prisma.categories.update({
+        where: { id },
+        data: { name: nextName }
+      })
+      success(res, { category }, 'Category updated successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  deleteBlogCategory: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const id = req.params.id
+      if (!id) return error(res, { message: 'Category id is required' }, 400)
+      const linksCount = await prisma.blog_categories.count({
+        where: { category_id: id }
+      })
+      if (linksCount > 0) {
+        return error(res, { message: 'Category is linked to blogs and cannot be deleted' }, 400)
+      }
+      await prisma.categories.delete({
+        where: { id }
+      })
+      success(res, {}, 'Category deleted successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  createBlogTag: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const name = (req.body?.name || '').trim()
+      if (!name) {
+        return error(res, { message: 'Tag name is required' }, 400)
+      }
+      const tag = await prisma.tags.create({
+        data: { name }
+      })
+      success(res, { tag }, 'Tag created successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  updateBlogTag: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const { id, name } = req.body || {}
+      const nextName = (name || '').trim()
+      if (!id || !nextName) {
+        return error(res, { message: 'Tag id and name are required' }, 400)
+      }
+      const tag = await prisma.tags.update({
+        where: { id },
+        data: { name: nextName }
+      })
+      success(res, { tag }, 'Tag updated successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
+  deleteBlogTag: async function (req, res, next) {
+    try {
+      if (req.user?.type !== 'ADMIN') {
+        return error(res, { message: 'Forbidden' }, 403)
+      }
+      const id = req.params.id
+      if (!id) return error(res, { message: 'Tag id is required' }, 400)
+      const linksCount = await prisma.blog_tags.count({
+        where: { tag_id: id }
+      })
+      if (linksCount > 0) {
+        return error(res, { message: 'Tag is linked to blogs and cannot be deleted' }, 400)
+      }
+      await prisma.tags.delete({
+        where: { id }
+      })
+      success(res, {}, 'Tag deleted successfully')
+    } catch (e) {
+      next(e)
+    }
+  },
   saveBlog: async function (req, res) {
     const { blog, status } = req.body
     const { id, email, name } = req.user
@@ -15,6 +157,7 @@ module.exports = {
       content: savedBlog.content,
       author_id: savedBlog.authorId,
       status: savedBlog.status,
+      url: savedBlog.url,
       created_at: savedBlog.created_at,
       updated_at: savedBlog.updated_at,
       categories: savedBlog.blog_categories.map((bt) => ({
@@ -27,11 +170,11 @@ module.exports = {
       }))
     }
     if (status === 'Published') {
-      const htmlBody = `
-                <p>Your blog <b>${savedBlog.title}</b> is now live!</p>
-                <p>To view your blog, click <a href="${process.env.BASE_URL}/blog-detail?id=${savedBlog.id}">here</a>.</p>
-                <p>Thank you for sharing your thoughts with the community!</p>`
-      await helper.sendEmail(name, email, `Your blog '${savedBlog.title}' is now live!`, htmlBody)
+      await helper.sendTemplatedEmail('blogPublished', email, {
+        recipientName: name,
+        title: savedBlog.title,
+        blogUrl: `${process.env.BASE_URL}/${savedBlog.url}`
+      })
     }
     success(res, { blog: formattedBlog }, 'Blog saved successfully')
   },
@@ -57,6 +200,7 @@ module.exports = {
         content: blog.content,
         author_id: blog.user.id,
         author_name: blog.user.name,
+        url: blog.url,
         created_at: blog.created_at,
         categories: blog.blog_categories.map((bt) => ({
           id: bt.categories.id,
@@ -97,6 +241,7 @@ module.exports = {
         content: limitedContent,
         author_id: blog.user.id,
         author_name: blog.user.name,
+        url: blog.url,
         created_at: blog.created_at,
         categories: blog.blog_categories.map((bt) => ({
           id: bt.categories.id,
@@ -121,6 +266,7 @@ module.exports = {
       content: blog.content,
       author_id: blog.authorId,
       status: blog.status,
+      url: blog.url,
       created_at: blog.created_at,
       updated_at: blog.updated_at,
       categories: blog.blog_categories.map((bt) => ({

@@ -12,6 +12,18 @@
     "icon": "ri-home-5-line"
   },
   {
+    "title": "Past Mediations",
+    "name": "app.past-mediations",
+    "is_heading": false,
+    "is_active": false,
+    "link": {
+      "name": "app.past-mediations"
+    },
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-archive-line"
+  },
+  {
     "title": "My Calendar",
     "name": "app.calendar2",
     "is_heading": false,
@@ -22,17 +34,5 @@
     "class_name": "",
     "is_icon_class": true,
     "icon": "ri-calendar-event-line"
-  },
-  {
-    "title": "My Documents",
-    "name": "app.e-commerce.index",
-    "is_heading": false,
-    "is_active": false,
-    "link": {
-      "name": "app.e-commerce.index"
-    },
-    "class_name": "",
-    "is_icon_class": true,
-    "icon": "ri-folder-2-line"
   }
 ]

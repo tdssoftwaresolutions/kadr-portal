@@ -5,8 +5,12 @@
 
     <section v-if="myCases.length" class="cases-overview">
       <div class="overview-head">
-        <h4>Mediator Case Workspace</h4>
-        <p>Switch between assigned cases, schedule meetings, track status and keep case-level notes.</p>
+        <h4>{{ isPastView ? 'Past Mediation Workspace' : 'Mediator Case Workspace' }}</h4>
+        <p>
+          {{ isPastView
+            ? 'Review completed, cancelled, and failed mediations with all case details and artifacts.'
+            : 'Switch between assigned cases, schedule meetings, track status and keep case-level notes.' }}
+        </p>
       </div>
 
       <div class="case-selector" v-if="myCases.length > 1">
@@ -59,7 +63,7 @@
             </strong>
           </section>
 
-          <section class="section-card action-required-section">
+          <section v-if="!isPastView" class="section-card action-required-section">
             <div class="section-head">
               <h5>
                 <i class="fas fa-exclamation-circle section-icon"></i>
@@ -92,7 +96,7 @@
             <div v-else class="empty-box">No immediate action is required for this case.</div>
           </section>
 
-          <section class="section-card">
+          <section v-if="!isPastView" class="section-card">
             <div class="section-head">
               <h5>Mediator Actions</h5>
               <small>Run key workflows directly from this case workspace.</small>
@@ -196,8 +200,12 @@
 
     <section v-else class="empty-state">
       <i class="fas fa-folder-open fa-3x"></i>
-      <h4>No Assigned Cases</h4>
-      <p>Assigned mediator cases will appear here with complete case context and actions.</p>
+      <h4>{{ isPastView ? 'No Past Mediations' : 'No Assigned Cases' }}</h4>
+      <p>
+        {{ isPastView
+          ? 'No completed, cancelled, or failed mediation cases are available right now.'
+          : 'Assigned mediator cases will appear here with complete case context and actions.' }}
+      </p>
     </section>
 
      <b-modal size="xl" id="resolve-modal" v-model="showResolveModal" title="Mark Case as Resolved" hide-footer>
@@ -350,6 +358,10 @@ export default {
     userName: {
       type: String,
       default: ''
+    },
+    isPastView: {
+      type: Boolean,
+      default: false
     }
   },
   watch: {
@@ -384,6 +396,7 @@ export default {
       return list.sort((a, b) => new Date(b.start_datetime) - new Date(a.start_datetime))
     },
     mediatorActionCards () {
+      if (this.isPastView) return []
       const actions = []
       if (!this.userId || this.selectedCase.mediator !== this.userId) return actions
       for (const ev of this.selectedCase.events || []) {
@@ -544,6 +557,7 @@ export default {
         const response = await this.$store.dispatch('newCalendarEvent', { event: payload })
         if (response.success || !response.error) {
           this.showAlert('Meeting scheduled successfully.', 'success')
+          this.$emit('refresh-dashboard')
         } else {
           this.showAlert(response.message || 'Unable to schedule meeting.', 'danger')
           event.preventDefault()
@@ -595,6 +609,7 @@ export default {
       return String(event.type || 'KADR').toUpperCase() === 'KADR'
     },
     showMediatorFeedbackButton (event) {
+      if (this.isPastView) return false
       if (!this.userId || this.selectedCase.mediator !== this.userId) return false
       if (!this.isKadrMeeting(event)) return false
       return mediatorNeedsMeetingFeedback(event)
