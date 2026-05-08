@@ -83,7 +83,7 @@
       '</a>'
 
     let toggle =
-      '<button type="button" class="kadr-menu-toggle" aria-label="Open menu" aria-expanded="false" id="kadrMenuToggle">☰</button>'
+      '<button type="button" class="kadr-menu-toggle" style="margin-left:8px;" aria-label="Open menu" aria-expanded="false" id="kadrMenuToggle">☰</button>'
 
     let tagline =
       '<span class="kadr-reels-tagline copy-en"></span>' +
@@ -104,9 +104,9 @@
     return (
       '<div class="kadr-header-row">' +
       brand +
-      toggle +
       '<nav class="kadr-nav-links" id="kadrNavLinks" aria-label="Primary">' + navLinks + '</nav>' +
       '<div class="kadr-header-tools">' + lang + ctas + '</div>' +
+      toggle +
       '</div>'
     )
   }

@@ -42,6 +42,18 @@
               <span>{{ item.title }}</span>
             </router-link>
           </li>
+          <li key="logout" class="mobile-top-nav-list-item" @click="onClickEditProfile">
+            <div class="mobile-top-nav-link">
+              <i class="ri-user-line"></i>
+              <span>Profile</span>
+              </div>
+          </li>
+          <li key="logout" class="mobile-top-nav-list-item" @click="onClickSignOut">
+            <div class="mobile-top-nav-link">
+              <i class="ri-logout-box-line"></i>
+              <span>Logout</span>
+            </div>
+          </li>
         </ul>
       </div>
     </div>
@@ -141,12 +153,14 @@ export default {
     },
     handleComplete () {},
     onClickEditProfile () {
+      this.isMobileNavOpen = false
       this.$router.push({ path: '/user/profile-edit' })
     },
     async onClickSignOut () {
       const response = await this.$store.dispatch('logout')
       if (!response.errorCode) {
         this.$cookies.remove('accessToken')
+        this.isMobileNavOpen = false
         this.$router.push({ path: '/auth/sign-in' })
       }
     },
@@ -253,6 +267,7 @@ export default {
 
   .mobile-top-nav-list-item + .mobile-top-nav-list-item {
     margin-top: 0.25rem;
+    cursor: pointer;
   }
 
   .mobile-top-nav-link {
