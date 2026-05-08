@@ -19,8 +19,12 @@
     font-size: 18px !important;
   }
 }
-input,
-textarea,
-select {
+
+// Global form input styles for desktop devices
+@media (min-width: 992px) {
+  input,
+  textarea,
+  select {
     font-size: 14px !important;
+  }
 }
