@@ -64,6 +64,7 @@ module.exports = {
           id: blog.id,
           title: blog.title,
           excerpt,
+          url: blog.url,
           created_at: blog.created_at,
           categories: blog.blog_categories.map((bt) => ({
             id: bt.categories.id,

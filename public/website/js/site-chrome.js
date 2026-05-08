@@ -6,14 +6,14 @@
 (function () {
   let LINKS = [
     { key: 'home', href: '/', en: 'Home', hi: 'Home' },
-    { key: 'how', href: 'how_it_works', en: 'How It Works', hi: 'Kaise Kaam Karta Hai' },
-    { key: 'cases', href: 'case_studies', en: 'Case Studies', hi: 'Case Studies' },
-    { key: 'pricing', href: 'pricings', en: 'Pricing', hi: 'Pricing' },
+    { key: 'how', href: '/how_it_works', en: 'How It Works', hi: 'Kaise Kaam Karta Hai' },
+    { key: 'cases', href: '/case_studies', en: 'Case Studies', hi: 'Case Studies' },
+    { key: 'pricing', href: '/pricings', en: 'Pricing', hi: 'Pricing' },
     { key: 'org', href: '/#kadr-organisations', en: 'For Organisations', hi: 'Organisations' },
-    { key: 'blog', href: 'resources', en: 'Blog', hi: 'Blog' },
-    { key: 'reels', href: 'video-reels', en: 'Video Reels', hi: 'Video Reels' },
-    { key: 'faq', href: 'faq', en: 'FAQ', hi: 'FAQ' },
-    { key: 'contact', href: 'contact', en: 'Contact', hi: 'Contact' }
+    { key: 'blog', href: '/blog', en: 'Blog', hi: 'Blog' },
+    { key: 'reels', href: '/video-reels', en: 'Video Reels', hi: 'Video Reels' },
+    { key: 'faq', href: '/faq', en: 'FAQ', hi: 'FAQ' },
+    { key: 'contact', href: '/contact', en: 'Contact', hi: 'Contact' }
   ]
 
   function navigateTo (page) {
@@ -177,7 +177,7 @@
       host.innerHTML =
         '<span>© 2026 KADR.live</span>' +
         '<a href="index">Home</a>' +
-        '<a href="resources">Blog</a>' +
+        '<a href="blog">Blog</a>' +
         '<a href="video-reels">Reels</a>' +
         '<a href="contact">Contact</a>'
       return
@@ -198,7 +198,7 @@
       '<a class="ft-link" href="video-reels"><span class="copy-en">Video Reels</span><span class="copy-hi">Video Reels</span></a>' +
       '</div>' +
       '<div><div class="ft-h copy-en">Learn</div><div class="ft-h copy-hi">Learn</div>' +
-      '<a class="ft-link" href="resources">Blog</a>' +
+      '<a class="ft-link" href="blog">Blog</a>' +
       '<a class="ft-link" href="faq">FAQ</a>' +
       '<a class="ft-link" href="contact">Contact</a>' +
       '<a class="ft-link" href="index#kadr-organisations"><span class="copy-en">For Organisations</span><span class="copy-hi">Organisations</span></a>' +

@@ -557,6 +557,7 @@ export default {
         const response = await this.$store.dispatch('newCalendarEvent', { event: payload })
         if (response.success || !response.error) {
           this.showAlert('Meeting scheduled successfully.', 'success')
+          this.$emit('refresh-dashboard')
         } else {
           this.showAlert(response.message || 'Unable to schedule meeting.', 'danger')
           event.preventDefault()

@@ -154,6 +154,10 @@ export default (router) => {
       },
       setCalendarInit (state, data) {
         state.calendarInit = data
+      },
+      invalidateDashboardCaches (state) {
+        state.dashboardContent = null
+        state.calendarInit = null
       }
     },
     actions: {
@@ -294,6 +298,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(MARK_CASE_RESOLVED, { caseId, resolveStatus, agreementText, signature })
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -379,6 +384,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(ACCEPT_MEDIATION_REQUEST, { caseId })
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -447,6 +453,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(SET_CLIENT_PAYMENT_ENDPOINT, { ...payload })
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -481,6 +488,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(NEW_CALENDAR_EVENT_ENDPOINT, { ...event })
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -544,11 +552,12 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
-      async submitMeetingFeedback ({ dispatch }, payload) {
+      async submitMeetingFeedback ({ commit, dispatch }, payload) {
         try {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(SUBMIT_EVENT_FEEDBACK_ENDPOINT, payload)
           if (!data.success) throw new Error(data.error.message)
+          commit('invalidateDashboardCaches')
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'

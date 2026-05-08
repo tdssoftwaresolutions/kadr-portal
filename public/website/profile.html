@@ -59,7 +59,7 @@ body{font-family:var(--font-body);background:var(--cream);color:var(--text-body)
   </section>
 
   <div style="text-align:center;margin-top:40px">
-    <button type="button" class="btn btn-outline-brown" onclick="navigateTo('resources')"><span class="copy-en">← Back to Blog</span><span class="copy-hi">← Blog</span></button>
+    <button type="button" class="btn btn-outline-brown" onclick="navigateTo('blog')"><span class="copy-en">← Back to Blog</span><span class="copy-hi">← Blog</span></button>
   </div>
 </div>
 
@@ -88,8 +88,9 @@ function renderBlogs (blogs) {
     var cats = (b.categories && b.categories.length)
       ? b.categories.map(function (c) { return '<span class="tag tag-brown">' + escHtml(c.name) + '</span>'; }).join(' ')
       : '';
-    return (
-      '<a class="profile-blog-card" href="blog-detail?id=' + encodeURIComponent(b.id) + '">' +
+    const blogUrl = b.url ? escHtml(b.url): '#'
+  return (
+      '<a class="profile-blog-card" href="' + blogUrl + '">' +
       '<div class="profile-blog-card-title">' + escHtml(b.title) + '</div>' +
       '<p class="profile-blog-card-excerpt">' + escHtml(b.excerpt || '') + '</p>' +
       '<div class="profile-blog-card-meta">' + cats +

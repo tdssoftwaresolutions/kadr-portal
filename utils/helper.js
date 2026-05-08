@@ -274,8 +274,90 @@ class Helper {
     })
   }
 
+  static generateBlogSlug (title) {
+    const sanitized = String(title || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    return sanitized || 'blog'
+  }
+
+  static escapeHtml (value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
+
+  static async resolveBlogUrl (prisma, slug, blogId) {
+    let candidate = `blog/${slug}`
+    let suffix = 1
+    while (await prisma.blogs.findFirst({
+      where: {
+        url: candidate,
+        ...(blogId ? { id: { not: blogId } } : {})
+      }
+    })) {
+      suffix += 1
+      candidate = `blog/${slug}-${suffix}`
+    }
+    return candidate
+  }
+
+  static async writeStaticBlogPage (blog, previousUrl) {
+    const templatePath = path.join(__dirname, '..', 'blog.sample')
+    const outputFileName = blog.url ? `${blog.url}.html` : `blog/${Helper.generateBlogSlug(blog.title)}.html`
+    const outputFilePath = path.join(__dirname, '..', 'public', 'website', outputFileName)
+    const outputFolder = path.dirname(outputFilePath)
+    await fs.promises.mkdir(outputFolder, { recursive: true })
+    const template = await fs.promises.readFile(templatePath, 'utf8')
+
+    const authorName = Helper.escapeHtml(blog.user?.name || '')
+    const authorLink = blog.author_id
+      ? `<a class="blog-author-link" href="/profile?id=${Helper.escapeHtml(blog.author_id)}">${authorName}</a>`
+      : `<strong>${authorName}</strong>`
+
+    const metaParts = [authorLink, new Date(blog.created_at).toLocaleDateString()]
+    if (blog.blog_categories && blog.blog_categories.length) {
+      metaParts.push(
+        blog.blog_categories.map((bt) => `<span class="tag tag-brown">${Helper.escapeHtml(bt.categories.name)}</span>`).join(' ')
+      )
+    }
+    if (blog.blog_tags && blog.blog_tags.length) {
+      metaParts.push(
+        blog.blog_tags.map((bt) => `<span class="tag tag-sage">${Helper.escapeHtml(bt.tags.name)}</span>`).join(' ')
+      )
+    }
+
+    if (previousUrl && previousUrl !== outputFileName) {
+      const oldFilePath = path.join(__dirname, '..', 'public', 'website', previousUrl + '.html')
+      await fs.promises.unlink(oldFilePath).catch(() => {})
+    }
+
+    const fileContent = template
+      .replace(/__BLOG_TITLE__/g, Helper.escapeHtml(blog.title))
+      .replace(/__BLOG_META__/g, metaParts.join(' · '))
+      .replace(/__BLOG_CONTENT__/g, blog.content || '')
+      .replace(/__BLOG_ID__/g, Helper.escapeHtml(blog.id))
+
+    await fs.promises.writeFile(outputFilePath, fileContent, 'utf8')
+  }
+
   static async saveBlog (prisma, blogData, authorId, status) {
     let savedBlog
+    let previousUrl = null
+    if (blogData.id) {
+      const existingBlog = await prisma.blogs.findUnique({
+        where: { id: blogData.id },
+        select: { url: true }
+      })
+      previousUrl = existingBlog?.url || null
+    }
     await prisma.$transaction(async (prisma) => {
       const blog = await prisma.blogs.upsert({
         where: {
@@ -401,10 +483,11 @@ class Helper {
         }
       }
 
-      // Fetch the saved blog with populated categories and tags
+      // Fetch the saved blog with populated categories, tags, and author
       savedBlog = await prisma.blogs.findUnique({
         where: { id: blog.id },
         include: {
+          user: true,
           blog_categories: {
             include: {
               categories: true
@@ -418,6 +501,49 @@ class Helper {
         }
       })
     })
+
+    const slug = Helper.generateBlogSlug(savedBlog.title)
+
+    // Check if this slug already exists in redirect_blogs and delete it
+    await prisma.redirect_blogs.deleteMany({
+      where: { new_url: `blog/${slug}` }
+    }).catch(() => {})
+
+    const nextUrl = await Helper.resolveBlogUrl(prisma, slug, savedBlog.id)
+    if (nextUrl !== savedBlog.url) {
+      // Store the redirect from old URL to new URL if old URL exists
+      if (previousUrl && previousUrl !== nextUrl) {
+        await prisma.redirect_blogs.upsert({
+          where: { old_url: previousUrl },
+          update: { new_url: nextUrl },
+          create: {
+            blog_id: savedBlog.id,
+            old_url: previousUrl,
+            new_url: nextUrl
+          }
+        }).catch(() => {})
+      }
+
+      savedBlog = await prisma.blogs.update({
+        where: { id: savedBlog.id },
+        data: { url: nextUrl },
+        include: {
+          user: true,
+          blog_categories: {
+            include: {
+              categories: true
+            }
+          },
+          blog_tags: {
+            include: {
+              tags: true
+            }
+          }
+        }
+      })
+    }
+
+    await Helper.writeStaticBlogPage(savedBlog, previousUrl)
     return savedBlog
   }
 
@@ -441,6 +567,20 @@ class Helper {
       await prisma.blog_tags.deleteMany({
         where: { blog_id: blogId }
       })
+      await prisma.blog_comments.deleteMany({
+        where: { blog_id: blogId }
+      })
+
+      // Delete HTML file if blog has a URL
+      if (blog.url) {
+        const filePath = path.join(__dirname, '..', 'public', 'website', blog.url + '.html')
+        await fs.promises.unlink(filePath).catch(() => {})
+      }
+
+      // Delete redirect entries for this blog
+      await prisma.redirect_blogs.deleteMany({
+        where: { blog_id: blogId }
+      }).catch(() => {})
 
       // Delete the blog
       await prisma.blogs.delete({

@@ -157,6 +157,7 @@ module.exports = {
       content: savedBlog.content,
       author_id: savedBlog.authorId,
       status: savedBlog.status,
+      url: savedBlog.url,
       created_at: savedBlog.created_at,
       updated_at: savedBlog.updated_at,
       categories: savedBlog.blog_categories.map((bt) => ({
@@ -172,7 +173,7 @@ module.exports = {
       await helper.sendTemplatedEmail('blogPublished', email, {
         recipientName: name,
         title: savedBlog.title,
-        blogUrl: `${process.env.BASE_URL}/blog-detail?id=${savedBlog.id}`
+        blogUrl: `${process.env.BASE_URL}/${savedBlog.url}`
       })
     }
     success(res, { blog: formattedBlog }, 'Blog saved successfully')
@@ -199,6 +200,7 @@ module.exports = {
         content: blog.content,
         author_id: blog.user.id,
         author_name: blog.user.name,
+        url: blog.url,
         created_at: blog.created_at,
         categories: blog.blog_categories.map((bt) => ({
           id: bt.categories.id,
@@ -239,6 +241,7 @@ module.exports = {
         content: limitedContent,
         author_id: blog.user.id,
         author_name: blog.user.name,
+        url: blog.url,
         created_at: blog.created_at,
         categories: blog.blog_categories.map((bt) => ({
           id: bt.categories.id,
@@ -263,6 +266,7 @@ module.exports = {
       content: blog.content,
       author_id: blog.authorId,
       status: blog.status,
+      url: blog.url,
       created_at: blog.created_at,
       updated_at: blog.updated_at,
       categories: blog.blog_categories.map((bt) => ({

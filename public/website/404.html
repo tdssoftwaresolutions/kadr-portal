@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>404 — Page Not Found | KADR.live</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --b900:#1A0A00;
+  --b800:#2C1205;
+  --b700:#4A2010;
+  --b600:#6B3218;
+  --b500:#8C4820;
+  --b400:#B46028;
+  --b300:#D48040;
+  --b200:#E8B888;
+  --b150:#F2D4B4;
+  --b100:#F8EAD8;
+  --b50:#FDF5EC;
+  --s600:#226054;
+  --s500:#2D7A6A;
+  --s100:#D8F0EC;
+  --g400:#D4A830;
+  --cream:#FAF0E0;
+  --text-primary:#1A0A00;
+  --text-body:#3D2010;
+  --text-muted:#7A5A40;
+  --border:#E8D4C0;
+  --border-light:#F2E8DA;
+  --font-display:'Playfair Display',Georgia,serif;
+  --font-body:'DM Sans',system-ui,sans-serif;
+  --shadow-md:0 4px 16px rgba(42,16,0,.08),0 2px 6px rgba(42,16,0,.05);
+  --shadow-lg:0 12px 40px rgba(42,16,0,.12),0 4px 12px rgba(42,16,0,.07);
+  --r-sm:6px;
+  --r-md:12px;
+  --r-lg:16px;
+  --r-xl:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--cream);min-height:100%}
+body{
+  font-family:var(--font-body);
+  color:var(--text-primary);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.copy-en,.copy-hi{display:block}
+span.copy-en,span.copy-hi{display:inline}
+body.lang-hi .copy-en{display:none!important}
+body.lang-en .copy-hi{display:none!important}
+
+.nf-main{
+  flex:1;
+  display:flex;
+}
+.nf-hero{
+  flex:1;
+  display:flex;
+  align-items:center;
+  position:relative;
+  background:linear-gradient(145deg,var(--b800) 0%,#3D2010 40%,#2C4A3A 100%);
+  padding:52px 22px;
+  overflow:hidden;
+}
+.nf-hero::before{
+  content:'';
+  position:absolute;
+  top:-180px;
+  right:-90px;
+  width:520px;
+  height:520px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(212,168,48,.14) 0%,transparent 62%);
+}
+.nf-hero::after{
+  content:'';
+  position:absolute;
+  left:-130px;
+  bottom:-180px;
+  width:420px;
+  height:420px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(45,122,106,.23) 0%,transparent 64%);
+}
+.nf-wrap{
+  max-width:1120px;
+  margin:0 auto;
+  position:relative;
+  z-index:1;
+}
+.nf-grid{
+  display:block;
+  max-width:760px;
+}
+.nf-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-size:11px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.74);
+  margin-bottom:14px;
+}
+.nf-kicker-dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--g400);
+}
+.nf-code{
+  font-family:var(--font-display);
+  font-size:82px;
+  letter-spacing:-.03em;
+  color:#fff;
+  line-height:1;
+  margin-bottom:6px;
+}
+.nf-title{
+  font-family:var(--font-display);
+  font-size:44px;
+  line-height:1.1;
+  color:#fff;
+  letter-spacing:-.02em;
+  margin-bottom:14px;
+}
+.nf-sub{
+  font-size:16px;
+  line-height:1.75;
+  color:rgba(255,255,255,.74);
+  max-width:560px;
+}
+.nf-sub strong{color:#fff}
+.nf-ctas{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:26px;
+}
+/* ─ BUTTONS ─ */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:var(--r-md);font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--font-body);transition:all .2s;white-space:nowrap;line-height:1}
+.btn-primary{background:var(--b500);color:#fff}
+.btn-primary:hover{background:var(--b600);box-shadow:0 4px 16px rgba(140,72,32,.35)}
+.btn-secondary{background:var(--s500);color:#fff}
+.btn-secondary:hover{background:var(--s600)}
+.btn-outline-brown{background:transparent;border:1.5px solid var(--b400);color:var(--b600)}
+.btn-outline-brown:hover{background:var(--b50);border-color:var(--b500)}
+.btn-outline-white{background:transparent;border:1.5px solid rgba(255,255,255,.35);color:#fff}
+.btn-outline-white:hover{background:rgba(255,255,255,.08)}
+.btn-white{background:#fff;color:var(--b600)}
+.btn-white:hover{background:var(--b50)}
+.btn-ghost{background:transparent;border:1.5px solid var(--s400);color:var(--s500)}
+.btn-gold{background:var(--g400);color:var(--b800)}
+.btn-lg{padding:14px 32px;font-size:15px;border-radius:var(--r-lg)}
+.btn-sm{padding:8px 16px;font-size:12px}
+.btn-icon{width:38px;height:38px;padding:0;justify-content:center;border-radius:50%}
+
+.nf-ctas .btn{
+  border:none;
+  text-decoration:none;
+  cursor:pointer;
+  font-family:var(--font-body);
+  font-size:14px;
+  font-weight:700;
+  border-radius:var(--r-md);
+  padding:12px 22px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .2s;
+}
+.btn-home{
+  background:var(--b400);
+  color:#fff;
+  box-shadow:0 7px 20px rgba(180,96,40,.35);
+}
+.btn-home:hover{background:var(--b500)}
+.btn-help{
+  color:#fff;
+  border:1.5px solid rgba(255,255,255,.34);
+  background:transparent;
+}
+.btn-help:hover{background:rgba(255,255,255,.1)}
+
+#kadr-site-footer{margin-top:0}
+
+@media (max-width:920px){
+  .nf-code{font-size:66px}
+  .nf-title{font-size:34px}
+}
+@media (max-width:600px){
+  .nf-hero{padding:44px 18px}
+  .nf-code{font-size:56px}
+  .nf-title{font-size:29px}
+  .nf-sub{font-size:14px}
+  .nf-ctas{flex-direction:column}
+  .btn{width:100%}
+}
+</style>
+<link rel="stylesheet" href="/css/site-responsive.css"/>
+</head>
+<body class="lang-en">
+<header id="kadr-site-header" data-kadr-active=""></header>
+
+<main class="nf-main">
+  <section class="nf-hero">
+    <div class="nf-wrap">
+      <div class="nf-grid">
+        <div class="nf-code">404</div>
+        <h1 class="nf-title copy-en">This page took a different route.</h1>
+        <h1 class="nf-title copy-hi">Yeh page alag raste nikal gaya.</h1>
+        <p class="nf-sub copy-en">The page you are looking for does not exist or might have moved. No worries - you can <strong>go back to home</strong> and continue from there.</p>
+        <p class="nf-sub copy-hi">Jo page aap dhoond rahe ho, woh yahan nahi mila ya shift ho gaya hai. Tension nahi - <strong>home pe wapas jao</strong> aur wahaan se continue karo.</p>
+        <div class="nf-ctas">
+          <a class="btn btn-home copy-en" href="/">Go to Home Page</a>
+          <a class="btn btn-home copy-hi" href="/">Home Page Par Jao</a>
+          <a class="btn btn-help copy-en" href="/contact">Need Help?</a>
+          <a class="btn btn-help copy-hi" href="/contact">Help Chahiye?</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="kadr-site-footer"></div>
+
+<script src="/js/site-chrome.js" defer></script>
+</body>
+</html>

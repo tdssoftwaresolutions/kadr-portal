@@ -600,8 +600,7 @@ export default {
         if (response.success) {
           this.showPaymentModal = false
           this.resetPaymentData()
-          // Update case status locally or refresh
-          this.$emit('case-updated')
+          this.$emit('refresh-dashboard')
         }
       } catch (error) {
         console.error('Payment failed:', error)
@@ -633,7 +632,7 @@ export default {
       try {
         // Process signature
         this.showAgreementModal = false
-        this.$emit('case-updated')
+        this.$emit('refresh-dashboard')
       } catch (error) {
         console.error('Failed to submit agreement:', error)
       } finally {

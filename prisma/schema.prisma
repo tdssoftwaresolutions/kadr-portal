@@ -260,7 +260,8 @@ model MediatorVideoReel {
 model blogs {
   id              String            @id @default(uuid()) @db.Char(36)
   title           String            @db.VarChar(255)
-  content         String            @db.Text
+  content         String            @db.Text  
+  url             String?           @unique(map: "url") @db.VarChar(255)  
   author_id       String            @db.Char(36)
   created_at      DateTime?         @default(now()) @db.DateTime(0)
   updated_at      DateTime?         @default(now()) @db.DateTime(0)
@@ -299,6 +300,18 @@ model tags {
   id        String      @id @default(uuid()) @db.Char(36)
   name      String      @unique(map: "name") @db.VarChar(50)
   blog_tags blog_tags[]
+}
+
+model redirect_blogs {
+  id         String    @id @default(uuid()) @db.Char(36)
+  blog_id    String    @db.Char(36)
+  old_url    String    @db.VarChar(255)
+  new_url    String    @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  updated_at DateTime? @default(now()) @updatedAt @db.DateTime(0)
+
+  @@unique([old_url], map: "uq_redirect_old_url")
+  @@index([blog_id], map: "idx_redirect_blog_id")
 }
 
 model case_history {
