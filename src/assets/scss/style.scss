@@ -11,9 +11,16 @@
 @import "~owl.carousel/dist/assets/owl.carousel.min.css";
 @import "~owl.carousel/dist/assets/owl.theme.default.min.css";
 
-// Global form input styles
+// Global form input styles for mobile devices
+@media (max-width: 991px) {
+  input,
+  textarea,
+  select {
+    font-size: 18px !important;
+  }
+}
 input,
 textarea,
 select {
-  font-size: 18px !important;
+    font-size: 14px !important;
 }
