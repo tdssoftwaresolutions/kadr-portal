@@ -27,7 +27,7 @@
         </button>
       </div>
 
-      <div class="workspace-layout">
+      <div class="workspace-layout" :class="{ 'workspace-layout--single': !showCorrespondencePanel }">
         <div class="workspace-main">
           <div class="quick-info-grid">
             <article class="info-card">
@@ -195,6 +195,24 @@
             <div v-else class="empty-box">No meetings are currently scheduled for this case.</div>
           </section>
         </div>
+
+        <aside v-if="showCorrespondencePanel" class="workspace-side">
+          <div class="workspace-side-stack">
+            <section class="section-card side-correspondence-card">
+              <KadrSupportChannels />
+              <CaseCorrespondencePanel
+                embedded
+                variant="sidebar"
+                :case-id="selectedCase.id"
+                :user-id="userId"
+                user-type="MEDIATOR"
+                mode="mediator"
+                :has-mediator="true"
+                :read-only="isPastView"
+              />
+            </section>
+          </div>
+        </aside>
       </div>
     </section>
 
@@ -333,6 +351,8 @@ import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import VueMaterialDateTimePicker from 'vue-material-date-time-picker'
 import FilePreview from '../core/DocumentPreview.vue'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
+import CaseCorrespondencePanel from '../../components/CaseCorrespondencePanel.vue'
+import KadrSupportChannels from '../../components/KadrSupportChannels.vue'
 import SignaturePad from 'signature_pad'
 import { Vue2TinymceEditor } from 'vue2-tinymce-editor'
 
@@ -344,7 +364,7 @@ import {
 export default {
   name: 'MyCases',
   components: {
-    Alert, Spinner, VueMaterialDateTimePicker, FilePreview, MeetingFeedbackModal, Vue2TinymceEditor
+    Alert, Spinner, VueMaterialDateTimePicker, FilePreview, MeetingFeedbackModal, Vue2TinymceEditor, CaseCorrespondencePanel, KadrSupportChannels
   },
   props: {
     cases: {
@@ -426,6 +446,9 @@ export default {
       if (status.includes('closed failed')) return 'danger'
       if (status.includes('progress')) return 'warning'
       return 'secondary'
+    },
+    showCorrespondencePanel () {
+      return !!(this.selectedCase.id && this.userId && this.selectedCase.mediator === this.userId)
     }
   },
   methods: {
@@ -925,7 +948,25 @@ export default {
 .workspace-layout {
   margin-top: 0.9rem;
   display: grid;
+  grid-template-columns: 1.4fr 0.72fr;
   gap: 1rem;
+  align-items: start;
+}
+
+.workspace-layout--single {
+  grid-template-columns: 1fr;
+}
+
+.workspace-side-stack {
+  position: sticky;
+  top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.side-correspondence-card {
+  padding: 0.65rem 0.75rem;
 }
 
 .workspace-main {
@@ -1265,7 +1306,7 @@ export default {
     grid-template-columns: 1fr;
   }
 
-  .workspace-side .sticky {
+  .workspace-side-stack {
     position: static;
   }
 }

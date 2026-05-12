@@ -77,6 +77,7 @@ import SideBarItemAdmin from '../FackApi/json/SideBarAdmin'
 import profile from '../assets/images/user/1.jpeg'
 import logo from '../assets/images/logo.png'
 import { sofbox } from '../config/pluginInit'
+import { filterAdminSidebarItems, adminCanAccessRoute, firstAllowedAdminRouteName } from '../utils/adminAccess'
 
 export default {
   name: 'StandardLayout',
@@ -97,6 +98,15 @@ export default {
   },
   beforeDestroy () {
     this.removeCompactSidebarState()
+  },
+  watch: {
+    $route (to) {
+      if (this.user && this.user.type === 'ADMIN' && !adminCanAccessRoute(this.user, to)) {
+        const nextName = firstAllowedAdminRouteName(this.user)
+        if (!nextName || nextName === to.name) return
+        this.$router.replace({ name: nextName })
+      }
+    }
   },
   data () {
     return {
@@ -144,11 +154,22 @@ export default {
             this.sidebar = SideBarItems
             break
           case 'ADMIN':
-            this.sidebar = SideBarItemAdmin
+            this.sidebar = filterAdminSidebarItems(SideBarItemAdmin, data.userData)
             break
         }
         this.user = data.userData
         this.userProfile = data.userData.photo || profile
+        if (data.userData.type === 'ADMIN') {
+          this.$nextTick(() => this.enforceAdminRouteAccess())
+        }
+      }
+    },
+    enforceAdminRouteAccess () {
+      if (!this.user || this.user.type !== 'ADMIN' || !this.$route) return
+      if (!adminCanAccessRoute(this.user, this.$route)) {
+        const nextName = firstAllowedAdminRouteName(this.user)
+        if (!nextName || nextName === this.$route.name) return
+        this.$router.replace({ name: nextName })
       }
     },
     handleComplete () {},

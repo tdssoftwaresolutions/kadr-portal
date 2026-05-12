@@ -11,7 +11,10 @@ module.exports = {
 
   newUserSignup: async function (req, res, next) {
     try {
-      const { name, email, phone, city, state, pincode, description, category, preferredLanguage, evidenceContent, profilePictureContent, oppositeName, oppositeEmail, oppositePhone, existingUser } = req.body
+      const { name, email, phone, city, state, pincode, description, category, preferredLanguage, evidenceContent, profilePictureContent, oppositeName, oppositeEmail, oppositePhone, existingUser, adultPlatformLiabilityAck } = req.body
+      if (!adultPlatformLiabilityAck) {
+        throw createError(errorCodes.INVALID_REQUEST)
+      }
       let uploadedProfilePictureResponse = null
       if (profilePictureContent) { uploadedProfilePictureResponse = await helper.deployToS3Bucket(profilePictureContent, `profile-picture-${uuidv4()}`) }
       const userRequestData = {

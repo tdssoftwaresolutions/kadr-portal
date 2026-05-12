@@ -363,8 +363,6 @@ export default {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding-top: 18px;
     margin-top: 14px;
     border-top: 1px solid rgba(0, 132, 255, 0.08);
   }

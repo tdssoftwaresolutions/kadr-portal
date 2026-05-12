@@ -50,6 +50,11 @@
                 <label for="pincode">Pin Code <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="pincode" v-model="formData.pincode" placeholder="Pin Code" />
             </div>
+            <div v-if="existingUser" class="mb-3 border rounded p-3 bg-light">
+              <b-form-checkbox v-model="formData.adultPlatformLiabilityAck">
+                I confirm that I am 18 years of age or older, that I take full responsibility for my actions on this platform, and that I agree to use the services in accordance with the platform’s terms and policies.
+              </b-form-checkbox>
+            </div>
             <div class="d-flex justify-content-between">
                 <div>
                   <button type="button" class="btn btn-secondary" @click="prevStep(1)">Previous</button>
@@ -114,6 +119,11 @@
                 <label for="oppositePhone">Opposite Party Phone <span class="text-danger">*</span></label>
                 <input type="tel" class="form-control" id="oppositePhone" v-model="formData.oppositePhone" placeholder="Phone" />
             </div>
+            <div class="mb-3 border rounded p-3 bg-light">
+              <b-form-checkbox v-model="formData.adultPlatformLiabilityAck">
+                I confirm that I am 18 years of age or older, that I take full responsibility for my actions on this platform, and that I agree to use the services in accordance with the platform’s terms and policies.
+              </b-form-checkbox>
+            </div>
             <button type="button" class="btn btn-secondary" @click="prevStep(3)">Previous</button>
             <button type="button" class="btn btn-success float-right ml" @click="submitClientForm">Submit</button>
         </div>
@@ -149,6 +159,7 @@ export default {
         oppositeEmail: '',
         preferredLanguage: '',
         oppositePhone: '',
+        adultPlatformLiabilityAck: false,
         profilePicture: null,
         profilePictureContent: null,
         userType: 'client'
@@ -278,6 +289,10 @@ export default {
         this.showAlert('Enter valid pincode', 'danger')
         return false
       }
+      if (this.existingUser === true && !this.formData.adultPlatformLiabilityAck) {
+        this.showAlert('Please confirm that you are 18+ and accept responsibility for your use of the platform.', 'danger')
+        return false
+      }
       if (this.existingUser === false) {
         const response = await this.$store.dispatch('isEmailExist', {
           emailAddress: this.formData.email
@@ -352,6 +367,10 @@ export default {
     },
     async submitClientForm () {
       if (this.existingUser === false) {
+        if (!this.formData.adultPlatformLiabilityAck) {
+          this.showAlert('Please confirm that you are 18+ and accept responsibility for your use of the platform.', 'danger')
+          return
+        }
         if (this.formData.oppositeName.trim() === '') {
           this.showAlert('Enter opposite party name', 'danger')
           return

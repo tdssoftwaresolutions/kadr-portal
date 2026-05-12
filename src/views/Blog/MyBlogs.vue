@@ -199,6 +199,12 @@
           <vue2-tinymce-editor v-model="selectedBlog.content" :options="options"></vue2-tinymce-editor>
         </div>
 
+        <div class="mb-3 border rounded p-3 bg-light">
+          <b-form-checkbox v-model="selectedBlog.contentRightsConfirmed" class="mb-0">
+            I confirm this content is my own original work (or I have all necessary rights and permissions), it is not copied from any third party without authorization, and I accept full responsibility for publishing it on this website without copyright issues.
+          </b-form-checkbox>
+        </div>
+
         <!-- Buttons -->
         <div class="d-flex justify-content-end gap-2">
           <button type="button" class="btn btn-secondary" @click="saveToDraft" v-if="selectedBlog.status != 'Published'">
@@ -287,6 +293,10 @@ export default {
       this.selectedBlog.tags.splice(index, 1)
     },
     async saveToDraft () {
+      if (!this.selectedBlog.contentRightsConfirmed) {
+        this.showAlert('Please confirm originality and rights for this content before saving.', 'danger')
+        return
+      }
       const response = await this.$store.dispatch('saveBlog', {
         blog: this.selectedBlog,
         status: 'Draft'
@@ -303,6 +313,10 @@ export default {
       this.page = 'HOME'
     },
     async publishBlog () {
+      if (!this.selectedBlog.contentRightsConfirmed) {
+        this.showAlert('Please confirm originality and rights for this content before publishing.', 'danger')
+        return
+      }
       const response = await this.$store.dispatch('saveBlog', {
         blog: this.selectedBlog,
         status: 'Published'
@@ -317,7 +331,7 @@ export default {
     },
     onClickBlog (blogRecord) {
       this.page = 'VIEW_EDIT'
-      this.selectedBlog = blogRecord
+      this.selectedBlog = { ...blogRecord, contentRightsConfirmed: false }
     },
     newBlog () {
       this.page = 'VIEW_EDIT'
@@ -327,7 +341,8 @@ export default {
         status: '',
         tags: [],
         content: '',
-        id: null
+        id: null,
+        contentRightsConfirmed: false
       }
     },
     getVariant (status) {
@@ -426,7 +441,8 @@ export default {
         title: '',
         status: '',
         tags: [],
-        content: ''
+        content: '',
+        contentRightsConfirmed: false
       },
       currentPage: 1,
       newTag: '',

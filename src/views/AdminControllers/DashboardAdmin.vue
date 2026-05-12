@@ -20,26 +20,26 @@
         </div>
       </div>
 
-      <div class="hero-stats">
-        <div class="stat-card">
+      <div class="hero-stats" v-if="showStatsRow">
+        <div class="stat-card" v-if="showStats">
           <span class="stat-label">Mediators</span>
           <span class="stat-value">{{ content.count.mediators }}</span>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" v-if="showStats">
           <span class="stat-label">Clients</span>
           <span class="stat-value">{{ content.count.clients }}</span>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" v-if="showStats">
           <span class="stat-label">Cases</span>
           <span class="stat-value">{{ content.count.cases }}</span>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" v-if="showSchedule">
           <span class="stat-label">Meetings Today</span>
           <span class="stat-value">{{ todaysEvents.length }}</span>
         </div>
       </div>
     </div>
-    <div class="workspace-grid">
+    <div class="workspace-grid" v-if="showSchedule">
       <iq-card class="workspace-card">
         <template v-slot:headerTitle>
           <h4 class="card-title">Today's Schedule</h4>
@@ -73,8 +73,8 @@
         </template>
       </iq-card>
     </div>
-    <b-row  class="cases-workspace">
-      <b-col sm="12"  class="cases-overview">
+    <b-row class="cases-workspace" v-if="showApprovals">
+      <b-col sm="12" class="cases-overview">
          <div class="overview-head">
           <h4>Approvals</h4>
           <p>Manage and approve new client and mediator requests</p>
@@ -91,11 +91,12 @@
         </section>
       </b-col>
     </b-row>
-    <client-cases :userid="user.id" :content="content"></client-cases>
+    <client-cases v-if="showCasesWidget" :userid="user.id" :content="content"></client-cases>
   </b-container>
 </template>
 <script>
 import InactiveUsers from '../AdminControllers/InactiveUsers.vue'
+import { adminUserHasComponent } from '../../utils/adminAccess'
 const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
 
 export default {
@@ -108,6 +109,21 @@ export default {
     InactiveUsers
   },
   computed: {
+    showStats () {
+      return adminUserHasComponent(this.user, 'stats') && this.content && this.content.count
+    },
+    showSchedule () {
+      return adminUserHasComponent(this.user, 'schedule')
+    },
+    showApprovals () {
+      return adminUserHasComponent(this.user, 'approvals') && this.content && this.content.inactive_users
+    },
+    showCasesWidget () {
+      return adminUserHasComponent(this.user, 'cases')
+    },
+    showStatsRow () {
+      return this.showStats || this.showSchedule
+    },
     todaysEvents () {
       return this.content?.todaysEvent || []
     }

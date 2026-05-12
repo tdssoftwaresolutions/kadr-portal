@@ -25,19 +25,6 @@
                 <input type="tel" class="form-control" id="phone" v-model="formData.phone" placeholder="Phone Number" />
             </div>
             <div class="mb-3">
-                <label for="language">Preferred Languages (Max 3) <span class="text-danger">*</span></label>
-                <div class="d-flex flex-wrap" style="height: 125px;overflow-y: scroll;">
-                  <div
-                    v-for="(option, index) in availableLanguges"
-                    :key="index"
-                    class="option-card"
-                    :class="{ selected: formData.preferredLanguages.includes(option.value), disabled: formData.preferredLanguages.length >= 3 && !formData.preferredLanguages.includes(option.value) }"
-                    @click="toggleSelection(option)">
-                    {{ option.text }}
-                  </div>
-                </div>
-            </div>
-            <div class="mb-3">
                 <label for="state">State <span class="text-danger">*</span></label>
                 <select id="state" v-model="formData.state" class="form-control">
                 <option value="">Select State</option>
@@ -132,6 +119,19 @@
             <div class="mb-3">
               <label for="barEnrollmentNo">Bar Enrollment Number <span class="text-danger">*</span></label>
               <input type="text" class="form-control capitalize-first-word" id="barEnrollmentNo" v-model="formData.barEnrollmentNo" placeholder="Bar Enrollment Number" />
+            </div>
+            <div class="mb-3">
+              <label for="language">Preferred Languages (Max 3) <span class="text-danger">*</span></label>
+              <div class="d-flex flex-wrap" style="height: 125px;overflow-y: scroll;">
+                <div
+                  v-for="(option, index) in availableLanguges"
+                  :key="index"
+                  class="option-card"
+                  :class="{ selected: formData.preferredLanguages.includes(option.value), disabled: formData.preferredLanguages.length >= 3 && !formData.preferredLanguages.includes(option.value) }"
+                  @click="toggleSelection(option)">
+                  {{ option.text }}
+                </div>
+              </div>
             </div>
             <div class="mb-3">
               <label for="areaOfPractice">Preferred Area of Practice  (Max 3) <span class="text-danger">*</span></label>
@@ -389,10 +389,6 @@ export default {
           this.showAlert('Enter valid phone number', 'danger')
           return
         }
-        if (this.formData.preferredLanguages.length === 0) {
-          this.showAlert('Select your preferred language', 'danger')
-          return
-        }
         if (this.formData.state.trim() === '') {
           this.showAlert('Select state', 'danger')
           return
@@ -471,6 +467,10 @@ export default {
     async submitClientForm () {
       if (this.formData.barEnrollmentNo.trim() === '') {
         this.showAlert('Enter bar enrollment number', 'danger')
+        return
+      }
+      if (this.formData.preferredLanguages.length === 0) {
+        this.showAlert('Select your preferred language', 'danger')
         return
       }
       if (this.formData.preferredAreaOfPractice.length === 0) {

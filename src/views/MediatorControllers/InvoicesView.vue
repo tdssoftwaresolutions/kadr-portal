@@ -129,7 +129,7 @@ export default {
         { key: 'invoice_number', label: 'Invoice #' },
         { key: 'caseLabel', label: 'Case' },
         { key: 'mediation_amount', label: 'Mediation amount' },
-        { key: 'commission_amount', label: 'Commission share' },
+        { key: 'commission_amount', label: 'Mediator revenue (share)' },
         { key: 'gst_amount', label: 'GST' },
         { key: 'tax_amount', label: 'Tax' },
         { key: 'net_payable', label: 'Net payable' },

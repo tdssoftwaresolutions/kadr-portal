@@ -7,10 +7,57 @@ const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { getOrCreateSettings, settingsToMap } = require('../services/invoice/invoiceService')
+const {
+  assertAdminPage,
+  assertAdminComponent,
+  assertAdminUsersOrApprovals,
+  adminHasComponent,
+  adminHasPage,
+  normalizeIncomingPermissions,
+  defaultFullPermissions
+} = require('../utils/adminPermissionHelpers')
+
+const calendarEventSelect = {
+  id: true,
+  title: true,
+  description: true,
+  start_datetime: true,
+  end_datetime: true,
+  type: true,
+  meeting_link: true,
+  meeting_summary: true,
+  mediator_next_steps: true,
+  first_party_next_steps: true,
+  second_party_next_steps: true,
+  first_party_rating: true,
+  second_party_rating: true,
+  mediator_feedback_at: true,
+  first_party_feedback_at: true,
+  second_party_feedback_at: true,
+  cases: {
+    select: {
+      id: true,
+      first_party: true,
+      second_party: true,
+      mediator: true,
+      caseId: true
+    }
+  }
+}
 
 module.exports = {
   getCalendarInit: async function (req, res, next) {
     try {
+      if (req.user.type === 'ADMIN') {
+        await assertAdminPage(req, 'calendar')
+        const events = await prisma.events.findMany({
+          orderBy: { start_datetime: 'asc' },
+          select: calendarEventSelect
+        })
+        success(res, { events })
+        return
+      }
+
       const user = await prisma.user.findUnique({
         where: {
           id: req.user.id
@@ -35,33 +82,7 @@ module.exports = {
               }
             ]
           },
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            start_datetime: true,
-            end_datetime: true,
-            type: true,
-            meeting_link: true,
-            meeting_summary: true,
-            mediator_next_steps: true,
-            first_party_next_steps: true,
-            second_party_next_steps: true,
-            first_party_rating: true,
-            second_party_rating: true,
-            mediator_feedback_at: true,
-            first_party_feedback_at: true,
-            second_party_feedback_at: true,
-            cases: {
-              select: {
-                id: true,
-                first_party: true,
-                second_party: true,
-                mediator: true,
-                caseId: true
-              }
-            }
-          }
+          select: calendarEventSelect
         })
         success(res, {
           events
@@ -73,11 +94,17 @@ module.exports = {
       next(error)
     }
   },
-  getInactiveUsers: async function (req, res) {
-    const type = req.query.type
-    const relationField = type === 'CLIENT' ? 'cases_cases_first_partyTouser' : 'cases_cases_mediatorTouser'
-    const inactiveUsers = await helper.getUsers(false, prisma, req.query.page, type, relationField)
-    success(res, { inactiveUsers })
+  getInactiveUsers: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminComponent(req, 'approvals')
+      const type = req.query.type
+      const relationField = type === 'CLIENT' ? 'cases_cases_first_partyTouser' : 'cases_cases_mediatorTouser'
+      const inactiveUsers = await helper.getUsers(false, prisma, req.query.page, type, relationField)
+      success(res, { inactiveUsers })
+    } catch (error) {
+      next(error)
+    }
   },
   updateUserProfile: async function (req, res, next) {
     try {
@@ -113,7 +140,9 @@ module.exports = {
           email: true,
           user_type: true,
           phone_number: true,
-          profile_picture_url: true
+          profile_picture_url: true,
+          master: true,
+          admin_permissions: true
         }
       })
 
@@ -124,6 +153,11 @@ module.exports = {
           startOfToday.setHours(0, 0, 0, 0)
           const endOfToday = new Date()
           endOfToday.setHours(23, 59, 59, 999)
+          const adminRow = { ...user, user_type: 'ADMIN' }
+          if (!adminHasPage(adminRow, 'dashboard')) {
+            success(res, { dashboardContent: {} })
+            return
+          }
           const [inactiveUsers, inactiveMediators, totalCases, clientUsers, mediatorUsers, todaysCaseMeetings] = await Promise.all([
             helper.getUsers(false, prisma, 1, 'CLIENT', 'cases_cases_first_partyTouser'),
             helper.getUsers(false, prisma, 1, 'MEDIATOR', 'cases_cases_mediatorTouser'),
@@ -181,27 +215,35 @@ module.exports = {
               }
             })
           ])
-          dashboardContent.inactive_users = inactiveUsers
-          dashboardContent.inactive_mediators = inactiveMediators
-          dashboardContent.count = {
-            cases: totalCases,
-            clients: clientUsers,
-            mediators: mediatorUsers
-          }
-          dashboardContent.todaysEvent = todaysCaseMeetings.map((event) => ({
-            id: event.id,
-            title: event.title,
-            description: event.description,
-            start_datetime: event.start_datetime,
-            end_datetime: event.end_datetime,
-            type: event.type,
-            meeting_link: event.meeting_link,
-            caseId: event.cases?.caseId,
-            caseType: event.cases?.case_type,
-            caseFirstPartyName: event.cases?.user_cases_first_partyTouser?.name,
-            caseSecondPartyName: event.cases?.user_cases_second_partyTouser?.name,
-            case_id: event.cases?.id
-          }))
+          dashboardContent.inactive_users = adminHasComponent(adminRow, 'approvals') ? inactiveUsers : { total: 0, users: [] }
+          dashboardContent.inactive_mediators = adminHasComponent(adminRow, 'approvals') ? inactiveMediators : { total: 0, users: [] }
+          dashboardContent.count = adminHasComponent(adminRow, 'stats')
+            ? {
+                cases: totalCases,
+                clients: clientUsers,
+                mediators: mediatorUsers
+              }
+            : {
+                cases: 0,
+                clients: 0,
+                mediators: 0
+              }
+          dashboardContent.todaysEvent = adminHasComponent(adminRow, 'schedule')
+            ? todaysCaseMeetings.map((event) => ({
+              id: event.id,
+              title: event.title,
+              description: event.description,
+              start_datetime: event.start_datetime,
+              end_datetime: event.end_datetime,
+              type: event.type,
+              meeting_link: event.meeting_link,
+              caseId: event.cases?.caseId,
+              caseType: event.cases?.case_type,
+              caseFirstPartyName: event.cases?.user_cases_first_partyTouser?.name,
+              caseSecondPartyName: event.cases?.user_cases_second_partyTouser?.name,
+              case_id: event.cases?.id
+            }))
+            : []
           break
         }
 
@@ -261,6 +303,7 @@ module.exports = {
   },
   updateInactiveUser: async function (req, res) {
     if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+    await assertAdminUsersOrApprovals(req)
     const { isActive, caseId, userId, caseType, sendWelcomeEmail = true } = req.body
     const shouldSendWelcomeEmail = Boolean(sendWelcomeEmail) && Boolean(isActive)
     let generatedPassword = null
@@ -449,42 +492,6 @@ module.exports = {
     })
     success(res, { ...user })
   },
-  getMyCases: async function (req, res, next) {
-    try {
-      const { id, type } = req.user
-      const { page } = req.query
-
-      if (!id || !type) throw createError(errorCodes.UNAUTHORIZED)
-
-      switch (type) {
-        case 'MEDIATOR':{
-          const [casesWithEvents, casesCount] = await Promise.all([
-            helper.getMediatorCases(prisma, id, page),
-            helper.getMediatorCasesCount(prisma, id)
-          ])
-          success(res, {
-            casesWithEvents, total: casesCount, page, perPage: 10
-          })
-          break
-        }
-        case 'CLIENT': {
-          const [casesWithEvents, casesCount] = await Promise.all([
-            helper.getJudgeCases(prisma, id, page),
-            helper.getJudgeCasesCount(prisma, id)
-          ])
-          success(res, {
-            casesWithEvents, total: casesCount, page, perPage: 10
-          })
-          break
-        }
-        case 'ADMIN': {
-          break
-        }
-      }
-    } catch (error) {
-      next(error)
-    }
-  },
   getPastMediations: async function (req, res, next) {
     try {
       const { id, type } = req.user
@@ -507,8 +514,8 @@ module.exports = {
         }
         case 'CLIENT': {
           const [casesWithEvents, casesCount] = await Promise.all([
-            helper.getJudgeCases(prisma, id, currentPage, pastStatuses),
-            helper.getJudgeCasesCount(prisma, id, pastStatuses)
+            helper.getClientCases(prisma, id, currentPage, pastStatuses),
+            helper.getClientCasesCount(prisma, id, pastStatuses)
           ])
           success(res, {
             casesWithEvents, total: casesCount, page: currentPage, perPage: 10
@@ -676,9 +683,10 @@ module.exports = {
       next(err)
     }
   },
-  getActiveUsers: async function (req, res) {
+  getActiveUsers: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'users')
       const { page = 1, type, includeInactive = 'false' } = req.query
       const withInactive = String(includeInactive).toLowerCase() === 'true'
 
@@ -698,8 +706,7 @@ module.exports = {
         res.json({ success: true, users: combinedUsers, total: combinedUsers.length })
       }
     } catch (error) {
-      console.error('Error fetching active users:', error)
-      res.status(500).json({ success: false, message: 'Failed to fetch active users' })
+      next(error)
     }
   },
   acceptMediationRequest: async function (req, res, next) {
@@ -759,13 +766,17 @@ module.exports = {
           profile_picture_url: true,
           phone_number: true,
           name: true,
-          master: true
+          master: true,
+          admin_permissions: true
         }
       })
       userData.photo = user.profile_picture_url || ''
       userData.phone = user.phone_number || ''
       userData.name = user.name || ''
       userData.master = Boolean(user.master)
+      if (req.user.type === 'ADMIN') {
+        userData.admin_permissions = user.master ? null : user.admin_permissions
+      }
 
       const signature = helper.signResponseData(userData)
 
@@ -790,6 +801,7 @@ module.exports = {
   getAdminUsers: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'admins')
       const admins = await prisma.user.findMany({
         where: {
           user_type: 'ADMIN'
@@ -804,7 +816,8 @@ module.exports = {
           phone_number: true,
           active: true,
           created_at: true,
-          master: true
+          master: true,
+          admin_permissions: true
         }
       })
       success(res, { admins })
@@ -815,15 +828,21 @@ module.exports = {
   createAdminUser: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'admins')
       const requester = await prisma.user.findUnique({
         where: { id: req.user.id },
         select: { id: true, master: true, name: true }
       })
       if (!requester?.master) throw createError(errorCodes.FORBIDDEN)
-      const { name, email, phone_number, master = false } = req.body
+      const { name, email, phone_number, master = false, admin_permissions: permBody } = req.body
       if (!name || !email) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
       const generatedPassword = helper.generateRandomPassword()
       const hashPassword = await helper.hashPassword(generatedPassword)
+      const isMaster = Boolean(master)
+      let adminPermissions = isMaster ? null : normalizeIncomingPermissions(permBody || defaultFullPermissions())
+      if (!isMaster && adminPermissions && adminPermissions.pages.length === 0) {
+        adminPermissions = defaultFullPermissions()
+      }
       const admin = await prisma.user.create({
         data: {
           name,
@@ -833,9 +852,10 @@ module.exports = {
           active: true,
           is_self_signed_up: false,
           password_hash: hashPassword,
-          master: Boolean(master)
+          master: isMaster,
+          admin_permissions: adminPermissions
         },
-        select: { id: true, name: true, email: true, phone_number: true, active: true, master: true, created_at: true }
+        select: { id: true, name: true, email: true, phone_number: true, active: true, master: true, created_at: true, admin_permissions: true }
       })
       await helper.sendTemplatedEmail('welcomeCredentials', admin.email, {
         recipientName: admin.name,
@@ -852,27 +872,41 @@ module.exports = {
   updateAdminUser: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'admins')
       const requester = await prisma.user.findUnique({
         where: { id: req.user.id },
         select: { id: true, master: true }
       })
       if (!requester?.master) throw createError(errorCodes.FORBIDDEN)
-      const { userId, name, email, phone_number, master } = req.body
+      const { userId, name, email, phone_number, master, admin_permissions: permBody } = req.body
       if (!userId || !name || !email) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
       const target = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, user_type: true }
+        select: { id: true, user_type: true, master: true }
       })
       if (!target || target.user_type !== 'ADMIN') throw createError(errorCodes.NOT_FOUND)
+      const nextMaster = master !== undefined ? Boolean(master) : undefined
+      const data = {
+        name,
+        email,
+        phone_number: phone_number || null
+      }
+      if (nextMaster !== undefined) {
+        data.master = nextMaster
+        if (nextMaster) {
+          data.admin_permissions = null
+        } else if (permBody !== undefined) {
+          data.admin_permissions = normalizeIncomingPermissions(permBody)
+        } else {
+          data.admin_permissions = defaultFullPermissions()
+        }
+      } else if (permBody !== undefined && !target.master) {
+        data.admin_permissions = normalizeIncomingPermissions(permBody)
+      }
       const admin = await prisma.user.update({
         where: { id: userId },
-        data: {
-          name,
-          email,
-          phone_number: phone_number || null,
-          ...(master !== undefined ? { master: Boolean(master) } : {})
-        },
-        select: { id: true, name: true, email: true, phone_number: true, active: true, master: true, created_at: true }
+        data,
+        select: { id: true, name: true, email: true, phone_number: true, active: true, master: true, created_at: true, admin_permissions: true }
       })
       success(res, { admin }, 'Admin user updated successfully')
     } catch (error) {
@@ -882,6 +916,7 @@ module.exports = {
   setAdminActiveStatus: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'admins')
       const requester = await prisma.user.findUnique({
         where: { id: req.user.id },
         select: { id: true, master: true }
@@ -1109,6 +1144,7 @@ module.exports = {
   getAdminActiveCases: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'cases')
       const page = parseInt(req.query.page, 10) || 1
       const filters = {
         mediatorId: req.query.mediatorId || null,
@@ -1133,6 +1169,7 @@ module.exports = {
   getAdminCaseManagementMeta: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'cases')
       const meta = await helper.getAdminCaseFilterMeta(prisma)
       success(res, { meta })
     } catch (error) {
@@ -1142,6 +1179,7 @@ module.exports = {
   adminAssignCaseMediator: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'cases')
       const { caseId, mediatorId } = req.body
       if (!caseId || !mediatorId) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
 

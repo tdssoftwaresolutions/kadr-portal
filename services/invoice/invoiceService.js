@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
 const DEFAULT_SETTINGS = [
-  { key: 'mediator_commission', label: 'Default mediator commission (%)', value: '5' },
+  { key: 'mediator_commission', label: 'Default mediator revenue share (% of mediation amount)', value: '5' },
   { key: 'invoice_gst_percentage', label: 'GST on invoice (%)', value: '0' },
   { key: 'invoice_tax_percentage', label: 'Tax on invoice (%)', value: '0' }
 ]

@@ -6,6 +6,8 @@ const signatureTemplates = require('./signatureTemplates')
 const meetingTemplates = require('./meetingTemplates')
 const adminTemplates = require('./adminTemplates')
 const blogTemplates = require('./blogTemplates')
+const caseCorrespondenceTemplates = require('./caseCorrespondenceTemplates')
+const websiteContactTemplates = require('./websiteContactTemplates')
 
 module.exports = {
   legacyCustomContent,
@@ -15,5 +17,7 @@ module.exports = {
   ...signatureTemplates,
   ...meetingTemplates,
   ...adminTemplates,
-  ...blogTemplates
+  ...blogTemplates,
+  ...caseCorrespondenceTemplates,
+  ...websiteContactTemplates
 }

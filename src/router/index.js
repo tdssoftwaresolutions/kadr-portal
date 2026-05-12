@@ -13,8 +13,11 @@ import GoogleAccountManagement from '../views/AdminControllers/GoogleAccountMana
 import AdminBlogTaxonomyView from '../views/AdminControllers/AdminBlogTaxonomyView.vue'
 import AdminManagementView from '../views/AdminControllers/AdminManagementView.vue'
 import AdminSettingsView from '../views/AdminControllers/AdminSettingsView.vue'
+import AdminCalendar from '../views/AdminControllers/AdminCalendar.vue'
+import AdminCorrespondenceInbox from '../views/AdminControllers/AdminCorrespondenceInbox.vue'
 /** Mediator */
 import InvoicesView from '../views/MediatorControllers/InvoicesView.vue'
+import PortalSupportView from '../views/Standard/PortalSupportView.vue'
 
 /** Client  */
 
@@ -52,6 +55,7 @@ const childRoutes = (prop) => [
   {
     path: '',
     name: prop + '.home',
+    meta: { adminPage: 'dashboard' },
     component: Dashboard
   }
 ]
@@ -61,6 +65,12 @@ const appChildRoute = (prop) => [
     name: prop + '.past-mediations',
     meta: { name: 'Past Mediations' },
     component: PastMediationsView
+  },
+  {
+    path: 'support',
+    name: prop + '.support',
+    meta: { name: 'Support' },
+    component: PortalSupportView
   },
   {
     path: 'calendar',
@@ -86,43 +96,55 @@ const appChildRoute = (prop) => [
   {
     path: 'users',
     name: prop + '.users',
-    meta: { name: 'Admin Users List' },
+    meta: { name: 'Admin Users List', adminPage: 'users' },
     component: AdminUsersListView
   },
   {
     path: 'cases',
     name: prop + '.cases',
-    meta: { name: 'Case management' },
+    meta: { name: 'Case management', adminPage: 'cases' },
     component: AdminCasesManagementView
+  },
+  {
+    path: 'messages',
+    name: prop + '.messages',
+    meta: { name: 'Messages', adminPage: 'messages' },
+    component: AdminCorrespondenceInbox
+  },
+  {
+    path: 'admin-calendar',
+    name: prop + '.admin-calendar',
+    meta: { name: 'Meetings calendar', adminPage: 'calendar' },
+    component: AdminCalendar
   },
   {
     path: 'google_management',
     name: prop + '.google_management',
-    meta: { name: 'Google Account Management' },
+    meta: { name: 'Google Account Management', adminPage: 'google' },
     component: GoogleAccountManagement
   },
   {
     path: 'blog-taxonomy',
     name: prop + '.blog-taxonomy',
-    meta: { name: 'Blog Taxonomy' },
+    meta: { name: 'Blog Taxonomy', adminPage: 'blog-taxonomy' },
     component: AdminBlogTaxonomyView
   },
   {
     path: 'admins',
     name: prop + '.admins',
-    meta: { name: 'Admin Management' },
+    meta: { name: 'Admin Management', adminPage: 'admins' },
     component: AdminManagementView
   },
   {
     path: 'settings',
     name: prop + '.settings',
-    meta: { name: 'Settings' },
+    meta: { name: 'Settings', adminPage: 'settings' },
     component: AdminSettingsView
   },
   {
     path: 'invoices',
     name: prop + '.invoices',
-    meta: { name: 'Payments & Invoices' },
+    meta: { name: 'Payments & Invoices', adminPage: 'invoices' },
     component: InvoicesView
   }
 ]

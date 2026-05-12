@@ -34,5 +34,17 @@
     "class_name": "",
     "is_icon_class": true,
     "icon": "ri-calendar-event-line"
+  },
+  {
+    "title": "Support",
+    "name": "app.support",
+    "is_heading": false,
+    "is_active": false,
+    "link": {
+      "name": "app.support"
+    },
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-customer-service-2-line"
   }
 ]
