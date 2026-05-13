@@ -71,12 +71,13 @@
 <script>
 import Loader from '../components/sofbox/loader/Loader'
 import SideBarStyle1 from '../components/sofbox/sidebars/SideBarStyle1'
-import SideBarItems from '../FackApi/json/SideBar'
-import SideBarItemsMediator from '../FackApi/json/SideBarMediator'
-import SideBarItemAdmin from '../FackApi/json/SideBarAdmin'
-import profile from '../assets/images/user/1.jpeg'
+import SideBarItemsClient from '../config/navigation/SideBarClient.json'
+import SideBarItemsMediator from '../config/navigation/SideBarMediator.json'
+import SideBarItemAdmin from '../config/navigation/SideBarAdmin.json'
+import profile from '../assets/images/default_avatar.jpeg'
 import logo from '../assets/images/logo.png'
 import { sofbox } from '../config/pluginInit'
+import { filterAdminSidebarItems, adminCanAccessRoute, firstAllowedAdminRouteName } from '../utils/adminAccess'
 
 export default {
   name: 'StandardLayout',
@@ -98,9 +99,18 @@ export default {
   beforeDestroy () {
     this.removeCompactSidebarState()
   },
+  watch: {
+    $route (to) {
+      if (this.user && this.user.type === 'ADMIN' && !adminCanAccessRoute(this.user, to)) {
+        const nextName = firstAllowedAdminRouteName(this.user)
+        if (!nextName || nextName === to.name) return
+        this.$router.replace({ name: nextName })
+      }
+    }
+  },
   data () {
     return {
-      sidebar: SideBarItems,
+      sidebar: SideBarItemsClient,
       userProfile: profile,
       logo,
       user: null,
@@ -141,14 +151,25 @@ export default {
             this.sidebar = SideBarItemsMediator
             break
           case 'CLIENT':
-            this.sidebar = SideBarItems
+            this.sidebar = SideBarItemsClient
             break
           case 'ADMIN':
-            this.sidebar = SideBarItemAdmin
+            this.sidebar = filterAdminSidebarItems(SideBarItemAdmin, data.userData)
             break
         }
         this.user = data.userData
         this.userProfile = data.userData.photo || profile
+        if (data.userData.type === 'ADMIN') {
+          this.$nextTick(() => this.enforceAdminRouteAccess())
+        }
+      }
+    },
+    enforceAdminRouteAccess () {
+      if (!this.user || this.user.type !== 'ADMIN' || !this.$route) return
+      if (!adminCanAccessRoute(this.user, this.$route)) {
+        const nextName = firstAllowedAdminRouteName(this.user)
+        if (!nextName || nextName === this.$route.name) return
+        this.$router.replace({ name: nextName })
       }
     },
     handleComplete () {},

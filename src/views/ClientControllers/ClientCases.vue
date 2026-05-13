@@ -195,22 +195,37 @@
         </div>
 
         <aside class="workspace-side">
-          <section class="section-card sticky">
-            <div class="section-head">
-              <h5>Case Timeline</h5>
-              <small>Current stage and pending milestones.</small>
-            </div>
-            <div class="timeline">
-              <div
-                v-for="(step, index) in selectedCase.case_history"
-                :key="index"
-                class="timeline-step"
-                :class="getProgressStepClass(step)"
-              >
-                <p>{{ step.title }}</p>
+          <div class="workspace-side-stack">
+            <section class="section-card">
+              <div class="section-head">
+                <h5>Case Timeline</h5>
+                <small>Current stage and pending milestones.</small>
               </div>
-            </div>
-          </section>
+              <div class="timeline">
+                <div
+                  v-for="(step, index) in selectedCase.case_history"
+                  :key="index"
+                  class="timeline-step"
+                  :class="getProgressStepClass(step)"
+                >
+                  <p>{{ step.title }}</p>
+                </div>
+              </div>
+            </section>
+            <section v-if="selectedCase.id" class="section-card side-correspondence-card">
+              <CaseCorrespondencePanel
+                embedded
+                variant="sidebar"
+                :case-id="selectedCase.id"
+                :user-id="userid"
+                user-type="CLIENT"
+                mode="client"
+                :client-channel="clientCorrespondenceChannel"
+                :has-mediator="true"
+                :read-only="isPastView"
+              />
+            </section>
+          </div>
         </aside>
       </div>
     </section>
@@ -289,6 +304,7 @@
 import { sofbox } from '../../config/pluginInit'
 import FilePreview from '../core/DocumentPreview.vue'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
+import CaseCorrespondencePanel from '../../components/CaseCorrespondencePanel.vue'
 import {
   isPastKadrCaseMeeting,
   clientNeedsMeetingFeedback,
@@ -300,7 +316,8 @@ export default {
   name: 'ClientCases',
   components: {
     FilePreview,
-    MeetingFeedbackModal
+    MeetingFeedbackModal,
+    CaseCorrespondencePanel
   },
   props: {
     content: {
@@ -358,6 +375,11 @@ export default {
     clientPartyRole () {
       if (this.userid === this.selectedCase.user_cases_first_partyTouser?.id) return 'first'
       if (this.userid === this.selectedCase.user_cases_second_partyTouser?.id) return 'second'
+      return null
+    },
+    clientCorrespondenceChannel () {
+      if (this.userid === this.selectedCase.user_cases_first_partyTouser?.id) return 'ADMIN_FIRST_PARTY'
+      if (this.userid === this.selectedCase.user_cases_second_partyTouser?.id) return 'ADMIN_SECOND_PARTY'
       return null
     },
     clientInitialPartySteps () {
@@ -1042,9 +1064,16 @@ export default {
   flex-wrap: wrap;
 }
 
-.workspace-side .sticky {
+.workspace-side-stack {
   position: sticky;
   top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.side-correspondence-card {
+  padding: 0.65rem 0.75rem;
 }
 
 .timeline {
@@ -1171,7 +1200,7 @@ export default {
     grid-template-columns: 1fr;
   }
 
-  .workspace-side .sticky {
+  .workspace-side-stack {
     position: static;
   }
 }

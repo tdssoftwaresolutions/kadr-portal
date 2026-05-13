@@ -13,8 +13,11 @@ import GoogleAccountManagement from '../views/AdminControllers/GoogleAccountMana
 import AdminBlogTaxonomyView from '../views/AdminControllers/AdminBlogTaxonomyView.vue'
 import AdminManagementView from '../views/AdminControllers/AdminManagementView.vue'
 import AdminSettingsView from '../views/AdminControllers/AdminSettingsView.vue'
+import AdminCalendar from '../views/AdminControllers/AdminCalendar.vue'
+import AdminCorrespondenceInbox from '../views/AdminControllers/AdminCorrespondenceInbox.vue'
 /** Mediator */
 import InvoicesView from '../views/MediatorControllers/InvoicesView.vue'
+import PortalSupportView from '../views/Standard/PortalSupportView.vue'
 
 /** Client  */
 
@@ -35,16 +38,12 @@ import SignUp from '../views/AuthPages/SignUp.vue'
 import RecoverPassword from '../views/AuthPages/RecoverPassword.vue'
 import ProfileEdit from '../views/Standard/ProfileEdit.vue'
 
-import ErrorPage from '../views/Pages/ErrorPage'
-import ComingSoon from '../views/Pages/ComingSoon'
-import Maintenance from '../views/Pages/Maintenance'
-import BlankPage from '../views/Pages/BlankPage'
-import FAQ from '../views/Pages/FAQ'
-import Invoice from '../views/Pages/Invoice'
+import ErrorPage from '../views/Pages/ErrorPage.vue'
+import ComingSoon from '../views/Pages/ComingSoon.vue'
+import Maintenance from '../views/Pages/Maintenance.vue'
+import BlankPage from '../views/Pages/BlankPage.vue'
 import ClientCalendar from '../views/ClientControllers/Calendar.vue'
 import MediatorCalendar from '../views/MediatorControllers/Calendar.vue'
-import ECommerceListing from '../views/Apps/Ecommerce/Listing.vue'
-import EditableTable from '../views/Tables/EditableTable'
 
 Vue.use(VueRouter)
 
@@ -52,6 +51,7 @@ const childRoutes = (prop) => [
   {
     path: '',
     name: prop + '.home',
+    meta: { adminPage: 'dashboard' },
     component: Dashboard
   }
 ]
@@ -61,6 +61,12 @@ const appChildRoute = (prop) => [
     name: prop + '.past-mediations',
     meta: { name: 'Past Mediations' },
     component: PastMediationsView
+  },
+  {
+    path: 'support',
+    name: prop + '.support',
+    meta: { name: 'Support' },
+    component: PortalSupportView
   },
   {
     path: 'calendar',
@@ -78,51 +84,57 @@ const appChildRoute = (prop) => [
     component: Signature
   },
   {
-    path: 'e-commerce/listing',
-    name: prop + '.e-commerce.index',
-    meta: { name: 'Product list' },
-    component: ECommerceListing
-  },
-  {
     path: 'users',
     name: prop + '.users',
-    meta: { name: 'Admin Users List' },
+    meta: { name: 'Admin Users List', adminPage: 'users' },
     component: AdminUsersListView
   },
   {
     path: 'cases',
     name: prop + '.cases',
-    meta: { name: 'Case management' },
+    meta: { name: 'Case management', adminPage: 'cases' },
     component: AdminCasesManagementView
+  },
+  {
+    path: 'messages',
+    name: prop + '.messages',
+    meta: { name: 'Messages', adminPage: 'messages' },
+    component: AdminCorrespondenceInbox
+  },
+  {
+    path: 'admin-calendar',
+    name: prop + '.admin-calendar',
+    meta: { name: 'Meetings calendar', adminPage: 'calendar' },
+    component: AdminCalendar
   },
   {
     path: 'google_management',
     name: prop + '.google_management',
-    meta: { name: 'Google Account Management' },
+    meta: { name: 'Google Account Management', adminPage: 'google' },
     component: GoogleAccountManagement
   },
   {
     path: 'blog-taxonomy',
     name: prop + '.blog-taxonomy',
-    meta: { name: 'Blog Taxonomy' },
+    meta: { name: 'Blog Taxonomy', adminPage: 'blog-taxonomy' },
     component: AdminBlogTaxonomyView
   },
   {
     path: 'admins',
     name: prop + '.admins',
-    meta: { name: 'Admin Management' },
+    meta: { name: 'Admin Management', adminPage: 'admins' },
     component: AdminManagementView
   },
   {
     path: 'settings',
     name: prop + '.settings',
-    meta: { name: 'Settings' },
+    meta: { name: 'Settings', adminPage: 'settings' },
     component: AdminSettingsView
   },
   {
     path: 'invoices',
     name: prop + '.invoices',
-    meta: { name: 'Payments & Invoices' },
+    meta: { name: 'Payments & Invoices', adminPage: 'invoices' },
     component: InvoicesView
   }
 ]
@@ -171,19 +183,9 @@ const userChildRoute = (prop) => [
 
 const defaultlayout = (prop) => [
   {
-    path: 'invoice',
-    name: prop + '.invoice',
-    component: Invoice
-  },
-  {
     path: 'blank-page',
     name: prop + '.blank-page',
     component: BlankPage
-  },
-  {
-    path: 'faq',
-    name: prop + '.faq',
-    component: FAQ
   }
 ]
 
@@ -205,26 +207,12 @@ const pagesChildRoutes = (prop) => [
   }
 ]
 
-const tableChildRoute = (prop) => [
-  {
-    path: 'editable',
-    name: prop + '.editable',
-    component: EditableTable
-  }
-]
-
 const routes = [
   {
     path: '/',
     name: 'dashboard',
     component: StandardLayout,
     children: childRoutes('dashboard')
-  },
-  {
-    path: '/table',
-    name: 'table',
-    component: StandardLayout,
-    children: tableChildRoute('table')
   },
   {
     path: '/agreement-signature',

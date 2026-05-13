@@ -33,6 +33,7 @@ model user {
   llb_certificate_url            String?         @db.VarChar(255)
   profile_picture_url            String?         @db.VarChar(255)
   master                         Boolean         @default(false)
+  admin_permissions              Json?
   blogs                          blogs[]
   mediator_video_reels           MediatorVideoReel[]
   cases_cases_first_partyTouser  cases[]         @relation("cases_first_partyTouser")
@@ -45,6 +46,10 @@ model user {
   blog_comments                  blog_comments[]
   mediator_bank_accounts         mediator_bank_accounts[]
   mediator_invoices              mediator_invoices[]
+  case_messages                  case_messages[]                 @relation("case_messages_author")
+  website_contact_messages       website_contact_messages[]      @relation("website_contact_message_admin")
+  website_contact_portal_threads website_contact_threads[]       @relation("WebsiteContactPortalUser")
+  admin_inbox_read_states        admin_inbox_read_states[]
 
   @@index([user_type, active, created_at], map: "idx_user_type_active_created")
 }
@@ -76,7 +81,8 @@ model cases {
   transactions                  transactions[]
   mediator_invoices             mediator_invoices[]
 
-  signature_tracking signature_tracking[] 
+  signature_tracking signature_tracking[]
+  case_messages      case_messages[]
   @@index([mediator], map: "fk_mediator")
   @@index([first_party], map: "fk_first_party")
   @@index([second_party], map: "fk_second_party")
@@ -441,4 +447,114 @@ enum otp_resets_type {
 enum mediator_invoices_status {
   PENDING
   PAID
+}
+
+enum case_correspondence_channel {
+  FIRST_PARTY_MEDIATOR
+  SECOND_PARTY_MEDIATOR
+  ADMIN_MEDIATOR
+  ADMIN_FIRST_PARTY
+  ADMIN_SECOND_PARTY
+}
+
+model case_messages {
+  id                String                     @id @default(uuid()) @db.Char(36)
+  case_id           String                     @db.Char(36)
+  channel           case_correspondence_channel
+  author_id         String                     @db.Char(36)
+  parent_id         String?                    @db.Char(36)
+  body              String                     @db.Text
+  had_pii_removed   Boolean                    @default(false)
+  created_at        DateTime?                  @default(now()) @db.Timestamp(0)
+  updated_at        DateTime?                  @default(now()) @updatedAt @db.Timestamp(0)
+  cases             cases                      @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_case_messages_case")
+  user              user                       @relation("case_messages_author", fields: [author_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_case_messages_author")
+  parent            case_messages?             @relation("case_message_thread", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: Restrict, map: "fk_case_messages_parent")
+  replies           case_messages[]            @relation("case_message_thread")
+  attachments       case_message_attachments[]
+
+  @@index([case_id, channel, created_at], map: "idx_case_messages_case_channel_created")
+  @@index([author_id], map: "idx_case_messages_author")
+  @@index([parent_id], map: "idx_case_messages_parent")
+}
+
+model case_message_attachments {
+  id         String        @id @default(uuid()) @db.Char(36)
+  message_id String        @db.Char(36)
+  file_name  String        @db.VarChar(500)
+  s3_url     String        @db.VarChar(500)
+  mime_type  String?       @db.VarChar(120)
+  created_at DateTime?     @default(now()) @db.Timestamp(0)
+  message    case_messages @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_case_message_attachments_msg")
+
+  @@index([message_id], map: "idx_case_message_attachments_msg")
+}
+
+enum admin_inbox_thread_kind {
+  CASE
+  WEBSITE
+}
+
+model admin_inbox_read_states {
+  id                String                 @id @default(uuid()) @db.Char(36)
+  admin_id          String                 @db.Char(36)
+  thread_kind       admin_inbox_thread_kind
+  case_id           String?                @db.Char(36)
+  logical_channel   String?                @db.VarChar(40)
+  website_thread_id String?                @db.Char(36)
+  last_read_at      DateTime               @db.Timestamp(0)
+  created_at        DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at        DateTime               @default(now()) @updatedAt @db.Timestamp(0)
+  user              user                   @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_admin_inbox_read_user")
+
+  @@unique([admin_id, thread_kind, case_id, logical_channel, website_thread_id], map: "uq_admin_inbox_read")
+  @@index([admin_id], map: "idx_admin_inbox_read_admin")
+}
+
+enum website_contact_thread_status {
+  OPEN
+  CLOSED
+}
+
+enum website_contact_thread_origin {
+  WEBSITE
+  PORTAL
+}
+
+enum website_contact_message_author {
+  VISITOR
+  ADMIN
+  PORTAL_USER
+}
+
+model website_contact_threads {
+  id              String                           @id @default(uuid()) @db.Char(36)
+  email           String                           @db.VarChar(255)
+  phone           String?                          @db.VarChar(40)
+  title           String                           @db.VarChar(500)
+  visitor_name    String?                          @db.VarChar(255)
+  thread_origin   website_contact_thread_origin    @default(WEBSITE)
+  portal_user_id  String?                          @db.Char(36)
+  support_topic   String?                          @db.VarChar(40)
+  status          website_contact_thread_status    @default(OPEN)
+  created_at      DateTime?                        @default(now()) @db.Timestamp(0)
+  updated_at      DateTime?                        @default(now()) @updatedAt @db.Timestamp(0)
+  messages        website_contact_messages[]
+  portal_user     user?                            @relation("WebsiteContactPortalUser", fields: [portal_user_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_website_contact_portal_user")
+
+  @@index([updated_at], map: "idx_website_contact_threads_updated")
+  @@index([portal_user_id], map: "idx_website_contact_portal_user")
+}
+
+model website_contact_messages {
+  id          String                         @id @default(uuid()) @db.Char(36)
+  thread_id   String                         @db.Char(36)
+  author_type website_contact_message_author
+  body        String                         @db.Text
+  admin_id    String?                        @db.Char(36)
+  created_at  DateTime?                      @default(now()) @db.Timestamp(0)
+  thread      website_contact_threads        @relation(fields: [thread_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_website_contact_msg_thread")
+  admin       user?                          @relation("website_contact_message_admin", fields: [admin_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_website_contact_msg_admin")
+
+  @@index([thread_id, created_at], map: "idx_website_contact_msg_thread_created")
 }

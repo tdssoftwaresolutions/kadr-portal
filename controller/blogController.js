@@ -3,6 +3,7 @@ const prisma = new PrismaClient()
 const helper = require('../utils/helper')
 const { success, error } = require('../utils/responses')
 const striptags = require('striptags')
+const { assertAdminPage } = require('../utils/adminPermissionHelpers')
 
 module.exports = {
   getAdminBlogTaxonomy: async function (req, res, next) {
@@ -10,6 +11,7 @@ module.exports = {
       if (req.user?.type !== 'ADMIN') {
         return error(res, { message: 'Forbidden' }, 403)
       }
+      await assertAdminPage(req, 'blog-taxonomy')
       const [categories, tags] = await Promise.all([
         prisma.categories.findMany({
           orderBy: { name: 'asc' },
@@ -38,6 +40,7 @@ module.exports = {
       if (req.user?.type !== 'ADMIN') {
         return error(res, { message: 'Forbidden' }, 403)
       }
+      await assertAdminPage(req, 'blog-taxonomy')
       const name = (req.body?.name || '').trim()
       if (!name) {
         return error(res, { message: 'Category name is required' }, 400)
@@ -55,6 +58,7 @@ module.exports = {
       if (req.user?.type !== 'ADMIN') {
         return error(res, { message: 'Forbidden' }, 403)
       }
+      await assertAdminPage(req, 'blog-taxonomy')
       const { id, name } = req.body || {}
       const nextName = (name || '').trim()
       if (!id || !nextName) {
@@ -74,6 +78,7 @@ module.exports = {
       if (req.user?.type !== 'ADMIN') {
         return error(res, { message: 'Forbidden' }, 403)
       }
+      await assertAdminPage(req, 'blog-taxonomy')
       const id = req.params.id
       if (!id) return error(res, { message: 'Category id is required' }, 400)
       const linksCount = await prisma.blog_categories.count({
@@ -95,6 +100,7 @@ module.exports = {
       if (req.user?.type !== 'ADMIN') {
         return error(res, { message: 'Forbidden' }, 403)
       }
+      await assertAdminPage(req, 'blog-taxonomy')
       const name = (req.body?.name || '').trim()
       if (!name) {
         return error(res, { message: 'Tag name is required' }, 400)
@@ -112,6 +118,7 @@ module.exports = {
       if (req.user?.type !== 'ADMIN') {
         return error(res, { message: 'Forbidden' }, 403)
       }
+      await assertAdminPage(req, 'blog-taxonomy')
       const { id, name } = req.body || {}
       const nextName = (name || '').trim()
       if (!id || !nextName) {
@@ -131,6 +138,7 @@ module.exports = {
       if (req.user?.type !== 'ADMIN') {
         return error(res, { message: 'Forbidden' }, 403)
       }
+      await assertAdminPage(req, 'blog-taxonomy')
       const id = req.params.id
       if (!id) return error(res, { message: 'Tag id is required' }, 400)
       const linksCount = await prisma.blog_tags.count({
@@ -147,36 +155,43 @@ module.exports = {
       next(e)
     }
   },
-  saveBlog: async function (req, res) {
-    const { blog, status } = req.body
-    const { id, email, name } = req.user
-    const savedBlog = await helper.saveBlog(prisma, blog, id, status)
-    const formattedBlog = {
-      id: savedBlog.id,
-      title: savedBlog.title,
-      content: savedBlog.content,
-      author_id: savedBlog.authorId,
-      status: savedBlog.status,
-      url: savedBlog.url,
-      created_at: savedBlog.created_at,
-      updated_at: savedBlog.updated_at,
-      categories: savedBlog.blog_categories.map((bt) => ({
-        id: bt.categories.id,
-        name: bt.categories.name
-      })),
-      tags: savedBlog.blog_tags.map((bt) => ({
-        id: bt.tags.id,
-        name: bt.tags.name
-      }))
-    }
-    if (status === 'Published') {
-      await helper.sendTemplatedEmail('blogPublished', email, {
-        recipientName: name,
+  saveBlog: async function (req, res, next) {
+    try {
+      const { blog, status } = req.body
+      if (!blog || !blog.contentRightsConfirmed) {
+        return error(res, { message: 'You must confirm that this content is your own, that it is not copied from a third party without permission, and that you have the right to publish it on this website.' }, 400)
+      }
+      const { id, email, name } = req.user
+      const savedBlog = await helper.saveBlog(prisma, blog, id, status)
+      const formattedBlog = {
+        id: savedBlog.id,
         title: savedBlog.title,
-        blogUrl: `${process.env.BASE_URL}/${savedBlog.url}`
-      })
+        content: savedBlog.content,
+        author_id: savedBlog.authorId,
+        status: savedBlog.status,
+        url: savedBlog.url,
+        created_at: savedBlog.created_at,
+        updated_at: savedBlog.updated_at,
+        categories: savedBlog.blog_categories.map((bt) => ({
+          id: bt.categories.id,
+          name: bt.categories.name
+        })),
+        tags: savedBlog.blog_tags.map((bt) => ({
+          id: bt.tags.id,
+          name: bt.tags.name
+        }))
+      }
+      if (status === 'Published') {
+        await helper.sendTemplatedEmail('blogPublished', email, {
+          recipientName: name,
+          title: savedBlog.title,
+          blogUrl: `${process.env.BASE_URL}/${savedBlog.url}`
+        })
+      }
+      success(res, { blog: formattedBlog }, 'Blog saved successfully')
+    } catch (e) {
+      next(e)
     }
-    success(res, { blog: formattedBlog }, 'Blog saved successfully')
   },
   deleteBlog: async function (req, res) {
     const { id } = req.params

@@ -68,7 +68,7 @@
                       <strong>Type:</strong> {{ c.case_type }}
                     </p>
                     <p class="mb-2">
-                      <strong>Mediator commission:</strong> {{ Number(c.mediator_commission || 0).toFixed(2) }}%
+                      <strong>Mediator revenue share:</strong> {{ Number(c.mediator_commission || 0).toFixed(2) }}% of mediation amount
                     </p>
                     <div class="mt-auto d-flex flex-wrap justify-content-end">
                       <b-button variant="outline-primary" size="sm" class="mr-1 mb-1" @click="openDetailModal(c)">
@@ -108,121 +108,249 @@
       title="Case details"
       hide-footer
       scrollable
+      @hidden="onDetailModalHidden"
     >
-      <div v-if="selectedCase">
-        <h5 class="mb-3">{{ selectedCase.caseId || 'Case' }}</h5>
-        <p class="mb-2"><strong>Status: </strong> {{ statusLabel(selectedCase) }} — {{ subStatusLabel(selectedCase) }}</p>
-        <p class="mb-2" v-if="selectedCase.category"><strong>Category: </strong> {{ selectedCase.category }}</p>
-        <p class="mb-2" v-if="selectedCase.case_type"><strong>Case type: </strong> {{ selectedCase.case_type }}</p>
-        <p class="mb-2" v-if="selectedCase.description"><strong>Description: </strong> {{ selectedCase.description }}</p>
-        <p class="mb-2"><strong>First party: </strong> {{ partyDetail(selectedCase.user_cases_first_partyTouser) }}</p>
-        <p class="mb-2"><strong>Second party: </strong> {{ partyDetail(selectedCase.user_cases_second_partyTouser) }}</p>
-        <p class="mb-2"><strong>Mediator:</strong>
-          <span v-if="selectedCase.user_cases_mediatorTouser">
-            {{ partyDetail(selectedCase.user_cases_mediatorTouser) }}
-          </span>
-          <span v-else class="text-muted">Not assigned</span>
-        </p>
-        <div class="border rounded p-2 mb-3 bg-light">
-          <p class="mb-2"><strong>Case commission (%)</strong></p>
-          <div class="d-flex align-items-center">
-            <b-form-input v-model.number="selectedCaseCommission" type="number" min="0" step="0.01" style="max-width: 220px;" />
-            <b-button size="sm" variant="primary" class="ml-2" @click="saveCaseCommission">Update</b-button>
+      <div v-if="selectedCase" class="admin-case-detail">
+        <header class="detail-hero mb-3">
+          <div>
+            <h5 class="mb-1">{{ selectedCase.caseId || 'Case' }}</h5>
+            <p class="mb-0 text-muted small">
+              Opened {{ formatDate(selectedCase.created_at) }}
+              <span v-if="selectedCase.updated_at"> · Updated {{ formatDate(selectedCase.updated_at) }}</span>
+            </p>
           </div>
-        </div>
+          <div class="detail-hero-badges">
+            <b-badge variant="info">{{ statusLabel(selectedCase) }}</b-badge>
+            <b-badge variant="secondary">{{ subStatusLabel(selectedCase) }}</b-badge>
+          </div>
+        </header>
 
-        <p class="mb-2"><strong>Meetings:</strong> </p>
-        <div v-if="!selectedCase.events || selectedCase.events.length === 0" class="text-muted small mb-3">No meetings scheduled yet.</div>
-        <div v-else class="meeting-stack mb-4">
-          <article
-            v-for="meeting in meetingRows(selectedCase.events)"
-            :key="meeting.id"
-            class="meeting-card"
-          >
-            <div class="meeting-head">
-              <div>
-                <h6 class="mb-1">{{ meeting.title || 'Meeting' }}</h6>
-                <p class="mb-0 small text-muted">Starts: {{ meeting.start }}</p>
-                <p class="mb-0 small text-muted">Ends: {{ meeting.end }}</p>
+        <b-tabs v-model="detailTab" content-class="detail-tab-body" nav-class="detail-tab-nav" pills card>
+          <b-tab title="Overview">
+            <div class="detail-section">
+              <h6 class="detail-section-title">Case summary</h6>
+              <dl class="detail-dl row">
+                <dt class="col-sm-3">Category</dt>
+                <dd class="col-sm-9">{{ selectedCase.category || '—' }}</dd>
+                <dt class="col-sm-3">Case type</dt>
+                <dd class="col-sm-9">{{ selectedCase.case_type || '—' }}</dd>
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9 text-break">{{ selectedCase.description || '—' }}</dd>
+              </dl>
+            </div>
+
+            <div class="detail-section">
+              <h6 class="detail-section-title">People on this case</h6>
+              <b-row>
+                <b-col md="4" class="mb-2">
+                  <div class="party-tile">
+                    <span class="party-tile-label">First party</span>
+                    <p class="party-tile-main">{{ partyName(selectedCase.user_cases_first_partyTouser) }}</p>
+                    <p class="party-tile-meta">{{ partyExtraLines(selectedCase.user_cases_first_partyTouser) }}</p>
+                  </div>
+                </b-col>
+                <b-col md="4" class="mb-2">
+                  <div class="party-tile">
+                    <span class="party-tile-label">Second party</span>
+                    <p class="party-tile-main">{{ partyName(selectedCase.user_cases_second_partyTouser) }}</p>
+                    <p class="party-tile-meta">{{ partyExtraLines(selectedCase.user_cases_second_partyTouser) }}</p>
+                  </div>
+                </b-col>
+                <b-col md="4" class="mb-2">
+                  <div class="party-tile">
+                    <span class="party-tile-label">Mediator</span>
+                    <p class="party-tile-main">
+                      {{ selectedCase.user_cases_mediatorTouser ? partyName(selectedCase.user_cases_mediatorTouser) : 'Not assigned' }}
+                    </p>
+                    <p v-if="selectedCase.user_cases_mediatorTouser" class="party-tile-meta">{{ partyExtraLines(selectedCase.user_cases_mediatorTouser) }}</p>
+                  </div>
+                </b-col>
+              </b-row>
+            </div>
+
+            <div class="detail-section commission-box">
+              <h6 class="detail-section-title">Mediator revenue share (% of mediation amount)</h6>
+              <div class="d-flex flex-wrap align-items-center">
+                <b-form-input v-model.number="selectedCaseCommission" type="number" min="0" step="0.01" class="commission-input" />
+                <b-button size="sm" variant="primary" class="ml-2" @click="saveCaseCommission">Save</b-button>
               </div>
-              <div class="meeting-head-actions">
-                <span class="meeting-status-tag" :class="meeting.statusClass">{{ meeting.statusLabel }}</span>
-                <b-button
-                  v-if="meeting.meeting_link"
-                  size="sm"
-                  variant="primary"
-                  :href="meeting.meeting_link"
-                  target="_blank"
-                  rel="noopener"
+            </div>
+          </b-tab>
+
+          <b-tab title="Activity">
+            <div class="detail-section">
+              <h6 class="detail-section-title">Meetings</h6>
+              <div v-if="!selectedCase.events || selectedCase.events.length === 0" class="text-muted small">No meetings scheduled yet.</div>
+              <div v-else class="meeting-stack">
+                <article
+                  v-for="meeting in meetingRows(selectedCase.events)"
+                  :key="meeting.id"
+                  class="meeting-card"
                 >
-                  Join
-                </b-button>
-                <b-button
-                  v-if="meeting.google_calendar_link"
-                  size="sm"
-                  variant="outline-secondary"
-                  :href="meeting.google_calendar_link"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  Calendar
-                </b-button>
+                  <div class="meeting-head">
+                    <div>
+                      <h6 class="mb-1">{{ meeting.title || 'Meeting' }}</h6>
+                      <p class="mb-0 small text-muted">Starts: {{ meeting.start }}</p>
+                      <p class="mb-0 small text-muted">Ends: {{ meeting.end }}</p>
+                    </div>
+                    <div class="meeting-head-actions">
+                      <span class="meeting-status-tag" :class="meeting.statusClass">{{ meeting.statusLabel }}</span>
+                      <b-button
+                        v-if="meeting.meeting_link"
+                        size="sm"
+                        variant="primary"
+                        :href="meeting.meeting_link"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        Join
+                      </b-button>
+                      <b-button
+                        v-if="meeting.google_calendar_link"
+                        size="sm"
+                        variant="outline-secondary"
+                        :href="meeting.google_calendar_link"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        Calendar
+                      </b-button>
+                    </div>
+                  </div>
+
+                  <b-tabs class="feedback-tabs mt-2" content-class="pt-2" pills small>
+                    <b-tab title="Mediator">
+                      <section class="feedback-box">
+                        <p><strong>Summary: </strong> {{ meeting.meeting_summary || '—' }}</p>
+                        <p><strong>Next steps: </strong> {{ meeting.mediator_next_steps || '—' }}</p>
+                        <p><strong>Submitted: </strong> {{ meeting.mediator_feedback_at || '—' }}</p>
+                      </section>
+                    </b-tab>
+                    <b-tab title="First party">
+                      <section class="feedback-box">
+                        <p>
+                          <strong>Rating: </strong>
+                          <span v-if="meeting.first_party_rating != null">{{ meeting.first_party_rating }}/5 {{ meeting.first_party_stars }}</span>
+                          <span v-else>—</span>
+                        </p>
+                        <p><strong>Next steps: </strong> {{ meeting.first_party_next_steps || '—' }}</p>
+                        <p><strong>Submitted: </strong> {{ meeting.first_party_feedback_at || '—' }}</p>
+                      </section>
+                    </b-tab>
+                    <b-tab title="Second party">
+                      <section class="feedback-box">
+                        <p>
+                          <strong>Rating: </strong>
+                          <span v-if="meeting.second_party_rating != null">{{ meeting.second_party_rating }}/5 {{ meeting.second_party_stars }}</span>
+                          <span v-else>—</span>
+                        </p>
+                        <p><strong>Next steps: </strong> {{ meeting.second_party_next_steps || '—' }}</p>
+                        <p><strong>Submitted: </strong> {{ meeting.second_party_feedback_at || '—' }}</p>
+                      </section>
+                    </b-tab>
+                  </b-tabs>
+                </article>
               </div>
             </div>
 
-            <h6 class="mt-3">Feedbacks</h6>
-            <b-tabs class="feedback-tabs" content-class="pt-3" pills small>
-              <b-tab title="Mediator">
-                <section class="feedback-box">
-                  <p><strong>Summary: </strong> {{ meeting.meeting_summary || '—' }}</p>
-                  <p><strong>Next steps: </strong> {{ meeting.mediator_next_steps || '—' }}</p>
-                  <p><strong>Submitted: </strong> {{ meeting.mediator_feedback_at || '—' }}</p>
-                </section>
-              </b-tab>
-              <b-tab title="First party">
-                <section class="feedback-box">
-                  <p>
-                    <strong>Rating: </strong>
-                    <span v-if="meeting.first_party_rating != null">{{ meeting.first_party_rating }}/5 {{ meeting.first_party_stars }}</span>
-                    <span v-else>—</span>
-                  </p>
-                  <p><strong>Next steps: </strong> {{ meeting.first_party_next_steps || '—' }}</p>
-                  <p><strong>Submitted: </strong> {{ meeting.first_party_feedback_at || '—' }}</p>
-                </section>
-              </b-tab>
-              <b-tab title="Second party">
-                <section class="feedback-box">
-                  <p>
-                    <strong>Rating: </strong>
-                    <span v-if="meeting.second_party_rating != null">{{ meeting.second_party_rating }}/5 {{ meeting.second_party_stars }}</span>
-                    <span v-else>—</span>
-                  </p>
-                  <p><strong>Next steps: </strong> {{ meeting.second_party_next_steps || '—' }}</p>
-                  <p><strong>Submitted: </strong> {{ meeting.second_party_feedback_at || '—' }}</p>
-                </section>
-              </b-tab>
-            </b-tabs>
-          </article>
-        </div>
+            <div class="detail-section">
+              <h6 class="detail-section-title">Case timeline</h6>
+              <div v-if="!selectedCase.case_history || selectedCase.case_history.length === 0" class="text-muted small">No timeline entries.</div>
+              <ul v-else class="timeline-list">
+                <li v-for="(h, idx) in selectedCase.case_history" :key="idx">
+                  <strong>{{ (h.case_events && h.case_events.title) || 'Event' }}</strong>
+                  <span v-if="h.created_at" class="text-muted"> · {{ formatDate(h.created_at) }}</span>
+                  <p v-if="h.case_events && h.case_events.description" class="timeline-desc small mb-0">{{ h.case_events.description }}</p>
+                </li>
+              </ul>
+            </div>
 
-        <p class="mb-2"><strong>Case timeline:</strong> </p>
-        <div v-if="!selectedCase.case_history || selectedCase.case_history.length === 0" class="text-muted small">No timeline entries.</div>
-        <ul v-else class="pl-3 small">
-          <li v-for="(h, idx) in selectedCase.case_history" :key="idx" class="mb-2">
-            <strong>{{ (h.case_events && h.case_events.title) || 'Event' }}</strong>
-            <span v-if="h.created_at"> — {{ formatDate(h.created_at) }}</span>
-          </li>
-        </ul>
-        <strong>Documents</strong>
-          <div class="docs-grid" v-if="selectedCase.evidence_document_url">
-              <FilePreview
-              key="Evidence Document"
-              :url="selectedCase.evidence_document_url"
-              name="Evidence Document"
-            />
-        </div>
+            <div class="detail-section">
+              <h6 class="detail-section-title">Payments on file</h6>
+              <div v-if="!selectedCase.transactions || selectedCase.transactions.length === 0" class="text-muted small">No payment records for this case.</div>
+              <div v-else class="table-responsive">
+                <table class="table table-sm table-borderless payments-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                      <th>Reason</th>
+                      <th>Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="tx in selectedCase.transactions" :key="tx.transaction_id">
+                      <td>{{ formatDate(tx.transaction_date) }}</td>
+                      <td>{{ tx.amount }} {{ tx.currency || '' }}</td>
+                      <td>
+                        <b-badge :variant="tx.success ? 'success' : 'danger'" class="text-uppercase">{{ tx.success ? 'Paid' : 'Failed' }}</b-badge>
+                      </td>
+                      <td>{{ tx.reason || '—' }}</td>
+                      <td class="small text-break">{{ tx.reference_id || '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </b-tab>
 
-        <div class="d-flex justify-content-end mt-3">
+          <b-tab title="Agreement & files">
+            <div class="detail-section">
+              <h6 class="detail-section-title">Evidence / uploads</h6>
+              <div v-if="!selectedCase.evidence_document_url" class="text-muted small">No evidence document on file.</div>
+              <div v-else class="docs-grid">
+                <FilePreview
+                  key="evidence"
+                  :url="selectedCase.evidence_document_url"
+                  name="Evidence document"
+                />
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h6 class="detail-section-title">Final mediation agreement</h6>
+              <p class="text-muted small">
+                Generated after signatures; this is the PDF emailed to both parties when the process completes.
+              </p>
+              <div v-if="!agreementRecord" class="text-muted small">No agreement record yet (case may still be open or agreement not finalized).</div>
+              <template v-else>
+                <dl class="detail-dl compact row mb-2">
+                  <dt class="col-sm-4">Agreement drafted</dt>
+                  <dd class="col-sm-8">{{ formatDate(agreementRecord.created_at) }}</dd>
+                  <dt class="col-sm-4">First party signed</dt>
+                  <dd class="col-sm-8">{{ agreementRecord.first_party_signature_datetime ? formatDate(agreementRecord.first_party_signature_datetime) : '—' }}</dd>
+                  <dt class="col-sm-4">Second party signed</dt>
+                  <dd class="col-sm-8">{{ agreementRecord.second_party_signature_datetime ? formatDate(agreementRecord.second_party_signature_datetime) : '—' }}</dd>
+                </dl>
+                <div v-if="agreementRecord.mediation_agreement_link" class="mb-3">
+                  <b-button
+                    variant="primary"
+                    size="sm"
+                    :href="agreementRecord.mediation_agreement_link"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Open signed agreement (PDF)
+                  </b-button>
+                  <div class="docs-grid mt-2">
+                    <FilePreview
+                      key="agreement-pdf"
+                      :url="agreementRecord.mediation_agreement_link"
+                      name="Signed agreement preview"
+                    />
+                  </div>
+                </div>
+                <div v-if="agreementRecord.agreed_terms" class="agreed-terms-box">
+                  <h6 class="small font-weight-bold text-muted mb-2">Agreed terms (as captured)</h6>
+                  <div class="agreed-terms-html" v-html="agreementRecord.agreed_terms"></div>
+                </div>
+              </template>
+            </div>
+          </b-tab>
+        </b-tabs>
+
+        <div class="d-flex justify-content-end detail-modal-footer">
           <b-button variant="secondary" @click="detailModalVisible = false">Close</b-button>
           <b-button variant="primary" class="ml-2" @click="openAssignFromDetail">Assign / change mediator</b-button>
         </div>
@@ -313,10 +441,19 @@ export default {
       mediatorSearch: '',
       selectedMediatorId: null,
       meetingFields: [],
-      selectedCaseCommission: 0
+      selectedCaseCommission: 0,
+      detailTab: 0
     }
   },
   computed: {
+    adminUserId () {
+      const u = this.$store.getters.user
+      return (u && u.id) ? u.id : ''
+    },
+    agreementRecord () {
+      if (!this.selectedCase) return null
+      return this.selectedCase.case_agreement_tracking || null
+    },
     mediatorFilterOptions () {
       const base = [
         { value: null, text: 'All mediators' },
@@ -401,6 +538,18 @@ export default {
       const parts = [u.name, u.email, u.phone_number].filter(Boolean)
       return parts.join(' · ')
     },
+    partyExtraLines (u) {
+      if (!u) return '—'
+      const parts = []
+      if (u.email) parts.push(u.email)
+      if (u.phone_number) parts.push(u.phone_number)
+      const loc = [u.city, u.state].filter(Boolean).join(', ')
+      if (loc) parts.push(loc)
+      return parts.length ? parts.join(' · ') : '—'
+    },
+    onDetailModalHidden () {
+      this.detailTab = 0
+    },
     statusLabel (c) {
       if (c.case_statuses && c.case_statuses.name) return c.case_statuses.name
       return c.status || '—'
@@ -477,6 +626,7 @@ export default {
     openDetailModal (c) {
       this.selectedCase = c
       this.selectedCaseCommission = Number(c.mediator_commission || 0)
+      this.detailTab = 0
       this.detailModalVisible = true
     },
     openAssignModal (c) {
@@ -525,9 +675,149 @@ export default {
   background-color: #fcfdff;
   border: 1px solid #dee2e6;
 }
-.text-muted {
+.empty-state .text-muted {
   width: 100%;
   color: #6c757d !important;
+}
+.admin-case-detail {
+  font-size: 0.95rem;
+}
+.detail-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+}
+.detail-hero-badges {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+::v-deep .detail-tab-nav {
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+::v-deep .detail-tab-nav .nav-link {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+}
+.detail-tab-body {
+  padding-top: 1rem !important;
+  min-height: 200px;
+}
+.detail-section {
+  margin-bottom: 1.35rem;
+}
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+.detail-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5c6578;
+  margin-bottom: 0.65rem;
+}
+.detail-dl dt {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.88rem;
+}
+.detail-dl dd {
+  font-size: 0.9rem;
+}
+.detail-dl.compact dt,
+.detail-dl.compact dd {
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+.party-tile {
+  border: 1px solid #e6e9f5;
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  background: #fcfdff;
+  height: 100%;
+}
+.party-tile-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6c757d;
+  margin-bottom: 0.35rem;
+}
+.party-tile-main {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+}
+.party-tile-meta {
+  font-size: 0.82rem;
+  color: #5a6272;
+  margin: 0;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.commission-box {
+  border: 1px dashed #c5d4f0;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  background: #f8faff;
+}
+.commission-input {
+  max-width: 220px;
+}
+.timeline-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.timeline-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eef1f8;
+}
+.timeline-list li:last-child {
+  border-bottom: none;
+}
+.timeline-desc {
+  color: #5c6578;
+  margin-top: 0.25rem;
+}
+.payments-table thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6c757d;
+  border-bottom: 2px solid #e9ecef;
+}
+.payments-table tbody td {
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+.detail-modal-footer {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e9ecef;
+}
+.agreed-terms-box {
+  border: 1px solid #e6e9f5;
+  border-radius: 10px;
+  padding: 0.85rem;
+  background: #fff;
+  max-height: 320px;
+  overflow: auto;
+}
+.agreed-terms-html {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.agreed-terms-html ::v-deep p:last-child {
+  margin-bottom: 0;
 }
 .docs-grid {
   display: grid;

@@ -5,6 +5,7 @@ const errorCodes = require('../utils/errors/errorCodes')
 const { success } = require('../utils/responses')
 const helper = require('../utils/helper')
 const puppeteer = require('puppeteer')
+const { assertAdminPage } = require('../utils/adminPermissionHelpers')
 
 const {
   toNumber,
@@ -27,6 +28,7 @@ module.exports = {
   getAdminSettings: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'settings')
       const settings = await getOrCreateSettings()
       success(res, { settings })
     } catch (error) {
@@ -36,6 +38,7 @@ module.exports = {
   saveAdminSettings: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'settings')
       const settings = Array.isArray(req.body.settings) ? req.body.settings : []
       if (!settings.length) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
 
@@ -59,6 +62,7 @@ module.exports = {
   updateCaseMediatorCommission: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'cases')
       const { caseId, mediator_commission } = req.body
       const commission = toNumber(mediator_commission, NaN)
       if (!caseId || Number.isNaN(commission) || commission < 0) throw createError(errorCodes.INVALID_REQUEST)
@@ -67,7 +71,7 @@ module.exports = {
         where: { id: caseId },
         data: { mediator_commission: commission }
       })
-      success(res, {}, 'Case commission updated successfully')
+      success(res, {}, 'Mediator revenue share for this case has been updated')
     } catch (error) {
       next(error)
     }
@@ -98,6 +102,7 @@ module.exports = {
   getMediatorBankAccount: async function (req, res, next) {
     try {
       const mediatorId = req.query.mediatorId || req.user.id
+      if (req.user.type === 'ADMIN') await assertAdminPage(req, 'invoices')
       if (req.user.type === 'MEDIATOR' && mediatorId !== req.user.id) throw createError(errorCodes.FORBIDDEN)
       const bankAccount = await prisma.mediator_bank_accounts.findUnique({
         where: { mediator_id: mediatorId }
@@ -110,6 +115,7 @@ module.exports = {
   syncMediatorInvoices: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'invoices')
       const settings = await getOrCreateSettings()
       const transactions = await prisma.transactions.findMany({
         where: {
@@ -131,6 +137,7 @@ module.exports = {
   },
   listInvoices: async function (req, res, next) {
     try {
+      if (req.user.type === 'ADMIN') await assertAdminPage(req, 'invoices')
       const mediatorId = req.user.type === 'MEDIATOR' ? req.user.id : (req.query.mediatorId || undefined)
       const where = {}
       if (mediatorId) where.mediator_id = mediatorId
@@ -181,6 +188,7 @@ module.exports = {
   listTransactionsForAdmin: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'invoices')
       const range = buildDateRange(req.query.range)
       const where = {}
       if (range) where.transaction_date = range
@@ -206,6 +214,7 @@ module.exports = {
   markInvoicePaid: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'invoices')
       const { invoiceId, notes } = req.body
       if (!invoiceId) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
       const existing = await prisma.mediator_invoices.findUnique({
@@ -240,6 +249,7 @@ module.exports = {
     try {
       const invoiceId = req.params.id
       if (!invoiceId) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      if (req.user.type === 'ADMIN') await assertAdminPage(req, 'invoices')
       const invoice = await prisma.mediator_invoices.findUnique({
         where: { id: invoiceId },
         include: {
@@ -263,7 +273,7 @@ module.exports = {
           <table style="width:100%; border-collapse: collapse; margin-top: 12px;">
             <tr><th style="text-align:left; border:1px solid #ddd; padding:8px;">Item</th><th style="text-align:right; border:1px solid #ddd; padding:8px;">Amount (INR)</th></tr>
             <tr><td style="border:1px solid #ddd; padding:8px;">Mediation amount</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">${invoice.mediation_amount}</td></tr>
-            <tr><td style="border:1px solid #ddd; padding:8px;">Commission (${invoice.commission_percentage}%)</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">${invoice.commission_amount}</td></tr>
+            <tr><td style="border:1px solid #ddd; padding:8px;">Mediator revenue share (${invoice.commission_percentage}% of mediation amount)</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">${invoice.commission_amount}</td></tr>
             <tr><td style="border:1px solid #ddd; padding:8px;">GST (${invoice.gst_percentage}%)</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">-${invoice.gst_amount}</td></tr>
             <tr><td style="border:1px solid #ddd; padding:8px;">Tax (${invoice.tax_percentage}%)</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">-${invoice.tax_amount}</td></tr>
             <tr><td style="border:1px solid #ddd; padding:8px;"><strong>Net payable</strong></td><td style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>${invoice.net_payable}</strong></td></tr>

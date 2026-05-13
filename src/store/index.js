@@ -50,7 +50,6 @@ const GET_EXISTING_USER_ENDPOINT = '/getExistingUser'
 const UPDATE_USER_PROFILE = '/updateUserProfile'
 const GET_CALENDAR_INIT_ENDPOINT = '/getCalendarInit'
 const NEW_CALENDAR_EVENT_ENDPOINT = '/newCalendarEvent'
-const GET_MY_CASES_ENDPOINT = '/getMyCases'
 const GET_PAST_MEDIATIONS_ENDPOINT = '/getPastMediations'
 const GET_MY_BLOGS_ENDPOINT = '/getMyBlogs'
 const SAVE_BLOG_ENDPOINT = '/saveBlog'
@@ -64,6 +63,16 @@ const GOOGLE_AUTH_ENDPOINT = '/authenticateWithGoogle'
 const GOOGLE_TOKEN_ENDPOINT = '/getGoogleToken'
 const SET_CLIENT_PAYMENT_ENDPOINT = '/setClientPayment'
 const SUBMIT_EVENT_FEEDBACK_ENDPOINT = '/submitEventFeedback'
+const GET_CASE_CORRESPONDENCE_ENDPOINT = '/case-correspondence'
+const POST_CASE_CORRESPONDENCE_ENDPOINT = '/case-correspondence'
+const GET_ADMIN_CASE_CORRESPONDENCE_ENDPOINT = '/admin/case-correspondence'
+const GET_ADMIN_CORRESPONDENCE_INBOX_ENDPOINT = '/admin/correspondence/inbox'
+const POST_ADMIN_CORRESPONDENCE_INBOX_MARK_READ_ENDPOINT = '/admin/correspondence/inbox/mark-read'
+const GET_ADMIN_CORRESPONDENCE_CONTEXT_ENDPOINT = '/admin/correspondence/context'
+const GET_ADMIN_CORRESPONDENCE_CASES_ENDPOINT = '/admin/correspondence/cases'
+const GET_ADMIN_WEBSITE_CONTACT_INBOX_ENDPOINT = '/admin/website-contact/inbox'
+const POST_PUBLIC_WEBSITE_CONTACT_LEAD_ENDPOINT = '/public/website-contact-lead'
+const GET_PORTAL_SUPPORT_THREADS_ENDPOINT = '/portal/support/threads'
 const SEND_OTP = '/sendOtp'
 const VERIFY_OTP = '/verifyOTP'
 const debug = process.env.NODE_ENV !== 'production'
@@ -90,7 +99,7 @@ const plugin = (router) => (store) => {
 }
 
 apiClient.interceptors.request.use((config) => {
-  const excludedEndpoints = [LOGIN_ENDPOINT, GET_EXISTING_USER_ENDPOINT, RESET_PASSWORD_ENDPOINT, CONFIRM_PASSWORD_CHANGE_ENDPOINT, NEW_USER_SIGNUP_ENDPOINT, NEW_MEDIATOR_SIGNUP_ENDPOINT, IS_EMAIL_EXIST_ENDPOINT]
+  const excludedEndpoints = [LOGIN_ENDPOINT, GET_EXISTING_USER_ENDPOINT, RESET_PASSWORD_ENDPOINT, CONFIRM_PASSWORD_CHANGE_ENDPOINT, NEW_USER_SIGNUP_ENDPOINT, NEW_MEDIATOR_SIGNUP_ENDPOINT, IS_EMAIL_EXIST_ENDPOINT, POST_PUBLIC_WEBSITE_CONTACT_LEAD_ENDPOINT]
   const isExcluded = excludedEndpoints.some((endpoint) =>
     config.url.includes(endpoint)
   )
@@ -716,23 +725,6 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
-      async getMyCases ({ commit, dispatch }, { page }) {
-        try {
-          dispatch('spinner/showSpinner')
-          const { data } = await apiClient.get(`${GET_MY_CASES_ENDPOINT}?page=${encodeURIComponent(page)}`)
-          if (!data.success) throw new Error(data.error.message)
-          return data
-        } catch (error) {
-          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
-          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
-          return {
-            success: false,
-            error
-          }
-        } finally {
-          dispatch('spinner/hideSpinner')
-        }
-      },
       async getPastMediations ({ commit, dispatch }, { page }) {
         try {
           dispatch('spinner/showSpinner')
@@ -1019,7 +1011,7 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(POST_CASE_COMMISSION_ENDPOINT, payload)
           if (!data.success) throw new Error(data.error?.message || 'Request failed')
-          dispatch('alert/showAlert', { message: data.message || 'Commission updated', type: 'success' }, { root: true })
+          dispatch('alert/showAlert', { message: data.message || 'Revenue share updated', type: 'success' }, { root: true })
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -1298,6 +1290,206 @@ export default (router) => {
           return { success: false, error }
         } finally {
           dispatch('spinner/hideSpinner')
+        }
+      },
+      async getCaseCorrespondence (ctx, { caseId, channel }) {
+        try {
+          const { data } = await apiClient.get(
+            `${GET_CASE_CORRESPONDENCE_ENDPOINT}?caseId=${encodeURIComponent(caseId)}&channel=${encodeURIComponent(channel)}`
+          )
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async postCaseCorrespondence (ctx, payload) {
+        try {
+          const { data } = await apiClient.post(POST_CASE_CORRESPONDENCE_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async getAdminCaseCorrespondence (ctx, { caseId }) {
+        try {
+          const { data } = await apiClient.get(
+            `${GET_ADMIN_CASE_CORRESPONDENCE_ENDPOINT}?caseId=${encodeURIComponent(caseId)}`
+          )
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async getAdminCorrespondenceInbox (ctx) {
+        try {
+          const { data } = await apiClient.get(GET_ADMIN_CORRESPONDENCE_INBOX_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async markAdminCorrespondenceInboxRead (ctx, payload) {
+        try {
+          const { data } = await apiClient.post(POST_ADMIN_CORRESPONDENCE_INBOX_MARK_READ_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async getAdminCorrespondenceContext (ctx, { caseId }) {
+        try {
+          const { data } = await apiClient.get(
+            `${GET_ADMIN_CORRESPONDENCE_CONTEXT_ENDPOINT}?caseId=${encodeURIComponent(caseId)}`
+          )
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async getAdminCorrespondenceCasesForPicker (ctx, { page = 1, search = '' } = {}) {
+        try {
+          const q = new URLSearchParams()
+          q.set('page', String(page))
+          if (search) q.set('search', search)
+          const { data } = await apiClient.get(`${GET_ADMIN_CORRESPONDENCE_CASES_ENDPOINT}?${q.toString()}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async getAdminWebsiteContactInbox (ctx) {
+        try {
+          const { data } = await apiClient.get(GET_ADMIN_WEBSITE_CONTACT_INBOX_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async getAdminWebsiteContactThread (ctx, { threadId }) {
+        try {
+          const { data } = await apiClient.get(`/admin/website-contact/thread/${encodeURIComponent(threadId)}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async postAdminWebsiteContactReply (ctx, { threadId, body }) {
+        try {
+          const { data } = await apiClient.post(
+            `/admin/website-contact/thread/${encodeURIComponent(threadId)}/messages`,
+            { body }
+          )
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async submitPublicWebsiteContactLead (ctx, { email, title, description, phone, name, apiKey } = {}) {
+        try {
+          const headers = {}
+          if (apiKey) headers['x-website-contact-key'] = apiKey
+          const { data } = await apiClient.post(
+            POST_PUBLIC_WEBSITE_CONTACT_LEAD_ENDPOINT,
+            { email, title, description, phone, name },
+            { headers }
+          )
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return {
+            success: false,
+            error,
+            message: error.response?.data?.error?.message || error.message
+          }
+        }
+      },
+      async getPortalSupportThreads (ctx) {
+        try {
+          const { data } = await apiClient.get(GET_PORTAL_SUPPORT_THREADS_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return { success: false, error, message: error.response?.data?.error?.message || error.message }
+        }
+      },
+      async getPortalSupportThread (ctx, { threadId }) {
+        try {
+          const { data } = await apiClient.get(`/portal/support/thread/${encodeURIComponent(threadId)}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return { success: false, error, message: error.response?.data?.error?.message || error.message }
+        }
+      },
+      async createPortalSupportThread (ctx, { topic, body }) {
+        try {
+          const { data } = await apiClient.post('/portal/support/thread', { topic, body })
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return { success: false, error, message: error.response?.data?.error?.message || error.message }
+        }
+      },
+      async postPortalSupportUserMessage (ctx, { threadId, body }) {
+        try {
+          const { data } = await apiClient.post(
+            `/portal/support/thread/${encodeURIComponent(threadId)}/messages`,
+            { body }
+          )
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          return { success: false, error, message: error.response?.data?.error?.message || error.message }
         }
       }
     },

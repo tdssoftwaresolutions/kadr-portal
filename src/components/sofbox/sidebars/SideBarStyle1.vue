@@ -52,7 +52,7 @@ export default {
     homeURL: { type: Object, default: () => ({ name: 'layout.dashboard' }) },
     items: { type: Array },
     logo: { type: String, default: require('../../../assets/logo.jpeg') },
-    userProfile: { type: String, default: require('../../../assets/images/user/1.jpeg') },
+    userProfile: { type: String, default: require('../../../assets/images/default_avatar.jpeg') },
     profileName: { type: String, default: '' },
     horizontal: { type: Boolean }
   },
@@ -363,8 +363,6 @@ export default {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding-top: 18px;
     margin-top: 14px;
     border-top: 1px solid rgba(0, 132, 255, 0.08);
   }

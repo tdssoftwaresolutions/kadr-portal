@@ -17,6 +17,7 @@ function mapErrorCodeToStatus (codeKey) {
   if (codeKey.includes('NOT_FOUND')) return 404
   if (codeKey.includes('CONFLICT') || codeKey.includes('EXISTS')) return 409
   if (codeKey.includes('INVALID') || codeKey.includes('MISSING')) return 400
+  if (codeKey === 'E310' || codeKey === 'E311') return 400
   return 500
 }
 

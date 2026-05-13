@@ -1,24 +1,17 @@
-# vue-dashboard
+# Kadr Portal
+
 
 ## Project setup
 ```
 npm install
 ```
 
-### Compiles and hot-reloads for development
+### Backend
 ```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
+npm run start
 ```
 
-### Lints and fixes files
+### Frontend
 ```
-npm run lint
+npm run watch
 ```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).

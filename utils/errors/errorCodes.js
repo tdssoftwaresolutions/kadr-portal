@@ -122,6 +122,14 @@ const ERROR_CODES = {
   ADMIN_NOTIFIED_FOR_MEDIATOR: {
     errorCode: 'E309',
     message: 'No mediator available, admin notified'
+  },
+  CASE_CORRESPONDENCE_BLOCKED: {
+    errorCode: 'E310',
+    message: 'Your message is empty after removing phone numbers or email addresses. Please revise your text or include an attachment.'
+  },
+  CASE_CORRESPONDENCE_NO_MEDIATOR: {
+    errorCode: 'E311',
+    message: 'You can send messages after a mediator is assigned to this case.'
   }
 }
 

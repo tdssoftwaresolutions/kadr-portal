@@ -30,7 +30,10 @@ module.exports = {
     try {
       assertMediator(req)
       const { reel } = req.body
-      if (!reel || !reel.title || typeof reel.title !== 'string' || !reel.title.trim()) {
+      if (!reel || !reel.contentRightsConfirmed) {
+        throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      }
+      if (!reel.title || typeof reel.title !== 'string' || !reel.title.trim()) {
         throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
       }
       if (!reel.youtube_url || typeof reel.youtube_url !== 'string' || !reel.youtube_url.trim()) {

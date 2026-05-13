@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 const errorCodes = require('./errors/errorCodes')
 const { google } = require('googleapis')
-const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
+const { CaseTypes } = require('../utils/caseConstants')
 const qs = require('qs')
 const path = require('path')
 const fs = require('fs')
@@ -135,7 +135,25 @@ class Helper {
     })
   }
 
-  static async getClientCases (prisma, clientId, page) {
+  static async getClientCasesCount (prisma, clientId, statuses = Helper.getActiveCaseStatuses()) {
+    return prisma.cases.count({
+      where: {
+        AND: [
+          {
+            OR: [
+              { first_party: clientId },
+              { second_party: clientId }
+            ]
+          }
+        ],
+        status: {
+          in: statuses
+        }
+      }
+    })
+  }
+
+  static async getClientCases (prisma, clientId, page, statuses = Helper.getActiveCaseStatuses()) {
     const perPage = 10
     // Calculate the number of items to skip
     const skip = (page - 1) * perPage
@@ -147,14 +165,11 @@ class Helper {
               { first_party: clientId },
               { second_party: clientId }
             ]
-          },
-          {
-            OR: [
-              { status: CaseTypes.NEW },
-              { status: CaseTypes.IN_PROGRESS }
-            ]
           }
-        ]
+        ],
+        status: {
+          in: statuses
+        }
       },
       orderBy: {
         created_at: 'desc'
@@ -816,215 +831,6 @@ class Helper {
     })
   }
 
-  static async getJudgeCasesCount (prisma, judgeId, statuses = Helper.getActiveCaseStatuses()) {
-    return prisma.cases.count({
-      where: {
-        judge: judgeId,
-        status: {
-          in: statuses
-        }
-      }
-    })
-  }
-
-  static async getMediationCenterCasesCount (prisma) {
-    return prisma.cases.count({
-      where: {
-        OR: [
-          {
-            AND: [
-              {
-                OR: [
-                  { sub_status: CaseSubTypes.PENDING_MEDIATION_CENTER },
-                  { sub_status: CaseSubTypes.MEDIATOR_ASSIGNED }
-                ]
-              },
-              {
-                OR: [
-                  { status: CaseTypes.NEW },
-                  { status: CaseTypes.IN_PROGRESS }
-                ]
-              }
-            ]
-          },
-          {
-            status: CaseTypes.CLOSED_SUCCESS,
-            sub_status: null
-          }
-        ]
-      }
-    })
-  }
-
-  static async getMediationCenterCases (prisma, page) {
-    const perPage = 10
-    const skip = (page - 1) * perPage
-
-    return prisma.cases.findMany({
-      where: {
-        OR: [
-          {
-            AND: [
-              {
-                OR: [
-                  { sub_status: CaseSubTypes.PENDING_MEDIATION_CENTER },
-                  { sub_status: CaseSubTypes.MEDIATOR_ASSIGNED }
-                ]
-              },
-              {
-                OR: [
-                  { status: CaseTypes.NEW },
-                  { status: CaseTypes.IN_PROGRESS }
-                ]
-              }
-            ]
-          },
-          {
-            status: CaseTypes.CLOSED_SUCCESS,
-            sub_status: null
-          }
-        ]
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      skip,
-      take: perPage,
-      select: {
-        id: true,
-        mediator: true,
-        first_party: true,
-        second_party: true,
-        caseId: true,
-        judge_document_url: true,
-        nature_of_suit: true,
-        stage: true,
-        suit_no: true,
-        status: true,
-        hearing_count: true,
-        sub_status: true,
-        hearing_date: true,
-        institution_date: true,
-        mediation_date_time: true,
-        referral_judge_signature: true,
-        plaintiff_signature: true,
-        plaintiff_phone: true,
-        plaintiff_advocate: true,
-        respondent_signature: true,
-        respondent_phone: true,
-        respondent_advocate: true,
-        judge: true,
-        user_cases_first_partyTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone_number: true,
-            city: true,
-            state: true
-          }
-        },
-        user_cases_second_partyTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone_number: true,
-            city: true,
-            state: true
-          }
-        },
-        user_cases_mediatorTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        user_cases_judgeTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
-  }
-
-  static async getJudgeCases (prisma, judgeId, page, statuses = Helper.getActiveCaseStatuses()) {
-    const perPage = 10
-
-    // Calculate the number of items to skip
-    const skip = (page - 1) * perPage
-
-    return prisma.cases.findMany({
-      where: {
-        judge: judgeId,
-        status: {
-          in: statuses
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      skip, // Skip items for pagination
-      take: perPage, // Limit the number of items per page
-      select: {
-        id: true,
-        mediator: true,
-        first_party: true,
-        second_party: true,
-        caseId: true,
-        judge_document_url: true,
-        nature_of_suit: true,
-        stage: true,
-        suit_no: true,
-        status: true,
-        hearing_count: true,
-        sub_status: true,
-        hearing_date: true,
-        institution_date: true,
-        mediation_date_time: true,
-        referral_judge_signature: true,
-        plaintiff_signature: true,
-        plaintiff_phone: true,
-        plaintiff_advocate: true,
-        respondent_signature: true,
-        respondent_phone: true,
-        respondent_advocate: true,
-        judge: true,
-        user_cases_first_partyTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone_number: true,
-            city: true,
-            state: true
-          }
-        },
-        user_cases_second_partyTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone_number: true,
-            city: true,
-            state: true
-          }
-        },
-        user_cases_mediatorTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
-  }
-
   static async getMediatorCases (prisma, mediatorId, page, statuses = Helper.getActiveCaseStatuses()) {
     // const today = new Date()
     // const startOfToday = new Date(today.setHours(0, 0, 0, 0))
@@ -1652,6 +1458,30 @@ class Helper {
     }
   }
 
+  static portalMessageCenterUrl ({ caseId, channel, leadId } = {}) {
+    const origin = String(process.env.PORTAL_APP_URL || process.env.BASE_URL || '').replace(/\/$/, '')
+    if (!origin) return ''
+    const qs = new URLSearchParams()
+    if (caseId && channel) {
+      qs.set('caseId', caseId)
+      qs.set('channel', channel)
+    } else if (leadId) {
+      qs.set('lead', leadId)
+    }
+    const q = qs.toString()
+    return `${origin}/admin/app/messages${q ? `?${q}` : ''}`
+  }
+
+  /** Logged-in user general support screen (mediator/client). */
+  static portalSupportUrl ({ threadId } = {}) {
+    const origin = String(process.env.PORTAL_APP_URL || process.env.BASE_URL || '').replace(/\/$/, '')
+    if (!origin) return ''
+    const qs = new URLSearchParams()
+    if (threadId) qs.set('thread', String(threadId))
+    const q = qs.toString()
+    return `${origin}/admin/app/support${q ? `?${q}` : ''}`
+  }
+
   static async sendTemplatedEmail (templateName, to, variables = {}, attachments = []) {
     return EmailService.sendTemplate({ templateName, to, variables, attachments })
   }
@@ -1902,6 +1732,120 @@ class Helper {
     return { AND: and }
   }
 
+  static getAdminCaseCardSelect () {
+    return {
+      id: true,
+      caseId: true,
+      description: true,
+      category: true,
+      case_type: true,
+      evidence_document_url: true,
+      created_at: true,
+      updated_at: true,
+      status: true,
+      sub_status: true,
+      mediator_commission: true,
+      mediator: true,
+      first_party: true,
+      second_party: true,
+      case_statuses: {
+        select: { id: true, name: true }
+      },
+      case_sub_statuses: {
+        select: { id: true, name: true }
+      },
+      user_cases_first_partyTouser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          city: true,
+          state: true
+        }
+      },
+      user_cases_second_partyTouser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          city: true,
+          state: true
+        }
+      },
+      user_cases_mediatorTouser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          city: true,
+          state: true,
+          profile_picture_url: true,
+          preferred_languages: true,
+          preferred_area_of_practice: true
+        }
+      },
+      events: {
+        orderBy: { start_datetime: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          start_datetime: true,
+          end_datetime: true,
+          type: true,
+          meeting_link: true,
+          google_calendar_link: true,
+          meeting_summary: true,
+          mediator_next_steps: true,
+          first_party_next_steps: true,
+          second_party_next_steps: true,
+          first_party_rating: true,
+          second_party_rating: true,
+          mediator_feedback_at: true,
+          first_party_feedback_at: true,
+          second_party_feedback_at: true
+        }
+      },
+      case_history: {
+        orderBy: { created_at: 'asc' },
+        select: {
+          created_at: true,
+          case_events: {
+            select: { title: true, description: true, sequence: true }
+          }
+        }
+      },
+      case_agreement: true,
+      case_agreement_tracking: {
+        select: {
+          id: true,
+          agreed_terms: true,
+          mediation_agreement_link: true,
+          created_at: true,
+          updated_at: true,
+          first_party_signature_datetime: true,
+          second_party_signature_datetime: true
+        }
+      },
+      transactions: {
+        orderBy: { transaction_date: 'desc' },
+        select: {
+          transaction_id: true,
+          amount: true,
+          currency: true,
+          success: true,
+          reason: true,
+          reference_id: true,
+          transaction_date: true,
+          payment_method: true
+        }
+      }
+    }
+  }
+
   static async getAdminActiveCasesCount (prisma, filters) {
     const where = this.buildAdminCasesWhere(filters)
     return prisma.cases.count({ where })
@@ -1916,92 +1860,7 @@ class Helper {
       orderBy: { created_at: 'desc' },
       skip,
       take: perPage,
-      select: {
-        id: true,
-        caseId: true,
-        description: true,
-        category: true,
-        case_type: true,
-        evidence_document_url: true,
-        created_at: true,
-        updated_at: true,
-        status: true,
-        sub_status: true,
-        mediator_commission: true,
-        mediator: true,
-        first_party: true,
-        second_party: true,
-        case_statuses: {
-          select: { id: true, name: true }
-        },
-        case_sub_statuses: {
-          select: { id: true, name: true }
-        },
-        user_cases_first_partyTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone_number: true,
-            city: true,
-            state: true
-          }
-        },
-        user_cases_second_partyTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone_number: true,
-            city: true,
-            state: true
-          }
-        },
-        user_cases_mediatorTouser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone_number: true,
-            city: true,
-            state: true,
-            profile_picture_url: true,
-            preferred_languages: true,
-            preferred_area_of_practice: true
-          }
-        },
-        events: {
-          orderBy: { start_datetime: 'desc' },
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            start_datetime: true,
-            end_datetime: true,
-            type: true,
-            meeting_link: true,
-            google_calendar_link: true,
-            meeting_summary: true,
-            mediator_next_steps: true,
-            first_party_next_steps: true,
-            second_party_next_steps: true,
-            first_party_rating: true,
-            second_party_rating: true,
-            mediator_feedback_at: true,
-            first_party_feedback_at: true,
-            second_party_feedback_at: true
-          }
-        },
-        case_history: {
-          orderBy: { created_at: 'asc' },
-          select: {
-            created_at: true,
-            case_events: {
-              select: { title: true, description: true, sequence: true }
-            }
-          }
-        }
-      }
+      select: this.getAdminCaseCardSelect()
     })
   }
 

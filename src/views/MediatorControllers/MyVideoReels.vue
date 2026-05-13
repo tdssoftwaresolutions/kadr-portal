@@ -105,6 +105,11 @@
               />
               <small class="text-muted">Paste a standard watch, embed, Shorts, or youtu.be URL.</small>
             </div>
+            <div class="mb-3 border rounded p-3 bg-light">
+              <b-form-checkbox v-model="selectedReel.contentRightsConfirmed" class="mb-0">
+                I confirm this video and its description are my own or I have full rights to feature them on this website, they are not copied from a third party without permission, and I accept responsibility for any copyright claims.
+              </b-form-checkbox>
+            </div>
           </div>
           <div class="col-lg-5">
             <label class="form-label fw-semibold">Preview</label>
@@ -154,7 +159,8 @@ export default {
         id: null,
         title: '',
         description: '',
-        youtube_url: ''
+        youtube_url: '',
+        contentRightsConfirmed: false
       },
       alert: {
         visible: false,
@@ -231,7 +237,8 @@ export default {
         id: null,
         title: '',
         description: '',
-        youtube_url: ''
+        youtube_url: '',
+        contentRightsConfirmed: false
       }
     },
     onEditReel (reel) {
@@ -240,7 +247,8 @@ export default {
         id: reel.id,
         title: reel.title,
         description: reel.description || '',
-        youtube_url: reel.youtube_url
+        youtube_url: reel.youtube_url,
+        contentRightsConfirmed: false
       }
     },
     cancel () {
@@ -255,12 +263,17 @@ export default {
         this.showAlert('Please enter a valid YouTube video URL.', 'danger')
         return
       }
+      if (!this.selectedReel.contentRightsConfirmed) {
+        this.showAlert('Please confirm originality and rights for this video before saving.', 'danger')
+        return
+      }
       const response = await this.$store.dispatch('saveVideoReel', {
         reel: {
           id: this.selectedReel.id,
           title: this.selectedReel.title.trim(),
           description: (this.selectedReel.description || '').trim(),
-          youtube_url: this.selectedReel.youtube_url.trim()
+          youtube_url: this.selectedReel.youtube_url.trim(),
+          contentRightsConfirmed: true
         }
       })
       if (response.success) {
