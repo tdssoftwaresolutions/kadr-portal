@@ -224,7 +224,6 @@
 import { sofbox } from '../../config/pluginInit'
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import Spinner from '../../components/sofbox/spinner/spinner.vue'
-import 'quill/dist/quill.snow.css'
 import { Vue2TinymceEditor } from 'vue2-tinymce-editor'
 
 export default {

@@ -1,4 +1,3 @@
-const webpack = require('webpack')
 const path = require('path')
 
 module.exports = {
@@ -22,9 +21,6 @@ module.exports = {
   },
   configureWebpack: {
     plugins: [
-      new webpack.ProvidePlugin({
-        mapboxgl: 'mapbox-gl'
-      }),
       {
         apply: (compiler) => {
           compiler.hooks.emit.tapAsync('ExcludeFolderPlugin', (compilation, callback) => {

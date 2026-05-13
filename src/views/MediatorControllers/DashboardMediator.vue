@@ -13,7 +13,7 @@
         >
         <img
           v-else
-          :src="require('../../assets/images/user/1.jpg')"
+          :src="require('../../assets/images/default_avatar.jpeg')"
           class="hero-avatar"
           alt="Profile picture"
         >

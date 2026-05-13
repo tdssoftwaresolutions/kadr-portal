@@ -22,18 +22,11 @@ Font
 /*---------------------------------------------------------------------
 import Css
 -----------------------------------------------------------------------*/
-@import url("./owl.carousel.min.css");
 @import url("./dripicons.css");
 @import url("./remixicon.css");
 @import url("./fontawesome.css");
 @import url("./line-awesome.min.css");
 @import url("./ionicons.min.css");
-@import url("./slick.css");
-@import url("./slick-theme.css");
-@import url("./Chart.min.css");
-@import url("./select2.min.css");
-@import url("./magnific-popup.css");
-@import url("./animate.css");
 
 /*---------------------------------------------------------------------
 General

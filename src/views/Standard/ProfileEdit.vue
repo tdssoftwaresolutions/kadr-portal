@@ -107,7 +107,7 @@
 </template>
 <script>
 import { sofbox } from '../../config/pluginInit'
-import profile from '../../assets/images/user/1.jpeg'
+import profile from '../../assets/images/default_avatar.jpeg'
 import Alert from '../../components/sofbox/alert/Alert.vue'
 const allowedTypes = [
   'image/jpeg',

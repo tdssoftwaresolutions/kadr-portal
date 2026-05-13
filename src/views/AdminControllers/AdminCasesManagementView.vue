@@ -295,20 +295,6 @@
             </div>
           </b-tab>
 
-          <b-tab title="Messages">
-            <p class="text-muted small mb-2">Private admin threads with the mediator and each party (same as the Messages hub). You can read the history and reply here.</p>
-            <CaseCorrespondencePanel
-              v-if="selectedCase.id"
-              :key="selectedCase.id + '-corr'"
-              embedded
-              :case-id="selectedCase.id"
-              :user-id="adminUserId || '00000000-0000-0000-0000-000000000000'"
-              user-type="ADMIN"
-              mode="admin"
-              :read-only="false"
-            />
-          </b-tab>
-
           <b-tab title="Agreement & files">
             <div class="detail-section">
               <h6 class="detail-section-title">Evidence / uploads</h6>
@@ -424,13 +410,11 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import FilePreview from '../core/DocumentPreview.vue'
-import CaseCorrespondencePanel from '../../components/CaseCorrespondencePanel.vue'
 
 export default {
   name: 'AdminCasesManagementView',
   components: {
-    FilePreview,
-    CaseCorrespondencePanel
+    FilePreview
   },
   mounted () {
     sofbox.index()

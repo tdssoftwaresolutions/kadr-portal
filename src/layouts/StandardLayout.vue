@@ -71,10 +71,10 @@
 <script>
 import Loader from '../components/sofbox/loader/Loader'
 import SideBarStyle1 from '../components/sofbox/sidebars/SideBarStyle1'
-import SideBarItems from '../FackApi/json/SideBar'
-import SideBarItemsMediator from '../FackApi/json/SideBarMediator'
-import SideBarItemAdmin from '../FackApi/json/SideBarAdmin'
-import profile from '../assets/images/user/1.jpeg'
+import SideBarItemsClient from '../config/navigation/SideBarClient.json'
+import SideBarItemsMediator from '../config/navigation/SideBarMediator.json'
+import SideBarItemAdmin from '../config/navigation/SideBarAdmin.json'
+import profile from '../assets/images/default_avatar.jpeg'
 import logo from '../assets/images/logo.png'
 import { sofbox } from '../config/pluginInit'
 import { filterAdminSidebarItems, adminCanAccessRoute, firstAllowedAdminRouteName } from '../utils/adminAccess'
@@ -110,7 +110,7 @@ export default {
   },
   data () {
     return {
-      sidebar: SideBarItems,
+      sidebar: SideBarItemsClient,
       userProfile: profile,
       logo,
       user: null,
@@ -151,7 +151,7 @@ export default {
             this.sidebar = SideBarItemsMediator
             break
           case 'CLIENT':
-            this.sidebar = SideBarItems
+            this.sidebar = SideBarItemsClient
             break
           case 'ADMIN':
             this.sidebar = filterAdminSidebarItems(SideBarItemAdmin, data.userData)

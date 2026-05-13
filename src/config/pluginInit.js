@@ -1,56 +1,29 @@
 import Scrollbar from 'smooth-scrollbar'
-// eslint-disable-next-line no-unused-vars
-import counterUp from 'counterup2'
+
 const $ = require('jquery')
-// eslint-disable-next-line no-unused-vars
-let WOW
 
 if (typeof window !== 'undefined') {
   window.$ = $
   window.jQuery = $
-  WOW = require('wowjs')
   require('owl.carousel/dist/owl.carousel')
-  require('bootstrap/js/src/tab')
-  require('bootstrap/js/src/tooltip')
-  require('datatables.net')
-  require('datatables.net-bs4')
-  require('datatables.net-buttons')
-  require('datatables.net-buttons-bs4')
-  require('datatables.net-buttons/js/buttons.html5.js')
-  require('datatables.net-buttons/js/buttons.print.min.js')
 }
 
 export const sofbox = {
   index () {
     this.loaderInit()
-    this.wowInit()
-    // this.tooltip()
-    this.countDownInit()
-    this.counterUp()
     this.owlCarousel()
     this.SmoothScrollbar()
-    this.Accordian()
-    this.SimpleWizard()
-    this.VerticalWizard()
-    this.ValidateWizard()
   },
   mainIndex () {
     this.wrapperMenuToggle()
     this.sideBarToggle()
     this.ripple()
     this.fullscreen()
-    this.AccordianInit()
-    this.checkOut()
   },
   loaderInit () {
     $('#load').fadeOut()
     $('#loading').delay(1000).fadeOut('slow')
   },
-  /*  tooltip () {
-    $('body').tooltip({
-      selector: '[data-toggle="tooltip"]'
-    })
-  }, */
   ripple () {
     $(document).on('click', '.iq-waves-effect', function (e) {
       // Remove any old one
@@ -142,38 +115,6 @@ export const sofbox = {
     }
   },
 
-  wowInit () {
-    const elementExist = this.checkElement('class', 'wow')
-
-    if (elementExist) {
-      new WOW.WOW({
-        boxClass: 'wow',
-        animateClass: 'animated',
-        offset: 0,
-        live: false
-      }).init()
-    }
-  },
-
-  countDownInit () {
-    const elementExist = this.checkElement('class', 'countdown')
-
-    if (elementExist) {
-      $('.countdown').countdown()
-    }
-  },
-  counterUp () {
-    const elementExist = this.checkElement('class', 'counter')
-    if (elementExist) {
-      // eslint-disable-next-line no-unused-vars
-      const el = document.querySelector('.counter')
-      /* counterUp(el, {
-        duration: 4000,
-        delay: 20
-      }) */
-    }
-  },
-
   checkElement (type, element) {
     let found = false
     let elements
@@ -250,20 +191,6 @@ export const sofbox = {
     }
   },
 
-  Accordian () {
-    $('.iq-accordion .iq-accordion-block .accordion-details').hide()
-    $('.iq-accordion .iq-accordion-block:first').addClass('accordion-active').children().slideDown('slow')
-  },
-
-  AccordianInit () {
-    $(document).on('click', '.iq-accordion .iq-accordion-block', function () {
-      if ($(this).children('div.accordion-details ').is(':hidden')) {
-        $('.iq-accordion .iq-accordion-block').removeClass('accordion-active').children('div.accordion-details ').slideUp('slow')
-        $(this).toggleClass('accordion-active').children('div.accordion-details ').slideDown('slow')
-      }
-    })
-  },
-
   getActiveLink (item, activeRoute) {
     let active = false
     if (item.children !== undefined) {
@@ -279,183 +206,5 @@ export const sofbox = {
       }
     }
     return active
-  },
-  SimpleWizard () {
-    let currentFs, nextFs, previousFs // fieldsets
-    let opacity
-    let current = 1
-    let steps = $('fieldset').length
-    setProgressBar(current)
-    $('.next').click(function () {
-      currentFs = $(this).parent()
-      nextFs = $(this).parent().next()
-      // Add Class Active
-      $('#top-tab-list li').eq($('fieldset').index(nextFs)).addClass('active')
-      $('#top-tab-list li').eq($('fieldset').index(currentFs)).addClass('done')
-      // show the next fieldset
-      nextFs.show()
-      // hide the current fieldset with style
-      currentFs.animate({
-        opacity: 0
-      }, {
-        step: function (now) {
-          // for making fielset appear animation
-          opacity = 1 - now
-          currentFs.css({ 'display': 'none', 'position': 'relative' })
-          nextFs.css({ opacity })
-        },
-        duration: 500
-      })
-      setProgressBar(++current)
-    })
-    $('.previous').click(function () {
-      currentFs = $(this).parent()
-      previousFs = $(this).parent().prev()
-      // Remove class active
-      $('#top-tab-list li').eq($('fieldset').index(currentFs)).removeClass('active')
-      $('#top-tab-list li').eq($('fieldset').index(previousFs)).removeClass('done')
-      // show the previous fieldset
-      previousFs.show()
-      // hide the current fieldset with style
-      currentFs.animate({
-        opacity: 0
-      }, {
-        step: function (now) {
-          // for making fielset appear animation
-          opacity = 1 - now
-          currentFs.css({
-            'display': 'none',
-            'position': 'relative'
-          })
-          previousFs.css({
-            opacity
-          })
-        },
-        duration: 500
-      })
-      setProgressBar(--current)
-    })
-    function setProgressBar (curStep) {
-      let percent = parseFloat(100 / steps) * curStep
-      percent = percent.toFixed()
-      $('.progress-bar').css('width', percent + '%')
-    }
-    $('.submit').click(function () {
-      return false
-    })
-  },
-  VerticalWizard () {
-    let currentFs, nextFs, previousFs // fieldsets
-    let opacity
-    let current = 1
-    let steps = $('fieldset').length
-    setProgressBar(current)
-    $('.next').click(function () {
-      currentFs = $(this).parent()
-      nextFs = $(this).parent().next()
-      // Add Class Active
-      $('#top-tabbar-vertical li').eq($('fieldset').index(nextFs)).addClass('active')
-      // show the next fieldset
-      nextFs.show()
-      // hide the current fieldset with style
-      currentFs.animate({
-        opacity: 0
-      }, {
-        step: function (now) {
-          // for making fielset appear animation
-          opacity = 1 - now
-          currentFs.css({ 'display': 'none', 'position': 'relative' })
-          nextFs.css({ opacity })
-        },
-        duration: 500
-      })
-      setProgressBar(++current)
-    })
-    $('.previous').click(function () {
-      currentFs = $(this).parent()
-      previousFs = $(this).parent().prev()
-      // Remove class active
-      $('#top-tabbar-vertical li').eq($('fieldset').index(currentFs)).removeClass('active')
-      // show the previous fieldset
-      previousFs.show()
-      // hide the current fieldset with style
-      currentFs.animate({
-        opacity: 0
-      }, {
-        step: function (now) {
-          // for making fielset appear animation
-          opacity = 1 - now
-          currentFs.css({
-            'display': 'none',
-            'position': 'relative'
-          })
-          previousFs.css({
-            opacity
-          })
-        },
-        duration: 500
-      })
-      setProgressBar(--current)
-    })
-    function setProgressBar (curStep) {
-      let percent = parseFloat(100 / steps) * curStep
-      percent = percent.toFixed()
-      $('.progress-bar').css('width', percent + '%')
-    }
-    $('.submit').click(function () {
-      return false
-    })
-  },
-  ValidateWizard () {
-    let navListItems = $('div.setup-panel div a')
-    let allWells = $('.setup-content')
-    let allNextBtn = $('.nextBtn')
-    allWells.hide()
-    navListItems.click(function (e) {
-      e.preventDefault()
-      let $target = $($(this).attr('href'))
-      let $item = $(this)
-      if (!$item.hasClass('disabled')) {
-        navListItems.addClass('active')
-        $item.parent().addClass('active')
-        allWells.hide()
-        $target.show()
-        $target.find('input:eq(0)').focus()
-      }
-    })
-    allNextBtn.click(function () {
-      let curStep = $(this).closest('.setup-content')
-      let curStepBtn = curStep.attr('id')
-      let nextStepWizard = $('div.setup-panel div a[href="#' + curStepBtn + '"]').parent().next().children('a')
-      let curInputs = curStep.find('input[type="text"],input[type="email"],input[type="password"],input[type="url"],textarea')
-      let isValid = true
-      $('.form-group').removeClass('has-error')
-      for (let i = 0; i < curInputs.length; i++) {
-        if (!curInputs[i].validity.valid) {
-          isValid = false
-          $(curInputs[i]).closest('.form-group').addClass('has-error')
-        }
-      }
-      if (isValid) {
-        nextStepWizard.removeAttr('disabled').trigger('click')
-      }
-    })
-    $('div.setup-panel div a.active').trigger('click')
-  },
-  checkOut () {
-    $('#place-order').click(function () {
-      $('#cart').removeClass('show')
-      $('#address').addClass('show')
-      $('#step1').removeClass('active')
-      $('#step1').addClass('done')
-      $('#step2').addClass('active')
-    })
-    $('#deliver-address').click(function () {
-      $('#address').removeClass('show')
-      $('#payment').addClass('show')
-      $('#step2').removeClass('active')
-      $('#step2').addClass('done')
-      $('#step3').addClass('active')
-    })
   }
 }
