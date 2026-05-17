@@ -7,9 +7,12 @@
             <h4 class="card-title">Clients & Experts</h4>
           </template>
           <template v-slot:body>
-            <div class="d-flex justify-content-end mb-3">
-              <b-form-checkbox v-model="showInactive" switch @change="onToggleInactive">
+            <div class="d-flex justify-content-end mb-3 flex-wrap">
+              <b-form-checkbox v-model="showInactive" switch class="mr-3 mb-2" @change="onToggleFilters">
                 Show inactive users
+              </b-form-checkbox>
+              <b-form-checkbox v-model="showDeleted" switch class="mb-2" @change="onToggleFilters">
+                Show deleted users
               </b-form-checkbox>
             </div>
             <b-tabs card>
@@ -31,13 +34,24 @@
                         <p v-if="user.preferred_languages || user.preferred_language" class="mb-3"><strong>Language:</strong> {{ getFullLanguages(user.preferred_languages || user.preferred_language) }}</p>
                         <div class="mt-auto text-right">
                           <b-button variant="outline-primary" size="sm" @click="openModal(user)">View Details</b-button>
+                          <b-badge v-if="user.is_deleted" variant="secondary" class="mr-2">Deleted</b-badge>
                           <b-button
+                            v-if="!user.is_deleted"
                             size="sm"
                             class="ml-2"
-                            :variant="user.active ? 'outline-danger' : 'outline-success'"
-                            @click="toggleUserActive(user)"
+                            variant="outline-danger"
+                            @click="deleteUser(user)"
                           >
-                            {{ user.active ? 'Inactivate' : 'Activate' }}
+                            Remove from platform
+                          </b-button>
+                          <b-button
+                            v-else
+                            size="sm"
+                            class="ml-2"
+                            variant="outline-success"
+                            @click="restoreUser(user)"
+                          >
+                            Restore user
                           </b-button>
                         </div>
                       </b-card-body>
@@ -77,13 +91,24 @@
                         <p v-if="user.preferred_languages || user.preferred_language" class="mb-3"><strong>Language:</strong> {{ getFullLanguages(user.preferred_languages || user.preferred_language) }}</p>
                         <div class="mt-auto text-right">
                           <b-button variant="outline-primary" size="sm" @click="openModal(user)">View Details</b-button>
+                          <b-badge v-if="user.is_deleted" variant="secondary" class="mr-2">Deleted</b-badge>
                           <b-button
+                            v-if="!user.is_deleted"
                             size="sm"
                             class="ml-2"
-                            :variant="user.active ? 'outline-danger' : 'outline-success'"
-                            @click="toggleUserActive(user)"
+                            variant="outline-danger"
+                            @click="deleteUser(user)"
                           >
-                            {{ user.active ? 'Inactivate' : 'Activate' }}
+                            Remove from platform
+                          </b-button>
+                          <b-button
+                            v-else
+                            size="sm"
+                            class="ml-2"
+                            variant="outline-success"
+                            @click="restoreUser(user)"
+                          >
+                            Restore user
                           </b-button>
                         </div>
                       </b-card-body>
@@ -194,6 +219,7 @@ export default {
       activeMediatorsPage: 1,
       perPage: 10,
       showInactive: false,
+      showDeleted: false,
       activeClientsData: { users: [], total: 0 },
       activeMediatorsData: { users: [], total: 0 },
       modalVisible: false,
@@ -243,8 +269,8 @@ export default {
         if (!type) {
           // Fetch both clients and mediators for page 1 on load
           const [clientsResponse, mediatorsResponse] = await Promise.all([
-            this.$store.dispatch('getActiveUsers', { page: 1, type: 'CLIENT', includeInactive: this.showInactive }),
-            this.$store.dispatch('getActiveUsers', { page: 1, type: 'MEDIATOR', includeInactive: this.showInactive })
+            this.$store.dispatch('getActiveUsers', { page: 1, type: 'CLIENT', includeInactive: this.showInactive, includeDeleted: this.showDeleted }),
+            this.$store.dispatch('getActiveUsers', { page: 1, type: 'MEDIATOR', includeInactive: this.showInactive, includeDeleted: this.showDeleted })
           ])
 
           if (clientsResponse.success) {
@@ -256,7 +282,7 @@ export default {
           }
         } else {
           // Fetch data for a specific user type on pagination
-          const response = await this.$store.dispatch('getActiveUsers', { page, type, includeInactive: this.showInactive })
+          const response = await this.$store.dispatch('getActiveUsers', { page, type, includeInactive: this.showInactive, includeDeleted: this.showDeleted })
           if (response.success) {
             if (type === 'CLIENT') {
               this.activeClientsData = response
@@ -271,18 +297,20 @@ export default {
         console.error('Error fetching active users:', error)
       }
     },
-    onToggleInactive () {
+    onToggleFilters () {
       this.activeClientsPage = 1
       this.activeMediatorsPage = 1
       this.fetchActiveUsers(1)
     },
-    async toggleUserActive (user) {
-      const targetStatus = !user.active
-      const response = await this.$store.dispatch('updateInactiveUsers', {
-        isActive: targetStatus,
-        userId: user.userId,
-        sendWelcomeEmail: false
-      })
+    async deleteUser (user) {
+      if (!window.confirm(`Remove ${user.name || user.email} from the platform? They will not be able to log in or receive case emails.`)) return
+      const response = await this.$store.dispatch('adminSetUserDeleted', { userId: user.userId, isDeleted: true })
+      if (response.success) {
+        this.fetchActiveUsers(user.user_type === 'CLIENT' ? this.activeClientsPage : this.activeMediatorsPage, user.user_type)
+      }
+    },
+    async restoreUser (user) {
+      const response = await this.$store.dispatch('adminSetUserDeleted', { userId: user.userId, isDeleted: false })
       if (response.success) {
         this.fetchActiveUsers(user.user_type === 'CLIENT' ? this.activeClientsPage : this.activeMediatorsPage, user.user_type)
       }

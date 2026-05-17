@@ -21,7 +21,7 @@ const getISTDayBounds = (offsetDays = 0) => {
 }
 
 const getRecipient = (recipientMap, user) => {
-  if (!user?.id || !user?.email || user.active === false) return null
+  if (!user?.id || !user?.email || user.active === false || user.is_deleted === true) return null
   if (!recipientMap.has(user.id)) {
     recipientMap.set(user.id, {
       id: user.id,

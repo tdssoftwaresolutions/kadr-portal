@@ -25,15 +25,12 @@
             </b-row>
 
             <b-row class="mb-4" v-if="isMasterAdmin && !newAdmin.master">
-              <b-col md="6">
-                <div class="perm-section-title">Pages they can open</div>
-                <b-form-checkbox-group
-                  v-model="newAdminPermissions.pages"
-                  :options="pageCheckboxOptions"
-                  stacked
-                />
+              <b-col md="7">
+                <div class="perm-section-title mb-2">Pages they can open</div>
+                <p class="small text-muted mb-2">Matches the grouped admin sidebar (Operations, Finance, System, etc.).</p>
+                <AdminPagePermissionGroups v-model="newAdminPermissions.pages" />
               </b-col>
-              <b-col md="6">
+              <b-col md="5">
                 <div class="perm-section-title">Dashboard widgets</div>
                 <b-form-checkbox-group
                   v-model="newAdminPermissions.components"
@@ -85,8 +82,8 @@
           Master admins always have full access.
         </div>
         <div v-else>
-          <div class="perm-section-title">Pages</div>
-          <b-form-checkbox-group v-model="permModalPayload.pages" :options="pageCheckboxOptions" stacked class="mb-3" />
+          <p class="small text-muted mb-2">Grouped to match the admin navigation menu.</p>
+          <AdminPagePermissionGroups v-model="permModalPayload.pages" class="mb-3" />
           <div class="perm-section-title">Dashboard widgets</div>
           <b-form-checkbox-group v-model="permModalPayload.components" :options="componentCheckboxOptions" stacked />
         </div>
@@ -97,14 +94,18 @@
 
 <script>
 import { sofbox } from '../../config/pluginInit'
+import AdminPagePermissionGroups from '../../components/admin/AdminPagePermissionGroups.vue'
 import {
-  ADMIN_PAGE_OPTIONS,
+  ADMIN_PAGE_GROUPS,
   ADMIN_COMPONENT_OPTIONS,
   defaultAdminPermissionPayload
 } from '../../constants/adminPermissionCatalog'
 
 export default {
   name: 'AdminManagementView',
+  components: {
+    AdminPagePermissionGroups
+  },
   props: {
     user: {
       type: Object,
@@ -139,9 +140,6 @@ export default {
     isMasterAdmin () {
       return Boolean(this.user && this.user.master)
     },
-    pageCheckboxOptions () {
-      return ADMIN_PAGE_OPTIONS.map((p) => ({ value: p.key, text: p.label }))
-    },
     componentCheckboxOptions () {
       return ADMIN_COMPONENT_OPTIONS.map((c) => ({ value: c.key, text: c.label }))
     }
@@ -159,9 +157,16 @@ export default {
       if (!item.admin_permissions || typeof item.admin_permissions !== 'object') return '—'
       const p = item.admin_permissions.pages
       const c = item.admin_permissions.components
-      const pn = Array.isArray(p) ? p.length : 0
+      const pages = Array.isArray(p) ? p : []
       const cn = Array.isArray(c) ? c.length : 0
-      return `${pn} page(s), ${cn} widget(s)`
+      const groupBits = ADMIN_PAGE_GROUPS.map((group) => {
+        const keys = group.pages.map((page) => page.key)
+        const count = keys.filter((k) => pages.includes(k)).length
+        if (!count) return null
+        return count === keys.length ? group.label : `${group.label} (${count})`
+      }).filter(Boolean)
+      const pagePart = groupBits.length ? groupBits.join(', ') : `${pages.length} page(s)`
+      return `${pagePart}; ${cn} widget(s)`
     },
     openPermissionModal (item) {
       this.permEditRow = item

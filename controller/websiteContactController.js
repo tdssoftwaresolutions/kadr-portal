@@ -28,7 +28,7 @@ function supportTopicLabel (code) {
 
 async function getMessageHubNotifyRecipients () {
   const rows = await prisma.user.findMany({
-    where: { user_type: 'ADMIN', active: true },
+    where: { user_type: 'ADMIN', active: true, is_deleted: false },
     select: { id: true, email: true, name: true, master: true, admin_permissions: true, user_type: true }
   })
   return rows

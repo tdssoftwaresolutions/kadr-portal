@@ -17,6 +17,10 @@ model user {
   updated_at                     DateTime?       @default(now()) @db.Timestamp(0)
   user_type                      user_user_type  @default(CLIENT)
   active                         Boolean         @default(true)
+  is_deleted                     Boolean         @default(false)
+  reward_points_balance          Int             @default(0)
+  referred_by_id                 String?         @db.Char(36)
+  referral_code                  String?         @unique(map: "uq_user_referral_code") @db.VarChar(12)
   city                           String?         @db.VarChar(100)
   state                          String?         @db.VarChar(100)
   pincode                        String?         @db.Char(6)
@@ -50,8 +54,85 @@ model user {
   website_contact_messages       website_contact_messages[]      @relation("website_contact_message_admin")
   website_contact_portal_threads website_contact_threads[]       @relation("WebsiteContactPortalUser")
   admin_inbox_read_states        admin_inbox_read_states[]
+  mediator_reward_transactions   mediator_reward_transactions[] @relation("mediator_reward_transactions")
+  reward_redemption_orders       reward_redemption_orders[]     @relation("reward_redemption_orders")
+  mediator_court_case_trackers   mediator_court_case_trackers[] @relation("mediator_court_case_trackers")
+  referred_by                    user?           @relation("user_referrals", fields: [referred_by_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_user_referred_by")
+  referrals                      user[]          @relation("user_referrals")
 
   @@index([user_type, active, created_at], map: "idx_user_type_active_created")
+  @@index([is_deleted], map: "idx_user_is_deleted")
+  @@index([referred_by_id], map: "idx_user_referred_by")
+}
+
+model mediator_court_case_trackers {
+  id              String    @id @default(uuid()) @db.Char(36)
+  mediator_id     String    @db.Char(36)
+  cnr             String    @db.VarChar(20)
+  label           String?   @db.VarChar(120)
+  case_number     String?   @db.VarChar(80)
+  case_title      String?   @db.VarChar(500)
+  court_name      String?   @db.VarChar(200)
+  case_status     String?   @db.VarChar(64)
+  case_snapshot   Json?
+  last_fetched_at DateTime? @db.DateTime(0)
+  created_at      DateTime? @default(now()) @db.Timestamp(0)
+  updated_at      DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  user            user      @relation("mediator_court_case_trackers", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_court_tracker_mediator")
+
+  @@unique([mediator_id, cnr], map: "uq_mediator_court_cnr")
+  @@index([mediator_id, updated_at], map: "idx_court_tracker_mediator_updated")
+}
+
+model mediator_reward_transactions {
+  id           String    @id @default(uuid()) @db.Char(36)
+  mediator_id  String    @db.Char(36)
+  points       Int
+  reason_code  String    @db.VarChar(64)
+  description  String    @db.VarChar(500)
+  reference_id String?   @db.VarChar(120)
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+  user         user      @relation("mediator_reward_transactions", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_reward_txn_mediator")
+
+  @@unique([mediator_id, reason_code, reference_id], map: "uq_reward_txn_dedup")
+  @@index([mediator_id, created_at], map: "idx_reward_txn_mediator_created")
+}
+
+model reward_catalog_items {
+  id          String    @id @default(uuid()) @db.Char(36)
+  title       String    @db.VarChar(255)
+  description String?   @db.Text
+  points_cost Int
+  active      Boolean   @default(true)
+  sort_order  Int       @default(0)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  orders      reward_redemption_orders[]
+
+  @@index([active, sort_order], map: "idx_reward_catalog_active_sort")
+}
+
+enum reward_redemption_order_status {
+  PENDING
+  FULFILLED
+}
+
+model reward_redemption_orders {
+  id              String                         @id @default(uuid()) @db.Char(36)
+  mediator_id     String                         @db.Char(36)
+  catalog_item_id String                         @db.Char(36)
+  points_spent    Int
+  status          reward_redemption_order_status @default(PENDING)
+  admin_notes     String?                        @db.Text
+  fulfilled_at    DateTime?                      @db.DateTime(0)
+  fulfilled_by    String?                        @db.Char(36)
+  created_at      DateTime?                      @default(now()) @db.Timestamp(0)
+  updated_at      DateTime?                      @default(now()) @updatedAt @db.Timestamp(0)
+  user            user                           @relation("reward_redemption_orders", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_reward_order_mediator")
+  catalog_item    reward_catalog_items           @relation(fields: [catalog_item_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_reward_order_catalog")
+
+  @@index([mediator_id, created_at], map: "idx_reward_order_mediator_created")
+  @@index([status, created_at], map: "idx_reward_order_status_created")
 }
 
 model cases {

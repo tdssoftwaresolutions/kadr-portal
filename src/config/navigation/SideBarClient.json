@@ -4,45 +4,48 @@
     "name": "sidebar.dashboard",
     "is_heading": false,
     "is_active": false,
-    "link": {
-      "name": "dashboard.home"
-    },
+    "link": { "name": "dashboard.home" },
     "class_name": "",
     "is_icon_class": true,
     "icon": "ri-home-5-line"
   },
   {
-    "title": "Past Mediations",
-    "name": "app.past-mediations",
+    "title": "Mediation",
+    "name": "sidebar.mediation",
     "is_heading": false,
-    "is_active": false,
-    "link": {
-      "name": "app.past-mediations"
-    },
+    "is_group": true,
     "class_name": "",
     "is_icon_class": true,
-    "icon": "ri-archive-line"
-  },
-  {
-    "title": "My Calendar",
-    "name": "app.calendar2",
-    "is_heading": false,
-    "is_active": false,
-    "link": {
-      "name": "app.calendar2"
-    },
-    "class_name": "",
-    "is_icon_class": true,
-    "icon": "ri-calendar-event-line"
+    "icon": "ri-scales-3-line",
+    "children": [
+      {
+        "title": "Past Mediations",
+        "name": "app.past-mediations",
+        "is_heading": false,
+        "is_active": false,
+        "link": { "name": "app.past-mediations" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-archive-line"
+      },
+      {
+        "title": "My Calendar",
+        "name": "app.calendar2",
+        "is_heading": false,
+        "is_active": false,
+        "link": { "name": "app.calendar2" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-calendar-event-line"
+      }
+    ]
   },
   {
     "title": "Support",
     "name": "app.support",
     "is_heading": false,
     "is_active": false,
-    "link": {
-      "name": "app.support"
-    },
+    "link": { "name": "app.support" },
     "class_name": "",
     "is_icon_class": true,
     "icon": "ri-customer-service-2-line"

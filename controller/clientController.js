@@ -29,7 +29,8 @@ module.exports = {
         preferred_languages: JSON.stringify([preferredLanguage]),
         profile_picture_url: uploadedProfilePictureResponse || '',
         pincode,
-        is_self_signed_up: true
+        is_self_signed_up: true,
+        is_deleted: false
       }
       if (existingUser === true) {
         const generatedPassword = helper.generateRandomPassword()
@@ -51,11 +52,29 @@ module.exports = {
         })
         success(res, {}, 'You are all set! Please check your email for the next steps.')
       } else {
+        const existing = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true, active: true, is_deleted: true, is_self_signed_up: true }
+        })
+        if (existing) {
+          if (existing.is_deleted) {
+            await prisma.user.update({
+              where: { id: existing.id },
+              data: userRequestData
+            })
+          } else if (existing.active === false && existing.is_self_signed_up) {
+            throw createError(errorCodes.REGISTRATION_PENDING_APPROVAL)
+          } else {
+            throw createError(errorCodes.YOU_USER_ALREADY_EXISTS)
+          }
+        }
         let uploadedFileResponse = null
         if (evidenceContent) uploadedFileResponse = await helper.deployToS3Bucket(evidenceContent, `evidence-${uuidv4()}`)
-        const user = await prisma.user.create({
-          data: userRequestData
-        })
+        const user = existing?.is_deleted
+          ? await prisma.user.findUnique({ where: { email } })
+          : await prisma.user.create({
+            data: userRequestData
+          })
         const oppositePartyUser = await prisma.user.upsert({
           where: {
             email: oppositeEmail
@@ -104,12 +123,15 @@ module.exports = {
         success(res, {}, 'Your account has been created successfully! Our team will review your details and get back to you shortly.')
       }
     } catch (error) {
+      if (error.errorCode) {
+        next(error)
+        return
+      }
       try {
-        if (error.code === 'P2002' && error.meta.target.includes('email')) {
+        if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
           throw createError(errorCodes.YOU_USER_ALREADY_EXISTS)
-        } else {
-          throw createError(errorCodes.INVALID_REQUEST)
         }
+        throw createError(errorCodes.INVALID_REQUEST)
       } catch (err) {
         next(err)
       }

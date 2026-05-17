@@ -94,7 +94,8 @@ class CaseAssignmentService {
     const users = await tx.user.findMany({
       where: {
         user_type: 'MEDIATOR',
-        active: true
+        active: true,
+        is_deleted: false
       },
       orderBy: { created_at: 'asc' }
     })
@@ -109,7 +110,8 @@ class CaseAssignmentService {
     const admins = await tx.user.findMany({
       where: {
         user_type: 'ADMIN',
-        active: true
+        active: true,
+        is_deleted: false
       },
       select: { email: true, name: true }
     })

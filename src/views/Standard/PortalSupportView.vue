@@ -123,12 +123,26 @@ export default {
       ]
     }
   },
+  computed: {
+    isComposeQuery () {
+      return this.isTruthyCompose(this.$route.query.compose)
+    }
+  },
   watch: {
     '$route.query.thread': {
       immediate: true,
       handler (v) {
+        if (this.isComposeQuery) return
         if (v && typeof v === 'string' && v.length) {
           this.openThread(v, { skipRouter: true })
+        }
+      }
+    },
+    '$route.query.compose': {
+      immediate: true,
+      handler (v) {
+        if (this.isTruthyCompose(v)) {
+          this.startNew({ keepComposeQuery: false })
         }
       }
     }
@@ -136,8 +150,14 @@ export default {
   mounted () {
     sofbox.index()
     this.refreshList()
+    if (this.isComposeQuery) {
+      this.startNew({ keepComposeQuery: false })
+    }
   },
   methods: {
+    isTruthyCompose (v) {
+      return v === '1' || v === 'true' || v === true
+    },
     async refreshList () {
       this.loadingList = true
       const res = await this.$store.dispatch('getPortalSupportThreads')
@@ -148,7 +168,7 @@ export default {
         this.threads = []
       }
     },
-    startNew () {
+    startNew ({ keepComposeQuery = false } = {}) {
       this.mode = 'compose'
       this.selectedId = null
       this.messages = []
@@ -156,7 +176,8 @@ export default {
       this.newBody = ''
       this.newToast = ''
       this.replyToast = ''
-      this.$router.replace({ name: this.$route.name, query: {} }).catch(() => {})
+      const query = keepComposeQuery ? { compose: '1' } : {}
+      this.$router.replace({ name: this.$route.name, query }).catch(() => {})
     },
     async openThread (threadId, { skipRouter = false } = {}) {
       this.selectedId = threadId
@@ -246,7 +267,9 @@ export default {
 
 <style scoped>
 .portal-support-page {
-  max-width: 1100px;
+  width: 100%;
+  max-width: none;
+  background: #f4f6fb;
 }
 .support-thread-list {
   max-height: min(420px, 55vh);

@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const helper = require('../utils/helper')
+const { awardRewardPoints } = require('../services/reward/rewardService')
 const { success, error } = require('../utils/responses')
 const striptags = require('striptags')
 const { assertAdminPage } = require('../utils/adminPermissionHelpers')
@@ -187,6 +188,15 @@ module.exports = {
           title: savedBlog.title,
           blogUrl: `${process.env.BASE_URL}/${savedBlog.url}`
         })
+        try {
+          await awardRewardPoints({
+            mediatorId: id,
+            reasonCode: 'blog_published',
+            referenceId: savedBlog.id
+          })
+        } catch (rewardErr) {
+          console.error('Reward on blog publish:', rewardErr)
+        }
       }
       success(res, { blog: formattedBlog }, 'Blog saved successfully')
     } catch (e) {
@@ -364,6 +374,20 @@ module.exports = {
         user: { select: { id: true, name: true } }
       }
     })
+
+    const commentCount = await prisma.blog_comments.count({ where: { blog_id: blogId } })
+    if (commentCount >= 10 && blog.author_id) {
+      try {
+        await awardRewardPoints({
+          mediatorId: blog.author_id,
+          reasonCode: 'blog_10_comments',
+          referenceId: blogId
+        })
+      } catch (rewardErr) {
+        console.error('Reward on blog 10 comments:', rewardErr)
+      }
+    }
+
     success(res, {
       comment: {
         id: comment.id,

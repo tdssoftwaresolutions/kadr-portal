@@ -256,6 +256,27 @@ class Helper {
             case_event_id: true,
             created_at: true
           }
+        },
+        transactions: {
+          orderBy: { transaction_date: 'desc' },
+          select: {
+            transaction_id: true,
+            amount: true,
+            currency: true,
+            success: true,
+            reason: true,
+            transaction_date: true,
+            payment_method: true
+          }
+        },
+        case_agreement_tracking: {
+          select: {
+            id: true,
+            first_party_signature_datetime: true,
+            second_party_signature_datetime: true,
+            created_at: true,
+            updated_at: true
+          }
         }
       }
     })
@@ -787,31 +808,27 @@ class Helper {
     })
   }
 
-  static mergeCaseHistory (myCases, caseEvents) {
-    return myCases.map(caseItem => {
-      const caseHistoryMap = new Map(
-        caseItem.case_history.map(history => [history.case_event_id, history.created_at])
-      )
-
-      console.log(caseItem)
-
-      // Find the sequence number of the current event
-      let currentSequence = null
-      caseEvents.forEach(event => {
-        if (`${event.status_id}__${event.sub_status_id}` === `${caseItem.case_statuses.id}__${caseItem.case_sub_statuses.id}`) {
-          currentSequence = event.sequence - 1
+  static mergeCaseHistory (myCases, caseEvents, viewer = {}) {
+    const { buildCaseProgress } = require('../services/case/caseProgressService')
+    return myCases.map((caseItem) => {
+      const caseProgress = buildCaseProgress(caseItem, caseEvents, viewer)
+      const tracking = caseItem.case_agreement_tracking
+      let agreementStatus = null
+      if (tracking) {
+        if (tracking.first_party_signature_datetime && tracking.second_party_signature_datetime) {
+          agreementStatus = 'signed'
+        } else if (tracking.first_party_signature_datetime || tracking.second_party_signature_datetime) {
+          agreementStatus = 'partial_signature'
+        } else {
+          agreementStatus = 'pending_signature'
         }
-      })
-      console.log(caseHistoryMap)
-      console.log(caseEvents)
-      // Merge caseEvents with caseHistory
-      const updatedCaseHistory = caseEvents.map(event => ({
-        ...event,
-        created_date: caseHistoryMap.get(event.id) || null,
-        completed: currentSequence !== null && event.sequence <= currentSequence
-      }))
-
-      return { ...caseItem, case_history: updatedCaseHistory }
+      }
+      return {
+        ...caseItem,
+        case_history: caseProgress.case_history,
+        case_progress: caseProgress,
+        agreement_status: agreementStatus
+      }
     })
   }
 
@@ -933,6 +950,27 @@ class Helper {
             case_event_id: true,
             created_at: true
           }
+        },
+        transactions: {
+          orderBy: { transaction_date: 'desc' },
+          select: {
+            transaction_id: true,
+            amount: true,
+            currency: true,
+            success: true,
+            reason: true,
+            transaction_date: true,
+            payment_method: true
+          }
+        },
+        case_agreement_tracking: {
+          select: {
+            id: true,
+            first_party_signature_datetime: true,
+            second_party_signature_datetime: true,
+            created_at: true,
+            updated_at: true
+          }
         }
       }
     })
@@ -1018,19 +1056,21 @@ class Helper {
     }
   }
 
-  static async getUsers (isActive, prisma, page, type, relationField, includeInactive = false) {
+  static async getUsers (isActive, prisma, page, type, relationField, includeInactive = false, includeDeleted = false) {
     const perPage = 10
 
     // Calculate the number of items to skip
     const skip = (page - 1) * perPage
 
     const activeCondition = includeInactive ? {} : { active: isActive }
+    const deletedCondition = includeDeleted ? {} : { is_deleted: false }
 
     let [inactiveUsers, totalInactiveUsers] = await prisma.$transaction([
       prisma.user.findMany({
         where: {
           AND: [
             activeCondition,
+            deletedCondition,
             { is_self_signed_up: true },
             { user_type: type }
           ]
@@ -1049,6 +1089,7 @@ class Helper {
           updated_at: true,
           user_type: true,
           active: true,
+          is_deleted: true,
           city: true,
           state: true,
           pincode: true,
@@ -1095,6 +1136,7 @@ class Helper {
         where: {
           AND: [
             activeCondition,
+            deletedCondition,
             { is_self_signed_up: true },
             { user_type: type }
           ]
@@ -1345,8 +1387,32 @@ class Helper {
     const tokenWithoutBearer = token.startsWith('Bearer ') ? token.slice(7, token.length) : token
 
     try {
-      const user = await this.verifyToken(tokenWithoutBearer)
-      req.user = user
+      const tokenUser = await this.verifyToken(tokenWithoutBearer)
+      const { PrismaClient } = require('@prisma/client')
+      const prisma = new PrismaClient()
+      const dbUser = await prisma.user.findUnique({
+        where: { id: tokenUser.id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          user_type: true,
+          active: true,
+          is_deleted: true
+        }
+      })
+      if (!dbUser || dbUser.is_deleted === true) {
+        return { status: 401, message: errorCodes.USER_ACCOUNT_DELETED }
+      }
+      if (dbUser.active === false) {
+        return { status: 401, message: errorCodes.USER_NOT_ACTIVE }
+      }
+      req.user = {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        type: dbUser.user_type
+      }
       return null
     } catch (err) {
       return { status: 401, message: errorCodes.TOKEN_EXPIRED }
@@ -1812,6 +1878,8 @@ class Helper {
       case_history: {
         orderBy: { created_at: 'asc' },
         select: {
+          id: true,
+          case_event_id: true,
           created_at: true,
           case_events: {
             select: { title: true, description: true, sequence: true }
@@ -1868,7 +1936,7 @@ class Helper {
     const active = this.adminActiveCaseStatusesFilter()
     const [mediators, firstParties, secondParties, statuses] = await Promise.all([
       prisma.user.findMany({
-        where: { user_type: 'MEDIATOR', active: true },
+        where: { user_type: 'MEDIATOR', active: true, is_deleted: false },
         select: {
           id: true,
           name: true,

@@ -99,6 +99,14 @@ const ERROR_CODES = {
     errorCode: 'E304',
     message: 'User not yet activated, please wait for Rouse Avenue team to review your account.'
   },
+  USER_ACCOUNT_DELETED: {
+    errorCode: 'E309',
+    message: 'This account has been removed from the platform. Contact support if you need assistance.'
+  },
+  REGISTRATION_PENDING_APPROVAL: {
+    errorCode: 'E310',
+    message: 'Your registration is pending approval. Please wait for the Kadr team to activate your account.'
+  },
   INVALID_OTP: {
     errorCode: 'E305',
     message: 'Invalid OTP, please enter valid OTP.'
@@ -130,6 +138,34 @@ const ERROR_CODES = {
   CASE_CORRESPONDENCE_NO_MEDIATOR: {
     errorCode: 'E311',
     message: 'You can send messages after a mediator is assigned to this case.'
+  },
+  INVALID_CNR_FORMAT: {
+    errorCode: 'E312',
+    message: 'Invalid CNR. Enter a 16-character Case Number Record (e.g. DLCT010000012024).'
+  },
+  COURT_CASE_FETCH_FAILED: {
+    errorCode: 'E313',
+    message: 'Unable to fetch case details right now. Try again or open the official eCourts portal.'
+  },
+  COURT_TRACKER_ALREADY_EXISTS: {
+    errorCode: 'E314',
+    message: 'This CNR is already in your tracker.'
+  },
+  COURT_TRACKER_LIMIT_REACHED: {
+    errorCode: 'E315',
+    message: 'You can track up to 25 court cases. Remove one to add another.'
+  },
+  ECOURTS_CAPTCHA_REQUIRED: {
+    errorCode: 'E316',
+    message: 'Enter the captcha from eCourts to fetch official case status.'
+  },
+  ECOURTS_API_NOT_CONFIGURED: {
+    errorCode: 'E317',
+    message: 'eCourts India API key is not configured. Set ECOURTS_INDIA_API_KEY in the server environment.'
+  },
+  COURT_CASE_NOT_FOUND: {
+    errorCode: 'E318',
+    message: 'No case found for this CNR on eCourts India.'
   }
 }
 

@@ -32,9 +32,17 @@
           <span class="stat-label">Meetings Today</span>
           <span class="stat-value">{{ todaysEvents.length }}</span>
         </div>
-        <div class="stat-card">
-          <span class="stat-label">Global Notes</span>
-          <span class="stat-value">{{ notes.length }}</span>
+        <div
+          class="stat-card stat-card-link"
+          role="button"
+          tabindex="0"
+          title="View reward store"
+          @click="goToRewards"
+          @keydown.enter="goToRewards"
+        >
+          <span class="stat-label">Reward Points</span>
+          <span class="stat-value">{{ rewardBalance.toLocaleString() }}</span>
+          <span class="stat-hint">View store →</span>
         </div>
       </div>
     </div>
@@ -81,7 +89,7 @@
 
       <iq-card class="workspace-card">
         <template v-slot:headerTitle>
-          <h4 class="card-title">Global Notes</h4>
+          <h4 class="card-title">Notes</h4>
         </template>
         <template v-slot:headerAction>
           <button type="button" class="btn btn-primary btn-sm" @click="onClickNewAdd('', '')">
@@ -113,10 +121,15 @@
                 </div>
               </div>
             </div>
-            <div v-else class="empty-data">No global notes yet. Add one to keep quick references.</div>
+            <div v-else class="empty-data">No notes yet. Add one to keep quick references.</div>
           </div>
         </template>
       </iq-card>
+    </div>
+
+    <div class="workspace-grid workspace-grid--tools">
+      <mediator-court-case-tracker />
+      <mediator-legal-feed-panel />
     </div>
 
     <my-cases :cases="content.myCases" :user-name="user.name" :user-id="user.id" @refresh-dashboard="$emit('refresh-dashboard')"></my-cases>
@@ -126,6 +139,8 @@
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import MyCases from './MyCases.vue'
+import MediatorCourtCaseTracker from '../../components/mediator/MediatorCourtCaseTracker.vue'
+import MediatorLegalFeedPanel from '../../components/mediator/MediatorLegalFeedPanel.vue'
 const PERSONAL_EVENT_COLOR = 'rgb(244, 81, 30)'
 const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
 
@@ -136,9 +151,16 @@ export default {
     content: null
   },
   components: {
-    Alert, Spinner, MyCases
+    Alert,
+    Spinner,
+    MyCases,
+    MediatorCourtCaseTracker,
+    MediatorLegalFeedPanel
   },
   computed: {
+    rewardBalance () {
+      return this.content?.rewardPoints?.balance ?? 0
+    },
     totalCases () {
       return this.content?.myCases?.total || this.content?.myCases?.casesWithEvents?.length || 0
     },
@@ -147,6 +169,9 @@ export default {
     }
   },
   methods: {
+    goToRewards () {
+      this.$router.push({ name: 'app.rewards' })
+    },
     formatDate (dateString) {
       const date = new Date(dateString)
       return date.toLocaleString('en-US', {
@@ -282,10 +307,10 @@ export default {
 
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
   gap: 0.75rem;
   width: 100%;
-  max-width: 460px;
+  max-width: 520px;
 }
 
 .stat-card {
@@ -307,11 +332,33 @@ export default {
   font-weight: 600;
 }
 
+.stat-card-link {
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.stat-card-link:hover,
+.stat-card-link:focus {
+  background: rgba(255, 255, 255, 0.28);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.stat-hint {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  margin-top: 0.2rem;
+}
+
 .workspace-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.workspace-grid--tools {
+  margin-top: 0;
 }
 
 .workspace-card {

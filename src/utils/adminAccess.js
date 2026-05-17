@@ -1,4 +1,7 @@
 import { ADMIN_PAGE_OPTIONS, ADMIN_COMPONENT_OPTIONS } from '../constants/adminPermissionCatalog'
+import { orderedAdminRoutesFromSidebar, ROUTE_ADMIN_PAGE_FALLBACK } from './adminNavPermissions'
+
+export { ROUTE_ADMIN_PAGE_FALLBACK }
 
 export function adminUserHasPage (user, pageKey) {
   if (!user || user.type !== 'ADMIN') return true
@@ -18,18 +21,6 @@ export function adminUserHasComponent (user, componentKey) {
   return raw.components.includes(componentKey)
 }
 
-const ROUTE_ADMIN_PAGE_FALLBACK = {
-  'dashboard.home': 'dashboard',
-  'app.users': 'users',
-  'app.cases': 'cases',
-  'app.messages': 'messages',
-  'app.admin-calendar': 'calendar',
-  'app.blog-taxonomy': 'blog-taxonomy',
-  'app.invoices': 'invoices',
-  'app.settings': 'settings',
-  'app.admins': 'admins'
-}
-
 export function routeRequiredAdminPage (route) {
   if (!route || !route.meta || !route.meta.adminPage) {
     const name = route && route.name
@@ -45,34 +36,64 @@ export function adminCanAccessRoute (user, route) {
   return adminUserHasPage(user, page)
 }
 
-const ADMIN_ROUTE_ORDER = [
-  { name: 'dashboard.home', page: 'dashboard' },
-  { name: 'app.admin-calendar', page: 'calendar' },
-  { name: 'app.users', page: 'users' },
-  { name: 'app.cases', page: 'cases' },
-  { name: 'app.messages', page: 'messages' },
-  { name: 'app.blog-taxonomy', page: 'blog-taxonomy' },
-  { name: 'app.invoices', page: 'invoices' },
-  { name: 'app.settings', page: 'settings' },
-  { name: 'app.admins', page: 'admins' }
-]
-
-export function firstAllowedAdminRouteName (user) {
+export function firstAllowedAdminRouteName (user, sidebarItems = null) {
   if (!user || user.type !== 'ADMIN') return 'dashboard.home'
-  for (const { name, page } of ADMIN_ROUTE_ORDER) {
+
+  const routeOrder = sidebarItems
+    ? orderedAdminRoutesFromSidebar(sidebarItems)
+    : orderedAdminRoutesFromSidebar()
+
+  for (const { name, page } of routeOrder) {
     if (adminUserHasPage(user, page)) return name
   }
   return null
 }
 
+export function firstAllowedAdminRouteFromFilteredSidebar (user, filteredSidebar) {
+  return firstAllowedAdminRouteName(user, filteredSidebar)
+}
+
+function filterAdminSidebarItem (item, user) {
+  if (!item) return null
+  if (item.is_heading) return item
+
+  if (item.children && item.children.length) {
+    const children = item.children
+      .map((child) => filterAdminSidebarItem(child, user))
+      .filter(Boolean)
+    if (!children.length) return null
+    const next = { ...item, children }
+    delete next.link
+    return next
+  }
+
+  if (!item.link || !item.link.name) return null
+  const page = item.adminPage || ROUTE_ADMIN_PAGE_FALLBACK[item.link.name]
+  if (!page) return item
+  return adminUserHasPage(user, page) ? item : null
+}
+
 export function filterAdminSidebarItems (items, user) {
   if (!user || user.type !== 'ADMIN' || !Array.isArray(items)) return items
-  return items.filter((item) => {
-    if (item.is_heading || !item.link || !item.link.name) return true
-    const page = item.adminPage || ROUTE_ADMIN_PAGE_FALLBACK[item.link.name]
-    if (!page) return true
-    return adminUserHasPage(user, page)
+  return items
+    .map((item) => filterAdminSidebarItem(item, user))
+    .filter(Boolean)
+}
+
+export function flattenSidebarItems (items) {
+  if (!Array.isArray(items)) return []
+  const result = []
+  items.forEach((item) => {
+    if (!item || item.is_heading) return
+    if (item.children && item.children.length) {
+      item.children.forEach((child) => {
+        if (child && !child.is_heading && child.link) result.push(child)
+      })
+      return
+    }
+    if (item.link) result.push(item)
   })
+  return result
 }
 
 export { ADMIN_PAGE_OPTIONS, ADMIN_COMPONENT_OPTIONS }

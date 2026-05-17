@@ -5,6 +5,12 @@ const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { success } = require('../utils/responses')
 const CaseAssignmentService = require('../utils/caseAssignment')
 const { getOrCreateSettings, settingsToMap } = require('../services/invoice/invoiceService')
+const {
+  recordCaseMilestone,
+  updateCaseSubStatus,
+  ensureNoticePhaseComplete,
+  syncMeetingScheduled
+} = require('../services/case/caseMilestoneService')
 
 module.exports = {
   setClientPayment: async function (req, res) {
@@ -58,7 +64,6 @@ module.exports = {
 
     if (caseDetails.sub_status === CaseSubTypes.PENDING_NOTICE_PAYMENT) {
       // First payment - send notice to opposite party
-
       const uniqueSignUpLink = helper.generateUniqueSignUpLink(caseDetails.user_cases_second_partyTouser.id)
 
       await helper.sendTemplatedEmail('paymentNoticeToSecondParty', caseDetails.user_cases_second_partyTouser.email, {
@@ -79,39 +84,26 @@ module.exports = {
         referenceId
       })
 
-      await prisma.cases.update({
-        where: {
-          id: caseId
-        },
-        data: {
-          sub_status: CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY
-        }
+      await recordCaseMilestone(prisma, {
+        caseId,
+        subStatusId: CaseSubTypes.PENDING_NOTICE_PAYMENT
       })
 
-      // Add case history
-      const caseEvent = await prisma.case_events.findFirst({
-        where: {
-          status_id: CaseTypes.IN_PROGRESS,
-          sub_status_id: CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY
-        }
+      await updateCaseSubStatus(prisma, caseId, {
+        status: CaseTypes.IN_PROGRESS,
+        sub_status: CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY
       })
-      if (caseEvent) {
-        await prisma.case_history.create({
-          data: {
-            case_id: caseId,
-            case_event_id: caseEvent.id
-          }
-        })
-      }
+
+      await recordCaseMilestone(prisma, {
+        caseId,
+        subStatusId: CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY
+      })
     } else if (caseDetails.sub_status === CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY) {
-      await prisma.cases.update({
-        where: {
-          id: caseId
-        },
-        data: {
-          status: CaseTypes.IN_PROGRESS,
-          sub_status: CaseSubTypes.PENDING_MEDIATION_PAYMENT
-        }
+      await ensureNoticePhaseComplete(prisma, caseId)
+
+      await updateCaseSubStatus(prisma, caseId, {
+        status: CaseTypes.IN_PROGRESS,
+        sub_status: CaseSubTypes.PENDING_MEDIATION_PAYMENT
       })
 
       await helper.sendTemplatedEmail('mediationAcceptanceFirstParty', caseDetails.user_cases_first_partyTouser.email, {
@@ -121,23 +113,14 @@ module.exports = {
       await helper.sendTemplatedEmail('mediationAcceptanceSecondParty', caseDetails.user_cases_second_partyTouser.email, {
         recipientName: caseDetails.user_cases_second_partyTouser.name
       })
-      // Add case history
-      const caseEvent = await prisma.case_events.findFirst({
-        where: {
-          status_id: CaseTypes.IN_PROGRESS,
-          sub_status_id: CaseSubTypes.PENDING_MEDIATION_PAYMENT
-        }
-      })
-      if (caseEvent) {
-        await prisma.case_history.create({
-          data: {
-            case_id: caseId,
-            case_event_id: caseEvent.id
-          }
-        })
-      }
     } else if (caseDetails.sub_status === CaseSubTypes.PENDING_MEDIATION_PAYMENT) {
-      // Second payment - assign mediator and schedule meeting
+      await ensureNoticePhaseComplete(prisma, caseId)
+
+      await recordCaseMilestone(prisma, {
+        caseId,
+        subStatusId: CaseSubTypes.PENDING_MEDIATION_PAYMENT
+      })
+
       const service = new CaseAssignmentService({ prisma })
       const response = await service.assign({
         caseId: caseDetails.caseId,
@@ -147,7 +130,7 @@ module.exports = {
       })
       const settingsRows = await getOrCreateSettings()
       const settingsMap = settingsToMap(settingsRows)
-      // Assign mediator to case
+
       await prisma.cases.update({
         where: { id: caseId },
         data: {
@@ -157,7 +140,11 @@ module.exports = {
         }
       })
 
-      // Schedule first meeting (1 hour from now)
+      await recordCaseMilestone(prisma, {
+        caseId,
+        subStatusId: CaseSubTypes.MEDIATOR_ASSIGNED
+      })
+
       const meetingStart = new Date()
       meetingStart.setHours(meetingStart.getHours() + 1)
       const meetingEnd = new Date(meetingStart)
@@ -182,21 +169,7 @@ module.exports = {
         }
       })
 
-      // Add case history for mediator assignment
-      const caseEvent = await prisma.case_events.findFirst({
-        where: {
-          status_id: CaseTypes.IN_PROGRESS,
-          sub_status_id: CaseSubTypes.MEDIATOR_ASSIGNED
-        }
-      })
-      if (caseEvent) {
-        await prisma.case_history.create({
-          data: {
-            case_id: caseId,
-            case_event_id: caseEvent.id
-          }
-        })
-      }
+      await syncMeetingScheduled(prisma, caseId)
 
       const google_calendar_link = helper.generateGoogleCalendarLink({
         title,

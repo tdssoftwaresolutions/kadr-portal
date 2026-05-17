@@ -4,6 +4,7 @@ const { success } = require('../utils/responses')
 const { createError } = require('../utils/errors')
 const errorCodes = require('../utils/errors/errorCodes')
 const { extractYoutubeVideoId } = require('../utils/youtube')
+const { awardRewardPoints } = require('../services/reward/rewardService')
 
 function assertMediator (req) {
   const role = req.user.type || req.user.user_type
@@ -69,6 +70,15 @@ module.exports = {
           },
           include: { user: { select: { id: true, name: true } } }
         })
+        try {
+          await awardRewardPoints({
+            mediatorId: userId,
+            reasonCode: 'video_reel_shared',
+            referenceId: saved.id
+          })
+        } catch (rewardErr) {
+          console.error('Reward on video reel:', rewardErr)
+        }
       }
       success(res, { reel: formatReel(saved) }, 'Video saved successfully')
     } catch (err) {

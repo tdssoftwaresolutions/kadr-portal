@@ -27,7 +27,8 @@ module.exports = {
         where: {
           id,
           user_type: 'MEDIATOR',
-          active: true
+          active: true,
+          is_deleted: false
         },
         select: {
           id: true,

@@ -1,119 +1,145 @@
 [
-    {
-      "title": "Home",
-      "name": "sidebar.dashboard",
-      "is_heading": false,
-      "is_active": false,
-      "adminPage": "dashboard",
-      "link": {
-        "name": "dashboard.home"
+  {
+    "title": "Home",
+    "name": "sidebar.dashboard",
+    "is_heading": false,
+    "is_active": false,
+    "adminPage": "dashboard",
+    "link": { "name": "dashboard.home" },
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-home-5-line"
+  },
+  {
+    "title": "Operations",
+    "name": "sidebar.operations",
+    "is_heading": false,
+    "is_group": true,
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-briefcase-line",
+    "children": [
+      {
+        "title": "Meetings calendar",
+        "name": "app.admin-calendar",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "calendar",
+        "link": { "name": "app.admin-calendar" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-calendar-2-line"
       },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-home-5-line"
-    },
-    {
-      "title": "Meetings calendar",
-      "name": "app.admin-calendar",
-      "is_heading": false,
-      "is_active": false,
-      "adminPage": "calendar",
-      "link": {
-        "name": "app.admin-calendar"
+      {
+        "title": "Case management",
+        "name": "app.cases",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "cases",
+        "link": { "name": "app.cases" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-briefcase-line"
       },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-calendar-2-line"
-    },
-    {
-      "title": "Clients & Experts",
-      "name": "app.users",
-      "is_heading": false,
-      "is_active": false,
-      "adminPage": "users",
-      "link": {
-        "name": "app.users"
+      {
+        "title": "Messages",
+        "name": "app.messages",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "messages",
+        "link": { "name": "app.messages" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-mail-line"
       },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-group-line"
-    },
-    {
-      "title": "Case management",
-      "name": "app.cases",
-      "is_heading": false,
-      "is_active": false,
-      "adminPage": "cases",
-      "link": {
-        "name": "app.cases"
+      {
+        "title": "Clients & Experts",
+        "name": "app.users",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "users",
+        "link": { "name": "app.users" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-group-line"
       },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-briefcase-line"
-    },
-    {
-      "title": "Messages",
-      "name": "app.messages",
-      "is_heading": false,
-      "is_active": false,
-      "adminPage": "messages",
-      "link": {
-        "name": "app.messages"
+      {
+        "title": "Blog taxonomy",
+        "name": "app.blog-taxonomy",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "blog-taxonomy",
+        "link": { "name": "app.blog-taxonomy" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-price-tag-3-line"
+      }
+    ]
+  },
+  {
+    "title": "Finance",
+    "name": "sidebar.finance",
+    "is_heading": false,
+    "is_group": true,
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-money-dollar-circle-line",
+    "children": [
+      {
+        "title": "Payments & Invoices",
+        "name": "app.invoices",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "invoices",
+        "link": { "name": "app.invoices" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-file-list-3-line"
       },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-mail-line"
-    },
-    {
-      "title": "Blog taxonomy",
-      "name": "app.blog-taxonomy",
-      "is_heading": false,
-      "is_active": false,
-      "adminPage": "blog-taxonomy",
-      "link": {
-        "name": "app.blog-taxonomy"
+      {
+        "title": "Reward orders",
+        "name": "app.reward-orders",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "reward-orders",
+        "link": { "name": "app.reward-orders" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-gift-2-line"
+      }
+    ]
+  },
+  {
+    "title": "System",
+    "name": "sidebar.system",
+    "is_heading": false,
+    "is_group": true,
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-settings-4-line",
+    "children": [
+      {
+        "title": "Settings",
+        "name": "app.settings",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "settings",
+        "link": { "name": "app.settings" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-settings-4-line"
       },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-price-tag-3-line"
-    },
-    {
-      "title": "Payments & Invoices",
-      "name": "app.invoices",
-      "is_heading": false,
-      "is_active": false,
-      "adminPage": "invoices",
-      "link": {
-        "name": "app.invoices"
-      },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-file-list-3-line"
-    },
-    {
-      "title": "Settings",
-      "name": "app.settings",
-      "is_heading": false,
-      "is_active": false,
-      "adminPage": "settings",
-      "link": {
-        "name": "app.settings"
-      },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-settings-4-line"
-    },
-    {
-      "title": "Admin management",
-      "name": "app.admins",
-      "is_heading": false,
-      "is_active": false,
-      "adminPage": "admins",
-      "link": {
-        "name": "app.admins"
-      },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-admin-line"
-    }
-  ]
+      {
+        "title": "Admin management",
+        "name": "app.admins",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "admins",
+        "link": { "name": "app.admins" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-admin-line"
+      }
+    ]
+  }
+]

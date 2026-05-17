@@ -6,6 +6,7 @@ const errorCodes = require('../utils/errors/errorCodes')
 const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
 const CaseAssignmentService = require('../utils/caseAssignment')
+const { canLogin } = require('../utils/userAccess')
 
 module.exports = {
   login: async function (req, res, next) {
@@ -18,7 +19,8 @@ module.exports = {
       })
       if (!user) throw createError(errorCodes.INVALID_CREDENTIALS)
 
-      if (user.active === false) throw createError(errorCodes.USER_NOT_ACTIVE)
+      if (user.is_deleted === true) throw createError(errorCodes.USER_ACCOUNT_DELETED)
+      if (!canLogin(user)) throw createError(errorCodes.USER_NOT_ACTIVE)
 
       const isPasswordValid = await helper.comparePassword(password, user.password_hash)
       if (!isPasswordValid) throw createError(errorCodes.INVALID_CREDENTIALS)
@@ -61,13 +63,27 @@ module.exports = {
       const user = await prisma.user.findUnique({
         where: {
           email: req.query.email
+        },
+        select: {
+          id: true,
+          active: true,
+          is_deleted: true,
+          is_self_signed_up: true
         }
       })
-      if (user) {
-        success(res, { exists: true }, 'Email address already exist, please login instead.')
-      } else {
+      if (!user) {
         success(res, { exists: false }, 'Email does not exist')
+        return
       }
+      if (user.is_deleted === true) {
+        success(res, { exists: false, canReRegister: true }, 'Email can be used to register again.')
+        return
+      }
+      if (user.active === false && user.is_self_signed_up === true) {
+        success(res, { exists: true, pendingApproval: true }, 'Your registration is pending approval.')
+        return
+      }
+      success(res, { exists: true }, 'Email address already exist, please login instead.')
     } catch (error) {
       next(error)
     }
@@ -247,6 +263,7 @@ module.exports = {
         where: {
           email,
           active: true,
+          is_deleted: false,
           user_type: {
             not: 'ADMIN'
           }

@@ -1,10 +1,13 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+const { REWARD_SETTING_DEFAULTS } = require('../reward/rewardService')
+
 const DEFAULT_SETTINGS = [
   { key: 'mediator_commission', label: 'Default mediator revenue share (% of mediation amount)', value: '5' },
   { key: 'invoice_gst_percentage', label: 'GST on invoice (%)', value: '0' },
-  { key: 'invoice_tax_percentage', label: 'Tax on invoice (%)', value: '0' }
+  { key: 'invoice_tax_percentage', label: 'Tax on invoice (%)', value: '0' },
+  ...REWARD_SETTING_DEFAULTS
 ]
 
 function toNumber (value, fallback = 0) {

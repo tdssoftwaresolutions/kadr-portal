@@ -17,6 +17,8 @@ import AdminCalendar from '../views/AdminControllers/AdminCalendar.vue'
 import AdminCorrespondenceInbox from '../views/AdminControllers/AdminCorrespondenceInbox.vue'
 /** Mediator */
 import InvoicesView from '../views/MediatorControllers/InvoicesView.vue'
+import MediatorRewardsView from '../views/MediatorControllers/MediatorRewardsView.vue'
+import AdminRewardOrdersView from '../views/AdminControllers/AdminRewardOrdersView.vue'
 import PortalSupportView from '../views/Standard/PortalSupportView.vue'
 
 /** Client  */
@@ -136,6 +138,18 @@ const appChildRoute = (prop) => [
     name: prop + '.invoices',
     meta: { name: 'Payments & Invoices', adminPage: 'invoices' },
     component: InvoicesView
+  },
+  {
+    path: 'rewards',
+    name: prop + '.rewards',
+    meta: { name: 'Reward Store' },
+    component: MediatorRewardsView
+  },
+  {
+    path: 'reward-orders',
+    name: prop + '.reward-orders',
+    meta: { name: 'Reward orders', adminPage: 'reward-orders' },
+    component: AdminRewardOrdersView
   }
 ]
 

@@ -11,6 +11,7 @@ const ALL_ADMIN_PAGES = [
   'calendar',
   'blog-taxonomy',
   'invoices',
+  'reward-orders',
   'settings',
   'admins'
 ]

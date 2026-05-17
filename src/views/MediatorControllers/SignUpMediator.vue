@@ -41,6 +41,11 @@
                 <label for="pincode">Pin Code <span class="text-danger">*</span></label>
                 <input type="number" class="form-control" id="pincode" v-model="formData.pincode" placeholder="Pin Code" />
             </div>
+            <div class="mb-3">
+                <label for="referralCode">Referral code (optional)</label>
+                <input type="text" class="form-control text-uppercase" id="referralCode" v-model="formData.referralCode" maxlength="12" />
+                <small class="text-muted">If a mediator invited you, enter their referral code.</small>
+            </div>
             <div class="d-flex justify-content-between">
                 <div>
                 <button type="button" class="btn btn-secondary" @click="prevStep(1)">Previous</button>
@@ -225,7 +230,8 @@ export default {
         profilePicture: null,
         profilePictureContent: null,
         selectedHearingTypes: [],
-        barEnrollmentNo: ''
+        barEnrollmentNo: '',
+        referralCode: ''
       },
       availableForOptions: [
         { text: 'Physical Hearing', value: 'physical' },
@@ -410,7 +416,10 @@ export default {
           emailAddress: this.formData.email
         })
         if (response.success && response.data.exists) {
-          this.showAlert(response.message, 'danger')
+          const msg = response.data.pendingApproval
+            ? 'Your registration is already pending approval. Please wait for the Kadr team to activate your account.'
+            : response.message
+          this.showAlert(msg, 'danger')
           return false
         }
       } else if (currentStep === 2) {

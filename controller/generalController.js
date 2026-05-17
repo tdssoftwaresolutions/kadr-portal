@@ -7,6 +7,8 @@ const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { getOrCreateSettings, settingsToMap } = require('../services/invoice/invoiceService')
+const { awardRewardPoints, onMediatorApproved } = require('../services/reward/rewardService')
+const { ensureMediatorReferralCode } = require('../utils/referralCode')
 const {
   assertAdminPage,
   assertAdminComponent,
@@ -165,13 +167,15 @@ module.exports = {
             prisma.user.count({
               where: {
                 user_type: 'CLIENT',
-                active: true
+                active: true,
+                is_deleted: false
               }
             }),
             prisma.user.count({
               where: {
                 user_type: 'MEDIATOR',
-                active: true
+                active: true,
+                is_deleted: false
               }
             }),
             prisma.events.findMany({
@@ -248,7 +252,7 @@ module.exports = {
         }
 
         case 'MEDIATOR': {
-          const [notes, casesWithEvents, casesCount, todaysPersonalMeetings] = await Promise.all([
+          const [notes, casesWithEvents, casesCount, todaysPersonalMeetings, caseEvents] = await Promise.all([
             prisma.notes.findMany({
               where: {
                 user_id: id
@@ -263,10 +267,14 @@ module.exports = {
             }),
             helper.getMediatorCases(prisma, id, 1),
             helper.getMediatorCasesCount(prisma, id),
-            helper.getTodaysPersonalMeetings(prisma, id)
+            helper.getTodaysPersonalMeetings(prisma, id),
+            helper.getCaseEvents(prisma)
           ])
           dashboardContent.myCases = {
-            casesWithEvents,
+            casesWithEvents: helper.mergeCaseHistory(casesWithEvents, caseEvents, {
+              userId: id,
+              type: 'MEDIATOR'
+            }),
             total: casesCount,
             page: 1,
             perPage: 10
@@ -274,6 +282,15 @@ module.exports = {
           dashboardContent.notes = notes
           dashboardContent.todaysEvent = helper.getTodaysEvents(casesWithEvents, todaysPersonalMeetings)
           dashboardContent.user = user
+          const mediatorReferralCode = await ensureMediatorReferralCode(prisma, id)
+          const rewardRow = await prisma.user.findUnique({
+            where: { id },
+            select: { reward_points_balance: true, referral_code: true }
+          })
+          dashboardContent.rewardPoints = {
+            balance: rewardRow?.reward_points_balance ?? 0,
+            referralCode: mediatorReferralCode || rewardRow?.referral_code || null
+          }
           break
         }
 
@@ -283,7 +300,10 @@ module.exports = {
             helper.getClientNotifications(prisma, id),
             helper.getCaseEvents(prisma)
           ])
-          dashboardContent.myCases = helper.mergeCaseHistory(casesWithEvents, caseEvents)
+          dashboardContent.myCases = helper.mergeCaseHistory(casesWithEvents, caseEvents, {
+            userId: id,
+            type: 'CLIENT'
+          })
           dashboardContent.notifications = clientNotifications
           dashboardContent.todaysEvent = helper.getEventsForToday(casesWithEvents)
           dashboardContent.user = user
@@ -312,6 +332,13 @@ module.exports = {
       generatedPassword = helper.generateRandomPassword()
       hashPassword = await helper.hashPassword(generatedPassword)
     }
+
+    const priorUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { user_type: true, active: true, is_deleted: true }
+    })
+    if (!priorUser || priorUser.is_deleted) throw createError(errorCodes.NOT_FOUND)
+
     const updatedUser = await prisma.user.update({
       where: {
         id: userId
@@ -323,9 +350,19 @@ module.exports = {
       select: {
         name: true,
         email: true,
-        phone_number: true
+        phone_number: true,
+        user_type: true,
+        active: true
       }
     })
+
+    if (isActive && priorUser.active === false && updatedUser.user_type === 'MEDIATOR') {
+      try {
+        await onMediatorApproved(userId)
+      } catch (rewardErr) {
+        console.error('Reward on mediator approval:', rewardErr)
+      }
+    }
     console.log(caseId)
     if (caseId) {
       let caseSubStatus = ''
@@ -352,18 +389,11 @@ module.exports = {
         }
       })
 
-      const caseEvent = await prisma.case_events.findFirst({
-        where: {
-          status_id: newCase.status,
-          sub_status_id: newCase.sub_status
-        }
-      })
-
-      await prisma.case_history.create({
-        data: {
-          case_id: newCase.id,
-          case_event_id: caseEvent.id
-        }
+      const { recordCaseMilestone } = require('../services/case/caseMilestoneService')
+      await recordCaseMilestone(prisma, {
+        caseId: newCase.id,
+        statusId: newCase.status,
+        subStatusId: newCase.sub_status
       })
     }
     if (shouldSendWelcomeEmail) {
@@ -503,22 +533,36 @@ module.exports = {
 
       switch (type) {
         case 'MEDIATOR': {
-          const [casesWithEvents, casesCount] = await Promise.all([
+          const [casesWithEvents, casesCount, caseEvents] = await Promise.all([
             helper.getMediatorCases(prisma, id, currentPage, pastStatuses),
-            helper.getMediatorCasesCount(prisma, id, pastStatuses)
+            helper.getMediatorCasesCount(prisma, id, pastStatuses),
+            helper.getCaseEvents(prisma)
           ])
           success(res, {
-            casesWithEvents, total: casesCount, page: currentPage, perPage: 10
+            casesWithEvents: helper.mergeCaseHistory(casesWithEvents, caseEvents, {
+              userId: id,
+              type: 'MEDIATOR'
+            }),
+            total: casesCount,
+            page: currentPage,
+            perPage: 10
           })
           break
         }
         case 'CLIENT': {
-          const [casesWithEvents, casesCount] = await Promise.all([
+          const [casesWithEvents, casesCount, caseEvents] = await Promise.all([
             helper.getClientCases(prisma, id, currentPage, pastStatuses),
-            helper.getClientCasesCount(prisma, id, pastStatuses)
+            helper.getClientCasesCount(prisma, id, pastStatuses),
+            helper.getCaseEvents(prisma)
           ])
           success(res, {
-            casesWithEvents, total: casesCount, page: currentPage, perPage: 10
+            casesWithEvents: helper.mergeCaseHistory(casesWithEvents, caseEvents, {
+              userId: id,
+              type: 'CLIENT'
+            }),
+            total: casesCount,
+            page: currentPage,
+            perPage: 10
           })
           break
         }
@@ -676,6 +720,12 @@ module.exports = {
           case_id: caseId
         }
       })
+
+      if (caseId && String(type).toLowerCase() !== 'personal') {
+        const { syncMeetingScheduled } = require('../services/case/caseMilestoneService')
+        await syncMeetingScheduled(prisma, caseId)
+      }
+
       success(res, {
         meetLink: meetingLink
       }, 'Event created successfully')
@@ -687,19 +737,20 @@ module.exports = {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
       await assertAdminPage(req, 'users')
-      const { page = 1, type, includeInactive = 'false' } = req.query
+      const { page = 1, type, includeInactive = 'false', includeDeleted = 'false' } = req.query
       const withInactive = String(includeInactive).toLowerCase() === 'true'
+      const withDeleted = String(includeDeleted).toLowerCase() === 'true'
 
       if (type) {
         // Fetch data for a specific user type
         const relationField = type === 'CLIENT' ? 'cases_cases_first_partyTouser' : 'cases_cases_mediatorTouser'
-        const activeUsers = await helper.getUsers(true, prisma, page, type, relationField, withInactive)
+        const activeUsers = await helper.getUsers(true, prisma, page, type, relationField, withInactive, withDeleted)
         res.json({ success: true, users: activeUsers.users, total: activeUsers.total })
       } else {
         // Fetch both clients and mediators
         const [activeClients, activeMediators] = await Promise.all([
-          helper.getUsers(true, prisma, page, 'CLIENT', 'cases_cases_first_partyTouser', withInactive),
-          helper.getUsers(true, prisma, page, 'MEDIATOR', 'cases_cases_mediatorTouser', withInactive)
+          helper.getUsers(true, prisma, page, 'CLIENT', 'cases_cases_first_partyTouser', withInactive, withDeleted),
+          helper.getUsers(true, prisma, page, 'MEDIATOR', 'cases_cases_mediatorTouser', withInactive, withDeleted)
         ])
 
         const combinedUsers = [...activeClients.users, ...activeMediators.users]
@@ -720,14 +771,16 @@ module.exports = {
         throw createError(errorCodes.UNAUTHORIZED)
       }
 
-      await prisma.cases.update({
-        where: {
-          id: caseId
-        },
-        data: {
-          status: CaseTypes.IN_PROGRESS,
-          sub_status: CaseSubTypes.PENDING_MEDIATION_PAYMENT
-        }
+      const {
+        ensureNoticePhaseComplete,
+        updateCaseSubStatus
+      } = require('../services/case/caseMilestoneService')
+
+      await ensureNoticePhaseComplete(prisma, caseId)
+
+      await updateCaseSubStatus(prisma, caseId, {
+        status: CaseTypes.IN_PROGRESS,
+        sub_status: CaseSubTypes.PENDING_MEDIATION_PAYMENT
       })
 
       await prisma.notifications.create({
@@ -1009,6 +1062,7 @@ module.exports = {
         select: {
           id: true,
           caseId: true,
+          mediator: true,
           user_cases_first_partyTouser: {
             select: {
               id: true,
@@ -1025,6 +1079,12 @@ module.exports = {
           agreed_terms: agreementText,
           signature_mediator: signature
         }
+      })
+
+      const { recordCaseMilestone } = require('../services/case/caseMilestoneService')
+      await recordCaseMilestone(prisma, {
+        caseId,
+        subStatusId: CaseSubTypes.PENDING_MEDIATION_AGREEMENT_SIGN
       })
 
       await prisma.cases.update({
@@ -1045,6 +1105,18 @@ module.exports = {
         signUrl: `${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}`,
         partyRole: 'first party'
       })
+
+      if (caseRecord.mediator) {
+        try {
+          await awardRewardPoints({
+            mediatorId: caseRecord.mediator,
+            reasonCode: 'case_closed',
+            referenceId: caseId
+          })
+        } catch (rewardErr) {
+          console.error('Reward on case closed:', rewardErr)
+        }
+      }
 
       success(res, {}, 'Case marked as resolved!')
     } catch (error) {
@@ -1131,10 +1203,22 @@ module.exports = {
         throw createError(errorCodes.FORBIDDEN)
       }
 
-      await prisma.events.update({
+      const updated = await prisma.events.update({
         where: { id: event_id },
         data
       })
+
+      if (userType === 'MEDIATOR' && updated.mediator_feedback_at && c.mediator === uid) {
+        try {
+          await awardRewardPoints({
+            mediatorId: uid,
+            reasonCode: 'meeting_feedback',
+            referenceId: event_id
+          })
+        } catch (rewardErr) {
+          console.error('Reward on meeting feedback:', rewardErr)
+        }
+      }
 
       success(res, {}, 'Meeting feedback saved successfully')
     } catch (error) {
@@ -1152,12 +1236,15 @@ module.exports = {
         secondPartyId: req.query.secondPartyId || null,
         status: req.query.status || null
       }
-      const [casesWithEvents, total] = await Promise.all([
+      const [casesWithEvents, total, caseEvents] = await Promise.all([
         helper.getAdminActiveCases(prisma, page, filters),
-        helper.getAdminActiveCasesCount(prisma, filters)
+        helper.getAdminActiveCasesCount(prisma, filters),
+        helper.getCaseEvents(prisma)
       ])
       success(res, {
-        casesWithEvents,
+        casesWithEvents: helper.mergeCaseHistory(casesWithEvents, caseEvents, {
+          type: 'ADMIN'
+        }),
         total,
         page,
         perPage: 10
@@ -1199,13 +1286,13 @@ module.exports = {
         }),
         prisma.user.findUnique({
           where: { id: mediatorId },
-          select: { id: true, user_type: true, name: true, email: true, active: true }
+          select: { id: true, user_type: true, name: true, email: true, active: true, is_deleted: true }
         })
       ])
 
       if (!caseRecord) throw createError(errorCodes.CASE_NOT_FOUND)
       if (!mediatorUser || mediatorUser.user_type !== 'MEDIATOR') throw createError(errorCodes.NOT_FOUND)
-      if (!mediatorUser.active) throw createError(errorCodes.USER_NOT_ACTIVE)
+      if (!mediatorUser.active || mediatorUser.is_deleted) throw createError(errorCodes.USER_NOT_ACTIVE)
 
       const activeStatuses = [CaseTypes.NEW, CaseTypes.IN_PROGRESS]
       if (!activeStatuses.includes(caseRecord.status)) {
@@ -1222,6 +1309,12 @@ module.exports = {
           status: CaseTypes.IN_PROGRESS,
           sub_status: CaseSubTypes.MEDIATOR_ASSIGNED
         }
+      })
+
+      const { recordCaseMilestone } = require('../services/case/caseMilestoneService')
+      await recordCaseMilestone(prisma, {
+        caseId,
+        subStatusId: CaseSubTypes.MEDIATOR_ASSIGNED
       })
 
       const label = caseRecord.caseId || 'your case'
@@ -1254,6 +1347,49 @@ module.exports = {
       await Promise.all(notifications)
 
       success(res, {}, 'Mediator assigned successfully.')
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  deleteMyAccount: async function (req, res, next) {
+    try {
+      if (req.user.type === 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      const { confirm } = req.body
+      if (!confirm) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { is_deleted: true, active: false }
+      })
+      success(res, {}, 'Your account has been removed from the platform. Your data is retained securely for audit purposes.')
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  adminSetUserDeleted: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'users')
+      const { userId, isDeleted } = req.body
+      if (!userId || typeof isDeleted !== 'boolean') throw createError(errorCodes.INVALID_REQUEST)
+
+      const target = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, user_type: true, master: true }
+      })
+      if (!target) throw createError(errorCodes.NOT_FOUND)
+      if (target.user_type === 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          is_deleted: isDeleted,
+          ...(isDeleted ? { active: false } : {})
+        }
+      })
+      success(res, {}, isDeleted ? 'User removed from the platform.' : 'User restored. Approve activation if they should log in again.')
     } catch (error) {
       next(error)
     }

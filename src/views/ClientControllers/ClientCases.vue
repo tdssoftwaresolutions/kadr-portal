@@ -198,19 +198,14 @@
           <div class="workspace-side-stack">
             <section class="section-card">
               <div class="section-head">
-                <h5>Case Timeline</h5>
-                <small>Current stage and pending milestones.</small>
+                <h5>Case progress</h5>
+                <small>Where you are now, what is next, and recent activity.</small>
               </div>
-              <div class="timeline">
-                <div
-                  v-for="(step, index) in selectedCase.case_history"
-                  :key="index"
-                  class="timeline-step"
-                  :class="getProgressStepClass(step)"
-                >
-                  <p>{{ step.title }}</p>
-                </div>
-              </div>
+              <CaseProgressPanel
+                :progress="selectedCase.case_progress"
+                :is-past-view="isPastView"
+                @action="handleProgressAction"
+              />
             </section>
             <section v-if="selectedCase.id" class="section-card side-correspondence-card">
               <CaseCorrespondencePanel
@@ -305,6 +300,7 @@ import { sofbox } from '../../config/pluginInit'
 import FilePreview from '../core/DocumentPreview.vue'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
 import CaseCorrespondencePanel from '../../components/CaseCorrespondencePanel.vue'
+import CaseProgressPanel from '../../components/cases/CaseProgressPanel.vue'
 import {
   isPastKadrCaseMeeting,
   clientNeedsMeetingFeedback,
@@ -317,7 +313,8 @@ export default {
   components: {
     FilePreview,
     MeetingFeedbackModal,
-    CaseCorrespondencePanel
+    CaseCorrespondencePanel,
+    CaseProgressPanel
   },
   props: {
     content: {
@@ -357,14 +354,6 @@ export default {
     }
   },
   computed: {
-    activeStepSequence () {
-      if (!this.selectedCase?.case_history?.length) return null
-      const sorted = [...this.selectedCase.case_history]
-        .sort((a, b) => a.sequence - b.sequence)
-
-      const activeStep = sorted.find(step => step.completed === false)
-      return activeStep ? activeStep.sequence : null
-    },
     myCases () {
       return this.content.myCases || []
     },
@@ -495,7 +484,6 @@ export default {
   mounted () {
     sofbox.index()
     this.selectedCase = this.myCases[0] || {}
-    this.updateProgressSteps()
   },
   watch: {
     myCases: {
@@ -508,11 +496,7 @@ export default {
 
         const current = newCases.find((item) => item.id === this.selectedCase.id)
         this.selectedCase = current || newCases[0]
-        this.updateProgressSteps()
       }
-    },
-    selectedCase () {
-      this.updateProgressSteps()
     }
   },
   methods: {
@@ -552,49 +536,30 @@ export default {
     },
     selectCase (caseItem) {
       this.selectedCase = caseItem
-      this.updateProgressSteps()
     },
-    getProgressStepClass (step) {
-      return {
-        'completed': step.completed === true,
-        'active': step.sequence === this.activeStepSequence,
-        'pending': step.completed === false && step.sequence !== this.activeStepSequence
+    handleProgressAction (actionKey) {
+      const isSecondParty = this.userid === this.selectedCase.user_cases_second_partyTouser?.id
+      const isFirstParty = this.userid === this.selectedCase.user_cases_first_partyTouser?.id
+
+      if (actionKey === 'notice_payment' && isFirstParty) {
+        this.initiatePayment('notice', this.selectedCase.user_cases_first_partyTouser.id)
+        return
       }
-    },
-    updateProgressSteps () {
-      // Reset all steps
-      console.log(this.caseProgressSteps)
-      if (!this.caseProgressSteps) return
-
-      this.caseProgressSteps.forEach((step) => {
-        step.status = 'pending'
-      })
-
-      const status = this.selectedCase.case_statuses?.name
-      const subStatus = this.selectedCase.case_sub_statuses?.name
-
-      // Update based on current status
-      if (status === 'New') {
-        this.caseProgressSteps[0].status = 'active'
-      } else if (status === 'In Progress') {
-        this.caseProgressSteps[0].status = 'completed'
-        this.caseProgressSteps[1].status = 'completed'
-
-        if (subStatus === 'Notice Sent to Opposite Party') {
-          this.caseProgressSteps[2].status = 'active'
-        } else if (subStatus === 'Pending Mediation Payment') {
-          this.caseProgressSteps[2].status = 'completed'
-          this.caseProgressSteps[3].status = 'active'
-        } else if (this.selectedCase.user_cases_mediatorTouser) {
-          this.caseProgressSteps[2].status = 'completed'
-          this.caseProgressSteps[3].status = 'completed'
-          this.caseProgressSteps[4].status = 'completed'
-          this.caseProgressSteps[5].status = 'active'
-        }
-      } else if (status === 'Closed Success') {
-        this.caseProgressSteps.forEach((step) => {
-          step.status = 'completed'
-        })
+      if (actionKey === 'accept_mediation' && isSecondParty) {
+        this.initiatePayment('notice', this.selectedCase.user_cases_second_partyTouser.id)
+        return
+      }
+      if (actionKey === 'mediation_payment' && isFirstParty) {
+        this.initiatePayment('mediation', this.selectedCase.user_cases_first_partyTouser.id)
+        return
+      }
+      if (actionKey === 'sign_agreement') {
+        this.initiateSigning()
+        return
+      }
+      if (actionKey === 'join_meeting') {
+        const link = this.selectedCase.case_progress?.now?.meetingLink
+        if (link) window.open(link, '_blank', 'noopener')
       }
     },
     initiatePayment (type, userId) {

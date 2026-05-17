@@ -9,7 +9,7 @@
         <slot name="headerAction" />
       </div>
     </div>
-    <b-card-body :body-class="'iq-card-body ' + bodyClass" v-if="hasBodySlot">
+    <b-card-body :body-class="'iq-card-body ' + bodyClass">
       <slot name="body"/>
     </b-card-body>
     <slot />

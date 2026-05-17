@@ -7,14 +7,19 @@
           <template v-slot:body>
             <div class="iq-edit-list">
               <ul class="iq-edit-profile d-flex nav nav-pills mb-4">
-                <li class="col-md-6 p-0">
+                <li class="col-md-4 p-0">
                   <a class="nav-link" :class="{active: activeTab==='personal'}" @click="activeTab='personal'">
                     Personal Information
                   </a>
                 </li>
-                <li class="col-md-6 p-0">
+                <li class="col-md-4 p-0">
                   <a class="nav-link" :class="{active: activeTab==='password'}" @click="activeTab='password'">
                     Change Password
+                  </a>
+                </li>
+                <li class="col-md-4 p-0">
+                  <a class="nav-link" :class="{active: activeTab==='account'}" @click="activeTab='account'">
+                    Account
                   </a>
                 </li>
               </ul>
@@ -65,10 +70,40 @@
                           <b-form-input id="phone" v-model="form.phone_number" />
                         </div>
                       </div>
+                      <div v-if="isMediator" class="reward-profile-link mb-4 p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                          <div>
+                            <strong>Reward points</strong>
+                            <p class="mb-0 text-muted small">Balance: {{ rewardBalance.toLocaleString() }} pts</p>
+                          </div>
+                          <b-button variant="outline-primary" size="sm" class="mt-2 mt-sm-0" @click="goToRewards">
+                            Reward store & referral
+                          </b-button>
+                        </div>
+                      </div>
                       <button type="submit" class="btn btn-primary mr-2">
                         <span >Save</span>
                       </button>
                     </b-form>
+                  </div>
+                </div>
+              </div>
+              <div v-show="activeTab==='account'">
+                <div class="iq-card">
+                  <div class="iq-card-header">
+                    <h4 class="card-title text-danger">Delete account</h4>
+                  </div>
+                  <div class="iq-card-body">
+                    <p>
+                      Removing your account disables login and platform access. Your cases and records stay in our system
+                      for audit and compliance only — they are not used for any other purpose.
+                    </p>
+                    <b-form-checkbox v-model="deleteConfirm" class="mb-3">
+                      I understand my account will be removed from the platform and data will be kept securely for audit purposes.
+                    </b-form-checkbox>
+                    <button type="button" class="btn btn-danger" :disabled="!deleteConfirm" @click="onDeleteAccount">
+                      Delete my account
+                    </button>
                   </div>
                 </div>
               </div>
@@ -146,11 +181,19 @@ export default {
         message: '',
         timeout: 5000,
         type: 'primary'
-      }
+      },
+      deleteConfirm: false,
+      rewardBalance: 0
     }
   },
-  created () {
-    this.initUserData()
+  computed: {
+    isMediator () {
+      return this.$store.state.user && this.$store.state.user.type === 'MEDIATOR'
+    }
+  },
+  async created () {
+    await this.initUserData()
+    if (this.isMediator) await this.loadRewardBalance()
   },
   mounted () {
     sofbox.index()
@@ -168,6 +211,15 @@ export default {
         this.form.phone_number = user.phone || ''
         this.form.profile_picture_url = user.photo || ''
       }
+    },
+    async loadRewardBalance () {
+      const res = await this.$store.dispatch('getMyRewards', { page: 1 })
+      if (res.success && res.data) {
+        this.rewardBalance = res.data.balance ?? 0
+      }
+    },
+    goToRewards () {
+      this.$router.push({ name: 'app.rewards' })
     },
     triggerProfilePictureUpload () {
       this.$refs.profilePictureInput.click()
@@ -213,6 +265,18 @@ export default {
     },
     async updateUserProfile (payload) {
       return await this.$store.dispatch('updateUserProfile', payload)
+    },
+    async onDeleteAccount () {
+      if (!this.deleteConfirm) return
+      if (!window.confirm('Are you sure you want to delete your account? You will be logged out immediately.')) return
+      const response = await this.$store.dispatch('deleteMyAccount', { confirm: true })
+      if (response.success) {
+        this.showAlert(response.message || 'Account removed.', 'success')
+        setTimeout(async () => {
+          await this.$store.dispatch('logout')
+          this.$router.push({ name: 'auth.sign-in' })
+        }, 1500)
+      }
     },
     async onSavePassword () {
       if (this.form.password.trim() === '') return this.showAlert('Please enter password', 'danger')
