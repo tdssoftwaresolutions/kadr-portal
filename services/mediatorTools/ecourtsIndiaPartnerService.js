@@ -30,6 +30,17 @@ function formatPartnerCase (apiBody, cnr) {
     throw createError(errorCodes.COURT_CASE_FETCH_FAILED)
   }
 
+  const petitioners = c.petitioners || []
+  const respondents = c.respondents || []
+  const petitionerAdvocates = c.petitionerAdvocates || []
+  const respondentAdvocates = c.respondentAdvocates || []
+  const judges = c.judges || []
+
+  const petitionersLabel = petitioners.join(', ') || '—'
+  const respondentsLabel = respondents.join(', ') || '—'
+  const caseTitle = `${petitionersLabel} vs ${respondentsLabel}`
+  const caseNumber = c.registrationNumber || c.caseNumber || c.filingNumber || c.cnr || cnr
+
   const caseDetails = []
   pushField(caseDetails, 'CNR', c.cnr || cnr)
   pushField(caseDetails, 'Case status', c.caseStatus)
@@ -47,32 +58,57 @@ function formatPartnerCase (apiBody, cnr) {
   pushField(caseDetails, 'Decision date', c.decisionDate)
   pushField(caseDetails, 'Disposal type', c.disposalType || c.disposalTypeRaw)
   pushField(caseDetails, 'Purpose', c.purpose)
-  pushField(caseDetails, 'Petitioner(s)', c.petitioners)
-  pushField(caseDetails, 'Petitioner advocate(s)', c.petitionerAdvocates)
-  pushField(caseDetails, 'Respondent(s)', c.respondents)
-  pushField(caseDetails, 'Respondent advocate(s)', c.respondentAdvocates)
-  pushField(caseDetails, 'Judges', c.judges)
-
-  const petitioners = (c.petitioners || []).join(', ') || '—'
-  const respondents = (c.respondents || []).join(', ') || '—'
-  const caseTitle = `${petitioners} vs ${respondents}`
-  const caseNumber = c.registrationNumber || c.caseNumber || c.filingNumber || c.cnr || cnr
+  pushField(caseDetails, 'Petitioner(s)', petitioners)
+  pushField(caseDetails, 'Petitioner advocate(s)', petitionerAdvocates)
+  pushField(caseDetails, 'Respondent(s)', respondents)
+  pushField(caseDetails, 'Respondent advocate(s)', respondentAdvocates)
+  pushField(caseDetails, 'Judges', judges)
 
   const hearingHistory = (c.historyOfCaseHearings || []).map((h) => ({
     judge: h.judge || '—',
-    businessOnDate: h.businessOnDate || '—',
-    hearingDate: h.hearingDate || '—',
+    businessOnDate: h.businessOnDate || null,
+    hearingDate: h.hearingDate || null,
     purposeOfListing: h.purposeOfListing || '—'
   }))
 
+  const orders = (c.judgmentOrders || []).map((o, idx) => ({
+    id: `order-${idx}`,
+    orderDate: o.orderDate || null,
+    orderType: o.orderType || 'Copy of Order',
+    orderUrl: o.orderUrl || null,
+    label: o.orderType ? `Order — ${o.orderType}` : 'Copy of Order'
+  }))
+
+  const profile = {
+    courtName: c.courtName || null,
+    judge: judges.length ? judges.join(', ') : null,
+    caseType: c.caseTypeRaw || c.caseType || null,
+    registrationNumber: c.registrationNumber || null,
+    filingNumber: c.filingNumber || null,
+    cnr: (c.cnr || cnr).toUpperCase(),
+    caseCategory: c.caseTypeSub || c.caseCategoryFacetPath || null,
+    caseStatus: c.caseStatus || null,
+    disposalType: c.disposalType || c.disposalTypeRaw || null,
+    decisionDate: c.decisionDate || null,
+    purpose: c.purpose || null
+  }
+
   return {
     source: 'ecourtsindia_partner',
-    cnr: (c.cnr || cnr).toUpperCase(),
+    cnr: profile.cnr,
     caseNumber: caseNumber ? String(caseNumber) : null,
     officialUrl: OFFICIAL_ECOURTS_URL,
     caseTitle,
-    caseStatus: c.caseStatus || null,
-    courtName: c.courtName || null,
+    caseStatus: profile.caseStatus,
+    courtName: profile.courtName,
+    profile,
+    parties: {
+      petitioners,
+      petitionerAdvocates,
+      respondents,
+      respondentAdvocates
+    },
+    orders,
     caseDetails,
     hearingHistory,
     disclaimer: 'Case data from eCourts India (official court records). Verify on the government eCourts portal when needed.'

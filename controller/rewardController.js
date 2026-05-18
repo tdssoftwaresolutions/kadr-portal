@@ -30,7 +30,10 @@ module.exports = {
       const { catalogItemId } = req.body
       if (!catalogItemId) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
       const order = await redeemCatalogItem(req.user.id, catalogItemId)
-      success(res, { order }, 'Your redemption request has been placed. Our team will fulfill it shortly.')
+      const msg = order?.status === 'FULFILLED'
+        ? 'Reward redeemed and applied to your account.'
+        : 'Your redemption request has been placed. Our team will fulfill it shortly.'
+      success(res, { order }, msg)
     } catch (error) {
       next(error)
     }
@@ -64,8 +67,26 @@ module.exports = {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
       await assertAdminPage(req, 'settings')
-      const { id, title, description, points_cost, active, sort_order } = req.body
-      const item = await upsertCatalogItem({ id, title, description, points_cost, active, sort_order })
+      const {
+        id,
+        title,
+        description,
+        points_cost,
+        active,
+        sort_order,
+        fulfillment_type,
+        fulfillment_rule_id
+      } = req.body
+      const item = await upsertCatalogItem({
+        id,
+        title,
+        description,
+        points_cost,
+        active,
+        sort_order,
+        fulfillment_type,
+        fulfillment_rule_id
+      })
       success(res, { item }, 'Reward item saved')
     } catch (error) {
       next(error)

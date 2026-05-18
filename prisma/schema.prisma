@@ -57,10 +57,17 @@ model user {
   mediator_reward_transactions   mediator_reward_transactions[] @relation("mediator_reward_transactions")
   reward_redemption_orders       reward_redemption_orders[]     @relation("reward_redemption_orders")
   mediator_court_case_trackers   mediator_court_case_trackers[] @relation("mediator_court_case_trackers")
+  mediator_subscriptions         mediator_subscriptions[]       @relation("mediator_subscriptions")
+  mediator_invoice_settings      mediator_invoice_settings?     @relation("mediator_invoice_settings")
+  mediator_private_invoices      mediator_private_invoices[]    @relation("mediator_private_invoices")
+  mediator_offboarding_events    mediator_offboarding_events[]  @relation("mediator_offboarding_events")
+  subscription_tier              subscription_tier              @default(FREE)
+  subscription_expires_at        DateTime?                      @db.DateTime(0)
   referred_by                    user?           @relation("user_referrals", fields: [referred_by_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_user_referred_by")
   referrals                      user[]          @relation("user_referrals")
 
   @@index([user_type, active, created_at], map: "idx_user_type_active_created")
+  @@index([subscription_tier, subscription_expires_at], map: "idx_user_subscription")
   @@index([is_deleted], map: "idx_user_is_deleted")
   @@index([referred_by_id], map: "idx_user_referred_by")
 }
@@ -99,17 +106,158 @@ model mediator_reward_transactions {
 }
 
 model reward_catalog_items {
-  id          String    @id @default(uuid()) @db.Char(36)
-  title       String    @db.VarChar(255)
-  description String?   @db.Text
-  points_cost Int
-  active      Boolean   @default(true)
-  sort_order  Int       @default(0)
-  created_at  DateTime? @default(now()) @db.Timestamp(0)
-  updated_at  DateTime? @default(now()) @updatedAt @db.Timestamp(0)
-  orders      reward_redemption_orders[]
+  id                  String    @id @default(uuid()) @db.Char(36)
+  title               String    @db.VarChar(255)
+  description         String?   @db.Text
+  points_cost         Int
+  active              Boolean   @default(true)
+  sort_order          Int       @default(0)
+  fulfillment_type    reward_fulfillment_type @default(MANUAL)
+  fulfillment_rule_id String?   @db.Char(36)
+  created_at          DateTime? @default(now()) @db.Timestamp(0)
+  updated_at          DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  orders              reward_redemption_orders[]
+  fulfillment_rule    reward_fulfillment_rules? @relation(fields: [fulfillment_rule_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_reward_catalog_rule")
 
   @@index([active, sort_order], map: "idx_reward_catalog_active_sort")
+}
+
+model reward_fulfillment_rules {
+  id          String    @id @default(uuid()) @db.Char(36)
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  active      Boolean   @default(true)
+  steps       Json
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  catalog_items reward_catalog_items[]
+}
+
+enum reward_fulfillment_type {
+  MANUAL
+  AUTO
+}
+
+model premium_feature_catalog {
+  id              String    @id @default(uuid()) @db.Char(36)
+  feature_key     String    @unique(map: "uq_premium_feature_key") @db.VarChar(80)
+  label           String    @db.VarChar(255)
+  description     String?   @db.Text
+  included_in_pro Boolean   @default(true)
+  sort_order      Int       @default(0)
+  active          Boolean   @default(true)
+  created_at      DateTime? @default(now()) @db.Timestamp(0)
+  updated_at      DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@index([active, sort_order], map: "idx_premium_feature_active_sort")
+}
+
+enum subscription_tier {
+  FREE
+  PRO
+}
+
+enum subscription_source {
+  PAYMENT
+  REWARD
+  ADMIN_GRANT
+}
+
+model mediator_subscriptions {
+  id              String              @id @default(uuid()) @db.Char(36)
+  mediator_id     String              @db.Char(36)
+  tier            subscription_tier
+  source          subscription_source
+  starts_at       DateTime            @db.DateTime(0)
+  expires_at      DateTime?           @db.DateTime(0)
+  amount_inr      Decimal?            @db.Decimal(10, 2)
+  payment_ref     String?             @db.VarChar(120)
+  reward_order_id String?             @db.Char(36)
+  created_at      DateTime?           @default(now()) @db.Timestamp(0)
+  user            user                @relation("mediator_subscriptions", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_sub_user")
+
+  @@index([mediator_id, created_at], map: "idx_mediator_sub_mediator_created")
+}
+
+enum mediator_offboarding_trigger {
+  SELF
+  ADMIN
+}
+
+model mediator_offboarding_events {
+  id              String                       @id @default(uuid()) @db.Char(36)
+  mediator_id     String                       @db.Char(36)
+  case_id         String?                      @db.Char(36)
+  trigger_type    mediator_offboarding_trigger
+  old_mediator_id String?                      @db.Char(36)
+  new_mediator_id String?                      @db.Char(36)
+  notes           String?                      @db.VarChar(500)
+  created_at      DateTime?                    @default(now()) @db.Timestamp(0)
+  user            user                         @relation("mediator_offboarding_events", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_offboarding_mediator")
+
+  @@index([mediator_id, created_at], map: "idx_offboarding_mediator_created")
+}
+
+model mediator_invoice_settings {
+  id            String    @id @default(uuid()) @db.Char(36)
+  mediator_id   String    @unique(map: "uq_mediator_invoice_settings") @db.Char(36)
+  business_name String?   @db.VarChar(255)
+  gstin         String?   @db.VarChar(20)
+  email         String?   @db.VarChar(255)
+  phone         String?   @db.VarChar(20)
+  address       String?   @db.Text
+  logo_url      String?   @db.VarChar(500)
+  terms         String?   @db.Text
+  signature_url String?   @db.VarChar(500)
+  created_at    DateTime? @default(now()) @db.Timestamp(0)
+  updated_at    DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  user          user      @relation("mediator_invoice_settings", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_invoice_settings_mediator")
+}
+
+enum mediator_private_invoice_status {
+  ISSUED
+  SENT
+  PAID
+}
+
+model mediator_private_invoices {
+  id             String                          @id @default(uuid()) @db.Char(36)
+  mediator_id    String                          @db.Char(36)
+  invoice_number String                          @db.VarChar(80)
+  client_name    String                          @db.VarChar(255)
+  client_email   String?                         @db.VarChar(255)
+  issue_date     DateTime                        @db.Date
+  due_date       DateTime?                       @db.Date
+  status         mediator_private_invoice_status @default(ISSUED)
+  subtotal       Decimal                         @db.Decimal(12, 2)
+  cgst_total     Decimal                         @default(0) @db.Decimal(12, 2)
+  sgst_total     Decimal                         @default(0) @db.Decimal(12, 2)
+  grand_total    Decimal                         @db.Decimal(12, 2)
+  notes          String?                         @db.Text
+  created_at     DateTime?                       @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?                       @default(now()) @updatedAt @db.Timestamp(0)
+  user           user                            @relation("mediator_private_invoices", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_private_invoice_mediator")
+  line_items     mediator_private_invoice_lines[]
+
+  @@unique([mediator_id, invoice_number], map: "uq_private_invoice_mediator_number")
+  @@index([mediator_id, created_at], map: "idx_private_invoice_mediator_created")
+}
+
+model mediator_private_invoice_lines {
+  id          String                    @id @default(uuid()) @db.Char(36)
+  invoice_id  String                    @db.Char(36)
+  description String                    @db.VarChar(500)
+  quantity    Decimal                   @default(1) @db.Decimal(10, 2)
+  unit_amount Decimal                   @db.Decimal(12, 2)
+  cgst_pct    Decimal                   @default(9) @db.Decimal(5, 2)
+  sgst_pct    Decimal                   @default(9) @db.Decimal(5, 2)
+  cgst_amount Decimal                   @default(0) @db.Decimal(12, 2)
+  sgst_amount Decimal                   @default(0) @db.Decimal(12, 2)
+  line_total  Decimal                   @db.Decimal(12, 2)
+  sort_order  Int                       @default(0)
+  invoice     mediator_private_invoices @relation(fields: [invoice_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_private_invoice_line")
+
+  @@index([invoice_id], map: "idx_private_invoice_line_invoice")
 }
 
 enum reward_redemption_order_status {

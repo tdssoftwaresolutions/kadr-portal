@@ -108,7 +108,7 @@ async function awardRewardPoints ({
 async function listActiveCatalogForMediator (balance) {
   const items = await prisma.reward_catalog_items.findMany({
     where: { active: true },
-    orderBy: [{ sort_order: 'asc' }, { points_cost: 'asc' }]
+    orderBy: [{ points_cost: 'asc' }, { sort_order: 'asc' }, { title: 'asc' }]
   })
   return items.map((item) => ({
     id: item.id,
@@ -125,7 +125,16 @@ async function listCatalogAdmin () {
   })
 }
 
-async function upsertCatalogItem ({ id, title, description, points_cost, active, sort_order }) {
+async function upsertCatalogItem ({
+  id,
+  title,
+  description,
+  points_cost,
+  active,
+  sort_order,
+  fulfillment_type,
+  fulfillment_rule_id
+}) {
   const cost = toInt(points_cost, NaN)
   if (!title || !String(title).trim() || Number.isNaN(cost) || cost <= 0) {
     const { createError } = require('../../utils/errors')
@@ -137,7 +146,9 @@ async function upsertCatalogItem ({ id, title, description, points_cost, active,
     description: description != null ? String(description).trim() : null,
     points_cost: cost,
     active: active !== false,
-    sort_order: toInt(sort_order, 0)
+    sort_order: toInt(sort_order, 0),
+    fulfillment_type: fulfillment_type === 'AUTO' ? 'AUTO' : 'MANUAL',
+    fulfillment_rule_id: fulfillment_rule_id || null
   }
   if (id) {
     return prisma.reward_catalog_items.update({ where: { id }, data })
@@ -206,6 +217,14 @@ async function redeemCatalogItem (mediatorId, catalogItemId) {
     })
 
     return order
+  }).then(async (order) => {
+    if (order) {
+      const { runFulfillmentForOrder } = require('./rewardFulfillmentEngine')
+      await runFulfillmentForOrder(order.id).catch((err) => {
+        console.error('[reward] Auto-fulfillment failed for order', order.id, err)
+      })
+    }
+    return order
   })
 }
 
@@ -237,8 +256,8 @@ async function listRedemptionOrdersAdmin ({ status, page = 1, perPage = 20 }) {
 }
 
 async function fulfillRedemptionOrder (orderId, adminId, adminNotes) {
-  const { createError } = require('../utils/errors')
-  const errorCodes = require('../utils/errors/errorCodes')
+  const { createError } = require('../../utils/errors')
+  const errorCodes = require('../../utils/errors/errorCodes')
 
   const order = await prisma.reward_redemption_orders.findUnique({ where: { id: orderId } })
   if (!order) throw createError(errorCodes.NOT_FOUND)

@@ -35,6 +35,32 @@
             <b-form-input v-model.number="form.sort_order" type="number" min="0" />
           </b-form-group>
           <b-form-checkbox v-model="form.active">Visible in mediator store</b-form-checkbox>
+          <b-form-group label="Fulfillment" label-size="sm" class="mt-2">
+            <b-form-select v-model="form.fulfillment_type" :options="fulfillmentTypeOptions" />
+          </b-form-group>
+          <div v-if="form.fulfillment_type === 'AUTO'" class="fulfillment-rule-picker mt-2">
+            <b-form-group label="Fulfillment rule" label-size="sm" class="mb-2">
+              <b-form-select v-model="form.fulfillment_rule_id" :options="ruleOptions">
+                <template #first>
+                  <b-form-select-option :value="null">Select rule…</b-form-select-option>
+                </template>
+              </b-form-select>
+            </b-form-group>
+            <p v-if="!fulfillmentRules.length" class="small text-warning mb-2">
+              No fulfillment rules yet. Create one to define what runs when this reward is redeemed (e.g. extend Pro, send email).
+            </p>
+            <div class="d-flex flex-wrap align-items-center">
+              <b-button size="sm" variant="outline-primary" class="mr-2 mb-1" @click="requestCreateRule">
+                Create new rule
+              </b-button>
+              <b-button size="sm" variant="link" class="p-0 mb-1" @click="loadRules">
+                Refresh rules
+              </b-button>
+            </div>
+            <p class="small text-muted mb-0 mt-1">
+              Rules are built in the section below (Pro features &amp; reward automation). After saving a rule, refresh and select it here.
+            </p>
+          </div>
         </b-form>
         <template #modal-footer>
           <b-button variant="secondary" @click="formVisible = false">Cancel</b-button>
@@ -54,6 +80,11 @@ export default {
       loading: false,
       formVisible: false,
       form: this.emptyForm(),
+      fulfillmentRules: [],
+      fulfillmentTypeOptions: [
+        { value: 'MANUAL', text: 'Manual (admin fulfills order)' },
+        { value: 'AUTO', text: 'Automatic (run fulfillment rule)' }
+      ],
       catalogFields: [
         { key: 'title', label: 'Reward' },
         { key: 'points_cost', label: 'Points', class: 'text-right' },
@@ -63,15 +94,37 @@ export default {
       ]
     }
   },
+  computed: {
+    ruleOptions () {
+      return this.fulfillmentRules.map((r) => ({ value: r.id, text: r.name }))
+    }
+  },
   mounted () {
     this.load()
+    this.loadRules()
   },
   methods: {
     emptyForm () {
-      return { id: null, title: '', description: '', points_cost: 1000, active: true, sort_order: 0 }
+      return {
+        id: null,
+        title: '',
+        description: '',
+        points_cost: 1000,
+        active: true,
+        sort_order: 0,
+        fulfillment_type: 'MANUAL',
+        fulfillment_rule_id: null
+      }
     },
     resetForm () {
       this.form = this.emptyForm()
+    },
+    async loadRules () {
+      const res = await this.$store.dispatch('getRewardFulfillmentRules')
+      if (res.success) this.fulfillmentRules = res.data?.rules || res.rules || []
+    },
+    requestCreateRule () {
+      this.$emit('create-fulfillment-rule')
     },
     async load () {
       this.loading = true
@@ -90,7 +143,9 @@ export default {
           description: item.description || '',
           points_cost: item.points_cost,
           active: item.active,
-          sort_order: item.sort_order || 0
+          sort_order: item.sort_order || 0,
+          fulfillment_type: item.fulfillment_type || 'MANUAL',
+          fulfillment_rule_id: item.fulfillment_rule_id || null
         }
       } else {
         this.form = this.emptyForm()

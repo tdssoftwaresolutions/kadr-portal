@@ -4,64 +4,151 @@
       <b-col sm="12">
         <iq-card>
           <template v-slot:headerTitle>
-            <div class="d-flex justify-content-between align-items-center w-100">
-              <h4 class="card-title mb-0">{{ isAdmin ? 'Payments & Invoices' : 'Invoices' }}</h4>
+            <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
+              <h4 class="card-title mb-0">{{ isAdmin ? 'Payments & Invoices' : 'Income & invoices' }}</h4>
+              <div v-if="!isAdmin && hasPrivateInvoices" class="mt-2 mt-md-0">
+                <b-button size="sm" variant="outline-secondary" class="mr-1" @click="openBranding">
+                  Invoice template
+                </b-button>
+                <b-button size="sm" variant="primary" @click="openPrivateCreate">
+                  New private invoice
+                </b-button>
+              </div>
             </div>
           </template>
           <template v-slot:body>
-            <b-row class="mb-3">
-              <b-col md="4">
-                <label class="small text-muted mb-1">Time range</label>
-                <b-form-select v-model="filters.range" :options="rangeOptions" @change="loadInvoices" />
-              </b-col>
-              <b-col md="4">
-                <label class="small text-muted mb-1">Payment status</label>
-                <b-form-select v-model="filters.status" :options="statusOptions" @change="loadInvoices" />
-              </b-col>
-              <b-col md="4" v-if="isAdmin">
-                <label class="small text-muted mb-1">Mediator</label>
-                <b-form-select v-model="filters.mediatorId" :options="mediatorOptions" @change="loadInvoices" />
-              </b-col>
-            </b-row>
+            <!-- Mediator: income 360 -->
+            <template v-if="!isAdmin">
+              <div class="income-stats-grid mb-4">
+                <div class="income-stat-card">
+                  <span class="income-stat-label">Total income</span>
+                  <span class="income-stat-value">₹{{ formatMoney(summary.combined.total) }}</span>
+                </div>
+                <div class="income-stat-card income-stat-card--kadr">
+                  <span class="income-stat-label">From Kadr</span>
+                  <span class="income-stat-value">₹{{ formatMoney(summary.earnedFromKadr) }}</span>
+                  <span class="income-stat-sub">Transferred: ₹{{ formatMoney(summary.transferredToAccount) }}</span>
+                </div>
+                <div class="income-stat-card income-stat-card--pending">
+                  <span class="income-stat-label">Pending from Kadr</span>
+                  <span class="income-stat-value">₹{{ formatMoney(summary.pendingFromKadr) }}</span>
+                </div>
+                <div v-if="hasPrivateInvoices" class="income-stat-card income-stat-card--private">
+                  <span class="income-stat-label">Private practice</span>
+                  <span class="income-stat-value">₹{{ formatMoney(summary.earnedPrivate) }}</span>
+                  <span class="income-stat-sub">Paid: ₹{{ formatMoney(summary.private.paid) }} · Open: ₹{{ formatMoney(summary.private.pending) }}</span>
+                </div>
+              </div>
 
-            <div class="mb-3">
-              <b-badge variant="primary" class="mr-2">Total: INR {{ totals.total.toFixed(2) }}</b-badge>
-              <b-badge variant="success" class="mr-2">Paid: INR {{ totals.paid.toFixed(2) }}</b-badge>
-              <b-badge variant="warning">Pending: INR {{ totals.pending.toFixed(2) }}</b-badge>
-            </div>
-            <div class="mb-3" v-if="isAdmin">
-              <b-badge variant="dark">Platform income: INR {{ totalIncome.toFixed(2) }}</b-badge>
-            </div>
+              <b-alert v-if="!hasPrivateInvoices" show variant="light" class="small border mb-3">
+                <router-link :to="{ name: 'app.edit' }">Upgrade to Pro</router-link> to create private invoices with your branding and GST line items.
+              </b-alert>
 
-            <b-table :items="invoices" :fields="fields" striped responsive small>
-              <template #cell(mediator)="row">{{ row.item.user && row.item.user.name }}</template>
-              <template #cell(caseLabel)="row">{{ row.item.cases && row.item.cases.caseId }}</template>
-              <template #cell(invoice_word)>Invoice</template>
-              <template #cell(branding)>kADR.live</template>
-              <template #cell(status)="row">
-                <b-badge :variant="row.item.status === 'PAID' ? 'success' : 'warning'">{{ row.item.status }}</b-badge>
-              </template>
-              <template #cell(bank)="row">
-                <span v-if="row.item.bank_details">
-                  {{ formatBank(row.item.bank_details) }}
-                </span>
-                <span v-else class="text-muted">Not available</span>
-              </template>
-              <template #cell(actions)="row">
-                <b-button size="sm" variant="outline-primary" class="mr-1" @click="downloadPdf(row.item)">PDF</b-button>
-                <b-button v-if="isAdmin && row.item.status !== 'PAID'" size="sm" variant="success" @click="markPaid(row.item)">Mark paid</b-button>
-              </template>
-            </b-table>
+              <mediator-private-invoice-section
+                v-if="hasPrivateInvoices"
+                ref="privateSection"
+                @changed="loadIncome"
+              />
+
+              <b-row class="mb-3">
+                <b-col md="3" sm="6" class="mb-2">
+                  <label class="small text-muted mb-1">Time range</label>
+                  <b-form-select v-model="filters.range" :options="rangeOptions" @change="loadIncome" />
+                </b-col>
+                <b-col md="3" sm="6" class="mb-2">
+                  <label class="small text-muted mb-1">Source</label>
+                  <b-form-select v-model="filters.source" :options="sourceOptions" @change="loadIncome" />
+                </b-col>
+                <b-col md="3" sm="6" class="mb-2">
+                  <label class="small text-muted mb-1">Payment status</label>
+                  <b-form-select v-model="filters.status" :options="statusOptions" @change="loadIncome" />
+                </b-col>
+              </b-row>
+
+              <b-table :items="incomeItems" :fields="mediatorFields" striped responsive small>
+                <template #cell(source)="row">
+                  <b-badge :variant="row.item.source === 'KADR' ? 'primary' : 'info'">
+                    {{ row.item.source === 'KADR' ? 'Kadr' : 'Private' }}
+                  </b-badge>
+                </template>
+                <template #cell(amount)="row">₹{{ formatMoney(row.item.amount) }}</template>
+                <template #cell(issue_date)="row">{{ formatDate(row.item.issue_date) }}</template>
+                <template #cell(status)="row">
+                  <b-badge :variant="statusVariant(row.item)">{{ incomeStatusLabel(row.item) }}</b-badge>
+                </template>
+                <template #cell(actions)="row">
+                  <b-button size="sm" variant="outline-primary" class="mr-1" @click="downloadRowPdf(row.item)">PDF</b-button>
+                  <b-button
+                    v-if="row.item.source === 'PRIVATE' && hasPrivateInvoices"
+                    size="sm"
+                    variant="outline-secondary"
+                    class="mr-1"
+                    @click="editPrivateRow(row.item)"
+                  >
+                    Edit
+                  </b-button>
+                  <b-button
+                    v-if="row.item.source === 'PRIVATE' && row.item.status !== 'PAID'"
+                    size="sm"
+                    variant="success"
+                    @click="markPrivatePaid(row.item)"
+                  >
+                    Mark paid
+                  </b-button>
+                </template>
+              </b-table>
+              <p v-if="!incomeItems.length && !loading" class="text-muted small mb-0">No invoices in this period.</p>
+            </template>
+
+            <!-- Admin: existing -->
+            <template v-else>
+              <b-row class="mb-3">
+                <b-col md="4">
+                  <label class="small text-muted mb-1">Time range</label>
+                  <b-form-select v-model="filters.range" :options="rangeOptions" @change="loadInvoices" />
+                </b-col>
+                <b-col md="4">
+                  <label class="small text-muted mb-1">Payment status</label>
+                  <b-form-select v-model="filters.status" :options="statusOptions" @change="loadInvoices" />
+                </b-col>
+                <b-col md="4">
+                  <label class="small text-muted mb-1">Mediator</label>
+                  <b-form-select v-model="filters.mediatorId" :options="mediatorOptions" @change="loadInvoices" />
+                </b-col>
+              </b-row>
+
+              <div class="mb-3">
+                <b-badge variant="primary" class="mr-2">Total: INR {{ totals.total.toFixed(2) }}</b-badge>
+                <b-badge variant="success" class="mr-2">Paid: INR {{ totals.paid.toFixed(2) }}</b-badge>
+                <b-badge variant="warning">Pending: INR {{ totals.pending.toFixed(2) }}</b-badge>
+              </div>
+              <div class="mb-3">
+                <b-badge variant="dark">Platform income: INR {{ totalIncome.toFixed(2) }}</b-badge>
+              </div>
+
+              <b-table :items="invoices" :fields="fields" striped responsive small>
+                <template #cell(mediator)="row">{{ row.item.user && row.item.user.name }}</template>
+                <template #cell(caseLabel)="row">{{ row.item.cases && row.item.cases.caseId }}</template>
+                <template #cell(status)="row">
+                  <b-badge :variant="row.item.status === 'PAID' ? 'success' : 'warning'">{{ row.item.status }}</b-badge>
+                </template>
+                <template #cell(bank)="row">
+                  <span v-if="row.item.bank_details">{{ formatBank(row.item.bank_details) }}</span>
+                  <span v-else class="text-muted">Not available</span>
+                </template>
+                <template #cell(actions)="row">
+                  <b-button size="sm" variant="outline-primary" class="mr-1" @click="downloadPdf(row.item)">PDF</b-button>
+                  <b-button v-if="row.item.status !== 'PAID'" size="sm" variant="success" @click="markPaid(row.item)">Mark paid</b-button>
+                </template>
+              </b-table>
+            </template>
           </template>
         </iq-card>
+
         <iq-card v-if="isAdmin">
-          <template v-slot:headerTitle>
-            <div class="d-flex justify-content-between align-items-center w-100">
-              <h4 class="card-title mb-0">Client Transactions</h4>
-            </div>
-          </template>
+          <template v-slot:headerTitle><h4 class="card-title mb-0">Client Transactions</h4></template>
           <template v-slot:body>
-              <b-table :items="transactions" :fields="transactionFields" striped responsive small />
+            <b-table :items="transactions" :fields="transactionFields" striped responsive small />
           </template>
         </iq-card>
       </b-col>
@@ -92,17 +179,33 @@
 
 <script>
 import { sofbox } from '../../config/pluginInit'
+import MediatorPrivateInvoiceSection from '../../components/mediator/MediatorPrivateInvoiceSection.vue'
+
+const EMPTY_SUMMARY = () => ({
+  kadr: { total: 0, paid: 0, pending: 0 },
+  private: { total: 0, paid: 0, pending: 0, enabled: false },
+  combined: { total: 0, paid: 0, pending: 0 },
+  transferredToAccount: 0,
+  pendingFromKadr: 0,
+  earnedFromKadr: 0,
+  earnedPrivate: 0
+})
 
 export default {
   name: 'InvoicesView',
+  components: { MediatorPrivateInvoiceSection },
   data () {
     return {
+      loading: false,
       invoices: [],
+      incomeItems: [],
+      summary: EMPTY_SUMMARY(),
+      hasPrivateInvoices: false,
       transactions: [],
       totalIncome: 0,
       totals: { total: 0, paid: 0, pending: 0 },
       mediators: [],
-      filters: { range: 'THIS_MONTH', status: null, mediatorId: null },
+      filters: { range: 'THIS_MONTH', status: null, mediatorId: null, source: null },
       bankForm: { bank_name: '', account_holder: '', account_number: '', ifsc_code: '', branch_name: '', upi_id: '' },
       transactionFields: [
         { key: 'payment_id', label: 'Payment ID' },
@@ -117,6 +220,15 @@ export default {
         { key: 'reference_id', label: 'Reference' },
         { key: 'success', label: 'Success' },
         { key: 'transaction_date', label: 'Date' }
+      ],
+      mediatorFields: [
+        { key: 'invoice_number', label: 'Invoice #' },
+        { key: 'source', label: 'Source' },
+        { key: 'label', label: 'Case / client' },
+        { key: 'amount', label: 'Amount', class: 'text-right' },
+        { key: 'issue_date', label: 'Date' },
+        { key: 'status', label: 'Status' },
+        { key: 'actions', label: '' }
       ]
     }
   },
@@ -148,15 +260,32 @@ export default {
         { value: 'LAST_MONTH', text: 'Last month' },
         { value: 'LAST_3_MONTHS', text: 'Last 3 months' },
         { value: 'LAST_6_MONTHS', text: 'Last 6 months' },
-        { value: null, text: 'All invoices' }
+        { value: null, text: 'All time' }
       ]
     },
     statusOptions () {
-      return [
+      const opts = [
         { value: null, text: 'All statuses' },
-        { value: 'PENDING', text: 'Pending' },
+        { value: 'PENDING', text: 'Unpaid / pending' },
         { value: 'PAID', text: 'Paid' }
       ]
+      if (this.hasPrivateInvoices && (!this.filters.source || this.filters.source === 'PRIVATE' || this.filters.source === 'ALL')) {
+        opts.push(
+          { value: 'ISSUED', text: 'Private — unpaid' },
+          { value: 'SENT', text: 'Private — sent to client' }
+        )
+      }
+      return opts
+    },
+    sourceOptions () {
+      const opts = [
+        { value: null, text: 'All sources' },
+        { value: 'KADR', text: 'Kadr platform' }
+      ]
+      if (this.hasPrivateInvoices) {
+        opts.push({ value: 'PRIVATE', text: 'Private practice' })
+      }
+      return opts
     },
     mediatorOptions () {
       return [{ value: null, text: 'All mediators' }].concat(this.mediators.map(m => ({ value: m.id, text: `${m.name} (${m.email})` })))
@@ -164,14 +293,107 @@ export default {
   },
   mounted () {
     sofbox.index()
-    this.loadMeta()
-    this.loadInvoices()
-    this.loadTransactions()
-    this.loadBankDetails()
+    if (!this.$store.state.mediatorFeatures.length && !this.isAdmin) {
+      this.$store.dispatch('loadMediatorSubscription')
+    }
+    this.hasPrivateInvoices = this.$store.getters.mediatorHasFeature('enhanced_invoices')
+    if (this.isAdmin) {
+      this.loadMeta()
+      this.loadInvoices()
+      this.loadTransactions()
+    } else {
+      this.loadIncome()
+      this.loadBankDetails()
+    }
+  },
+  watch: {
+    '$store.state.mediatorFeatures' () {
+      if (!this.isAdmin) {
+        this.hasPrivateInvoices = this.$store.getters.mediatorHasFeature('enhanced_invoices')
+      }
+    }
   },
   methods: {
+    formatMoney (v) {
+      return Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    },
+    formatDate (v) {
+      if (!v) return '—'
+      return new Date(v).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    },
+    incomeStatusLabel (item) {
+      if (item.source === 'PRIVATE') {
+        return item.status_label || this.privateStatusLabel(item.status)
+      }
+      if (item.status === 'PENDING') return 'Pending transfer'
+      if (item.status === 'PAID') return 'Transferred'
+      return item.status || '—'
+    },
+    privateStatusLabel (status) {
+      const key = String(status || '').toUpperCase()
+      if (key === 'PAID') return 'Paid'
+      if (key === 'SENT') return 'Sent to client'
+      if (key === 'ISSUED' || key === 'DRAFT') return 'Unpaid'
+      return status || '—'
+    },
+    statusVariant (item) {
+      const status = typeof item === 'object' ? item.status : item
+      const source = typeof item === 'object' ? item.source : null
+      if (status === 'PAID') return 'success'
+      if (source === 'PRIVATE') {
+        if (status === 'SENT') return 'info'
+        return 'warning'
+      }
+      if (status === 'PENDING') return 'warning'
+      return 'secondary'
+    },
+    async markPrivatePaid (row) {
+      const res = await this.$store.dispatch('updatePrivateInvoice', {
+        id: row.id,
+        payload: { status: 'PAID' }
+      })
+      if (res.success) this.loadIncome()
+    },
+    async loadIncome () {
+      this.loading = true
+      try {
+        const res = await this.$store.dispatch('getMediatorIncome', {
+          range: this.filters.range,
+          status: this.filters.status || null,
+          source: this.filters.source || null
+        })
+        if (res.success) {
+          this.incomeItems = res.items || res.data?.items || []
+          this.summary = res.summary || res.data?.summary || EMPTY_SUMMARY()
+          this.hasPrivateInvoices = res.hasPrivateInvoices ?? res.data?.hasPrivateInvoices ?? this.hasPrivateInvoices
+        }
+      } finally {
+        this.loading = false
+      }
+    },
+    openBranding () {
+      this.$refs.privateSection && this.$refs.privateSection.openBranding()
+    },
+    openPrivateCreate () {
+      this.$refs.privateSection && this.$refs.privateSection.openCreate()
+    },
+    editPrivateRow (row) {
+      this.$refs.privateSection && this.$refs.privateSection.openEdit(row)
+    },
+    async downloadRowPdf (row) {
+      if (row.source === 'PRIVATE') {
+        await this.$store.dispatch('downloadPrivateInvoicePdf', {
+          id: row.id,
+          invoiceNumber: row.invoice_number
+        })
+      } else {
+        await this.$store.dispatch('downloadInvoicePdf', {
+          invoiceId: row.id,
+          invoiceNumber: row.invoice_number
+        })
+      }
+    },
     async loadMeta () {
-      if (!this.isAdmin) return
       const res = await this.$store.dispatch('getAdminCaseManagementMeta')
       if (res.success) this.mediators = (res.data.meta && res.data.meta.mediators) || []
     },
@@ -181,10 +403,9 @@ export default {
         this.invoices = (res.data && res.data.invoices) || []
         this.totals = (res.data && res.data.totals) || this.totals
       }
-      if (this.isAdmin) this.loadTransactions()
+      this.loadTransactions()
     },
     async loadTransactions () {
-      if (!this.isAdmin) return
       const res = await this.$store.dispatch('getTransactions', { range: this.filters.range })
       if (res.success && res.data) {
         this.totalIncome = Number(res.data.totalIncome || 0)
@@ -208,16 +429,16 @@ export default {
       })
     },
     async loadBankDetails () {
-      if (this.isAdmin) return
       const res = await this.$store.dispatch('getMediatorBankAccount')
       if (res.success && res.data.bankAccount) {
+        const b = res.data.bankAccount
         this.bankForm = {
-          bank_name: res.data.bankAccount.bank_name || '',
-          account_holder: res.data.bankAccount.account_holder || '',
-          account_number: res.data.bankAccount.account_number || '',
-          ifsc_code: res.data.bankAccount.ifsc_code || '',
-          branch_name: res.data.bankAccount.branch_name || '',
-          upi_id: res.data.bankAccount.upi_id || ''
+          bank_name: b.bank_name || '',
+          account_holder: b.account_holder || '',
+          account_number: b.account_number || '',
+          ifsc_code: b.ifsc_code || '',
+          branch_name: b.branch_name || '',
+          upi_id: b.upi_id || ''
         }
       }
     },
@@ -231,3 +452,55 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.income-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.income-stat-card {
+  background: #f4f6fb;
+  border: 1px solid #e8ecf5;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.income-stat-card--kadr {
+  background: linear-gradient(135deg, #eef2ff 0%, #f8f9ff 100%);
+  border-color: #d8dff1;
+}
+
+.income-stat-card--pending {
+  background: #fff8ee;
+  border-color: #f0e4c8;
+}
+
+.income-stat-card--private {
+  background: #eefaf3;
+  border-color: #cce8d8;
+}
+
+.income-stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6f7894;
+  margin-bottom: 0.25rem;
+}
+
+.income-stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e2640;
+}
+
+.income-stat-sub {
+  font-size: 0.75rem;
+  color: #5a6a8e;
+  margin-top: 0.2rem;
+}
+</style>

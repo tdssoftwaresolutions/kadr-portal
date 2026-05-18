@@ -20,6 +20,8 @@ function mapErrorCodeToStatus (codeKey) {
   if (codeKey === 'E314') return 409
   if (codeKey === 'E318') return 404
   if (codeKey === 'E310' || codeKey === 'E311') return 400
+  if (codeKey === 'E320') return 403
+  if (codeKey === 'E323' || codeKey === 'E324') return 400
   return 500
 }
 

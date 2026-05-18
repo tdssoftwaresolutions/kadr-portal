@@ -4,7 +4,39 @@ import axios from 'axios'
 import VueCookies from 'vue-cookies'
 import alert from './alertStore'
 import spinner from './spinnerStore'
+import { hasUnlockedFeature, isPremiumGateError } from '../utils/mediatorEntitlements'
 Vue.use(Vuex)
+
+function dispatchApiErrorAlert (dispatch, error, fallback = 'Something went wrong') {
+  if (isPremiumGateError(error)) return
+  const msg = error.response?.data?.error?.message || error.message || fallback
+  dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+}
+
+async function triggerPdfBlobDownload (response, filename) {
+  const contentType = (response.headers && response.headers['content-type']) || ''
+  if (contentType.includes('application/json') || contentType.includes('text/html')) {
+    const text = typeof response.data.text === 'function'
+      ? await response.data.text()
+      : String(response.data)
+    let message = 'PDF download failed'
+    try {
+      const json = JSON.parse(text)
+      message = json.error?.message || json.message || message
+    } catch (_) {
+      if (text) message = text.slice(0, 200)
+    }
+    throw new Error(message)
+  }
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', filename)
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}
 
 const LOGIN_ENDPOINT = '/login'
 const RESET_PASSWORD_ENDPOINT = '/resetPassword'
@@ -55,6 +87,16 @@ const REDEEM_REWARD_ENDPOINT = '/mediator/redeem-reward'
 const MEDIATOR_LEGAL_FEEDS_CATALOG_ENDPOINT = '/mediator/legal-feeds/catalog'
 const MEDIATOR_LEGAL_FEEDS_ENDPOINT = '/mediator/legal-feeds'
 const MEDIATOR_COURT_CASES_ENDPOINT = '/mediator/court-cases'
+const MEDIATOR_SUBSCRIPTION_ENDPOINT = '/mediator/subscription'
+const MEDIATOR_SUBSCRIPTION_PURCHASE_ENDPOINT = '/mediator/subscription/purchase'
+const MEDIATOR_PRIVATE_INVOICE_SETTINGS = '/mediator/private-invoice-settings'
+const MEDIATOR_PRIVATE_INVOICE_UPLOAD = '/mediator/private-invoice-settings/upload'
+const MEDIATOR_PRIVATE_INVOICES = '/mediator/private-invoices'
+const MEDIATOR_INCOME_ENDPOINT = '/mediator/income'
+const ADMIN_MEDIATOR_OFFBOARDING_PREVIEW = '/admin/mediators'
+const ADMIN_PREMIUM_FEATURES = '/admin/premium-features'
+const ADMIN_REWARD_FULFILLMENT_RULES = '/admin/reward-fulfillment-rules'
+const ADMIN_REWARD_FULFILLMENT_CATALOG = '/admin/reward-fulfillment-catalog'
 const ADMIN_REWARD_CATALOG_ENDPOINT = '/admin/reward-catalog'
 const ADMIN_REWARD_ORDERS_ENDPOINT = '/admin/reward-orders'
 const GET_CALENDAR_INIT_ENDPOINT = '/getCalendarInit'
@@ -93,7 +135,9 @@ const getDefaultState = () => {
     availableStates: null,
     allLanguages: null,
     dashboardContent: null,
-    calendarInit: null
+    calendarInit: null,
+    mediatorFeatures: [],
+    mediatorSubscriptionTier: 'FREE'
   }
 }
 
@@ -190,6 +234,14 @@ export default (router) => {
       invalidateDashboardCaches (state) {
         state.dashboardContent = null
         state.calendarInit = null
+      },
+      setMediatorSubscription (state, { tier, features }) {
+        state.mediatorSubscriptionTier = tier || 'FREE'
+        state.mediatorFeatures = Array.isArray(features) ? features : []
+      },
+      clearMediatorSubscription (state) {
+        state.mediatorSubscriptionTier = 'FREE'
+        state.mediatorFeatures = []
       }
     },
     actions: {
@@ -421,6 +473,8 @@ export default (router) => {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.post(REDEEM_REWARD_ENDPOINT, { catalogItemId })
           if (!data.success) throw new Error(data.error?.message || data.message)
+          commit('invalidateDashboardCaches')
+          await dispatch('loadMediatorSubscription')
           dispatch('alert/showAlert', { message: data.message || 'Reward redeemed', type: 'success' }, { root: true })
           return data
         } catch (error) {
@@ -441,6 +495,19 @@ export default (router) => {
           return { success: false, error }
         }
       },
+      async loadMediatorSubscription ({ commit, dispatch }) {
+        try {
+          const { data } = await apiClient.get(MEDIATOR_SUBSCRIPTION_ENDPOINT)
+          const result = parseApiResponse(data)
+          const tier = result.tier || result.data?.tier || 'FREE'
+          const features = result.features || result.data?.features || []
+          commit('setMediatorSubscription', { tier, features })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
       async getMediatorLegalFeeds ({ dispatch }, { feed = 'judgments', limit = 12 } = {}) {
         try {
           const { data } = await apiClient.get(
@@ -448,8 +515,7 @@ export default (router) => {
           )
           return parseApiResponse(data)
         } catch (error) {
-          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
-          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          dispatchApiErrorAlert(dispatch, error)
           return { success: false, error }
         }
       },
@@ -458,8 +524,10 @@ export default (router) => {
           const { data } = await apiClient.get(MEDIATOR_COURT_CASES_ENDPOINT)
           return parseApiResponse(data)
         } catch (error) {
-          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
-          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
           return { success: false, error }
         }
       },
@@ -471,9 +539,12 @@ export default (router) => {
           dispatch('alert/showAlert', { message: result.message || data.message || 'Case tracked', type: 'success' }, { root: true })
           return result
         } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
           const apiErr = error.response?.data?.error
           const msg = apiErr?.message || error.message || 'Something went wrong'
-          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          dispatchApiErrorAlert(dispatch, error)
           return { success: false, error: { message: msg, details: apiErr?.details || null } }
         } finally {
           dispatch('spinner/hideSpinner')
@@ -487,8 +558,10 @@ export default (router) => {
           dispatch('alert/showAlert', { message: result.message || data.message || 'Refreshed', type: 'success' }, { root: true })
           return result
         } catch (error) {
-          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
-          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
           return { success: false, error }
         } finally {
           dispatch('spinner/hideSpinner')
@@ -499,8 +572,10 @@ export default (router) => {
           const { data } = await apiClient.get(`${MEDIATOR_COURT_CASES_ENDPOINT}/${encodeURIComponent(id)}/details`)
           return parseApiResponse(data)
         } catch (error) {
-          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
-          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
           return { success: false, error }
         }
       },
@@ -509,6 +584,259 @@ export default (router) => {
           const { data } = await apiClient.delete(`${MEDIATOR_COURT_CASES_ENDPOINT}/${encodeURIComponent(id)}`)
           const result = parseApiResponse(data)
           dispatch('alert/showAlert', { message: result.message || data.message || 'Removed', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async getMySubscription ({ dispatch, commit }) {
+        try {
+          const { data } = await apiClient.get(MEDIATOR_SUBSCRIPTION_ENDPOINT)
+          const result = parseApiResponse(data)
+          const tier = result.tier || result.data?.tier || 'FREE'
+          const features = result.features || result.data?.features || []
+          commit('setMediatorSubscription', { tier, features })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async purchaseProSubscription ({ dispatch, commit }, { paymentId, amount }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(MEDIATOR_SUBSCRIPTION_PURCHASE_ENDPOINT, {
+            paymentId,
+            status: 'success',
+            amount,
+            currency: 'INR',
+            paymentMethod: 'card'
+          })
+          const result = parseApiResponse(data)
+          commit('invalidateDashboardCaches')
+          await dispatch('loadMediatorSubscription')
+          dispatch('alert/showAlert', { message: result.message || 'Pro activated', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMediatorOffboardingPreview ({ dispatch }, { mediatorId }) {
+        try {
+          const { data } = await apiClient.get(`${ADMIN_MEDIATOR_OFFBOARDING_PREVIEW}/${mediatorId}/offboarding-preview`)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async completeMediatorOffboarding ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(
+            `${ADMIN_MEDIATOR_OFFBOARDING_PREVIEW}/${payload.mediatorId}/complete-offboarding`,
+            payload
+          )
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Mediator removed', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMediator360 ({ dispatch }, { mediatorId }) {
+        try {
+          const { data } = await apiClient.get(`${ADMIN_MEDIATOR_OFFBOARDING_PREVIEW}/${mediatorId}/360`)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async getPrivateInvoiceSettings ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(MEDIATOR_PRIVATE_INVOICE_SETTINGS)
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async savePrivateInvoiceSettings ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(MEDIATOR_PRIVATE_INVOICE_SETTINGS, payload)
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async uploadPrivateInvoiceAsset ({ dispatch }, { fileContent, assetType }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(MEDIATOR_PRIVATE_INVOICE_UPLOAD, { fileContent, assetType })
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMediatorIncome ({ dispatch }, { range, status, source } = {}) {
+        try {
+          const params = new URLSearchParams()
+          if (range) params.set('range', range)
+          if (status) params.set('status', status)
+          if (source) params.set('source', source)
+          const query = params.toString()
+          const { data } = await apiClient.get(query ? `${MEDIATOR_INCOME_ENDPOINT}?${query}` : MEDIATOR_INCOME_ENDPOINT)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async listPrivateInvoices ({ dispatch }, { page = 1, range, status } = {}) {
+        try {
+          const params = { page }
+          if (range) params.range = range
+          if (status) params.status = status
+          const { data } = await apiClient.get(MEDIATOR_PRIVATE_INVOICES, { params })
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async createPrivateInvoice ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(MEDIATOR_PRIVATE_INVOICES, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Invoice created', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async updatePrivateInvoice ({ dispatch }, { id, payload }) {
+        try {
+          const { data } = await apiClient.put(`${MEDIATOR_PRIVATE_INVOICES}/${id}`, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Invoice updated', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async downloadPrivateInvoicePdf ({ dispatch }, { id, invoiceNumber }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const response = await apiClient.get(`${MEDIATOR_PRIVATE_INVOICES}/${id}/pdf`, { responseType: 'blob' })
+          const filename = `${invoiceNumber || `private-invoice-${id}`}.pdf`.replace(/[^\w.-]+/g, '_')
+          await triggerPdfBlobDownload(response, filename)
+          return { success: true }
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          const msg = error.message || error.response?.data?.error?.message || 'Download failed'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getPremiumFeaturesAdmin ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_PREMIUM_FEATURES)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async updatePremiumFeature ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(ADMIN_PREMIUM_FEATURES, payload)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async getRewardFulfillmentCatalog ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_REWARD_FULFILLMENT_CATALOG)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async getRewardFulfillmentRules ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_REWARD_FULFILLMENT_RULES)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async saveRewardFulfillmentRule ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(ADMIN_REWARD_FULFILLMENT_RULES, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Rule saved', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async deleteRewardFulfillmentRule ({ dispatch }, { id }) {
+        try {
+          const { data } = await apiClient.delete(`${ADMIN_REWARD_FULFILLMENT_RULES}/${id}`)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Rule deleted', type: 'success' }, { root: true })
           return result
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -735,8 +1063,10 @@ export default (router) => {
           commit('invalidateDashboardCaches')
           return data
         } catch (error) {
-          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
-          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
           return {
             success: false,
             error
@@ -1326,17 +1656,11 @@ export default (router) => {
           const response = await apiClient.get(`${GET_INVOICE_PDF_ENDPOINT}/${encodeURIComponent(invoiceId)}/pdf`, {
             responseType: 'blob'
           })
-          const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
-          const link = document.createElement('a')
-          link.href = url
-          link.setAttribute('download', `${invoiceNumber || 'invoice'}.pdf`)
-          document.body.appendChild(link)
-          link.click()
-          link.remove()
-          window.URL.revokeObjectURL(url)
+          const filename = `${invoiceNumber || 'invoice'}.pdf`.replace(/[^\w.-]+/g, '_')
+          await triggerPdfBlobDownload(response, filename)
           return { success: true }
         } catch (error) {
-          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          const msg = error.message || error.response?.data?.error?.message || 'Something went wrong'
           dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
           return { success: false, error }
         } finally {
@@ -1735,7 +2059,11 @@ export default (router) => {
       availableStates: (state) => state.availableStates,
       allLanguages: (state) => state.allLanguages,
       dashboardContent: (state) => state.dashboardContent,
-      calendarInit: (state) => state.calendarInit
+      calendarInit: (state) => state.calendarInit,
+      mediatorFeatures: (state) => state.mediatorFeatures,
+      mediatorSubscriptionTier: (state) => state.mediatorSubscriptionTier,
+      isMediatorPro: (state) => state.mediatorSubscriptionTier === 'PRO',
+      mediatorHasFeature: (state) => (featureKey) => hasUnlockedFeature(state.mediatorFeatures, featureKey)
     },
     strict: debug,
     plugins: [plugin(router)]

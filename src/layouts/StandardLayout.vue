@@ -8,6 +8,7 @@
         :logo="logo"
         :userProfile="userProfile"
         :profileName="user ? user.name : 'Edit Profile'"
+        :show-pro-badge="isMediatorPro"
         @edit-profile="onClickEditProfile"
         @logout="onClickSignOut"
       />
@@ -18,7 +19,10 @@
       </div>
     </div>
     <div class="mobile-top-nav-shell">
-      <div class="mobile-nav-brand">Kadr.live</div>
+      <div class="mobile-nav-brand">
+        <span>Kadr.live</span>
+        <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ml-2" />
+      </div>
       <button v-if="user && mobileNavTree.length" class="mobile-top-nav-toggle" @click="toggleMobileNav" type="button" aria-label="Open navigation">
         <i class="las la-bars" style="font-size:18px"></i>
         <span>Menu</span>
@@ -87,7 +91,8 @@
             <div class="mobile-top-nav-link">
               <i class="ri-user-line"></i>
               <span>Profile</span>
-              </div>
+              <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ml-auto" />
+            </div>
           </li>
           <li key="logout" class="mobile-top-nav-list-item" @click="onClickSignOut">
             <div class="mobile-top-nav-link">
@@ -115,6 +120,7 @@
 import Loader from '../components/sofbox/loader/Loader'
 import KadrSupportFab from '../components/KadrSupportFab.vue'
 import SideBarStyle1 from '../components/sofbox/sidebars/SideBarStyle1'
+import MediatorProBadge from '../components/mediator/MediatorProBadge.vue'
 import SideBarItemsClient from '../config/navigation/SideBarClient.json'
 import SideBarItemsMediator from '../config/navigation/SideBarMediator.json'
 import SideBarItemAdmin from '../config/navigation/SideBarAdmin.json'
@@ -126,13 +132,18 @@ import {
   adminCanAccessRoute,
   firstAllowedAdminRouteFromFilteredSidebar
 } from '../utils/adminAccess'
+import {
+  filterMediatorSidebar,
+  mediatorCanAccessRoute
+} from '../utils/mediatorEntitlements'
 
 export default {
   name: 'StandardLayout',
   components: {
     Loader,
     KadrSupportFab,
-    SideBarStyle1
+    SideBarStyle1,
+    MediatorProBadge
   },
   async created () {
     if (!this.isSessionAvailable()) {
@@ -159,8 +170,16 @@ export default {
         if (!nextName || nextName === to.name) return
         this.$router.replace({ name: nextName })
       }
+      if (this.user && this.user.type === 'MEDIATOR') {
+        this.enforceMediatorRouteAccess(to)
+      }
       if (this.isMobileNavOpen) {
         this.expandMobileGroupForActiveRoute()
+      }
+    },
+    '$store.state.mediatorFeatures' () {
+      if (this.user && this.user.type === 'MEDIATOR') {
+        this.applyMediatorSidebar()
       }
     }
   },
@@ -177,6 +196,9 @@ export default {
   computed: {
     mobileNavTree () {
       return (this.sidebar || []).filter((item) => !item.is_heading)
+    },
+    isMediatorPro () {
+      return this.user?.type === 'MEDIATOR' && this.$store.getters.isMediatorPro
     }
   },
   methods: {
@@ -204,7 +226,8 @@ export default {
       if (response.success) {
         switch (data.userData.type) {
           case 'MEDIATOR':
-            this.sidebar = SideBarItemsMediator
+            await this.$store.dispatch('loadMediatorSubscription')
+            this.applyMediatorSidebar()
             break
           case 'CLIENT':
             this.sidebar = SideBarItemsClient
@@ -218,7 +241,22 @@ export default {
         if (data.userData.type === 'ADMIN') {
           this.$nextTick(() => this.enforceAdminRouteAccess())
         }
+        if (data.userData.type === 'MEDIATOR') {
+          this.$nextTick(() => this.enforceMediatorRouteAccess())
+        }
       }
+    },
+    applyMediatorSidebar () {
+      this.sidebar = filterMediatorSidebar(
+        SideBarItemsMediator,
+        this.$store.state.mediatorFeatures
+      )
+    },
+    enforceMediatorRouteAccess (route = this.$route) {
+      if (!this.user || this.user.type !== 'MEDIATOR' || !route) return
+      if (mediatorCanAccessRoute(this.$store.state.mediatorFeatures, route)) return
+      if (route.name === 'dashboard.home') return
+      this.$router.replace({ name: 'dashboard.home' })
     },
     enforceAdminRouteAccess () {
       if (!this.user || this.user.type !== 'ADMIN' || !this.$route) return
@@ -236,6 +274,7 @@ export default {
     async onClickSignOut () {
       const response = await this.$store.dispatch('logout')
       if (!response.errorCode) {
+        this.$store.commit('clearMediatorSubscription')
         this.$cookies.remove('accessToken')
         this.isMobileNavOpen = false
         this.$router.push({ path: '/auth/sign-in' })
@@ -487,10 +526,22 @@ export default {
     }
 
     .mobile-nav-brand {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.35rem;
       font-weight: 600;
       color: #333;
       margin-right: auto;
       font-size: 1.3rem;
+    }
+    .mobile-top-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .mobile-top-nav-link .ml-auto {
+      margin-left: auto;
     }
 
     .mobile-top-nav-toggle {

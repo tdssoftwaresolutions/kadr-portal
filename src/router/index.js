@@ -19,6 +19,7 @@ import AdminCorrespondenceInbox from '../views/AdminControllers/AdminCorresponde
 import InvoicesView from '../views/MediatorControllers/InvoicesView.vue'
 import MediatorRewardsView from '../views/MediatorControllers/MediatorRewardsView.vue'
 import AdminRewardOrdersView from '../views/AdminControllers/AdminRewardOrdersView.vue'
+import AdminMediator360View from '../views/AdminControllers/AdminMediator360View.vue'
 import PortalSupportView from '../views/Standard/PortalSupportView.vue'
 
 /** Client  */
@@ -150,6 +151,16 @@ const appChildRoute = (prop) => [
     name: prop + '.reward-orders',
     meta: { name: 'Reward orders', adminPage: 'reward-orders' },
     component: AdminRewardOrdersView
+  },
+  {
+    path: 'mediators/:mediatorId/360',
+    name: prop + '.mediator-360',
+    meta: { name: 'Mediator 360', adminPage: 'users' },
+    component: AdminMediator360View
+  },
+  {
+    path: 'private-invoices',
+    redirect: { name: 'app.invoices' }
   }
 ]
 

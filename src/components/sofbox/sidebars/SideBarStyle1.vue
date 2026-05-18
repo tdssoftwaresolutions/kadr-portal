@@ -2,12 +2,10 @@
   <div class="iq-sidebar compact-sidebar-shell">
     <div class="compact-sidebar-panel">
       <div class="iq-sidebar-logo compact-sidebar-logo" style="padding:0px;margin-bottom:1rem;">
-        <router-link :to="homeURL" aria-label="Go to dashboard">
-          <span class="compact-brand-mark">
-            <img :src="logo" class="img-fluid" alt="logo">
-          </span>
-          <span class="compact-brand-text">kADR.live</span>
-        </router-link>
+      <span class="compact-brand-mark">
+        <img :src="logo" class="img-fluid" alt="logo">
+      </span>
+      <span class="compact-brand-text">kADR.live</span>
       </div>
       <div id="sidebar-scrollbar" class="compact-sidebar-scroll">
         <nav class="iq-sidebar-menu compact-sidebar-menu" :class="horizontal ? 'd-xl-none' : ''">
@@ -37,6 +35,7 @@
           >
             <span class="compact-profile-avatar">
               <img :src="userProfile" alt="profile">
+              <mediator-pro-badge v-if="showProBadge" size="sm" class="compact-profile-pro-badge" />
             </span>
             <span class="compact-action-label">Profile</span>
           </button>
@@ -48,6 +47,7 @@
 
 <script>
 import List from '../menus/ListStyle1'
+import MediatorProBadge from '../../mediator/MediatorProBadge.vue'
 
 const COMPACT_FLYOUT_GAP = 14
 const COMPACT_SUBMENU_GAP = 2
@@ -56,15 +56,16 @@ const COMPACT_SUBMENU_HIDE_DELAY = 150
 export default {
   name: 'SideBarStyle1',
   props: {
-    homeURL: { type: Object, default: () => ({ name: 'layout.dashboard' }) },
     items: { type: Array },
     logo: { type: String, default: require('../../../assets/logo.jpeg') },
     userProfile: { type: String, default: require('../../../assets/images/default_avatar.jpeg') },
     profileName: { type: String, default: '' },
+    showProBadge: { type: Boolean, default: false },
     horizontal: { type: Boolean }
   },
   components: {
-    List
+    List,
+    MediatorProBadge
   },
   data () {
     return {
@@ -800,7 +801,24 @@ export default {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    overflow: hidden;
+    overflow: visible;
+    position: relative;
+  }
+
+  body.compact-sidebar .compact-profile-pro-badge {
+    position: absolute;
+    right: -6px;
+    bottom: -4px;
+    transform: scale(0.92);
+    transform-origin: bottom right;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  }
+
+  body.compact-sidebar .compact-pro-badge {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.35rem;
+    margin-bottom: 0.15rem;
   }
 
   body.compact-sidebar .compact-profile-avatar img {

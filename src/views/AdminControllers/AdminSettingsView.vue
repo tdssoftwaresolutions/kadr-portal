@@ -52,7 +52,12 @@
       </b-col>
 
       <b-col sm="12" lg="6" class="mb-4">
-        <admin-reward-catalog-panel />
+        <admin-reward-catalog-panel
+          ref="rewardCatalog"
+          @create-fulfillment-rule="openFulfillmentRuleEditor"
+          @fulfillment-rules-changed="onFulfillmentRulesChanged"
+        />
+        <admin-premium-settings-panel ref="premiumPanel" @fulfillment-rules-changed="onFulfillmentRulesChanged" />
         <div class="text-right mt-2">
           <router-link :to="{ name: 'app.reward-orders' }" class="btn btn-sm btn-outline-secondary">
             View redemption orders →
@@ -66,15 +71,22 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import AdminRewardCatalogPanel from './AdminRewardCatalogPanel.vue'
+import AdminPremiumSettingsPanel from '../../components/admin/AdminPremiumSettingsPanel.vue'
 
 const INVOICE_SETTING_KEYS = new Set([
   'mediator_commission',
   'invoice_gst_percentage',
-  'invoice_tax_percentage'
+  'invoice_tax_percentage',
+  'premium_pro_monthly_price_inr'
 ])
 
 function isRewardSetting (key) {
-  return String(key || '').startsWith('reward_points_')
+  const k = String(key || '')
+  return k.startsWith('reward_points_')
+}
+
+function isPremiumSetting (key) {
+  return String(key || '').startsWith('premium_')
 }
 
 function mapSettingRow (s) {
@@ -88,7 +100,7 @@ function mapSettingRow (s) {
 
 export default {
   name: 'AdminSettingsView',
-  components: { AdminRewardCatalogPanel },
+  components: { AdminRewardCatalogPanel, AdminPremiumSettingsPanel },
   data () {
     return {
       settings: [],
@@ -100,7 +112,7 @@ export default {
   },
   computed: {
     invoiceSettings () {
-      return this.settings.filter(s => INVOICE_SETTING_KEYS.has(s.key))
+      return this.settings.filter(s => INVOICE_SETTING_KEYS.has(s.key) || isPremiumSetting(s.key))
     },
     rewardSettings () {
       return this.settings.filter(s => isRewardSetting(s.key))
@@ -127,6 +139,22 @@ export default {
       if (!rows.length) return
       const res = await this.$store.dispatch('saveAdminSettings', { settings: rows })
       if (res.success) this.load()
+    },
+    onFulfillmentRulesChanged () {
+      const catalog = this.$refs.rewardCatalog
+      if (catalog && typeof catalog.loadRules === 'function') {
+        catalog.loadRules()
+      }
+      const premium = this.$refs.premiumPanel
+      if (premium && typeof premium.reloadFulfillmentRules === 'function') {
+        premium.reloadFulfillmentRules()
+      }
+    },
+    openFulfillmentRuleEditor () {
+      const premium = this.$refs.premiumPanel
+      if (premium && typeof premium.openFulfillmentRuleEditor === 'function') {
+        premium.openFulfillmentRuleEditor()
+      }
     }
   }
 }

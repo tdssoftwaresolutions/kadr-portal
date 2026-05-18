@@ -127,8 +127,11 @@
       </iq-card>
     </div>
 
-    <div class="workspace-grid workspace-grid--tools">
-      <mediator-court-case-tracker />
+    <div
+      class="workspace-grid workspace-grid--tools"
+      :class="{ 'workspace-grid--tools-single': !hasCourtCaseTracker }"
+    >
+      <mediator-court-case-tracker v-if="hasCourtCaseTracker" />
       <mediator-legal-feed-panel />
     </div>
 
@@ -166,6 +169,9 @@ export default {
     },
     todaysEvents () {
       return this.content?.todaysEvent || []
+    },
+    hasCourtCaseTracker () {
+      return this.$store.getters.mediatorHasFeature('court_case_tracker')
     }
   },
   methods: {
@@ -359,6 +365,10 @@ export default {
 
 .workspace-grid--tools {
   margin-top: 0;
+}
+
+.workspace-grid--tools-single {
+  grid-template-columns: 1fr;
 }
 
 .workspace-card {

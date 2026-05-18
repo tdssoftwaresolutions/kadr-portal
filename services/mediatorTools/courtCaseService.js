@@ -1,6 +1,11 @@
 const { createError } = require('../../utils/errors')
 const errorCodes = require('../../utils/errors/errorCodes')
 const { fetchCaseByCnr, officialEcourtsUrl } = require('./ecourtsIndiaPartnerService')
+const { assertFeature } = require('../subscription/entitlementService')
+
+async function requireCourtTracker (mediatorId) {
+  await assertFeature(mediatorId, 'court_case_tracker')
+}
 
 const MAX_TRACKERS_PER_MEDIATOR = 25
 const CNR_PATTERN = /^[A-Z0-9]{16}$/
@@ -67,6 +72,7 @@ function serializeTracker (row, { includeSnapshot = false } = {}) {
 }
 
 async function listTrackers (prisma, mediatorId) {
+  await requireCourtTracker(mediatorId)
   const rows = await prisma.mediator_court_case_trackers.findMany({
     where: { mediator_id: mediatorId },
     orderBy: { updated_at: 'desc' }
@@ -75,6 +81,7 @@ async function listTrackers (prisma, mediatorId) {
 }
 
 async function addTracker (prisma, mediatorId, { cnr: rawCnr, label }) {
+  await requireCourtTracker(mediatorId)
   const cnr = normalizeCnr(rawCnr)
   validateCnr(cnr)
 
@@ -110,6 +117,7 @@ async function addTracker (prisma, mediatorId, { cnr: rawCnr, label }) {
 
 /** Fetch live data from eCourts, persist snapshot + summary + timestamps. */
 async function refreshTracker (prisma, mediatorId, trackerId) {
+  await requireCourtTracker(mediatorId)
   const row = await prisma.mediator_court_case_trackers.findFirst({
     where: { id: trackerId, mediator_id: mediatorId }
   })
@@ -136,6 +144,7 @@ async function refreshTracker (prisma, mediatorId, trackerId) {
 
 /** Return cached snapshot from DB only (no external API). */
 async function getTrackerDetails (prisma, mediatorId, trackerId) {
+  await requireCourtTracker(mediatorId)
   const row = await prisma.mediator_court_case_trackers.findFirst({
     where: { id: trackerId, mediator_id: mediatorId }
   })
@@ -148,6 +157,7 @@ async function getTrackerDetails (prisma, mediatorId, trackerId) {
 }
 
 async function removeTracker (prisma, mediatorId, trackerId) {
+  await requireCourtTracker(mediatorId)
   const row = await prisma.mediator_court_case_trackers.findFirst({
     where: { id: trackerId, mediator_id: mediatorId }
   })

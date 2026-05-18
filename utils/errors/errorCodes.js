@@ -166,6 +166,18 @@ const ERROR_CODES = {
   COURT_CASE_NOT_FOUND: {
     errorCode: 'E318',
     message: 'No case found for this CNR on eCourts India.'
+  },
+  PREMIUM_REQUIRED: {
+    errorCode: 'E320',
+    message: 'This feature requires an active Pro subscription.'
+  },
+  FULFILLMENT_RULE_EMPTY: {
+    errorCode: 'E323',
+    message: 'Add at least one valid action to the fulfillment flow.'
+  },
+  FULFILLMENT_RULE_IN_USE: {
+    errorCode: 'E324',
+    message: 'This rule is attached to reward catalog items. Detach it before deleting.'
   }
 }
 

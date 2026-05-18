@@ -81,61 +81,42 @@
 
       <b-modal
         v-model="detailsVisible"
-        size="lg"
+        size="xl"
         scrollable
-        :title="modalTitle"
+        modal-class="court-case-modal"
+        content-class="court-case-modal__content"
+        body-class="court-case-modal__body"
+        hide-header
         @hidden="onModalHidden"
       >
-        <p v-if="detailsLoading" class="text-muted small mb-0">Loading saved case data…</p>
-        <p v-else-if="detailsError" class="text-danger small mb-0">{{ detailsError }}</p>
-        <template v-else>
-          <p v-if="lastPulledAt" class="small text-muted mb-3">
-            Last pulled on {{ formatDate(lastPulledAt) }}
-          </p>
-          <p v-else class="small text-muted mb-3">
-            No saved status yet. Use &ldquo;Get latest status&rdquo; to fetch from eCourts.
-          </p>
+        <div class="court-case-modal__toolbar">
+          <div class="court-case-modal__toolbar-left">
+            <code v-if="selectedTracker" class="court-case-modal__cnr">{{ selectedTracker.cnr }}</code>
+            <span v-if="lastPulledAt" class="court-case-modal__pulled">
+              Last pulled on {{ formatDate(lastPulledAt) }}
+            </span>
+            <span v-else class="court-case-modal__pulled court-case-modal__pulled--muted">
+              No saved status yet
+            </span>
+          </div>
+          <button type="button" class="court-case-modal__close" aria-label="Close" @click="detailsVisible = false">
+            <i class="ri-close-line" />
+          </button>
+        </div>
 
-          <template v-if="caseDetails">
-            <p v-if="caseDetails.caseTitle" class="font-weight-bold mb-2">{{ caseDetails.caseTitle }}</p>
-            <p v-if="caseDetails.caseStatus" class="small mb-2">
-              <strong>Status:</strong> {{ caseDetails.caseStatus }}
-              <span v-if="caseDetails.courtName" class="text-muted"> · {{ caseDetails.courtName }}</span>
-            </p>
-            <p class="small text-muted mb-2">CNR: <code>{{ caseDetails.cnr }}</code></p>
-
-            <dl v-if="detailRows.length" class="case-details-dl small mb-3">
-              <div v-for="(row, idx) in detailRows" :key="'row-' + idx" class="case-details-row">
-                <dt>{{ row.label }}</dt>
-                <dd>{{ row.value }}</dd>
-              </div>
-            </dl>
-
-            <div v-if="hearingRows.length" class="hearing-block">
-              <h6 class="small font-weight-bold mb-2">Hearing history</h6>
-              <div class="table-responsive">
-                <table class="table table-sm table-bordered hearing-table mb-0">
-                  <thead>
-                    <tr>
-                      <th>Judge</th>
-                      <th>Business date</th>
-                      <th>Hearing date</th>
-                      <th>Purpose</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(h, hIdx) in hearingRows" :key="'h-' + hIdx">
-                      <td>{{ h.judge }}</td>
-                      <td>{{ h.businessOnDate }}</td>
-                      <td>{{ h.hearingDate }}</td>
-                      <td>{{ h.purposeOfListing }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </template>
-        </template>
+        <div v-if="detailsLoading" class="court-case-modal__loading">
+          <b-spinner small class="mr-2" />
+          Loading saved case data…
+        </div>
+        <p v-else-if="detailsError" class="text-danger small mb-0 px-1">{{ detailsError }}</p>
+        <court-case-details-panel
+          v-else-if="caseDetails"
+          :details="caseDetails"
+          :official-url="caseDetails.officialUrl"
+        />
+        <p v-else class="text-muted small mb-0 px-1">
+          Use &ldquo;Get latest status&rdquo; to fetch case details from eCourts.
+        </p>
         <template v-slot:modal-footer>
           <b-button
             size="sm"
@@ -154,8 +135,13 @@
 </template>
 
 <script>
+import CourtCaseDetailsPanel from './CourtCaseDetailsPanel.vue'
+
 export default {
   name: 'MediatorCourtCaseTracker',
+  components: {
+    CourtCaseDetailsPanel
+  },
   data () {
     return {
       loading: true,
@@ -172,20 +158,7 @@ export default {
       lastPulledAt: null
     }
   },
-  computed: {
-    modalTitle () {
-      if (!this.selectedTracker) return 'Case details'
-      return this.selectedTracker.cnr
-    },
-    detailRows () {
-      if (!this.caseDetails || !Array.isArray(this.caseDetails.caseDetails)) return []
-      return this.caseDetails.caseDetails
-    },
-    hearingRows () {
-      if (!this.caseDetails || !Array.isArray(this.caseDetails.hearingHistory)) return []
-      return this.caseDetails.hearingHistory
-    }
-  },
+  computed: {},
   mounted () {
     this.loadTrackers()
   },
@@ -244,6 +217,9 @@ export default {
       this.loading = true
       try {
         const res = await this.$store.dispatch('getMediatorCourtCaseTrackers')
+        if (res.success === false || res.premiumLocked) {
+          return
+        }
         const payload = this.unwrap(res)
         const rows = (payload && payload.trackers) || []
         this.trackers = rows.map((r) => this.normalizeRow(r))
@@ -426,36 +402,6 @@ export default {
   flex-shrink: 0;
 }
 
-.case-details-dl {
-  margin: 0;
-}
-
-.case-details-row {
-  display: grid;
-  grid-template-columns: minmax(110px, 36%) 1fr;
-  gap: 0.2rem 0.6rem;
-}
-
-.case-details-dl dt {
-  font-weight: 600;
-  color: #4a5472;
-  margin: 0;
-}
-
-.case-details-dl dd {
-  margin: 0;
-  color: #1e2640;
-}
-
-.hearing-table {
-  font-size: 0.78rem;
-}
-
-.hearing-table th {
-  background: #f4f6fb;
-  white-space: nowrap;
-}
-
 .empty-data {
   text-align: center;
   color: #7c86a7;
@@ -489,5 +435,75 @@ export default {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.court-case-modal__content {
+  border-radius: 12px;
+  border: none;
+  overflow: hidden;
+}
+
+.court-case-modal__body {
+  padding: 0 1.25rem 1rem;
+  max-height: calc(100vh - 10rem);
+}
+
+.court-case-modal__toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 0 0.75rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid #ebedf5;
+}
+
+.court-case-modal__toolbar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.court-case-modal__cnr {
+  font-size: 0.85rem;
+  background: #eef2ff;
+  color: #2b4ecf;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.court-case-modal__pulled {
+  font-size: 0.78rem;
+  color: #5a6a8e;
+}
+
+.court-case-modal__pulled--muted {
+  color: #9aa3bd;
+}
+
+.court-case-modal__close {
+  background: #f4f6fb;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  color: #4a5472;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.court-case-modal__close:hover {
+  background: #e8ecf5;
+  color: #1e2640;
+}
+
+.court-case-modal__loading {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  color: #5a6a8e;
+  font-size: 0.9rem;
 }
 </style>

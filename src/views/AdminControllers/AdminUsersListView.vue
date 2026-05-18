@@ -91,13 +91,14 @@
                         <p v-if="user.preferred_languages || user.preferred_language" class="mb-3"><strong>Language:</strong> {{ getFullLanguages(user.preferred_languages || user.preferred_language) }}</p>
                         <div class="mt-auto text-right">
                           <b-button variant="outline-primary" size="sm" @click="openModal(user)">View Details</b-button>
+                          <b-button size="sm" class="ml-1" variant="outline-info" @click="openMediator360(user)">360° view</b-button>
                           <b-badge v-if="user.is_deleted" variant="secondary" class="mr-2">Deleted</b-badge>
                           <b-button
                             v-if="!user.is_deleted"
                             size="sm"
                             class="ml-2"
                             variant="outline-danger"
-                            @click="deleteUser(user)"
+                            @click="deleteMediator(user)"
                           >
                             Remove from platform
                           </b-button>
@@ -196,17 +197,25 @@
         </div>
       </div>
     </b-modal>
+    <admin-mediator-offboarding-modal
+      :visible="offboardingVisible"
+      :mediator-id="offboardingMediatorId"
+      @close="offboardingVisible = false"
+      @completed="onOffboardingCompleted"
+    />
   </b-container>
 </template>
 
 <script>
 import { sofbox } from '../../config/pluginInit'
 import FilePreview from '../core/DocumentPreview.vue'
+import AdminMediatorOffboardingModal from '../../components/admin/AdminMediatorOffboardingModal.vue'
 
 export default {
   name: 'UserList',
   components: {
-    FilePreview
+    FilePreview,
+    AdminMediatorOffboardingModal
   },
   mounted () {
     sofbox.index()
@@ -224,7 +233,9 @@ export default {
       activeMediatorsData: { users: [], total: 0 },
       modalVisible: false,
       selectedUser: null,
-      languages: {}
+      languages: {},
+      offboardingVisible: false,
+      offboardingMediatorId: ''
     }
   },
   computed: {
@@ -308,6 +319,17 @@ export default {
       if (response.success) {
         this.fetchActiveUsers(user.user_type === 'CLIENT' ? this.activeClientsPage : this.activeMediatorsPage, user.user_type)
       }
+    },
+    deleteMediator (user) {
+      this.offboardingMediatorId = user.userId || user.id
+      this.offboardingVisible = true
+    },
+    openMediator360 (user) {
+      const id = user.userId || user.id
+      this.$router.push({ name: 'app.mediator-360', params: { mediatorId: id } })
+    },
+    onOffboardingCompleted () {
+      this.fetchActiveUsers(this.activeMediatorsPage, 'MEDIATOR')
     },
     async restoreUser (user) {
       const response = await this.$store.dispatch('adminSetUserDeleted', { userId: user.userId, isDeleted: false })

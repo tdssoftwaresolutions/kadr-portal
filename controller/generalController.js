@@ -614,7 +614,12 @@ module.exports = {
 
       let meetingLink = ''
 
-      if (type !== 'personal') {
+      if (type === 'personal' && req.user.type === 'MEDIATOR') {
+        const { assertFeature } = require('../services/subscription/entitlementService')
+        await assertFeature(req.user.id, 'personal_calendar')
+        const zoomMeeting = await helper.scheduleMeeting(title, description, start, end, [{ email: req.user.email }])
+        meetingLink = zoomMeeting?.meetingLink || ''
+      } else if (type !== 'personal') {
         const [lCase] = await Promise.all([
           prisma.cases.findUnique({
             where: {
@@ -714,10 +719,10 @@ module.exports = {
           description,
           start_datetime: start,
           end_datetime: end,
-          type: type.toUpperCase(),
+          type: type.toUpperCase() === 'PERSONAL' ? 'PERSONAL' : 'KADR',
           meeting_link: meetingLink,
           created_by: req.user.id,
-          case_id: caseId
+          case_id: type === 'personal' ? null : caseId
         }
       })
 
@@ -1358,10 +1363,19 @@ module.exports = {
       const { confirm } = req.body
       if (!confirm) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
 
-      await prisma.user.update({
-        where: { id: req.user.id },
-        data: { is_deleted: true, active: false }
-      })
+      if (req.user.type === 'MEDIATOR') {
+        const { processOffboarding } = require('../services/mediator/mediatorOffboardingService')
+        await processOffboarding({
+          mediatorId: req.user.id,
+          triggerType: 'SELF',
+          caseAssignments: []
+        })
+      } else {
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: { is_deleted: true, active: false }
+        })
+      }
       success(res, {}, 'Your account has been removed from the platform. Your data is retained securely for audit purposes.')
     } catch (error) {
       next(error)
@@ -1381,6 +1395,14 @@ module.exports = {
       })
       if (!target) throw createError(errorCodes.NOT_FOUND)
       if (target.user_type === 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+
+      if (isDeleted && target.user_type === 'MEDIATOR') {
+        throw createError({
+          errorCode: 'E322',
+          message: 'Use the mediator removal wizard to reassign cases and review pending payouts before removing this mediator.',
+          statusCode: 400
+        })
+      }
 
       await prisma.user.update({
         where: { id: userId },

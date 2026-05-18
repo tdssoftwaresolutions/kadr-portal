@@ -29,9 +29,9 @@
 
     <h5 class="mb-3">Redeem rewards</h5>
     <p v-if="loading" class="text-muted">Loading rewards…</p>
-    <div v-else-if="catalog.length" class="reward-catalog-grid">
+    <div v-else-if="sortedCatalog.length" class="reward-catalog-grid">
       <div
-        v-for="item in catalog"
+        v-for="item in sortedCatalog"
         :key="item.id"
         class="reward-catalog-card"
         :class="{ 'reward-catalog-card--locked': !item.eligible }"
@@ -49,10 +49,9 @@
           >
             Redeem
           </b-button>
-        </div>
-        <div v-if="!item.eligible" class="reward-catalog-card__locked">
-          <span>Not eligible</span>
-          <small>Need {{ (item.points_cost - balance).toLocaleString() }} more pts</small>
+          <div v-if="!item.eligible" class="reward-catalog-card__locked">
+            Need {{ (item.points_cost - balance).toLocaleString() }} more pts to redeem
+          </div>
         </div>
       </div>
     </div>
@@ -115,6 +114,16 @@ export default {
         { key: 'description', label: 'Activity' },
         { key: 'points', label: 'Points', class: 'text-right' }
       ]
+    }
+  },
+  computed: {
+    sortedCatalog () {
+      return [...this.catalog].sort((a, b) => {
+        const costA = Number(a.points_cost) || 0
+        const costB = Number(b.points_cost) || 0
+        if (costA !== costB) return costA - costB
+        return String(a.title || '').localeCompare(String(b.title || ''))
+      })
     }
   },
   mounted () {
@@ -216,28 +225,23 @@ export default {
   flex: 1;
   margin-bottom: 0.5rem;
 }
-.reward-catalog-card--locked .reward-catalog-card__inner {
-  filter: blur(3px);
-  opacity: 0.55;
-  pointer-events: none;
-  user-select: none;
-}
 .reward-catalog-card--locked {
   position: relative;
+  border-color: #dee2e6;
+  background: #fafbfc;
+}
+.reward-catalog-card--locked .reward-catalog-card__inner {
+  opacity: 1;
 }
 .reward-catalog-card__locked {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.75);
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #fff3cd;
+  border-radius: 8px;
   font-weight: 600;
-  color: #495057;
+  color: #856404;
   text-align: center;
-  padding: 1rem;
-  z-index: 1;
+  font-size: 0.85rem;
 }
 .reward-catalog-card__locked small {
   font-weight: 400;

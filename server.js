@@ -2,6 +2,8 @@ const express = require('express')
 const cookieParser = require('cookie-parser')
 require('dotenv').config()
 const { scheduleDailyReminderJob } = require('./services/scheduler/dailyReminderScheduler')
+const { scheduleSubscriptionExpiryJob } = require('./services/scheduler/subscriptionExpiryScheduler')
+const { ensurePremiumFeatureCatalog } = require('./services/subscription/entitlementService')
 const blogRedirectMiddleware = require('./middleware/blogRedirectMiddleware')
 
 const app = express()
@@ -29,4 +31,8 @@ app.use(require('./middleware/errorHandler'))
 app.listen(port, () => {
   console.log(`API running on ${port}`)
   scheduleDailyReminderJob()
+  scheduleSubscriptionExpiryJob()
+  ensurePremiumFeatureCatalog().catch((err) => {
+    console.error('[startup] Premium feature catalog seed failed', err)
+  })
 })
