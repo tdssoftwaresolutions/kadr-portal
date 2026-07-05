@@ -1,6 +1,9 @@
 {
-  "name": "KADR.live",
+  "name": "KADR.live — Online Mediation",
   "short_name": "KADR",
+  "description": "India's private online mediation platform.",
+  "start_url": "/admin/",
+  "scope": "/admin/",
   "icons": [
     {
       "src": "/img/icons/android-chrome-192x192.png",

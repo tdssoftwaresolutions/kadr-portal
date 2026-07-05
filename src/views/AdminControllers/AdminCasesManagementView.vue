@@ -254,15 +254,13 @@
             </div>
 
             <div class="detail-section">
-              <h6 class="detail-section-title">Case timeline</h6>
-              <div v-if="!selectedCase.case_history || selectedCase.case_history.length === 0" class="text-muted small">No timeline entries.</div>
-              <ul v-else class="timeline-list">
-                <li v-for="(h, idx) in selectedCase.case_history" :key="idx">
-                  <strong>{{ (h.case_events && h.case_events.title) || 'Event' }}</strong>
-                  <span v-if="h.created_at" class="text-muted"> · {{ formatDate(h.created_at) }}</span>
-                  <p v-if="h.case_events && h.case_events.description" class="timeline-desc small mb-0">{{ h.case_events.description }}</p>
-                </li>
-              </ul>
+              <h6 class="detail-section-title">Case progress</h6>
+              <CaseProgressPanel
+                v-if="selectedCase.case_progress"
+                :progress="selectedCase.case_progress"
+                :is-past-view="isSelectedCaseClosed"
+              />
+              <div v-else class="text-muted small">Progress details are not available for this case.</div>
             </div>
 
             <div class="detail-section">
@@ -410,11 +408,13 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import FilePreview from '../core/DocumentPreview.vue'
+import CaseProgressPanel from '../../components/cases/CaseProgressPanel.vue'
 
 export default {
   name: 'AdminCasesManagementView',
   components: {
-    FilePreview
+    FilePreview,
+    CaseProgressPanel
   },
   mounted () {
     sofbox.index()
@@ -453,6 +453,11 @@ export default {
     agreementRecord () {
       if (!this.selectedCase) return null
       return this.selectedCase.case_agreement_tracking || null
+    },
+    isSelectedCaseClosed () {
+      if (!this.selectedCase) return false
+      const statusId = (this.selectedCase.case_statuses?.id || this.selectedCase.status || '').toLowerCase()
+      return ['closed_success', 'closed_no_success', 'cancelled', 'failed', 'escalated', 'on_hold'].includes(statusId)
     },
     mediatorFilterOptions () {
       const base = [

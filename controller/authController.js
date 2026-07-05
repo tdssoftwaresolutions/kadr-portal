@@ -1,11 +1,12 @@
 const jwt = require('jsonwebtoken')
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma.js')
 const helper = require('../utils/helper')
 const errorCodes = require('../utils/errors/errorCodes')
 const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
 const CaseAssignmentService = require('../utils/caseAssignment')
+const { canLogin } = require('../utils/userAccess')
+const { isMobileClientRequest } = require('../utils/mobileClient')
 
 module.exports = {
   login: async function (req, res, next) {
@@ -18,27 +19,37 @@ module.exports = {
       })
       if (!user) throw createError(errorCodes.INVALID_CREDENTIALS)
 
-      if (user.active === false) throw createError(errorCodes.USER_NOT_ACTIVE)
+      if (user.is_deleted === true) throw createError(errorCodes.USER_ACCOUNT_DELETED)
+      if (!canLogin(user)) throw createError(errorCodes.USER_NOT_ACTIVE)
 
       const isPasswordValid = await helper.comparePassword(password, user.password_hash)
       if (!isPasswordValid) throw createError(errorCodes.INVALID_CREDENTIALS)
 
+      const isMobile = isMobileClientRequest(req)
       const accessToken = helper.generateAccessToken(user)
-      const refreshToken = helper.generateRefreshToken(user)
+      const refreshToken = isMobile
+        ? helper.generateMobileRefreshToken(user)
+        : helper.generateRefreshToken(user)
+      const refreshMaxAgeMs = isMobile
+        ? 30 * 24 * 60 * 60 * 1000
+        : 7 * 24 * 60 * 60 * 1000
       try {
         res.cookie('refresh_token', refreshToken, {
           httpOnly: true,
           secure: true,
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+          maxAge: refreshMaxAgeMs,
           sameSite: 'None',
           path: '/'
         })
       } catch (e) {
-        res.setHeader('Set-Cookie', `refresh_token=${refreshToken}; HttpOnly; Max-Age=604800000; Path=/; Secure=true`)
+        res.setHeader('Set-Cookie', `refresh_token=${refreshToken}; HttpOnly; Max-Age=${refreshMaxAgeMs}; Path=/; Secure=true`)
       }
-      success(res, {
-        accessToken
-      })
+      const payload = { accessToken }
+      if (isMobile) {
+        payload.refreshToken = refreshToken
+        payload.refreshExpiresIn = Math.floor(refreshMaxAgeMs / 1000)
+      }
+      success(res, payload)
     } catch (error) {
       next(error)
     }
@@ -61,13 +72,27 @@ module.exports = {
       const user = await prisma.user.findUnique({
         where: {
           email: req.query.email
+        },
+        select: {
+          id: true,
+          active: true,
+          is_deleted: true,
+          is_self_signed_up: true
         }
       })
-      if (user) {
-        success(res, { exists: true }, 'Email address already exist, please login instead.')
-      } else {
+      if (!user) {
         success(res, { exists: false }, 'Email does not exist')
+        return
       }
+      if (user.is_deleted === true) {
+        success(res, { exists: false, canReRegister: true }, 'Email can be used to register again.')
+        return
+      }
+      if (user.active === false && user.is_self_signed_up === true) {
+        success(res, { exists: true, pendingApproval: true }, 'Your registration is pending approval.')
+        return
+      }
+      success(res, { exists: true }, 'Email address already exist, please login instead.')
     } catch (error) {
       next(error)
     }
@@ -173,8 +198,6 @@ module.exports = {
             }
           }
         })
-        console.log(caseRecord)
-        console.log(signatureTracking)
         if (caseRecord.user_cases_first_partyTouser.id === signatureTracking.user_id) {
           phoneNumber = caseRecord.user_cases_first_partyTouser.phone_number
         } else if (caseRecord.user_cases_second_partyTouser.id === signatureTracking.user_id) {
@@ -182,7 +205,6 @@ module.exports = {
         }
       }
 
-      console.log(phoneNumber)
       if (!phoneNumber) throw createError(errorCodes.INVALID_REQUEST)
 
       const otp = Math.floor(100000 + Math.random() * 900000)
@@ -247,6 +269,7 @@ module.exports = {
         where: {
           email,
           active: true,
+          is_deleted: false,
           user_type: {
             not: 'ADMIN'
           }
@@ -349,7 +372,9 @@ module.exports = {
   },
   refreshToken: function (req, res, next) {
     try {
-      const refreshToken = req.cookies.refresh_token
+      const refreshToken =
+        req.body?.refreshToken ||
+        req.cookies?.refresh_token
       if (!refreshToken) throw createError(errorCodes.NO_REFRESH_TOKEN)
 
       jwt.verify(refreshToken, process.env.REFRESH_SECRET_KEY, (err, user) => {
@@ -357,7 +382,16 @@ module.exports = {
           return res.status(403).json(errorCodes.REFRESH_TOKEN_EXPIRED)
         }
         const newAccessToken = helper.generateAccessToken(user)
+        const isMobile = isMobileClientRequest(req)
 
+        if (isMobile) {
+          return res.json({
+            success: true,
+            data: {
+              accessToken: newAccessToken
+            }
+          })
+        }
         res.json({ accessToken: newAccessToken })
       })
     } catch (error) {

@@ -1,6 +1,5 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../lib/prisma')
 const { v4: uuidv4 } = require('uuid')
-const prisma = new PrismaClient()
 const helper = require('../utils/helper')
 const errorCodes = require('../utils/errors/errorCodes')
 const { createError } = require('../utils/errors')
@@ -105,7 +104,7 @@ function senderRoleLabel (userId, caseRow, userType) {
 
 async function getMessageHubNotifyRecipients () {
   const rows = await prisma.user.findMany({
-    where: { user_type: 'ADMIN', active: true },
+    where: { user_type: 'ADMIN', active: true, is_deleted: false },
     select: { id: true, email: true, name: true, master: true, admin_permissions: true, user_type: true }
   })
   return rows

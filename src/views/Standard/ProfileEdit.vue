@@ -6,15 +6,25 @@
         <iq-card>
           <template v-slot:body>
             <div class="iq-edit-list">
-              <ul class="iq-edit-profile d-flex nav nav-pills mb-4">
-                <li class="col-md-6 p-0">
+              <ul class="iq-edit-profile nav nav-pills mb-4" :class="{ 'iq-edit-profile--mediator': isMediator }">
+                <li class="iq-edit-profile__tab">
                   <a class="nav-link" :class="{active: activeTab==='personal'}" @click="activeTab='personal'">
                     Personal Information
                   </a>
                 </li>
-                <li class="col-md-6 p-0">
+                <li class="iq-edit-profile__tab">
                   <a class="nav-link" :class="{active: activeTab==='password'}" @click="activeTab='password'">
                     Change Password
+                  </a>
+                </li>
+                <li v-if="isMediator" class="iq-edit-profile__tab">
+                  <a class="nav-link" :class="{active: activeTab==='subscription'}" @click="activeTab='subscription'">
+                    My plan
+                  </a>
+                </li>
+                <li class="iq-edit-profile__tab">
+                  <a class="nav-link" :class="{active: activeTab==='account'}" @click="activeTab='account'">
+                    Account
                   </a>
                 </li>
               </ul>
@@ -65,10 +75,53 @@
                           <b-form-input id="phone" v-model="form.phone_number" />
                         </div>
                       </div>
+                      <div v-if="isMediator" class="reward-profile-link mb-4 p-3 border rounded bg-light">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                          <div>
+                            <strong>Reward points</strong>
+                            <p class="mb-0 text-muted small">Balance: {{ rewardBalance.toLocaleString() }} pts</p>
+                          </div>
+                          <b-button variant="outline-primary" size="sm" class="mt-2 mt-sm-0" @click="goToRewards">
+                            Reward store & referral
+                          </b-button>
+                        </div>
+                      </div>
                       <button type="submit" class="btn btn-primary mr-2">
                         <span >Save</span>
                       </button>
                     </b-form>
+                  </div>
+                </div>
+              </div>
+              <div v-show="activeTab==='subscription' && isMediator">
+                <div class="iq-card">
+                  <div class="iq-card-header"><h4 class="card-title">Subscription</h4></div>
+                  <div class="iq-card-body">
+                    <p v-if="subscriptionLoading" class="text-muted">Loading plan…</p>
+                    <template v-else>
+                      <p class="mb-2">Current plan: <b-badge :variant="subscription.tier === 'PRO' ? 'success' : 'secondary'">{{ subscription.tier === 'PRO' ? 'Pro' : 'Free' }}</b-badge></p>
+                      <p v-if="subscription.tier === 'PRO' && subscriptionExpiryLabel" class="text-muted small">Valid through: {{ subscriptionExpiryLabel }}</p>
+                      <b-button v-if="subscription.tier !== 'PRO'" variant="primary" class="mt-2" @click="showProPayment = true">Upgrade to Pro — ₹{{ subscription.monthlyPriceInr }}/month</b-button>
+                    </template>
+                  </div>
+                </div>
+              </div>
+              <div v-show="activeTab==='account'">
+                <div class="iq-card">
+                  <div class="iq-card-header">
+                    <h4 class="card-title text-danger">Delete account</h4>
+                  </div>
+                  <div class="iq-card-body">
+                    <p>
+                      Removing your account disables login and platform access. Your cases and records stay in our system
+                      for audit and compliance only — they are not used for any other purpose.
+                    </p>
+                    <b-form-checkbox v-model="deleteConfirm" class="mb-3">
+                      I understand my account will be removed from the platform and data will be kept securely for audit purposes.
+                    </b-form-checkbox>
+                    <button type="button" class="btn btn-danger" :disabled="!deleteConfirm" @click="onDeleteAccount">
+                      Delete my account
+                    </button>
                   </div>
                 </div>
               </div>
@@ -103,12 +156,22 @@
         </iq-card>
       </b-col>
     </b-row>
+    <FakePaymentModal
+      :visible="showProPayment"
+      :amount-inr="subscription.monthlyPriceInr || 1000"
+      title="Upgrade to Kadr Pro"
+      subtitle="Demo payment — no real charge until payment vendor is connected."
+      :processing="proPaymentProcessing"
+      @close="showProPayment = false"
+      @submit="onProPayment"
+    />
   </b-container>
 </template>
 <script>
 import { sofbox } from '../../config/pluginInit'
 import profile from '../../assets/images/default_avatar.jpeg'
 import Alert from '../../components/sofbox/alert/Alert.vue'
+import FakePaymentModal from '../../components/FakePaymentModal.vue'
 const allowedTypes = [
   'image/jpeg',
   'image/png'
@@ -118,7 +181,8 @@ const maxSize = 2 * 1024 * 1024
 export default {
   name: 'ProfileEdit',
   components: {
-    Alert
+    Alert,
+    FakePaymentModal
   },
   data () {
     return {
@@ -146,11 +210,35 @@ export default {
         message: '',
         timeout: 5000,
         type: 'primary'
-      }
+      },
+      deleteConfirm: false,
+      rewardBalance: 0,
+      subscription: { tier: 'FREE', expiresAt: null, monthlyPriceInr: 1000, features: [] },
+      subscriptionLoading: false,
+      showProPayment: false,
+      proPaymentProcessing: false
     }
   },
-  created () {
-    this.initUserData()
+  computed: {
+    isMediator () {
+      return this.$store.state.user && this.$store.state.user.type === 'MEDIATOR'
+    },
+    subscriptionExpiryLabel () {
+      if (this.subscription.expiresAtLabel) return this.subscription.expiresAtLabel
+      if (!this.subscription.expiresAt) return ''
+      return new Date(this.subscription.expiresAt).toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'Asia/Kolkata'
+      })
+    }
+  },
+  async created () {
+    await this.initUserData()
+    if (this.isMediator) {
+      await Promise.all([this.loadRewardBalance(), this.loadSubscription()])
+    }
   },
   mounted () {
     sofbox.index()
@@ -167,6 +255,50 @@ export default {
         this.form.name = user.name || ''
         this.form.phone_number = user.phone || ''
         this.form.profile_picture_url = user.photo || ''
+      }
+    },
+    async loadRewardBalance () {
+      const res = await this.$store.dispatch('getMyRewards', { page: 1 })
+      if (res.success && res.data) {
+        this.rewardBalance = res.data.balance ?? 0
+      }
+    },
+    goToRewards () {
+      this.$router.push({ name: 'app.rewards' })
+    },
+    formatDate (v) {
+      return v ? new Date(v).toLocaleString() : '—'
+    },
+    async loadSubscription () {
+      this.subscriptionLoading = true
+      try {
+        const res = await this.$store.dispatch('getMySubscription')
+        if (res.success) {
+          this.subscription = {
+            tier: res.tier || res.data?.tier || 'FREE',
+            expiresAt: res.expiresAt || res.data?.expiresAt,
+            expiresAtLabel: res.expiresAtLabel || res.data?.expiresAtLabel || null,
+            monthlyPriceInr: res.monthlyPriceInr || res.data?.monthlyPriceInr || 1000,
+            features: res.features || res.data?.features || []
+          }
+        }
+      } finally {
+        this.subscriptionLoading = false
+      }
+    },
+    async onProPayment () {
+      this.proPaymentProcessing = true
+      try {
+        const res = await this.$store.dispatch('purchaseProSubscription', {
+          paymentId: `pro-${Date.now()}`,
+          amount: this.subscription.monthlyPriceInr
+        })
+        if (res.success) {
+          this.showProPayment = false
+          await this.loadSubscription()
+        }
+      } finally {
+        this.proPaymentProcessing = false
       }
     },
     triggerProfilePictureUpload () {
@@ -214,6 +346,18 @@ export default {
     async updateUserProfile (payload) {
       return await this.$store.dispatch('updateUserProfile', payload)
     },
+    async onDeleteAccount () {
+      if (!this.deleteConfirm) return
+      if (!window.confirm('Are you sure you want to delete your account? You will be logged out immediately.')) return
+      const response = await this.$store.dispatch('deleteMyAccount', { confirm: true })
+      if (response.success) {
+        this.showAlert(response.message || 'Account removed.', 'success')
+        setTimeout(async () => {
+          await this.$store.dispatch('logout')
+          this.$router.push({ name: 'auth.sign-in' })
+        }, 1500)
+      }
+    },
     async onSavePassword () {
       if (this.form.password.trim() === '') return this.showAlert('Please enter password', 'danger')
       if (this.form.confirmPassword.trim() === '') return this.showAlert('Please enter confirm password', 'danger')
@@ -233,22 +377,62 @@ export default {
 
 <style scoped>
 .iq-edit-profile {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
   margin-bottom: 0;
+  padding: 0;
+  list-style: none;
+}
+.iq-edit-profile__tab {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0;
+}
+.iq-edit-profile--mediator .iq-edit-profile__tab {
+  flex: 1 1 25%;
 }
 .iq-edit-profile .nav-link {
   border-radius: 0;
   border: none;
+  border-left: 1px solid #e8ecf5;
   color: #495057;
   background: #f8f9fa;
   text-align: center;
   font-weight: 500;
-  font-size: 1rem;
-  padding: 1rem 0;
+  font-size: clamp(0.72rem, 1.1vw, 0.95rem);
+  padding: 0.85rem 0.35rem;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.iq-edit-profile__tab:first-child .nav-link {
+  border-left: none;
+  border-radius: 5px 0 0 5px;
+}
+.iq-edit-profile__tab:last-child .nav-link {
+  border-radius: 0 5px 5px 0;
 }
 .iq-edit-profile .nav-link.active {
   background: #007bff;
   color: #fff;
+}
+@media (max-width: 575.98px) {
+  .iq-edit-profile {
+    flex-wrap: wrap;
+  }
+  .iq-edit-profile__tab {
+    flex: 1 1 50%;
+  }
+  .iq-edit-profile--mediator .iq-edit-profile__tab {
+    flex: 1 1 50%;
+  }
+  .iq-edit-profile .nav-link {
+    white-space: normal;
+    font-size: 0.8rem;
+    padding: 0.65rem 0.25rem;
+  }
 }
 .profile-img-edit {
   position: relative;

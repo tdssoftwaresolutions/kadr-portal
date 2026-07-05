@@ -1,9 +1,9 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma.js')
 const { success } = require('../utils/responses')
 const { createError } = require('../utils/errors')
 const errorCodes = require('../utils/errors/errorCodes')
 const { extractYoutubeVideoId } = require('../utils/youtube')
+const { awardRewardPoints, revokeContentRewards } = require('../services/reward/rewardService')
 
 function assertMediator (req) {
   const role = req.user.type || req.user.user_type
@@ -69,6 +69,15 @@ module.exports = {
           },
           include: { user: { select: { id: true, name: true } } }
         })
+        try {
+          await awardRewardPoints({
+            mediatorId: userId,
+            reasonCode: 'video_reel_shared',
+            referenceId: saved.id
+          })
+        } catch (rewardErr) {
+          console.error('Reward on video reel:', rewardErr)
+        }
       }
       success(res, { reel: formatReel(saved) }, 'Video saved successfully')
     } catch (err) {
@@ -84,6 +93,11 @@ module.exports = {
         where: { id, user_id: req.user.id }
       })
       if (!existing) throw createError(errorCodes.NOT_FOUND)
+      await revokeContentRewards({
+        mediatorId: req.user.id,
+        referenceId: id,
+        reasonCodes: ['video_reel_shared']
+      })
       await prisma.mediatorVideoReel.delete({ where: { id } })
       success(res, { message: 'Video deleted successfully' })
     } catch (err) {

@@ -1,9 +1,7 @@
 const cron = require('node-cron')
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../../lib/prisma')
 const helper = require('../../utils/helper')
 const { CaseSubTypes } = require('../../utils/caseConstants')
-
-const prisma = new PrismaClient()
 
 const DAILY_FEEDBACK_REMINDER_TITLE = 'DAILY_FEEDBACK_REMINDER'
 
@@ -21,7 +19,7 @@ const getISTDayBounds = (offsetDays = 0) => {
 }
 
 const getRecipient = (recipientMap, user) => {
-  if (!user?.id || !user?.email || user.active === false) return null
+  if (!user?.id || !user?.email || user.active === false || user.is_deleted === true) return null
   if (!recipientMap.has(user.id)) {
     recipientMap.set(user.id, {
       id: user.id,

@@ -1,0 +1,25 @@
+{
+  "watch": [
+    "server.js",
+    "controller",
+    "services",
+    "routes",
+    "middleware",
+    "utils",
+    "lib",
+    "config",
+    "desktop"
+  ],
+  "ignore": [
+    "public/**",
+    "dist/**",
+    "src/**",
+    "android/**",
+    "ios/**",
+    "node_modules/**",
+    "prisma/migrations/**",
+    "*.html",
+    "*.sample"
+  ],
+  "ext": "js,json"
+}

@@ -1,11 +1,11 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma.js')
 const helper = require('../utils/helper')
 const errorCodes = require('../utils/errors/errorCodes')
 const { createError } = require('../utils/errors')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { success } = require('../utils/responses')
 const { v4: uuidv4 } = require('uuid')
+const { resolveReferrerMediatorId, ensureMediatorReferralCode } = require('../utils/referralCode')
 
 module.exports = {
   assignMediator: async function (req, res, next) {
@@ -24,6 +24,12 @@ module.exports = {
       await prisma.cases.update({
         where: { id: caseId },
         data: { mediator: mediatorId, status: CaseTypes.IN_PROGRESS, sub_status: CaseSubTypes.MEDIATOR_ASSIGNED }
+      })
+
+      const { recordCaseMilestone } = require('../services/case/caseMilestoneService')
+      await recordCaseMilestone(prisma, {
+        caseId,
+        subStatusId: CaseSubTypes.MEDIATOR_ASSIGNED
       })
 
       const caseDetails = await prisma.cases.findUnique({
@@ -145,38 +151,71 @@ Issued by: Rouse Avenue Mediation Court`
   },
   newMediatorSignup: async function (req, res, next) {
     try {
-      const { name, email, phone, city, state, pincode, preferredLanguages, llbCollege, llbUniversity, llbYear, profilePictureContent, mediatorCourseYear, mcpcCertificateContent, llbCertificateContent, preferredAreaOfPractice, selectedHearingTypes, barEnrollmentNo } = req.body.userDetails
+      const {
+        name, email, phone, city, state, pincode, preferredLanguages, llbCollege, llbUniversity, llbYear,
+        profilePictureContent, mediatorCourseYear, mcpcCertificateContent, llbCertificateContent,
+        preferredAreaOfPractice, selectedHearingTypes, barEnrollmentNo, referralCode
+      } = req.body.userDetails || req.body
 
       let uploadedMCPCFileResponse = null; let uploadedLLbFileResponse = null; let uploadedProfilePictureResponse = null
       if (mcpcCertificateContent) { uploadedMCPCFileResponse = await helper.deployToS3Bucket(mcpcCertificateContent, `mcpc-certificate-${uuidv4()}`) }
       if (llbCertificateContent) { uploadedLLbFileResponse = await helper.deployToS3Bucket(llbCertificateContent, `llb-certificate-${uuidv4()}`) }
       if (profilePictureContent) { uploadedProfilePictureResponse = await helper.deployToS3Bucket(profilePictureContent, `profile-picture-${uuidv4()}`) }
 
-      await prisma.user.create({
-        data: {
-          name,
-          email,
-          phone_number: phone,
-          password_hash: '',
-          user_type: 'MEDIATOR',
-          active: false,
-          city,
-          state,
-          preferred_languages: JSON.stringify(preferredLanguages),
-          pincode,
-          is_self_signed_up: true,
-          llb_college: llbCollege,
-          llb_university: llbUniversity,
-          llb_year: llbYear,
-          mediator_course_year: mediatorCourseYear,
-          mcpc_certificate_url: uploadedMCPCFileResponse || '',
-          llb_certificate_url: uploadedLLbFileResponse || '',
-          profile_picture_url: uploadedProfilePictureResponse || '',
-          preferred_area_of_practice: JSON.stringify(preferredAreaOfPractice),
-          selected_hearing_types: JSON.stringify(selectedHearingTypes),
-          bar_enrollment_no: barEnrollmentNo
-        }
+      const referredById = await resolveReferrerMediatorId(prisma, referralCode)
+
+      const signupData = {
+        name,
+        email,
+        phone_number: phone,
+        password_hash: '',
+        user_type: 'MEDIATOR',
+        active: false,
+        is_deleted: false,
+        city,
+        state,
+        preferred_languages: JSON.stringify(preferredLanguages),
+        pincode,
+        is_self_signed_up: true,
+        llb_college: llbCollege,
+        llb_university: llbUniversity,
+        llb_year: llbYear,
+        mediator_course_year: mediatorCourseYear,
+        mcpc_certificate_url: uploadedMCPCFileResponse || '',
+        llb_certificate_url: uploadedLLbFileResponse || '',
+        profile_picture_url: uploadedProfilePictureResponse || '',
+        preferred_area_of_practice: JSON.stringify(preferredAreaOfPractice),
+        selected_hearing_types: JSON.stringify(selectedHearingTypes),
+        bar_enrollment_no: barEnrollmentNo,
+        referred_by_id: referredById
+      }
+
+      const existing = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, active: true, is_deleted: true, is_self_signed_up: true, user_type: true }
       })
+
+      let mediatorUserId = null
+      if (existing) {
+        if (existing.is_deleted) {
+          await prisma.user.update({
+            where: { id: existing.id },
+            data: signupData
+          })
+          mediatorUserId = existing.id
+        } else if (existing.active === false && existing.is_self_signed_up) {
+          throw createError(errorCodes.REGISTRATION_PENDING_APPROVAL)
+        } else {
+          throw createError(errorCodes.YOU_USER_ALREADY_EXISTS)
+        }
+      } else {
+        const created = await prisma.user.create({ data: signupData })
+        mediatorUserId = created.id
+      }
+
+      if (mediatorUserId) {
+        await ensureMediatorReferralCode(prisma, mediatorUserId)
+      }
 
       await helper.addLanguagesToDatabase(preferredLanguages, prisma)
       await helper.sendTemplatedEmail('registrationUnderReview', email, {
@@ -186,12 +225,15 @@ Issued by: Rouse Avenue Mediation Court`
 
       success(res, {}, 'User created successfully! Your account is under review, and you\'ll be notified once approved by the Kadr team.')
     } catch (error) {
+      if (error.errorCode) {
+        next(error)
+        return
+      }
       try {
-        if (error.code === 'P2002' && error.meta.target.includes('email')) {
+        if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
           throw createError(errorCodes.YOU_USER_ALREADY_EXISTS)
-        } else {
-          throw createError(errorCodes.INVALID_REQUEST)
         }
+        throw createError(errorCodes.INVALID_REQUEST)
       } catch (err) {
         next(err)
       }

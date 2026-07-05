@@ -1,16 +1,22 @@
-/** Keys must match server utils/adminPermissionHelpers.js */
+/** Keys must match server utils/adminPermissionHelpers.js and SideBarAdmin.json adminPage fields */
+
+import {
+  buildAdminPagePermissionLayout,
+  getAllAdminPageKeysFromSidebar
+} from '../utils/adminNavPermissions'
+
+const adminPageLayout = buildAdminPagePermissionLayout()
+
+export const ADMIN_PAGE_GROUPS = adminPageLayout.groups
+
+export const ADMIN_STANDALONE_PAGES = adminPageLayout.standalone
 
 export const ADMIN_PAGE_OPTIONS = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'users', label: 'Clients & experts' },
-  { key: 'cases', label: 'Case management' },
-  { key: 'messages', label: 'Message center' },
-  { key: 'calendar', label: 'Meetings calendar' },
-  { key: 'blog-taxonomy', label: 'Blog taxonomy' },
-  { key: 'invoices', label: 'Payments & invoices' },
-  { key: 'settings', label: 'Settings' },
-  { key: 'admins', label: 'Admin management' }
+  ...ADMIN_STANDALONE_PAGES,
+  ...ADMIN_PAGE_GROUPS.flatMap((g) => g.pages)
 ]
+
+export const ALL_ADMIN_PAGE_KEYS = getAllAdminPageKeysFromSidebar()
 
 export const ADMIN_COMPONENT_OPTIONS = [
   { key: 'stats', label: 'Dashboard: case/client/mediator counts' },

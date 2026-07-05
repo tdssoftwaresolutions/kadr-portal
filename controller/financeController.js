@@ -1,11 +1,11 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma.js')
 const { createError } = require('../utils/errors')
 const errorCodes = require('../utils/errors/errorCodes')
 const { success } = require('../utils/responses')
 const helper = require('../utils/helper')
-const puppeteer = require('puppeteer')
+const { renderPdfFromHtml, sendPdfResponse } = require('../utils/pdfFromHtml')
 const { assertAdminPage } = require('../utils/adminPermissionHelpers')
+const { getMediatorIncomeOverview } = require('../services/invoice/mediatorIncomeService')
 
 const {
   toNumber,
@@ -135,6 +135,21 @@ module.exports = {
       next(error)
     }
   },
+  getMediatorIncome: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'MEDIATOR') throw createError(errorCodes.FORBIDDEN)
+      const { normalizeFilterParam } = require('../utils/privateInvoiceStatus')
+      const data = await getMediatorIncomeOverview(req.user.id, {
+        range: req.query.range || null,
+        status: normalizeFilterParam(req.query.status),
+        source: normalizeFilterParam(req.query.source)
+      })
+      success(res, data)
+    } catch (error) {
+      next(error)
+    }
+  },
+
   listInvoices: async function (req, res, next) {
     try {
       if (req.user.type === 'ADMIN') await assertAdminPage(req, 'invoices')
@@ -282,25 +297,9 @@ module.exports = {
           <p style="margin: 0;">${bankAccount ? `${bankAccount.bank_name} | ${bankAccount.account_holder} | ${bankAccount.account_number} | ${bankAccount.ifsc_code}` : 'Not provided'}</p>
         </div>
       `
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      })
-      const page = await browser.newPage()
-      await page.setContent(html, { waitUntil: 'networkidle0' })
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '5mm', bottom: '5mm' }
-      })
-      await browser.close()
-      const buffer = Buffer.from(pdfBuffer)
-      res.writeHead(200, {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${invoice.invoice_number}.pdf"`,
-        'Content-Length': buffer.length
-      })
-      res.end(buffer)
+      const buffer = await renderPdfFromHtml(html)
+      const filename = `${invoice.invoice_number || 'invoice'}.pdf`.replace(/[^\w.-]+/g, '_')
+      sendPdfResponse(res, buffer, filename)
     } catch (error) {
       next(error)
     }

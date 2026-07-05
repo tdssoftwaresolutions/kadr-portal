@@ -1,10 +1,44 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import axios from 'axios'
 import VueCookies from 'vue-cookies'
+import { apiClient } from '../utils/apiClient'
+import { setTokens, clearTokens } from '../utils/tokenStorage'
+import { getMobileClientHeaders, isNativeApp } from '../utils/platform'
 import alert from './alertStore'
 import spinner from './spinnerStore'
+import { hasUnlockedFeature, isPremiumGateError } from '../utils/mediatorEntitlements'
 Vue.use(Vuex)
+
+function dispatchApiErrorAlert (dispatch, error, fallback = 'Something went wrong') {
+  if (isPremiumGateError(error)) return
+  const msg = error.response?.data?.error?.message || error.message || fallback
+  dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+}
+
+async function triggerPdfBlobDownload (response, filename) {
+  const contentType = (response.headers && response.headers['content-type']) || ''
+  if (contentType.includes('application/json') || contentType.includes('text/html')) {
+    const text = typeof response.data.text === 'function'
+      ? await response.data.text()
+      : String(response.data)
+    let message = 'PDF download failed'
+    try {
+      const json = JSON.parse(text)
+      message = json.error?.message || json.message || message
+    } catch (_) {
+      if (text) message = text.slice(0, 200)
+    }
+    throw new Error(message)
+  }
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', filename)
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}
 
 const LOGIN_ENDPOINT = '/login'
 const RESET_PASSWORD_ENDPOINT = '/resetPassword'
@@ -25,6 +59,7 @@ const GET_ADMIN_ACTIVE_CASES_ENDPOINT = '/activeCases'
 const GET_ADMIN_CASE_META_ENDPOINT = '/caseManagementMeta'
 const POST_ADMIN_ASSIGN_CASE_MEDIATOR_ENDPOINT = '/assignCaseMediator'
 const GET_SETTINGS_ENDPOINT = '/settings'
+const GET_ADMIN_WEBSITE_CONTENT_ENDPOINT = '/admin/website-content'
 const POST_SETTINGS_ENDPOINT = '/settings'
 const POST_CASE_COMMISSION_ENDPOINT = '/cases/commission'
 const GET_INVOICES_ENDPOINT = '/invoices'
@@ -40,7 +75,6 @@ const ADMIN_BLOG_CATEGORIES_ENDPOINT = '/blog-categories'
 const ADMIN_BLOG_TAGS_ENDPOINT = '/blog-tags'
 const ADMIN_USERS_ENDPOINT = '/users'
 const ADMIN_USERS_ACTIVE_ENDPOINT = '/users/active'
-const REFRESH_TOKEN_ENDPOINT = '/refresh-token'
 const SAVE_NOTE_ENDPOINT = '/saveNote'
 const SUBMIT_AGREEMENT_SIGNATURE = '/submitAgreementSignature'
 const GET_DASHBOARD_CONTENT_ENDPOINT = '/getDashboardContent'
@@ -48,6 +82,31 @@ const DELETE_NOTE_ENDPOINT = '/deleteNote'
 const GET_AGREEMENT_DETAILS_FOR_SIGNATURE = '/getAgreementDetailsForSignature'
 const GET_EXISTING_USER_ENDPOINT = '/getExistingUser'
 const UPDATE_USER_PROFILE = '/updateUserProfile'
+const DELETE_MY_ACCOUNT_ENDPOINT = '/deleteMyAccount'
+const ADMIN_SET_USER_DELETED_ENDPOINT = '/admin/setUserDeleted'
+const GET_MY_REWARDS_ENDPOINT = '/mediator/rewards'
+const REDEEM_REWARD_ENDPOINT = '/mediator/redeem-reward'
+const MEDIATOR_LEGAL_FEEDS_CATALOG_ENDPOINT = '/mediator/legal-feeds/catalog'
+const MEDIATOR_LEGAL_FEEDS_ENDPOINT = '/mediator/legal-feeds'
+const MEDIATOR_COURT_CASES_ENDPOINT = '/mediator/court-cases'
+const MEDIATOR_SUBSCRIPTION_ENDPOINT = '/mediator/subscription'
+const MEDIATOR_SUBSCRIPTION_PURCHASE_ENDPOINT = '/mediator/subscription/purchase'
+const MEDIATOR_PRIVATE_INVOICE_SETTINGS = '/mediator/private-invoice-settings'
+const MEDIATOR_PRIVATE_INVOICE_UPLOAD = '/mediator/private-invoice-settings/upload'
+const MEDIATOR_PRIVATE_INVOICES = '/mediator/private-invoices'
+const MEDIATOR_INCOME_ENDPOINT = '/mediator/income'
+const ADMIN_MEDIATOR_OFFBOARDING_PREVIEW = '/admin/mediators'
+const ADMIN_PREMIUM_FEATURES = '/admin/premium-features'
+const ADMIN_REWARD_FULFILLMENT_RULES = '/admin/reward-fulfillment-rules'
+const ADMIN_REWARD_FULFILLMENT_CATALOG = '/admin/reward-fulfillment-catalog'
+const ADMIN_NOTIFICATION_TEMPLATES = '/admin/notifications/templates'
+const ADMIN_NOTIFICATION_CHANNEL_SETTINGS = '/admin/notifications/channel-settings'
+const ADMIN_NOTIFICATION_USERS = '/admin/notifications/users'
+const ADMIN_NOTIFICATION_SEND = '/admin/notifications/send'
+const ADMIN_NOTIFICATION_SEND_LOGS = '/admin/notifications/send-logs'
+const ADMIN_NOTIFICATION_PREVIEW_LAYOUT = '/admin/notifications/preview-email-layout'
+const ADMIN_REWARD_CATALOG_ENDPOINT = '/admin/reward-catalog'
+const ADMIN_REWARD_ORDERS_ENDPOINT = '/admin/reward-orders'
 const GET_CALENDAR_INIT_ENDPOINT = '/getCalendarInit'
 const NEW_CALENDAR_EVENT_ENDPOINT = '/newCalendarEvent'
 const GET_PAST_MEDIATIONS_ENDPOINT = '/getPastMediations'
@@ -84,53 +143,30 @@ const getDefaultState = () => {
     availableStates: null,
     allLanguages: null,
     dashboardContent: null,
-    calendarInit: null
+    calendarInit: null,
+    mediatorFeatures: [],
+    mediatorSubscriptionTier: 'FREE'
   }
 }
 
-const apiClient = axios.create({
-  baseURL: '/api',
-  timeout: 100000
-})
+function parseApiResponse (body) {
+  if (!body?.success) {
+    const message = body?.error?.message || body?.message || 'Request failed'
+    throw new Error(message)
+  }
+  const payload = body.data || {}
+  return {
+    success: true,
+    message: body.message,
+    ...payload,
+    data: payload
+  }
+}
 
 const plugin = (router) => (store) => {
   store.$cookies = VueCookies
   store.$router = router
 }
-
-apiClient.interceptors.request.use((config) => {
-  const excludedEndpoints = [LOGIN_ENDPOINT, GET_EXISTING_USER_ENDPOINT, RESET_PASSWORD_ENDPOINT, CONFIRM_PASSWORD_CHANGE_ENDPOINT, NEW_USER_SIGNUP_ENDPOINT, NEW_MEDIATOR_SIGNUP_ENDPOINT, IS_EMAIL_EXIST_ENDPOINT, POST_PUBLIC_WEBSITE_CONTACT_LEAD_ENDPOINT]
-  const isExcluded = excludedEndpoints.some((endpoint) =>
-    config.url.includes(endpoint)
-  )
-  if (!isExcluded) {
-    const token = VueCookies.get('accessToken')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-  }
-  return config
-})
-
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response.data.errorCode === 'E102') {
-      try {
-        const { data } = await apiClient.post(REFRESH_TOKEN_ENDPOINT)
-        VueCookies.set('accessToken', data.accessToken, '1d', '/', '', true, 'None')
-        const originalRequest = error.config
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
-        return apiClient(originalRequest) // Retry the request
-      } catch (error) {
-        console.error('Refreshing tokens failed:', error)
-        throw error
-      }
-    } else {
-      return Promise.reject(error)
-    }
-  }
-)
 
 export default (router) => {
   const store = new Vuex.Store({
@@ -167,6 +203,14 @@ export default (router) => {
       invalidateDashboardCaches (state) {
         state.dashboardContent = null
         state.calendarInit = null
+      },
+      setMediatorSubscription (state, { tier, features }) {
+        state.mediatorSubscriptionTier = tier || 'FREE'
+        state.mediatorFeatures = Array.isArray(features) ? features : []
+      },
+      clearMediatorSubscription (state) {
+        state.mediatorSubscriptionTier = 'FREE'
+        state.mediatorFeatures = []
       }
     },
     actions: {
@@ -179,9 +223,20 @@ export default (router) => {
       async login ({ commit, dispatch }, { username, password }) {
         try {
           dispatch('spinner/showSpinner')
-          const { data } = await apiClient.post(LOGIN_ENDPOINT, { username, password })
+          const { data } = await apiClient.post(
+            LOGIN_ENDPOINT,
+            {
+              username,
+              password,
+              ...(isNativeApp() ? { clientType: 'mobile' } : {})
+            },
+            { headers: getMobileClientHeaders() }
+          )
           if (!data.success) throw new Error(data.error.message)
-          store.$cookies.set('accessToken', data.data.accessToken, '1d', '/', '', true, 'None')
+          await setTokens({
+            accessToken: data.data.accessToken,
+            refreshToken: data.data.refreshToken
+          })
           store.$router.push({ name: 'dashboard.home' })
           return data
         } catch (error) {
@@ -324,6 +379,7 @@ export default (router) => {
         try {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.get(LOGOUT_ENDPOINT)
+          await clearTokens()
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -349,6 +405,600 @@ export default (router) => {
             success: false,
             error
           }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteMyAccount ({ commit, dispatch }, { confirm }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(DELETE_MY_ACCOUNT_ENDPOINT, { confirm })
+          if (!data.success) throw new Error(data.error?.message || data.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async adminSetUserDeleted ({ commit, dispatch }, { userId, isDeleted }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_SET_USER_DELETED_ENDPOINT, { userId, isDeleted })
+          if (!data.success) throw new Error(data.error?.message || data.message)
+          dispatch('alert/showAlert', { message: data.message, type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMyRewards ({ commit, dispatch }, { page = 1 }) {
+        try {
+          const { data } = await apiClient.get(`${GET_MY_REWARDS_ENDPOINT}?page=${encodeURIComponent(page)}`)
+          if (!data.success) throw new Error(data.error?.message || data.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async redeemReward ({ commit, dispatch }, { catalogItemId }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(REDEEM_REWARD_ENDPOINT, { catalogItemId })
+          if (!data.success) throw new Error(data.error?.message || data.message)
+          commit('invalidateDashboardCaches')
+          await dispatch('loadMediatorSubscription')
+          dispatch('alert/showAlert', { message: data.message || 'Reward redeemed', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMediatorLegalFeedCatalog ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(MEDIATOR_LEGAL_FEEDS_CATALOG_ENDPOINT)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async loadMediatorSubscription ({ commit, dispatch }) {
+        try {
+          const { data } = await apiClient.get(MEDIATOR_SUBSCRIPTION_ENDPOINT)
+          const result = parseApiResponse(data)
+          const tier = result.tier || result.data?.tier || 'FREE'
+          const features = result.features || result.data?.features || []
+          commit('setMediatorSubscription', { tier, features })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async getMediatorLegalFeeds ({ dispatch }, { feed = 'judgments', limit = 12 } = {}) {
+        try {
+          const { data } = await apiClient.get(
+            `${MEDIATOR_LEGAL_FEEDS_ENDPOINT}?feed=${encodeURIComponent(feed)}&limit=${encodeURIComponent(limit)}`
+          )
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async getMediatorCourtCaseTrackers ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(MEDIATOR_COURT_CASES_ENDPOINT)
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async addMediatorCourtCaseTracker ({ dispatch }, { cnr, label }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(MEDIATOR_COURT_CASES_ENDPOINT, { cnr, label })
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || data.message || 'Case tracked', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          const apiErr = error.response?.data?.error
+          const msg = apiErr?.message || error.message || 'Something went wrong'
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error: { message: msg, details: apiErr?.details || null } }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async refreshMediatorCourtCaseTracker ({ dispatch }, { id }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${MEDIATOR_COURT_CASES_ENDPOINT}/${encodeURIComponent(id)}/refresh`)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || data.message || 'Refreshed', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMediatorCourtCaseDetails ({ dispatch }, { id }) {
+        try {
+          const { data } = await apiClient.get(`${MEDIATOR_COURT_CASES_ENDPOINT}/${encodeURIComponent(id)}/details`)
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async removeMediatorCourtCaseTracker ({ dispatch }, { id }) {
+        try {
+          const { data } = await apiClient.delete(`${MEDIATOR_COURT_CASES_ENDPOINT}/${encodeURIComponent(id)}`)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || data.message || 'Removed', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async getMySubscription ({ dispatch, commit }) {
+        try {
+          const { data } = await apiClient.get(MEDIATOR_SUBSCRIPTION_ENDPOINT)
+          const result = parseApiResponse(data)
+          const tier = result.tier || result.data?.tier || 'FREE'
+          const features = result.features || result.data?.features || []
+          commit('setMediatorSubscription', { tier, features })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async purchaseProSubscription ({ dispatch, commit }, { paymentId, amount }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(MEDIATOR_SUBSCRIPTION_PURCHASE_ENDPOINT, {
+            paymentId,
+            status: 'success',
+            amount,
+            currency: 'INR',
+            paymentMethod: 'card'
+          })
+          const result = parseApiResponse(data)
+          commit('invalidateDashboardCaches')
+          await dispatch('loadMediatorSubscription')
+          dispatch('alert/showAlert', { message: result.message || 'Pro activated', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMediatorOffboardingPreview ({ dispatch }, { mediatorId }) {
+        try {
+          const { data } = await apiClient.get(`${ADMIN_MEDIATOR_OFFBOARDING_PREVIEW}/${mediatorId}/offboarding-preview`)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async completeMediatorOffboarding ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(
+            `${ADMIN_MEDIATOR_OFFBOARDING_PREVIEW}/${payload.mediatorId}/complete-offboarding`,
+            payload
+          )
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Mediator removed', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMediator360 ({ dispatch }, { mediatorId }) {
+        try {
+          const { data } = await apiClient.get(`${ADMIN_MEDIATOR_OFFBOARDING_PREVIEW}/${mediatorId}/360`)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async getPrivateInvoiceSettings ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(MEDIATOR_PRIVATE_INVOICE_SETTINGS)
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async savePrivateInvoiceSettings ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(MEDIATOR_PRIVATE_INVOICE_SETTINGS, payload)
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async uploadPrivateInvoiceAsset ({ dispatch }, { fileContent, assetType }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(MEDIATOR_PRIVATE_INVOICE_UPLOAD, { fileContent, assetType })
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getMediatorIncome ({ dispatch }, { range, status, source } = {}) {
+        try {
+          const params = new URLSearchParams()
+          if (range) params.set('range', range)
+          if (status) params.set('status', status)
+          if (source) params.set('source', source)
+          const query = params.toString()
+          const { data } = await apiClient.get(query ? `${MEDIATOR_INCOME_ENDPOINT}?${query}` : MEDIATOR_INCOME_ENDPOINT)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async listPrivateInvoices ({ dispatch }, { page = 1, range, status } = {}) {
+        try {
+          const params = { page }
+          if (range) params.range = range
+          if (status) params.status = status
+          const { data } = await apiClient.get(MEDIATOR_PRIVATE_INVOICES, { params })
+          return parseApiResponse(data)
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async createPrivateInvoice ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(MEDIATOR_PRIVATE_INVOICES, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Invoice created', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async updatePrivateInvoice ({ dispatch }, { id, payload }) {
+        try {
+          const { data } = await apiClient.put(`${MEDIATOR_PRIVATE_INVOICES}/${id}`, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Invoice updated', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async downloadPrivateInvoicePdf ({ dispatch }, { id, invoiceNumber }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const response = await apiClient.get(`${MEDIATOR_PRIVATE_INVOICES}/${id}/pdf`, { responseType: 'blob' })
+          const filename = `${invoiceNumber || `private-invoice-${id}`}.pdf`.replace(/[^\w.-]+/g, '_')
+          await triggerPdfBlobDownload(response, filename)
+          return { success: true }
+        } catch (error) {
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          const msg = error.message || error.response?.data?.error?.message || 'Download failed'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getPremiumFeaturesAdmin ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_PREMIUM_FEATURES)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async updatePremiumFeature ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(ADMIN_PREMIUM_FEATURES, payload)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async getRewardFulfillmentCatalog ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_REWARD_FULFILLMENT_CATALOG)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async getRewardFulfillmentRules ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_REWARD_FULFILLMENT_RULES)
+          return parseApiResponse(data)
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async saveRewardFulfillmentRule ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(ADMIN_REWARD_FULFILLMENT_RULES, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Rule saved', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async deleteRewardFulfillmentRule ({ dispatch }, { id }) {
+        try {
+          const { data } = await apiClient.delete(`${ADMIN_REWARD_FULFILLMENT_RULES}/${id}`)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Rule deleted', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async getNotificationTemplates ({ dispatch }, { channel } = {}) {
+        try {
+          const qs = channel ? `?channel=${encodeURIComponent(channel)}` : ''
+          const { data } = await apiClient.get(`${ADMIN_NOTIFICATION_TEMPLATES}${qs}`)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async saveNotificationTemplate ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(ADMIN_NOTIFICATION_TEMPLATES, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Template saved', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async deleteNotificationTemplate ({ dispatch }, { id }) {
+        try {
+          const { data } = await apiClient.delete(`${ADMIN_NOTIFICATION_TEMPLATES}/${id}`)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Template deleted', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async previewNotificationTemplate ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(`${ADMIN_NOTIFICATION_TEMPLATES}/preview`, payload)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async getNotificationChannelSettings ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_NOTIFICATION_CHANNEL_SETTINGS)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async saveNotificationChannelSettings ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(ADMIN_NOTIFICATION_CHANNEL_SETTINGS, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Channel settings saved', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async searchNotificationUsers ({ dispatch }, { q, types }) {
+        try {
+          const params = new URLSearchParams()
+          if (q) params.set('q', q)
+          if (types && types.length) params.set('types', types.join(','))
+          const query = params.toString()
+          const { data } = await apiClient.get(query ? `${ADMIN_NOTIFICATION_USERS}?${query}` : ADMIN_NOTIFICATION_USERS)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async sendAdminNotifications ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner', null, { root: true })
+          const { data } = await apiClient.post(ADMIN_NOTIFICATION_SEND, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Notifications sent', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner', null, { root: true })
+        }
+      },
+      async getNotificationSendLogs ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_NOTIFICATION_SEND_LOGS)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async previewEmailLayout ({ dispatch }, { headerHtml, footerHtml }) {
+        try {
+          const { data } = await apiClient.post(ADMIN_NOTIFICATION_PREVIEW_LAYOUT, { headerHtml, footerHtml })
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async getRewardCatalogAdmin ({ commit, dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_REWARD_CATALOG_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || data.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async saveRewardCatalogItem ({ commit, dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(ADMIN_REWARD_CATALOG_ENDPOINT, payload)
+          if (!data.success) throw new Error(data.error?.message || data.message)
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteRewardCatalogItem ({ commit, dispatch }, { id }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${ADMIN_REWARD_CATALOG_ENDPOINT}/${id}`)
+          if (!data.success) throw new Error(data.error?.message || data.message)
+          dispatch('alert/showAlert', { message: data.message || 'Removed', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getRewardOrdersAdmin ({ commit, dispatch }, { page = 1, status }) {
+        try {
+          dispatch('spinner/showSpinner')
+          let url = `${ADMIN_REWARD_ORDERS_ENDPOINT}?page=${encodeURIComponent(page)}`
+          if (status) url += `&status=${encodeURIComponent(status)}`
+          const { data } = await apiClient.get(url)
+          if (!data.success) throw new Error(data.error?.message || data.message)
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async fulfillRewardOrder ({ commit, dispatch }, { id, admin_notes }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${ADMIN_REWARD_ORDERS_ENDPOINT}/${id}/fulfill`, { admin_notes })
+          if (!data.success) throw new Error(data.error?.message || data.message)
+          dispatch('alert/showAlert', { message: data.message || 'Order fulfilled', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
         } finally {
           dispatch('spinner/hideSpinner')
         }
@@ -500,8 +1150,10 @@ export default (router) => {
           commit('invalidateDashboardCaches')
           return data
         } catch (error) {
-          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
-          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          if (isPremiumGateError(error)) {
+            return { success: false, premiumLocked: true, error }
+          }
+          dispatchApiErrorAlert(dispatch, error)
           return {
             success: false,
             error
@@ -705,12 +1357,12 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
-      async getActiveUsers ({ commit, dispatch }, { page, type, includeInactive = false }) {
+      async getActiveUsers ({ commit, dispatch }, { page, type, includeInactive = false, includeDeleted = false }) {
         try {
           dispatch('spinner/showSpinner')
           const params = type
-            ? `?page=${encodeURIComponent(page)}&type=${encodeURIComponent(type)}&includeInactive=${encodeURIComponent(includeInactive)}`
-            : `?page=${encodeURIComponent(page)}&includeInactive=${encodeURIComponent(includeInactive)}`
+            ? `?page=${encodeURIComponent(page)}&type=${encodeURIComponent(type)}&includeInactive=${encodeURIComponent(includeInactive)}&includeDeleted=${encodeURIComponent(includeDeleted)}`
+            : `?page=${encodeURIComponent(page)}&includeInactive=${encodeURIComponent(includeInactive)}&includeDeleted=${encodeURIComponent(includeDeleted)}`
           const { data } = await apiClient.get(`${GET_ACTIVE_USERS_ENDPOINT}${params}`)
           if (!data.success) throw new Error(data.error.message)
           return data
@@ -1006,6 +1658,185 @@ export default (router) => {
           dispatch('spinner/hideSpinner')
         }
       },
+      async getAdminWebsiteContent ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(GET_ADMIN_WEBSITE_CONTENT_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteSettings ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/settings`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteBanner ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/banner`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteTestimonial ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/testimonials`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteAdminWebsiteTestimonial ({ dispatch }, id) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/testimonials/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Deleted', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsitePricingPlan ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/pricing-plans`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteAdminWebsitePricingPlan ({ dispatch }, id) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/pricing-plans/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Deleted', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteFaqCategory ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/faq-categories`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteAdminWebsiteFaqCategory ({ dispatch }, id) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/faq-categories/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Deleted', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteFaqItem ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/faq-items`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteAdminWebsiteFaqItem ({ dispatch }, id) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/faq-items/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Deleted', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async regenerateAdminWebsiteContent ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/regenerate`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Pages regenerated', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
       async updateCaseMediatorCommission ({ dispatch }, payload) {
         try {
           dispatch('spinner/showSpinner')
@@ -1091,17 +1922,11 @@ export default (router) => {
           const response = await apiClient.get(`${GET_INVOICE_PDF_ENDPOINT}/${encodeURIComponent(invoiceId)}/pdf`, {
             responseType: 'blob'
           })
-          const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
-          const link = document.createElement('a')
-          link.href = url
-          link.setAttribute('download', `${invoiceNumber || 'invoice'}.pdf`)
-          document.body.appendChild(link)
-          link.click()
-          link.remove()
-          window.URL.revokeObjectURL(url)
+          const filename = `${invoiceNumber || 'invoice'}.pdf`.replace(/[^\w.-]+/g, '_')
+          await triggerPdfBlobDownload(response, filename)
           return { success: true }
         } catch (error) {
-          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          const msg = error.message || error.response?.data?.error?.message || 'Something went wrong'
           dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
           return { success: false, error }
         } finally {
@@ -1500,7 +2325,11 @@ export default (router) => {
       availableStates: (state) => state.availableStates,
       allLanguages: (state) => state.allLanguages,
       dashboardContent: (state) => state.dashboardContent,
-      calendarInit: (state) => state.calendarInit
+      calendarInit: (state) => state.calendarInit,
+      mediatorFeatures: (state) => state.mediatorFeatures,
+      mediatorSubscriptionTier: (state) => state.mediatorSubscriptionTier,
+      isMediatorPro: (state) => state.mediatorSubscriptionTier === 'PRO',
+      mediatorHasFeature: (state) => (featureKey) => hasUnlockedFeature(state.mediatorFeatures, featureKey)
     },
     strict: debug,
     plugins: [plugin(router)]

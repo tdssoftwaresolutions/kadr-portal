@@ -1,87 +1,115 @@
 [
-    {
-      "title": "Home",
-      "name": "sidebar.dashboard",
-      "is_heading": false,
-      "is_active": false,
-      "link": {
-        "name": "dashboard.home"
+  {
+    "title": "Home",
+    "name": "sidebar.dashboard",
+    "is_heading": false,
+    "is_active": false,
+    "link": { "name": "dashboard.home" },
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-home-5-line"
+  },
+  {
+    "title": "Mediation",
+    "name": "sidebar.mediation",
+    "is_heading": false,
+    "is_group": true,
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-scales-3-line",
+    "children": [
+      {
+        "title": "Past Mediations",
+        "name": "app.past-mediations",
+        "is_heading": false,
+        "is_active": false,
+        "link": { "name": "app.past-mediations" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-archive-line"
       },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-home-5-line"
-    },
-    {
-      "title": "Past Mediations",
-      "name": "app.past-mediations",
-      "is_heading": false,
-      "is_active": false,
-      "link": {
-        "name": "app.past-mediations"
+      {
+        "title": "My Calendar",
+        "name": "app.calendar",
+        "is_heading": false,
+        "is_active": false,
+        "link": { "name": "app.calendar" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-calendar-event-line"
+      }
+    ]
+  },
+  {
+    "title": "Content",
+    "name": "sidebar.content",
+    "is_heading": false,
+    "is_group": true,
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-article-line",
+    "children": [
+      {
+        "title": "My Blogs",
+        "name": "blog.list",
+        "is_heading": false,
+        "is_active": false,
+        "link": { "name": "blog.list" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-article-line"
       },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-archive-line"
-    },
-    {
-      "title": "My Calendar",
-      "name": "app.calendar",
-      "is_heading": false,
-      "is_active": false,
-      "link": {
-        "name": "app.calendar"
+      {
+        "title": "Video reels",
+        "name": "reels.list",
+        "is_heading": false,
+        "is_active": false,
+        "link": { "name": "reels.list" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-movie-2-line"
+      }
+    ]
+  },
+  {
+    "title": "Business",
+    "name": "sidebar.business",
+    "is_heading": false,
+    "is_group": true,
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-briefcase-line",
+    "children": [
+      {
+        "title": "Reward Store",
+        "name": "app.rewards",
+        "is_heading": false,
+        "is_active": false,
+        "link": { "name": "app.rewards" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-gift-2-line"
       },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-calendar-event-line"
-    },
-    {
-      "title": "My Blogs",
-      "name": "blog.list",
-      "is_heading": false,
-      "is_active": false,
-      "link": {
-        "name": "blog.list"
-      },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-article-line"
-    },
-    {
-      "title": "Video reels",
-      "name": "reels.list",
-      "is_heading": false,
-      "is_active": false,
-      "link": {
-        "name": "reels.list"
-      },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-movie-2-line"
-    },
-    {
-      "title": "Invoices",
-      "name": "app.invoices",
-      "is_heading": false,
-      "is_active": false,
-      "link": {
-        "name": "app.invoices"
-      },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-file-list-3-line"
-    },
-    {
-      "title": "Support",
-      "name": "app.support",
-      "is_heading": false,
-      "is_active": false,
-      "link": {
-        "name": "app.support"
-      },
-      "class_name": "",
-      "is_icon_class": true,
-      "icon": "ri-customer-service-2-line"
-    }
-  ]
-  
+      {
+        "title": "Invoices",
+        "name": "app.invoices",
+        "is_heading": false,
+        "is_active": false,
+        "link": { "name": "app.invoices" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-file-list-3-line"
+      }
+    ]
+  },
+  {
+    "title": "Support",
+    "name": "app.support",
+    "is_heading": false,
+    "is_active": false,
+    "link": { "name": "app.support" },
+    "class_name": "",
+    "is_icon_class": true,
+    "icon": "ri-customer-service-2-line"
+  }
+]

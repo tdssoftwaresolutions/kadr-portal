@@ -40,6 +40,53 @@
   window.goToLogin = goToLogin
   window.setLanguage = setLanguage
 
+  function getSiteConfig () {
+    var c = window.KADR_SITE_CONFIG
+    if (c) return c
+    return {
+      email: 'contact@kadr.live',
+      phone: '',
+      whatsapp: '',
+      addressEn: 'Delhi, India',
+      addressHi: 'Delhi, India'
+    }
+  }
+
+  function buildContactLine () {
+    var c = getSiteConfig()
+    var parts = ['📧 ' + c.email]
+    if (c.phone) parts.push('📞 ' + c.phone)
+    if (c.whatsapp) parts.push('💬 WhatsApp: ' + c.whatsapp)
+    parts.push('<span class="copy-en">📍 ' + c.addressEn + '</span>')
+    parts.push('<span class="copy-hi">📍 ' + (c.addressHi || c.addressEn) + '</span>')
+    return parts.join('<br/>')
+  }
+
+  function loadScriptOnce (src) {
+    if (document.querySelector('script[src="' + src + '"]')) return
+    var s = document.createElement('script')
+    s.src = src
+    s.defer = true
+    document.body.appendChild(s)
+  }
+
+  function ensurePwaMeta () {
+    if (!document.querySelector('link[rel="manifest"]')) {
+      var manifest = document.createElement('link')
+      manifest.rel = 'manifest'
+      manifest.href = '/manifest.webmanifest'
+      document.head.appendChild(manifest)
+    }
+    var appleMeta = document.querySelector('meta[name="apple-mobile-web-app-capable"]')
+    if (!appleMeta) {
+      appleMeta = document.createElement('meta')
+      appleMeta.name = 'apple-mobile-web-app-capable'
+      appleMeta.content = 'yes'
+      document.head.appendChild(appleMeta)
+    }
+    loadScriptOnce('/js/pwa-install.js')
+  }
+
   function getCookie (name) {
     let value = '; ' + document.cookie
     let parts = value.split('; ' + name + '=')
@@ -189,7 +236,7 @@
       '<div class="ft-logo"><div class="ft-logo-mark">🌿</div><div class="ft-logo-text">k<span>ADR</span>.live</div></div>' +
       '<div class="ft-desc copy-en">India\'s private online mediation platform. Affordable, confidential, and legally valid dispute resolution — aligned with India\'s framework for private mediation.</div>' +
       '<div class="ft-desc copy-hi">India ka online private mediation platform. Affordable, confidential, aur legally valid dispute resolution.</div>' +
-      '<div class="ft-contact">📧 contact@kadr.live<br/>📍 Delhi, India</div>' +
+      '<div class="ft-contact">' + buildContactLine() + '</div>' +
       '</div>' +
       '<div><div class="ft-h copy-en">Platform</div><div class="ft-h copy-hi">Platform</div>' +
       '<a class="ft-link" href="how_it_works"><span class="copy-en">How It Works</span><span class="copy-hi">Kaise Kaam Karta Hai</span></a>' +
@@ -215,11 +262,26 @@
       '</div>'
   }
 
+  function ensureSiteConfig (cb) {
+    if (window.KADR_SITE_CONFIG) {
+      cb()
+      return
+    }
+    var s = document.createElement('script')
+    s.src = '/js/site-config.js'
+    s.onload = cb
+    s.onerror = cb
+    document.head.appendChild(s)
+  }
+
   function runChrome () {
-    mountHeader()
-    mountFooter()
-    syncLangFromStorage()
-    syncLoginLabel()
+    ensureSiteConfig(function () {
+      mountHeader()
+      mountFooter()
+      syncLangFromStorage()
+      syncLoginLabel()
+      ensurePwaMeta()
+    })
   }
 
   if (document.readyState === 'loading') {

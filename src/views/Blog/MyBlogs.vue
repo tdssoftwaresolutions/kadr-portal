@@ -237,7 +237,6 @@ export default {
   },
   methods: {
     formatDateTime (dateString) {
-      console.log(dateString)
       const date = new Date(dateString)
       const options = {
         weekday: 'long',
@@ -251,7 +250,6 @@ export default {
       return new Intl.DateTimeFormat('en-US', options).format(date)
     },
     toggleSelection (option) {
-      console.log(option)
       if (this.selectedBlog.categories.some(category => category.id === option.id)) {
         this.selectedBlog.categories = this.selectedBlog.categories.filter(item => item.id !== option.id)
       } else if (this.selectedBlog.categories.length < 3) {
@@ -487,7 +485,6 @@ export default {
               const reader = new FileReader()
               reader.onload = function (e) {
                 callback(e.target.result, { alt: file.name })
-                console.log('completed')
                 ref.loading = false
               }
               reader.onerror = function () {
@@ -502,7 +499,6 @@ export default {
         media_live_embeds: true,
         setup: function (editor) {
           editor.addShortcut('ctrl+s', 'Save', function () {
-            console.log('Saved!')
           })
         },
         image_caption: true,

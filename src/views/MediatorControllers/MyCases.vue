@@ -27,7 +27,7 @@
         </button>
       </div>
 
-      <div class="workspace-layout" :class="{ 'workspace-layout--single': !showCorrespondencePanel }">
+      <div class="workspace-layout">
         <div class="workspace-main">
           <div class="quick-info-grid">
             <article class="info-card">
@@ -196,10 +196,20 @@
           </section>
         </div>
 
-        <aside v-if="showCorrespondencePanel" class="workspace-side">
+        <aside v-if="selectedCase.id" class="workspace-side">
           <div class="workspace-side-stack">
-            <section class="section-card side-correspondence-card">
-              <KadrSupportChannels />
+            <section class="section-card side-progress-card">
+              <div class="section-head">
+                <h5>Case progress</h5>
+                <small>Current stage, coming up, and activity.</small>
+              </div>
+              <CaseProgressPanel
+                :progress="selectedCase.case_progress"
+                :is-past-view="isPastView"
+                @action="handleProgressAction"
+              />
+            </section>
+            <section v-if="showCorrespondencePanel" class="section-card side-correspondence-card">
               <CaseCorrespondencePanel
                 embedded
                 variant="sidebar"
@@ -352,7 +362,7 @@ import VueMaterialDateTimePicker from 'vue-material-date-time-picker'
 import FilePreview from '../core/DocumentPreview.vue'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
 import CaseCorrespondencePanel from '../../components/CaseCorrespondencePanel.vue'
-import KadrSupportChannels from '../../components/KadrSupportChannels.vue'
+import CaseProgressPanel from '../../components/cases/CaseProgressPanel.vue'
 import SignaturePad from 'signature_pad'
 import { Vue2TinymceEditor } from 'vue2-tinymce-editor'
 
@@ -364,7 +374,7 @@ import {
 export default {
   name: 'MyCases',
   components: {
-    Alert, Spinner, VueMaterialDateTimePicker, FilePreview, MeetingFeedbackModal, Vue2TinymceEditor, CaseCorrespondencePanel, KadrSupportChannels
+    Alert, Spinner, VueMaterialDateTimePicker, FilePreview, MeetingFeedbackModal, Vue2TinymceEditor, CaseCorrespondencePanel, CaseProgressPanel
   },
   props: {
     cases: {
@@ -433,12 +443,6 @@ export default {
         })
       }
       return actions
-    },
-    activeStepSequence () {
-      if (!this.selectedCase?.case_history?.length) return null
-      const sorted = [...this.selectedCase.case_history].sort((a, b) => a.sequence - b.sequence)
-      const activeStep = sorted.find(step => step.completed === false)
-      return activeStep ? activeStep.sequence : null
     },
     statusBadgeClass () {
       const status = (this.selectedCase.case_statuses?.name || '').toLowerCase()
@@ -516,11 +520,14 @@ export default {
     selectCase (caseItem) {
       this.selectedCase = caseItem
     },
-    getProgressStepClass (step) {
-      return {
-        completed: step.completed === true,
-        active: step.sequence === this.activeStepSequence,
-        pending: step.completed === false && step.sequence !== this.activeStepSequence
+    handleProgressAction (actionKey) {
+      if (actionKey === 'schedule_meeting') {
+        this.openMeetingModal()
+        return
+      }
+      if (actionKey === 'join_meeting') {
+        const link = this.selectedCase.case_progress?.now?.meetingLink
+        if (link) window.open(link, '_blank', 'noopener')
       }
     },
     formatDateTime (dateString) {
@@ -963,6 +970,14 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.side-progress-card {
+  padding: 0.85rem 0.9rem;
+}
+
+.side-progress-card :deep(.case-progress-activity-list) {
+  max-height: 220px;
 }
 
 .side-correspondence-card {

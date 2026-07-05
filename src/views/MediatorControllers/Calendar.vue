@@ -10,7 +10,7 @@
           <template v-slot:body>
             <ul class="m-0 p-0 job-classification">
               <li class=""><i class="ri-checkbox-blank-circle-fill" :style="{ color: personalEventColor }"/>KADR Client Meeting</li>
-              <li class=""><i class="ri-checkbox-blank-circle-fill"  :style="{ color: kadrEventColor }"/>Personal Client Meeting</li>
+              <li v-if="hasPersonalCalendar" class=""><i class="ri-checkbox-blank-circle-fill"  :style="{ color: kadrEventColor }"/>Personal Client Meeting</li>
             </ul>
           </template>
         </iq-card>
@@ -76,7 +76,7 @@
                 <i class="ri-checkbox-blank-circle-fill" :style="{ color: kadrEventColor, marginRight: '0.5rem' }"></i> KADR Client Meeting
               </label>
             </div>
-            <div class="radio-btn-wrapper"  @click="onClickAppointmentType">
+            <div v-if="hasPersonalCalendar" class="radio-btn-wrapper" @click="onClickAppointmentType">
               <input type="radio" id="option2" name="group1" value="personal" v-model="newAppointment.type">
               <label for="option2">
                 <i class="ri-checkbox-blank-circle-fill" :style="{ color: personalEventColor,marginRight: '0.5rem' }"></i> Personal Client Meeting
@@ -259,6 +259,9 @@ export default {
     }
   },
   computed: {
+    hasPersonalCalendar () {
+      return this.$store.getters.mediatorHasFeature('personal_calendar')
+    },
     currentUserId () {
       return this.$store.state.user && this.$store.state.user.id
     },
@@ -323,6 +326,9 @@ export default {
   },
   async mounted () {
     sofbox.index()
+    if (!this.$store.state.mediatorFeatures.length) {
+      await this.$store.dispatch('loadMediatorSubscription')
+    }
     this.initCalendar(false)
   },
   methods: {
@@ -430,11 +436,13 @@ export default {
       this.$refs['view-appointment-modal'].hide()
     },
     onSave () {
+      if (this.newAppointment.type === 'personal' && !this.hasPersonalCalendar) {
+        this.showAlert('Personal meetings require Kadr Pro. Upgrade from My Account.', 'warning')
+        return
+      }
       const endDate = new Date(this.newAppointment.start)
       endDate.setMinutes(endDate.getMinutes() + 30)
-      console.log(this.newAppointment)
       if (this.newAppointment.start) {
-        console.log(this.newAppointment)
         this.storeNewEvent({
           id: this.incrementalId++,
           title: this.newAppointment.title,
@@ -498,7 +506,6 @@ export default {
           startDate: event.start,
           type: event.type.toUpperCase()
         })
-        console.log(this.dashboardContent.todaysEvent)
       }
       this.loading = false
     },

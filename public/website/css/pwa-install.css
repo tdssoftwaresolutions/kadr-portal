@@ -1,0 +1,75 @@
+.kadr-pwa-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: linear-gradient(135deg, var(--b700, #4A2010), var(--b600, #6B3218));
+  color: #fff;
+  padding: 14px 18px;
+  box-shadow: 0 -4px 24px rgba(26, 10, 0, 0.25);
+  font-family: var(--font-body, 'DM Sans', system-ui, sans-serif);
+  animation: kadrPwaSlideUp 0.35s ease-out;
+}
+@keyframes kadrPwaSlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.kadr-pwa-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.kadr-pwa-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.kadr-pwa-copy {
+  flex: 1;
+  min-width: 200px;
+}
+.kadr-pwa-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.kadr-pwa-sub {
+  font-size: 12px;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+.kadr-pwa-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.kadr-pwa-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+.kadr-pwa-btn--primary {
+  background: var(--g400, #D4A830);
+  color: var(--b900, #1A0A00);
+}
+.kadr-pwa-btn--ghost {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.35);
+}
+.kadr-pwa-ios-steps {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+@media (max-width: 600px) {
+  .kadr-pwa-inner { flex-direction: column; align-items: stretch; text-align: center; }
+  .kadr-pwa-actions { justify-content: center; }
+}

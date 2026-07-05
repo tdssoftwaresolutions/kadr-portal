@@ -273,16 +273,12 @@ export default {
       this.modalVisible = true
     },
     getLanguageName (code) {
-      console.log(code)
-      console.log(this.languages)
-      console.log(this.languages[code])
       return this.languages[code] || code
     },
     getFullLanguages (value) {
       if (!value) return ''
       try {
         const codes = this.isArrayValue(value) ? JSON.parse(value) : value.split(',')
-        console.log(codes)
         return codes.map(code => this.getLanguageName(code.trim())).join(', ')
       } catch (e) {
         return value

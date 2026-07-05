@@ -13,10 +13,15 @@ import GoogleAccountManagement from '../views/AdminControllers/GoogleAccountMana
 import AdminBlogTaxonomyView from '../views/AdminControllers/AdminBlogTaxonomyView.vue'
 import AdminManagementView from '../views/AdminControllers/AdminManagementView.vue'
 import AdminSettingsView from '../views/AdminControllers/AdminSettingsView.vue'
+import AdminNotificationsView from '../views/AdminControllers/AdminNotificationsView.vue'
+import AdminWebsiteContentView from '../views/AdminControllers/AdminWebsiteContentView.vue'
 import AdminCalendar from '../views/AdminControllers/AdminCalendar.vue'
 import AdminCorrespondenceInbox from '../views/AdminControllers/AdminCorrespondenceInbox.vue'
 /** Mediator */
 import InvoicesView from '../views/MediatorControllers/InvoicesView.vue'
+import MediatorRewardsView from '../views/MediatorControllers/MediatorRewardsView.vue'
+import AdminRewardOrdersView from '../views/AdminControllers/AdminRewardOrdersView.vue'
+import AdminMediator360View from '../views/AdminControllers/AdminMediator360View.vue'
 import PortalSupportView from '../views/Standard/PortalSupportView.vue'
 
 /** Client  */
@@ -132,10 +137,44 @@ const appChildRoute = (prop) => [
     component: AdminSettingsView
   },
   {
+    path: 'notifications',
+    name: prop + '.notifications',
+    meta: { name: 'Notifications', adminPage: 'notifications' },
+    component: AdminNotificationsView
+  },
+  {
+    path: 'website-content',
+    name: prop + '.website-content',
+    meta: { name: 'Website content', adminPage: 'website-content' },
+    component: AdminWebsiteContentView
+  },
+  {
     path: 'invoices',
     name: prop + '.invoices',
     meta: { name: 'Payments & Invoices', adminPage: 'invoices' },
     component: InvoicesView
+  },
+  {
+    path: 'rewards',
+    name: prop + '.rewards',
+    meta: { name: 'Reward Store' },
+    component: MediatorRewardsView
+  },
+  {
+    path: 'reward-orders',
+    name: prop + '.reward-orders',
+    meta: { name: 'Reward orders', adminPage: 'reward-orders' },
+    component: AdminRewardOrdersView
+  },
+  {
+    path: 'mediators/:mediatorId/360',
+    name: prop + '.mediator-360',
+    meta: { name: 'Mediator 360', adminPage: 'users' },
+    component: AdminMediator360View
+  },
+  {
+    path: 'private-invoices',
+    redirect: { name: 'app.invoices' }
   }
 ]
 
@@ -263,9 +302,11 @@ const routes = [
   }
 ]
 
+const routerBase = process.env.VUE_APP_CAPACITOR === '1' ? './' : '/admin/'
+
 const router = new VueRouter({
   mode: 'history',
-  base: '/admin/',
+  base: routerBase,
   routes
 })
 

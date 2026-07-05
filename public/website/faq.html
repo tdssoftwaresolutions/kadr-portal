@@ -674,25 +674,9 @@ html, body {
 <div class="sec-h2 white copy-hi" style="font-size:44px;text-align:center">Aksar Pooche Jaane Wale Sawaal</div>
 </div>
 <div class="section white">
-<div style="display:grid;grid-template-columns:260px 1fr;gap:52px;max-width:1100px;margin:0 auto">
-<div>
-<div class="copy-en" style="font-size:12px;font-weight:700;color:var(--b700);margin-bottom:12px">Categories</div>
-<div class="copy-hi" style="font-size:12px;font-weight:700;color:var(--b700);margin-bottom:12px">Categories</div>
-<div style="display:flex;flex-direction:column;gap:4px">
-<div style="padding:10px 14px;background:var(--b500);color:#fff;border-radius:var(--r-sm);font-size:12px;font-weight:600;cursor:pointer"><span class="copy-en">About Mediation</span><span class="copy-hi">Mediation Ke Baare Mein</span></div>
-<div style="padding:10px 14px;color:var(--text-muted);font-size:12px;cursor:pointer"><span class="copy-en">The KADR Process</span><span class="copy-hi">KADR ka Process</span></div>
-<div style="padding:10px 14px;color:var(--text-muted);font-size:12px;cursor:pointer"><span class="copy-en">Payments &amp; Pricing</span><span class="copy-hi">Payment aur Pricing</span></div>
-<div style="padding:10px 14px;color:var(--text-muted);font-size:12px;cursor:pointer"><span class="copy-en">Legal Status</span><span class="copy-hi">Legal Status</span></div>
-<div style="padding:10px 14px;color:var(--text-muted);font-size:12px;cursor:pointer"><span class="copy-en">Privacy &amp; Data</span><span class="copy-hi">Privacy aur Data</span></div>
-<div style="padding:10px 14px;color:var(--text-muted);font-size:12px;cursor:pointer"><span class="copy-en">For Organisations</span><span class="copy-hi">Organisations Ke Liye</span></div>
-</div>
-</div>
-<div>
-<div class="faq-item open" onclick="this.classList.toggle('open')"><div class="faq-q"><span class="copy-en">What is mediation and how is it different from going to court?</span><span class="copy-hi">Mediation kya hoti hai? Court se kya fark hai?</span><div class="faq-toggle">+</div></div><div class="faq-a copy-en">Mediation is a voluntary, structured process where a neutral mediator helps both parties reach a mutually agreed resolution. Unlike court, the mediator doesn't impose a decision — both parties work together to find a solution they can live with. It's private, confidential, faster, and significantly more affordable.</div><div class="faq-a copy-hi">Mediation ek voluntary, structured process hai jisme ek neutral mediator dono parties ko milkar solution nikalne mein help karta hai. Court ki tarah mediator decision nahi thopata — dono parties milkar koi bhi solution nikal sakte hain. Private, confidential, fast, aur kaafi affordable hai.</div></div>
-<div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q"><span class="copy-en">Is a KADR mediation settlement legally binding?</span><span class="copy-hi">Kya KADR settlement legally binding hai?</span><div class="faq-toggle">+</div></div><div class="faq-a copy-en">Yes. A signed Mediation Settlement Agreement is legally valid under Indian contract law and can be filed in court for enforcement under CPC provisions. India's Mediation Act 2023 — once notified — will further strengthen this framework. We strongly recommend both parties seek independent legal advice before signing.</div><div class="faq-a copy-hi">Haan. Signed Mediation Settlement Agreement Indian contract law ke under legally valid hai aur CPC provisions ke under court mein file ho sakti hai. Mediation Act 2023 jab notified hoga, aur strengthen hoga. Sign karne se pehle independent legal advice zarur lo.</div></div>
-<div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q"><span class="copy-en">What types of disputes can KADR handle?</span><span class="copy-hi">KADR kaunse disputes handle karta hai?</span><div class="faq-toggle">+</div></div><div class="faq-a copy-en">Civil, commercial, family, and community disputes: trader payment disputes, tenant-landlord conflicts, family property matters, matrimonial issues, partnership disputes, and community/RWA disputes. Criminal matters, cases with active court injunctions, or disputes excluded under applicable law cannot be handled.</div><div class="faq-a copy-hi">Civil, commercial, family, aur community disputes: trader payment, tenant-landlord, family property, matrimonial, partnership, aur community/RWA disputes. Criminal matters ya court injunctions wale cases handle nahi hote.</div></div>
-<div class="faq-item" onclick="this.classList.toggle('open')"><div class="faq-q"><span class="copy-en">How is my data and privacy protected?</span><span class="copy-hi">Mera data aur privacy safe hai kya?</span><div class="faq-toggle">+</div></div><div class="faq-a copy-en">KADR operates under a data minimisation policy — we collect only what's needed for case management. All data is encrypted at rest and in transit. Our practices comply with the Digital Personal Data Protection Act 2023. Aadhaar data is used solely for identity verification per UIDAI regulations. We do not sell or share personal data.</div><div class="faq-a copy-hi">KADR data minimisation policy follow karta hai — sirf zaruri information collect hoti hai. Sab encrypted hai. DPDP Act 2023 ke saath compliant hain. Aadhaar data sirf identity verification ke liye — UIDAI regulations ke hisaab se. Personal data kabhi sell ya share nahi karte.</div></div>
-</div>
+<div id="kadr-faq-root">
+<p class="copy-en" style="text-align:center;color:var(--text-muted);padding:40px 20px">Loading FAQs…</p>
+<p class="copy-hi" style="text-align:center;color:var(--text-muted);padding:0 20px 40px">FAQ load ho rahi hai…</p>
 </div>
 </div>
 <div id="kadr-site-footer"></div>
@@ -700,6 +684,7 @@ html, body {
 </div>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="js/faq-page.js" defer></script>
 <script src="js/site-chrome.js" defer></script>
 </body>
 </html>

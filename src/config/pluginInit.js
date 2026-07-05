@@ -182,7 +182,7 @@ export const sofbox = {
 
   SmoothScrollbar () {
     const elementExistMain = this.checkElement('id', 'sidebar-scrollbar')
-    if (elementExistMain) {
+    if (elementExistMain && !document.body.classList.contains('compact-sidebar')) {
       Scrollbar.init(document.querySelector('#sidebar-scrollbar'))
     }
     const elementExistRight = this.checkElement('id', 'right-sidebar-scrollbar')
@@ -192,19 +192,12 @@ export const sofbox = {
   },
 
   getActiveLink (item, activeRoute) {
-    let active = false
-    if (item.children !== undefined) {
-      item.children.filter(function (child) {
-        if (child.link.name === activeRoute) {
-          active = true
-        }
-        return active
-      })
-    } else {
-      if (item.link.name === activeRoute) {
-        active = true
-      }
+    if (item.children && item.children.length) {
+      return item.children.some((child) => sofbox.getActiveLink(child, activeRoute))
     }
-    return active
+    if (item.link && item.link.name) {
+      return item.link.name === activeRoute
+    }
+    return false
   }
 }

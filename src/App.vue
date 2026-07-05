@@ -7,6 +7,7 @@
 </template>
 <script>
 import './assets/scss/style.scss'
+import './assets/scss/_mobile-app.scss'
 import Alert from './components/sofbox/alert/Alert.vue'
 import Spinner from './components/sofbox/spinner/spinner.vue'
 import { mapState } from 'vuex'
@@ -15,6 +16,13 @@ export default {
   name: 'App',
   components: {
     Alert, Spinner
+  },
+  created () {
+    import('./utils/platform').then(({ isNativeApp }) => {
+      if (isNativeApp()) {
+        document.body.classList.add('kadr-native-app')
+      }
+    })
   },
   computed: {
     ...mapState('alert', ['visible', 'message', 'type', 'timeout']),

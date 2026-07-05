@@ -25,10 +25,11 @@ class CaseAssignmentService {
   }
 
   async assign (caseData) {
-    const { clientLanguage, clientState } = caseData
+    const { clientLanguage, clientState, excludeMediatorIds = [] } = caseData
+    const excludeSet = new Set((excludeMediatorIds || []).filter(Boolean))
 
     return this.prisma.$transaction(async (tx) => {
-      const mediators = await this.fetchMediators(tx)
+      const mediators = await this.fetchMediators(tx, excludeSet)
 
       if (!mediators.length) {
         await this.notifyAdminNoMediator(tx, caseData)
@@ -90,11 +91,13 @@ class CaseAssignmentService {
     })
   }
 
-  async fetchMediators (tx) {
+  async fetchMediators (tx, excludeIds = new Set()) {
     const users = await tx.user.findMany({
       where: {
         user_type: 'MEDIATOR',
-        active: true
+        active: true,
+        is_deleted: false,
+        ...(excludeIds.size ? { id: { notIn: [...excludeIds] } } : {})
       },
       orderBy: { created_at: 'asc' }
     })
@@ -109,7 +112,8 @@ class CaseAssignmentService {
     const admins = await tx.user.findMany({
       where: {
         user_type: 'ADMIN',
-        active: true
+        active: true,
+        is_deleted: false
       },
       select: { email: true, name: true }
     })

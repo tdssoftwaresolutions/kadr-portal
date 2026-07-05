@@ -8,9 +8,10 @@
       <i v-if="item.is_heading" class="ri-subtract-line" />
       <span v-if="item.is_heading">{{ item.title }}</span>
       <router-link
-        v-if="!item.is_heading"
+        v-if="!item.is_heading && !isGroup(item)"
         :to="item.link"
         :title="depth === 0 ? item.title : null"
+        :data-flyout-label="depth === 0 ? item.title : null"
         :class="menuLinkClass(item)"
       >
         <span class="menu-icon-wrap">
@@ -18,11 +19,27 @@
           <template v-else v-html="item.icon"></template>
         </span>
         <span class="menu-title">{{ item.title }}</span>
-        <i v-if="item.children" class="ri-arrow-right-s-line iq-arrow-right" />
         <small v-html="item.append" :class="item.append_class" />
       </router-link>
+      <button
+        v-else-if="!item.is_heading && isGroup(item)"
+        type="button"
+        :data-flyout-label="depth === 0 ? item.title : null"
+        :title="depth === 0 ? item.title : null"
+        :aria-label="item.title"
+        :aria-expanded="isGroupOpen(item)"
+        :class="menuLinkClass(item)"
+      >
+        <span class="menu-icon-wrap">
+          <i :class="item.icon" v-if="item.is_icon_class" style="margin-right: 0px;"/>
+          <template v-else v-html="item.icon"></template>
+        </span>
+        <span class="menu-title">{{ item.title }}</span>
+        <i class="ri-arrow-right-s-line iq-arrow-right menu-group-chevron" />
+        <small v-html="item.append" :class="item.append_class" />
+      </button>
       <List
-        v-if="item.children"
+        v-if="item.children && item.children.length"
         :items="item.children"
         :open="true"
         :depth="depth + 1"
@@ -50,9 +67,10 @@ export default {
   components: {
     List
   },
-  mounted () {
-  },
   methods: {
+    isGroup (item) {
+      return !!(item.children && item.children.length && (!item.link || item.is_group))
+    },
     menuItemClass (item) {
       if (item.is_heading) {
         return 'iq-menu-title'
@@ -60,7 +78,8 @@ export default {
 
       return {
         active: this.activeLink(item),
-        'has-children': !!item.children,
+        'has-children': this.isGroup(item),
+        'is-group-item': this.isGroup(item),
         'is-root-item': this.depth === 0,
         'is-child-item': this.depth > 0
       }
@@ -71,8 +90,12 @@ export default {
         active: this.activeLink(item),
         'sidebar-link': true,
         'root-link': this.depth === 0,
-        'child-link': this.depth > 0
+        'child-link': this.depth > 0,
+        'menu-group-trigger': this.isGroup(item)
       }
+    },
+    isGroupOpen (item) {
+      return this.activeLink(item)
     },
     activeLink (item) {
       return sofbox.getActiveLink(item, this.$route.name)

@@ -8,6 +8,7 @@
         :logo="logo"
         :userProfile="userProfile"
         :profileName="user ? user.name : 'Edit Profile'"
+        :show-pro-badge="isMediatorPro"
         @edit-profile="onClickEditProfile"
         @logout="onClickSignOut"
       />
@@ -18,8 +19,11 @@
       </div>
     </div>
     <div class="mobile-top-nav-shell">
-      <div class="mobile-nav-brand">Kadr.live</div>
-      <button v-if="user && mobileNavItems.length" class="mobile-top-nav-toggle" @click="toggleMobileNav" type="button" aria-label="Open navigation">
+      <div class="mobile-nav-brand">
+        <span>Kadr.live</span>
+        <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ml-2" />
+      </div>
+      <button v-if="user && mobileNavTree.length" class="mobile-top-nav-toggle" @click="toggleMobileNav" type="button" aria-label="Open navigation">
         <i class="las la-bars" style="font-size:18px"></i>
         <span>Menu</span>
       </button>
@@ -31,22 +35,64 @@
           <button type="button" class="mobile-top-nav-close" @click="closeMobileNav" aria-label="Close navigation">×</button>
         </div>
         <ul class="mobile-top-nav-list">
-          <li v-for="item in mobileNavItems" :key="item.name" class="mobile-top-nav-list-item">
-            <router-link
-              :to="item.link"
-              class="mobile-top-nav-link"
-              :class="{ active: isNavItemActive(item) }"
-              @click.native="closeMobileNav"
+          <template v-for="item in mobileNavTree">
+            <li
+              v-if="!isMobileGroup(item)"
+              :key="item.name"
+              class="mobile-top-nav-list-item"
             >
-              <i v-if="item.is_icon_class" :class="item.icon"></i>
-              <span>{{ item.title }}</span>
-            </router-link>
-          </li>
-          <li key="logout" class="mobile-top-nav-list-item" @click="onClickEditProfile">
+              <router-link
+                :to="item.link"
+                class="mobile-top-nav-link"
+                :class="{ active: isNavItemActive(item) }"
+                @click.native="closeMobileNav"
+              >
+                <i v-if="item.is_icon_class" :class="item.icon"></i>
+                <span>{{ item.title }}</span>
+              </router-link>
+            </li>
+            <li
+              v-else
+              :key="`group-${item.name}`"
+              class="mobile-top-nav-list-item mobile-top-nav-group"
+              :class="{ 'is-expanded': isMobileGroupExpanded(item) }"
+            >
+              <button
+                type="button"
+                class="mobile-top-nav-group-toggle"
+                :class="{ active: isMobileGroupActive(item) }"
+                :aria-expanded="isMobileGroupExpanded(item) ? 'true' : 'false'"
+                @click="toggleMobileGroup(item.name)"
+              >
+                <i v-if="item.is_icon_class" :class="item.icon"></i>
+                <span>{{ item.title }}</span>
+                <i class="ri-arrow-down-s-line mobile-top-nav-group-chevron"></i>
+              </button>
+              <ul v-show="isMobileGroupExpanded(item)" class="mobile-top-nav-sublist">
+                <li
+                  v-for="child in item.children"
+                  :key="child.name"
+                  class="mobile-top-nav-sublist-item"
+                >
+                  <router-link
+                    :to="child.link"
+                    class="mobile-top-nav-link mobile-top-nav-sublink"
+                    :class="{ active: isNavItemActive(child) }"
+                    @click.native="closeMobileNav"
+                  >
+                    <i v-if="child.is_icon_class" :class="child.icon"></i>
+                    <span>{{ child.title }}</span>
+                  </router-link>
+                </li>
+              </ul>
+            </li>
+          </template>
+          <li key="profile" class="mobile-top-nav-list-item" @click="onClickEditProfile">
             <div class="mobile-top-nav-link">
               <i class="ri-user-line"></i>
               <span>Profile</span>
-              </div>
+              <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ml-auto" />
+            </div>
           </li>
           <li key="logout" class="mobile-top-nav-list-item" @click="onClickSignOut">
             <div class="mobile-top-nav-link">
@@ -57,6 +103,8 @@
         </ul>
       </div>
     </div>
+    <KadrSupportFab v-if="user" :user-type="user.type" />
+
     <FooterStyle1>
       <template v-slot:left>
         <li class="list-inline-item"><a href="#">Privacy Policy</a></li>
@@ -70,22 +118,37 @@
 </template>
 <script>
 import Loader from '../components/sofbox/loader/Loader'
+import KadrSupportFab from '../components/KadrSupportFab.vue'
 import SideBarStyle1 from '../components/sofbox/sidebars/SideBarStyle1'
+import MediatorProBadge from '../components/mediator/MediatorProBadge.vue'
 import SideBarItemsClient from '../config/navigation/SideBarClient.json'
 import SideBarItemsMediator from '../config/navigation/SideBarMediator.json'
 import SideBarItemAdmin from '../config/navigation/SideBarAdmin.json'
 import profile from '../assets/images/default_avatar.jpeg'
 import logo from '../assets/images/logo.png'
 import { sofbox } from '../config/pluginInit'
-import { filterAdminSidebarItems, adminCanAccessRoute, firstAllowedAdminRouteName } from '../utils/adminAccess'
+import {
+  filterAdminSidebarItems,
+  adminCanAccessRoute,
+  firstAllowedAdminRouteFromFilteredSidebar
+} from '../utils/adminAccess'
+import {
+  filterMediatorSidebar,
+  mediatorCanAccessRoute
+} from '../utils/mediatorEntitlements'
 
 export default {
   name: 'StandardLayout',
   components: {
-    Loader, SideBarStyle1
+    Loader,
+    KadrSupportFab,
+    SideBarStyle1,
+    MediatorProBadge
   },
   async created () {
-    if (!this.isSessionAvailable()) {
+    const { hasStoredSession } = await import('../utils/tokenStorage')
+    const sessionOk = await hasStoredSession()
+    if (!sessionOk) {
       this.$router.push({ path: '/auth/sign-in' })
     } else {
       const response = await this.$store.dispatch('getUserData')
@@ -102,9 +165,23 @@ export default {
   watch: {
     $route (to) {
       if (this.user && this.user.type === 'ADMIN' && !adminCanAccessRoute(this.user, to)) {
-        const nextName = firstAllowedAdminRouteName(this.user)
+        const nextName = firstAllowedAdminRouteFromFilteredSidebar(
+          this.user,
+          filterAdminSidebarItems(this.sidebar, this.user)
+        )
         if (!nextName || nextName === to.name) return
         this.$router.replace({ name: nextName })
+      }
+      if (this.user && this.user.type === 'MEDIATOR') {
+        this.enforceMediatorRouteAccess(to)
+      }
+      if (this.isMobileNavOpen) {
+        this.expandMobileGroupForActiveRoute()
+      }
+    },
+    '$store.state.mediatorFeatures' () {
+      if (this.user && this.user.type === 'MEDIATOR') {
+        this.applyMediatorSidebar()
       }
     }
   },
@@ -114,13 +191,16 @@ export default {
       userProfile: profile,
       logo,
       user: null,
-      isMobileNavOpen: false
+      isMobileNavOpen: false,
+      mobileExpandedGroups: {}
     }
   },
   computed: {
-    mobileNavItems () {
-      return (this.sidebar || [])
-        .filter(item => !item.is_heading && item.link)
+    mobileNavTree () {
+      return (this.sidebar || []).filter((item) => !item.is_heading)
+    },
+    isMediatorPro () {
+      return this.user?.type === 'MEDIATOR' && this.$store.getters.isMediatorPro
     }
   },
   methods: {
@@ -133,11 +213,9 @@ export default {
     removeCompactSidebarState () {
       document.body.classList.remove('compact-sidebar')
     },
-    isSessionAvailable () {
-      if (this.$cookies.get('accessToken')) {
-        return true
-      }
-      return false
+    async isSessionAvailable () {
+      const { hasStoredSession } = await import('../utils/tokenStorage')
+      return hasStoredSession()
     },
     async validateData (data) {
       const response = await this.$store.dispatch('verifySignature', {
@@ -148,7 +226,8 @@ export default {
       if (response.success) {
         switch (data.userData.type) {
           case 'MEDIATOR':
-            this.sidebar = SideBarItemsMediator
+            await this.$store.dispatch('loadMediatorSubscription')
+            this.applyMediatorSidebar()
             break
           case 'CLIENT':
             this.sidebar = SideBarItemsClient
@@ -162,12 +241,27 @@ export default {
         if (data.userData.type === 'ADMIN') {
           this.$nextTick(() => this.enforceAdminRouteAccess())
         }
+        if (data.userData.type === 'MEDIATOR') {
+          this.$nextTick(() => this.enforceMediatorRouteAccess())
+        }
       }
+    },
+    applyMediatorSidebar () {
+      this.sidebar = filterMediatorSidebar(
+        SideBarItemsMediator,
+        this.$store.state.mediatorFeatures
+      )
+    },
+    enforceMediatorRouteAccess (route = this.$route) {
+      if (!this.user || this.user.type !== 'MEDIATOR' || !route) return
+      if (mediatorCanAccessRoute(this.$store.state.mediatorFeatures, route)) return
+      if (route.name === 'dashboard.home') return
+      this.$router.replace({ name: 'dashboard.home' })
     },
     enforceAdminRouteAccess () {
       if (!this.user || this.user.type !== 'ADMIN' || !this.$route) return
       if (!adminCanAccessRoute(this.user, this.$route)) {
-        const nextName = firstAllowedAdminRouteName(this.user)
+        const nextName = firstAllowedAdminRouteFromFilteredSidebar(this.user, this.sidebar)
         if (!nextName || nextName === this.$route.name) return
         this.$router.replace({ name: nextName })
       }
@@ -180,16 +274,40 @@ export default {
     async onClickSignOut () {
       const response = await this.$store.dispatch('logout')
       if (!response.errorCode) {
-        this.$cookies.remove('accessToken')
+        this.$store.commit('clearMediatorSubscription')
         this.isMobileNavOpen = false
         this.$router.push({ path: '/auth/sign-in' })
       }
     },
     toggleMobileNav () {
       this.isMobileNavOpen = !this.isMobileNavOpen
+      if (this.isMobileNavOpen) {
+        this.expandMobileGroupForActiveRoute()
+      }
     },
     closeMobileNav () {
       this.isMobileNavOpen = false
+    },
+    isMobileGroup (item) {
+      return !!(item.children && item.children.length && (!item.link || item.is_group))
+    },
+    isMobileGroupExpanded (item) {
+      return !!this.mobileExpandedGroups[item.name]
+    },
+    toggleMobileGroup (groupName) {
+      this.$set(this.mobileExpandedGroups, groupName, !this.mobileExpandedGroups[groupName])
+    },
+    isMobileGroupActive (item) {
+      return sofbox.getActiveLink(item, this.$route.name)
+    },
+    expandMobileGroupForActiveRoute () {
+      const routeName = this.$route && this.$route.name
+      if (!routeName) return
+      this.mobileNavTree.forEach((item) => {
+        if (this.isMobileGroup(item) && sofbox.getActiveLink(item, routeName)) {
+          this.$set(this.mobileExpandedGroups, item.name, true)
+        }
+      })
     },
     isNavItemActive (item) {
       return this.$route && item.link && this.$route.name === item.link.name
@@ -321,6 +439,71 @@ export default {
     flex: 1;
   }
 
+  .mobile-top-nav-group-toggle {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border: 0;
+    border-left: 4px solid transparent;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .mobile-top-nav-group-toggle:hover,
+  .mobile-top-nav-group-toggle.active {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    border-color: #3c7dff;
+  }
+
+  .mobile-top-nav-group-toggle i:first-child {
+    min-width: 1.4rem;
+    font-size: 1.1rem;
+    color: #8ca2ff;
+  }
+
+  .mobile-top-nav-group-toggle span {
+    flex: 1;
+  }
+
+  .mobile-top-nav-group-chevron {
+    font-size: 1.2rem;
+    color: #8ca2ff;
+    transition: transform 0.2s ease;
+  }
+
+  .mobile-top-nav-group.is-expanded .mobile-top-nav-group-chevron {
+    transform: rotate(180deg);
+  }
+
+  .mobile-top-nav-sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0.35rem;
+    background: rgba(0, 0, 0, 0.18);
+  }
+
+  .mobile-top-nav-sublist-item + .mobile-top-nav-sublist-item {
+    margin-top: 0;
+  }
+
+  .mobile-top-nav-sublink {
+    padding-left: 2.75rem !important;
+    font-size: 0.95rem;
+  }
+
+  .mobile-top-nav-sublink i {
+    min-width: 1.2rem;
+    font-size: 1rem;
+  }
+
   @media (max-width: 991px) {
 
     .mobile-top-nav-shell {
@@ -342,10 +525,22 @@ export default {
     }
 
     .mobile-nav-brand {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.35rem;
       font-weight: 600;
       color: #333;
       margin-right: auto;
       font-size: 1.3rem;
+    }
+    .mobile-top-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .mobile-top-nav-link .ml-auto {
+      margin-left: auto;
     }
 
     .mobile-top-nav-toggle {
@@ -366,6 +561,8 @@ export default {
     body.compact-sidebar .iq-footer {
       margin-left: 92px;
       margin-top: 2rem;
+      position: relative;
+      z-index: 1;
     }
 
     body.compact-sidebar .content-page {

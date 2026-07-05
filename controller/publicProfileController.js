@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma.js')
 const { success, error } = require('../utils/responses')
 const striptags = require('striptags')
 const { extractYoutubeVideoId } = require('../utils/youtube')
@@ -27,7 +26,8 @@ module.exports = {
         where: {
           id,
           user_type: 'MEDIATOR',
-          active: true
+          active: true,
+          is_deleted: false
         },
         select: {
           id: true,

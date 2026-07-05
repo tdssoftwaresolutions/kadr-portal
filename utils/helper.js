@@ -4,7 +4,6 @@ const crypto = require('crypto')
 const errorCodes = require('./errors/errorCodes')
 const { google } = require('googleapis')
 const { CaseTypes } = require('../utils/caseConstants')
-const qs = require('qs')
 const path = require('path')
 const fs = require('fs')
 const axios = require('axios')
@@ -255,6 +254,27 @@ class Helper {
             id: true,
             case_event_id: true,
             created_at: true
+          }
+        },
+        transactions: {
+          orderBy: { transaction_date: 'desc' },
+          select: {
+            transaction_id: true,
+            amount: true,
+            currency: true,
+            success: true,
+            reason: true,
+            transaction_date: true,
+            payment_method: true
+          }
+        },
+        case_agreement_tracking: {
+          select: {
+            id: true,
+            first_party_signature_datetime: true,
+            second_party_signature_datetime: true,
+            created_at: true,
+            updated_at: true
           }
         }
       }
@@ -563,6 +583,7 @@ class Helper {
   }
 
   static async deleteBlog (prisma, blogId, userId) {
+    const { revokeContentRewards } = require('../services/reward/rewardService')
     await prisma.$transaction(async (prisma) => {
       // First, verify the blog belongs to the user
       const blog = await prisma.blogs.findFirst({
@@ -574,6 +595,13 @@ class Helper {
       if (!blog) {
         throw new Error('Blog not found or access denied')
       }
+
+      await revokeContentRewards({
+        mediatorId: blog.author_id,
+        referenceId: blogId,
+        reasonCodes: ['blog_published', 'blog_10_comments'],
+        tx: prisma
+      })
 
       // Delete related records first due to foreign key constraints
       await prisma.blog_categories.deleteMany({
@@ -787,31 +815,27 @@ class Helper {
     })
   }
 
-  static mergeCaseHistory (myCases, caseEvents) {
-    return myCases.map(caseItem => {
-      const caseHistoryMap = new Map(
-        caseItem.case_history.map(history => [history.case_event_id, history.created_at])
-      )
-
-      console.log(caseItem)
-
-      // Find the sequence number of the current event
-      let currentSequence = null
-      caseEvents.forEach(event => {
-        if (`${event.status_id}__${event.sub_status_id}` === `${caseItem.case_statuses.id}__${caseItem.case_sub_statuses.id}`) {
-          currentSequence = event.sequence - 1
+  static mergeCaseHistory (myCases, caseEvents, viewer = {}) {
+    const { buildCaseProgress } = require('../services/case/caseProgressService')
+    return myCases.map((caseItem) => {
+      const caseProgress = buildCaseProgress(caseItem, caseEvents, viewer)
+      const tracking = caseItem.case_agreement_tracking
+      let agreementStatus = null
+      if (tracking) {
+        if (tracking.first_party_signature_datetime && tracking.second_party_signature_datetime) {
+          agreementStatus = 'signed'
+        } else if (tracking.first_party_signature_datetime || tracking.second_party_signature_datetime) {
+          agreementStatus = 'partial_signature'
+        } else {
+          agreementStatus = 'pending_signature'
         }
-      })
-      console.log(caseHistoryMap)
-      console.log(caseEvents)
-      // Merge caseEvents with caseHistory
-      const updatedCaseHistory = caseEvents.map(event => ({
-        ...event,
-        created_date: caseHistoryMap.get(event.id) || null,
-        completed: currentSequence !== null && event.sequence <= currentSequence
-      }))
-
-      return { ...caseItem, case_history: updatedCaseHistory }
+      }
+      return {
+        ...caseItem,
+        case_history: caseProgress.case_history,
+        case_progress: caseProgress,
+        agreement_status: agreementStatus
+      }
     })
   }
 
@@ -933,6 +957,27 @@ class Helper {
             case_event_id: true,
             created_at: true
           }
+        },
+        transactions: {
+          orderBy: { transaction_date: 'desc' },
+          select: {
+            transaction_id: true,
+            amount: true,
+            currency: true,
+            success: true,
+            reason: true,
+            transaction_date: true,
+            payment_method: true
+          }
+        },
+        case_agreement_tracking: {
+          select: {
+            id: true,
+            first_party_signature_datetime: true,
+            second_party_signature_datetime: true,
+            created_at: true,
+            updated_at: true
+          }
         }
       }
     })
@@ -964,8 +1009,6 @@ class Helper {
         data: languagesToInsert,
         skipDuplicates: true // Prevent errors for existing keys
       })
-
-      console.log('Languages added to database successfully!')
     } catch (error) {
       console.error('Error adding languages to database:', error)
     } finally {
@@ -1018,19 +1061,21 @@ class Helper {
     }
   }
 
-  static async getUsers (isActive, prisma, page, type, relationField, includeInactive = false) {
+  static async getUsers (isActive, prisma, page, type, relationField, includeInactive = false, includeDeleted = false) {
     const perPage = 10
 
     // Calculate the number of items to skip
     const skip = (page - 1) * perPage
 
     const activeCondition = includeInactive ? {} : { active: isActive }
+    const deletedCondition = includeDeleted ? {} : { is_deleted: false }
 
     let [inactiveUsers, totalInactiveUsers] = await prisma.$transaction([
       prisma.user.findMany({
         where: {
           AND: [
             activeCondition,
+            deletedCondition,
             { is_self_signed_up: true },
             { user_type: type }
           ]
@@ -1049,6 +1094,7 @@ class Helper {
           updated_at: true,
           user_type: true,
           active: true,
+          is_deleted: true,
           city: true,
           state: true,
           pincode: true,
@@ -1095,6 +1141,7 @@ class Helper {
         where: {
           AND: [
             activeCondition,
+            deletedCondition,
             { is_self_signed_up: true },
             { user_type: type }
           ]
@@ -1345,8 +1392,31 @@ class Helper {
     const tokenWithoutBearer = token.startsWith('Bearer ') ? token.slice(7, token.length) : token
 
     try {
-      const user = await this.verifyToken(tokenWithoutBearer)
-      req.user = user
+      const tokenUser = await this.verifyToken(tokenWithoutBearer)
+      const prisma = require('../lib/prisma.js')
+      const dbUser = await prisma.user.findUnique({
+        where: { id: tokenUser.id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          user_type: true,
+          active: true,
+          is_deleted: true
+        }
+      })
+      if (!dbUser || dbUser.is_deleted === true) {
+        return { status: 401, message: errorCodes.USER_ACCOUNT_DELETED }
+      }
+      if (dbUser.active === false) {
+        return { status: 401, message: errorCodes.USER_NOT_ACTIVE }
+      }
+      req.user = {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        type: dbUser.user_type
+      }
       return null
     } catch (err) {
       return { status: 401, message: errorCodes.TOKEN_EXPIRED }
@@ -1376,40 +1446,33 @@ class Helper {
     return jwt.sign({ id: user.id, email: user.email, type: user.user_type ? user.user_type : user.type, name: user.name }, process.env.REFRESH_SECRET_KEY, { expiresIn: '7d' })
   }
 
+  static generateMobileRefreshToken (user) {
+    return jwt.sign({ id: user.id, email: user.email, type: user.user_type ? user.user_type : user.type, name: user.name }, process.env.REFRESH_SECRET_KEY, { expiresIn: '30d' })
+  }
+
   static async sendOtpSMS (otp, toNumber) {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID
-    const authToken = process.env.TWILIO_AUTH_TOKEN
-
-    const data = qs.stringify({
-      To: `+91${toNumber}`,
-      From: process.env.TWILIO_SENDER_NUMBER,
-      Body: `Your OTP for identity verification on KDR is ${otp}. Please enter this code to continue. Do not share it with anyone.`
-    })
-
     try {
-      const response = await axios.post(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        data,
-        {
-          auth: {
-            username: accountSid,
-            password: authToken
-          },
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        }
-      )
-      console.log('Message sent successfully:', response.data)
-    } catch (error) {
-      console.error('Error sending SMS:', error.response?.data || error.message)
+      const notificationService = require('../services/notification/notificationService')
+      await notificationService.send({
+        templateKey: 'identityVerificationOtp',
+        channel: 'SMS',
+        to: toNumber,
+        data: { otp }
+      })
+    } catch (err) {
+      console.error('Error sending SMS:', err.message)
     }
   }
 
   static async createEmail (customerName, content) {
-    return EmailService.renderLayout({
+    const { renderEmailLayout } = require('../services/email/emailLayoutRenderer')
+    const { getEmailLayout } = require('../services/notification/emailLayoutService')
+    const { headerHtml, footerHtml } = await getEmailLayout()
+    return renderEmailLayout({
       greeting: customerName ? `Hi ${customerName},` : 'Hello,',
-      bodyHtml: content || ''
+      bodyHtml: content || '',
+      headerHtml,
+      footerHtml
     })
   }
 
@@ -1483,7 +1546,49 @@ class Helper {
   }
 
   static async sendTemplatedEmail (templateName, to, variables = {}, attachments = []) {
-    return EmailService.sendTemplate({ templateName, to, variables, attachments })
+    const notificationService = require('../services/notification/notificationService')
+    return notificationService.send({
+      templateKey: templateName,
+      channel: 'EMAIL',
+      to,
+      data: variables,
+      attachments
+    })
+  }
+
+  /**
+   * Central notification API for all channels (email, SMS, WhatsApp, push).
+   * @see services/notification/notificationService.js
+   */
+  static async sendNotification ({ templateKey, channel, userId, to, data, attachments }) {
+    const notificationService = require('../services/notification/notificationService')
+    return notificationService.send({ templateKey, channel, userId, to, data, attachments })
+  }
+
+  static async sendNotificationBulk (payload) {
+    const notificationService = require('../services/notification/notificationService')
+    return notificationService.sendBulk(payload)
+  }
+
+  static async evaluateNotificationRules (payload) {
+    const triggerRuleEngine = require('../services/notification/triggerRuleEngine')
+    return triggerRuleEngine.evaluateContext(payload)
+  }
+
+  /** Pass extra template vars for the next Prisma write(s) (e.g. generated password). */
+  static runWithNotificationContext (context, fn) {
+    const { runWithNotificationContext } = require('../services/notification/notificationContext')
+    return runWithNotificationContext(context, fn)
+  }
+
+  static registerNotificationTableTrigger (tableName, handler) {
+    const { codeTriggerRegistry } = require('../services/notification/triggerRuleEngine')
+    return codeTriggerRegistry.registerTableTrigger(tableName, handler)
+  }
+
+  static registerNotificationRuleTrigger (ruleKey, handler) {
+    const { codeTriggerRegistry } = require('../services/notification/triggerRuleEngine')
+    return codeTriggerRegistry.registerRuleTrigger(ruleKey, handler)
   }
 
   static async createSignatureTrackingRecord (prisma, userId, caseId, caseAgreementId) {
@@ -1812,6 +1917,8 @@ class Helper {
       case_history: {
         orderBy: { created_at: 'asc' },
         select: {
+          id: true,
+          case_event_id: true,
           created_at: true,
           case_events: {
             select: { title: true, description: true, sequence: true }
@@ -1868,7 +1975,7 @@ class Helper {
     const active = this.adminActiveCaseStatusesFilter()
     const [mediators, firstParties, secondParties, statuses] = await Promise.all([
       prisma.user.findMany({
-        where: { user_type: 'MEDIATOR', active: true },
+        where: { user_type: 'MEDIATOR', active: true, is_deleted: false },
         select: {
           id: true,
           name: true,

@@ -1,0 +1,25 @@
+{
+  "name": "KADR.live — Online Mediation",
+  "short_name": "KADR",
+  "description": "India's private online mediation platform. Settle disputes affordably, confidentially, and online.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#8C4820",
+  "background_color": "#FAF0E0",
+  "icons": [
+    {
+      "src": "/admin/img/icons/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/admin/img/icons/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
