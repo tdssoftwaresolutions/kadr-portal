@@ -25,9 +25,6 @@ export function firstPartyNeedsRating (event) {
 }
 
 export function secondPartyNeedsRating (event) {
-  console.log('Checking second party rating for event:', event)
-  console.log(isPastKadrCaseMeeting(event))
-  console.log(event.second_party_rating)
   return isPastKadrCaseMeeting(event) && (event.second_party_rating === null || event.second_party_rating === '')
 }
 
@@ -37,7 +34,6 @@ export function clientNeedsMeetingFeedback (event, userId, selectedCase) {
     return firstPartyNeedsRating(event)
   }
   if (selectedCase.user_cases_second_partyTouser && selectedCase.user_cases_second_partyTouser.id === userId) {
-    console.log(secondPartyNeedsRating(event))
     return secondPartyNeedsRating(event)
   }
   return false

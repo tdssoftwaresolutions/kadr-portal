@@ -1,0 +1,46 @@
+appId: live.kadr.portal
+productName: Kadr Portal
+copyright: Copyright © Kadr
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**
+  - desktop/**
+  - lib/**
+  - routes/**
+  - controller/**
+  - services/**
+  - middleware/**
+  - utils/**
+  - prisma/**
+  - server.js
+  - package.json
+  - node_modules/.prisma/**/*
+  - node_modules/@prisma/**/*
+  - "!src/**"
+  - "!public/**"
+  - "!**/*.md"
+  - "!**/.env*"
+
+asarUnpack:
+  - node_modules/.prisma/**/*
+  - node_modules/@prisma/**/*
+  - node_modules/puppeteer/**
+
+mac:
+  category: public.app-category.business
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  target:
+    - dmg
+    - zip
+
+dmg:
+  title: Kadr Portal
+
+extraResources:
+  - from: .env.desktop.example
+    to: .env.example

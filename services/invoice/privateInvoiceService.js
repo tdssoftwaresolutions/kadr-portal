@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../../lib/prisma')
 const { createError } = require('../../utils/errors')
 const errorCodes = require('../../utils/errors/errorCodes')
 const { assertFeature } = require('../subscription/entitlementService')
@@ -6,8 +6,6 @@ const {
   resolvePrivateInvoiceStatus,
   repairInvalidPrivateInvoiceStatuses
 } = require('../../utils/privateInvoiceStatus')
-
-const prisma = new PrismaClient()
 
 function roundMoney (n) {
   return Math.round((Number(n) + Number.EPSILON) * 100) / 100

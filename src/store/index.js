@@ -1,7 +1,9 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import axios from 'axios'
 import VueCookies from 'vue-cookies'
+import { apiClient } from '../utils/apiClient'
+import { setTokens, clearTokens } from '../utils/tokenStorage'
+import { getMobileClientHeaders, isNativeApp } from '../utils/platform'
 import alert from './alertStore'
 import spinner from './spinnerStore'
 import { hasUnlockedFeature, isPremiumGateError } from '../utils/mediatorEntitlements'
@@ -57,6 +59,7 @@ const GET_ADMIN_ACTIVE_CASES_ENDPOINT = '/activeCases'
 const GET_ADMIN_CASE_META_ENDPOINT = '/caseManagementMeta'
 const POST_ADMIN_ASSIGN_CASE_MEDIATOR_ENDPOINT = '/assignCaseMediator'
 const GET_SETTINGS_ENDPOINT = '/settings'
+const GET_ADMIN_WEBSITE_CONTENT_ENDPOINT = '/admin/website-content'
 const POST_SETTINGS_ENDPOINT = '/settings'
 const POST_CASE_COMMISSION_ENDPOINT = '/cases/commission'
 const GET_INVOICES_ENDPOINT = '/invoices'
@@ -72,7 +75,6 @@ const ADMIN_BLOG_CATEGORIES_ENDPOINT = '/blog-categories'
 const ADMIN_BLOG_TAGS_ENDPOINT = '/blog-tags'
 const ADMIN_USERS_ENDPOINT = '/users'
 const ADMIN_USERS_ACTIVE_ENDPOINT = '/users/active'
-const REFRESH_TOKEN_ENDPOINT = '/refresh-token'
 const SAVE_NOTE_ENDPOINT = '/saveNote'
 const SUBMIT_AGREEMENT_SIGNATURE = '/submitAgreementSignature'
 const GET_DASHBOARD_CONTENT_ENDPOINT = '/getDashboardContent'
@@ -97,6 +99,12 @@ const ADMIN_MEDIATOR_OFFBOARDING_PREVIEW = '/admin/mediators'
 const ADMIN_PREMIUM_FEATURES = '/admin/premium-features'
 const ADMIN_REWARD_FULFILLMENT_RULES = '/admin/reward-fulfillment-rules'
 const ADMIN_REWARD_FULFILLMENT_CATALOG = '/admin/reward-fulfillment-catalog'
+const ADMIN_NOTIFICATION_TEMPLATES = '/admin/notifications/templates'
+const ADMIN_NOTIFICATION_CHANNEL_SETTINGS = '/admin/notifications/channel-settings'
+const ADMIN_NOTIFICATION_USERS = '/admin/notifications/users'
+const ADMIN_NOTIFICATION_SEND = '/admin/notifications/send'
+const ADMIN_NOTIFICATION_SEND_LOGS = '/admin/notifications/send-logs'
+const ADMIN_NOTIFICATION_PREVIEW_LAYOUT = '/admin/notifications/preview-email-layout'
 const ADMIN_REWARD_CATALOG_ENDPOINT = '/admin/reward-catalog'
 const ADMIN_REWARD_ORDERS_ENDPOINT = '/admin/reward-orders'
 const GET_CALENDAR_INIT_ENDPOINT = '/getCalendarInit'
@@ -141,11 +149,6 @@ const getDefaultState = () => {
   }
 }
 
-const apiClient = axios.create({
-  baseURL: '/api',
-  timeout: 100000
-})
-
 function parseApiResponse (body) {
   if (!body?.success) {
     const message = body?.error?.message || body?.message || 'Request failed'
@@ -164,40 +167,6 @@ const plugin = (router) => (store) => {
   store.$cookies = VueCookies
   store.$router = router
 }
-
-apiClient.interceptors.request.use((config) => {
-  const excludedEndpoints = [LOGIN_ENDPOINT, GET_EXISTING_USER_ENDPOINT, RESET_PASSWORD_ENDPOINT, CONFIRM_PASSWORD_CHANGE_ENDPOINT, NEW_USER_SIGNUP_ENDPOINT, NEW_MEDIATOR_SIGNUP_ENDPOINT, IS_EMAIL_EXIST_ENDPOINT, POST_PUBLIC_WEBSITE_CONTACT_LEAD_ENDPOINT]
-  const isExcluded = excludedEndpoints.some((endpoint) =>
-    config.url.includes(endpoint)
-  )
-  if (!isExcluded) {
-    const token = VueCookies.get('accessToken')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-  }
-  return config
-})
-
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response.data.errorCode === 'E102') {
-      try {
-        const { data } = await apiClient.post(REFRESH_TOKEN_ENDPOINT)
-        VueCookies.set('accessToken', data.accessToken, '1d', '/', '', true, 'None')
-        const originalRequest = error.config
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
-        return apiClient(originalRequest) // Retry the request
-      } catch (error) {
-        console.error('Refreshing tokens failed:', error)
-        throw error
-      }
-    } else {
-      return Promise.reject(error)
-    }
-  }
-)
 
 export default (router) => {
   const store = new Vuex.Store({
@@ -254,9 +223,20 @@ export default (router) => {
       async login ({ commit, dispatch }, { username, password }) {
         try {
           dispatch('spinner/showSpinner')
-          const { data } = await apiClient.post(LOGIN_ENDPOINT, { username, password })
+          const { data } = await apiClient.post(
+            LOGIN_ENDPOINT,
+            {
+              username,
+              password,
+              ...(isNativeApp() ? { clientType: 'mobile' } : {})
+            },
+            { headers: getMobileClientHeaders() }
+          )
           if (!data.success) throw new Error(data.error.message)
-          store.$cookies.set('accessToken', data.data.accessToken, '1d', '/', '', true, 'None')
+          await setTokens({
+            accessToken: data.data.accessToken,
+            refreshToken: data.data.refreshToken
+          })
           store.$router.push({ name: 'dashboard.home' })
           return data
         } catch (error) {
@@ -399,6 +379,7 @@ export default (router) => {
         try {
           dispatch('spinner/showSpinner')
           const { data } = await apiClient.get(LOGOUT_ENDPOINT)
+          await clearTokens()
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
@@ -841,6 +822,112 @@ export default (router) => {
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
           dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        }
+      },
+      async getNotificationTemplates ({ dispatch }, { channel } = {}) {
+        try {
+          const qs = channel ? `?channel=${encodeURIComponent(channel)}` : ''
+          const { data } = await apiClient.get(`${ADMIN_NOTIFICATION_TEMPLATES}${qs}`)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async saveNotificationTemplate ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(ADMIN_NOTIFICATION_TEMPLATES, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Template saved', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async deleteNotificationTemplate ({ dispatch }, { id }) {
+        try {
+          const { data } = await apiClient.delete(`${ADMIN_NOTIFICATION_TEMPLATES}/${id}`)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Template deleted', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async previewNotificationTemplate ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(`${ADMIN_NOTIFICATION_TEMPLATES}/preview`, payload)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async getNotificationChannelSettings ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_NOTIFICATION_CHANNEL_SETTINGS)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async saveNotificationChannelSettings ({ dispatch }, payload) {
+        try {
+          const { data } = await apiClient.post(ADMIN_NOTIFICATION_CHANNEL_SETTINGS, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Channel settings saved', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async searchNotificationUsers ({ dispatch }, { q, types }) {
+        try {
+          const params = new URLSearchParams()
+          if (q) params.set('q', q)
+          if (types && types.length) params.set('types', types.join(','))
+          const query = params.toString()
+          const { data } = await apiClient.get(query ? `${ADMIN_NOTIFICATION_USERS}?${query}` : ADMIN_NOTIFICATION_USERS)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async sendAdminNotifications ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner', null, { root: true })
+          const { data } = await apiClient.post(ADMIN_NOTIFICATION_SEND, payload)
+          const result = parseApiResponse(data)
+          dispatch('alert/showAlert', { message: result.message || 'Notifications sent', type: 'success' }, { root: true })
+          return result
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner', null, { root: true })
+        }
+      },
+      async getNotificationSendLogs ({ dispatch }) {
+        try {
+          const { data } = await apiClient.get(ADMIN_NOTIFICATION_SEND_LOGS)
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
+          return { success: false, error }
+        }
+      },
+      async previewEmailLayout ({ dispatch }, { headerHtml, footerHtml }) {
+        try {
+          const { data } = await apiClient.post(ADMIN_NOTIFICATION_PREVIEW_LAYOUT, { headerHtml, footerHtml })
+          return parseApiResponse(data)
+        } catch (error) {
+          dispatchApiErrorAlert(dispatch, error)
           return { success: false, error }
         }
       },
@@ -1562,6 +1649,185 @@ export default (router) => {
           const { data } = await apiClient.post(POST_SETTINGS_ENDPOINT, payload)
           if (!data.success) throw new Error(data.error?.message || 'Request failed')
           dispatch('alert/showAlert', { message: data.message || 'Settings saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async getAdminWebsiteContent ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.get(GET_ADMIN_WEBSITE_CONTENT_ENDPOINT)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteSettings ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/settings`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteBanner ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.put(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/banner`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteTestimonial ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/testimonials`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteAdminWebsiteTestimonial ({ dispatch }, id) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/testimonials/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Deleted', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsitePricingPlan ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/pricing-plans`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteAdminWebsitePricingPlan ({ dispatch }, id) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/pricing-plans/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Deleted', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteFaqCategory ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/faq-categories`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteAdminWebsiteFaqCategory ({ dispatch }, id) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/faq-categories/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Deleted', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async saveAdminWebsiteFaqItem ({ dispatch }, payload) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/faq-items`, payload)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Saved', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async deleteAdminWebsiteFaqItem ({ dispatch }, id) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.delete(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/faq-items/${id}`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Deleted', type: 'success' }, { root: true })
+          return data
+        } catch (error) {
+          const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+          dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+          return { success: false, error }
+        } finally {
+          dispatch('spinner/hideSpinner')
+        }
+      },
+      async regenerateAdminWebsiteContent ({ dispatch }) {
+        try {
+          dispatch('spinner/showSpinner')
+          const { data } = await apiClient.post(`${GET_ADMIN_WEBSITE_CONTENT_ENDPOINT}/regenerate`)
+          if (!data.success) throw new Error(data.error?.message || 'Request failed')
+          dispatch('alert/showAlert', { message: data.message || 'Pages regenerated', type: 'success' }, { root: true })
           return data
         } catch (error) {
           const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'

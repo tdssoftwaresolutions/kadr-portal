@@ -27,6 +27,26 @@
       </template>
     </iq-card>
 
+    <iq-card v-if="earningOptions.length" class="mb-4">
+      <template v-slot:headerTitle>
+        <h4 class="card-title mb-0">How to earn points</h4>
+      </template>
+      <template v-slot:body>
+        <p class="small text-muted mb-3">
+          Points are configured by KADR admin. Amounts below reflect current settings. Editing or republishing content does not earn again; deleting content may reverse points already awarded.
+        </p>
+        <div class="earning-options-list">
+          <div v-for="opt in earningOptions" :key="opt.reasonCode" class="earning-option-row">
+            <div class="earning-option-row__points">+{{ opt.points.toLocaleString() }}</div>
+            <div>
+              <div class="earning-option-row__title">{{ opt.title }}</div>
+              <div class="earning-option-row__desc small text-muted">{{ opt.description }}</div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </iq-card>
+
     <h5 class="mb-3">Redeem rewards</h5>
     <p v-if="loading" class="text-muted">Loading rewards…</p>
     <div v-else-if="sortedCatalog.length" class="reward-catalog-grid">
@@ -107,6 +127,7 @@ export default {
       perPage: 20,
       loading: false,
       referralCode: '',
+      earningOptions: [],
       copied: false,
       redeemingId: null,
       tableFields: [
@@ -145,6 +166,7 @@ export default {
           this.transactions = res.data.transactions || []
           this.total = res.data.total || 0
           this.referralCode = res.data.referralCode || ''
+          this.earningOptions = res.data.earningOptions || []
         }
       } finally {
         this.loading = false
@@ -246,5 +268,30 @@ export default {
 .reward-catalog-card__locked small {
   font-weight: 400;
   margin-top: 0.25rem;
+}
+.earning-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.earning-option-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eef2f6;
+}
+.earning-option-row:last-child {
+  border-bottom: none;
+}
+.earning-option-row__points {
+  min-width: 4rem;
+  font-weight: 700;
+  color: #1a5f9e;
+  font-size: 1.05rem;
+}
+.earning-option-row__title {
+  font-weight: 600;
+  margin-bottom: 0.15rem;
 }
 </style>

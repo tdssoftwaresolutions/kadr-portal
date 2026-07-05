@@ -1,12 +1,10 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../../lib/prisma')
 const {
   computeProExpiresAt,
   startOfTodayIst,
   isProActiveAt,
   formatSubscriptionExpiryDate
 } = require('../../utils/subscriptionDates')
-
-const prisma = new PrismaClient()
 
 const PRO_DURATION_DAYS = 30
 

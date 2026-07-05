@@ -1,10 +1,14 @@
 const path = require('path')
 
+const isCapacitorBuild = process.env.VUE_APP_CAPACITOR === '1'
+
 module.exports = {
   lintOnSave: process.env.NODE_ENV !== 'production',
-  publicPath: process.env.NODE_ENV === 'production'
-    ? process.env.BASE_URL + '/admin/'
-    : '/admin/',
+  publicPath: isCapacitorBuild
+    ? './'
+    : (process.env.NODE_ENV === 'production'
+        ? process.env.BASE_URL + '/admin/'
+        : '/admin/'),
   devServer: {
     proxy: {
       '/api': {

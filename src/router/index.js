@@ -13,6 +13,8 @@ import GoogleAccountManagement from '../views/AdminControllers/GoogleAccountMana
 import AdminBlogTaxonomyView from '../views/AdminControllers/AdminBlogTaxonomyView.vue'
 import AdminManagementView from '../views/AdminControllers/AdminManagementView.vue'
 import AdminSettingsView from '../views/AdminControllers/AdminSettingsView.vue'
+import AdminNotificationsView from '../views/AdminControllers/AdminNotificationsView.vue'
+import AdminWebsiteContentView from '../views/AdminControllers/AdminWebsiteContentView.vue'
 import AdminCalendar from '../views/AdminControllers/AdminCalendar.vue'
 import AdminCorrespondenceInbox from '../views/AdminControllers/AdminCorrespondenceInbox.vue'
 /** Mediator */
@@ -133,6 +135,18 @@ const appChildRoute = (prop) => [
     name: prop + '.settings',
     meta: { name: 'Settings', adminPage: 'settings' },
     component: AdminSettingsView
+  },
+  {
+    path: 'notifications',
+    name: prop + '.notifications',
+    meta: { name: 'Notifications', adminPage: 'notifications' },
+    component: AdminNotificationsView
+  },
+  {
+    path: 'website-content',
+    name: prop + '.website-content',
+    meta: { name: 'Website content', adminPage: 'website-content' },
+    component: AdminWebsiteContentView
   },
   {
     path: 'invoices',
@@ -288,9 +302,11 @@ const routes = [
   }
 ]
 
+const routerBase = process.env.VUE_APP_CAPACITOR === '1' ? './' : '/admin/'
+
 const router = new VueRouter({
   mode: 'history',
-  base: '/admin/',
+  base: routerBase,
   routes
 })
 

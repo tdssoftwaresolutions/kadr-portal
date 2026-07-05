@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma.js')
 const { createError } = require('./errors')
 const errorCodes = require('./errors/errorCodes')
 
@@ -13,6 +12,8 @@ const ALL_ADMIN_PAGES = [
   'invoices',
   'reward-orders',
   'settings',
+  'notifications',
+  'website-content',
   'admins'
 ]
 

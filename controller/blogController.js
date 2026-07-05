@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma.js')
 const helper = require('../utils/helper')
 const { awardRewardPoints } = require('../services/reward/rewardService')
 const { success, error } = require('../utils/responses')

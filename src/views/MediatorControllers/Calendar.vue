@@ -442,9 +442,7 @@ export default {
       }
       const endDate = new Date(this.newAppointment.start)
       endDate.setMinutes(endDate.getMinutes() + 30)
-      console.log(this.newAppointment)
       if (this.newAppointment.start) {
-        console.log(this.newAppointment)
         this.storeNewEvent({
           id: this.incrementalId++,
           title: this.newAppointment.title,
@@ -508,7 +506,6 @@ export default {
           startDate: event.start,
           type: event.type.toUpperCase()
         })
-        console.log(this.dashboardContent.todaysEvent)
       }
       this.loading = false
     },

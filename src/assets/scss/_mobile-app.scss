@@ -1,0 +1,58 @@
+// Capacitor / native shell overrides
+body.kadr-native-app {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+
+  .wrapper .iq-sidebar,
+  .iq-sidebar-logo {
+    display: none !important;
+  }
+
+  .content-page,
+  body.compact-sidebar .content-page {
+    margin-left: 0 !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-top: calc(72px + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .mobile-top-nav-shell {
+    padding-top: env(safe-area-inset-top, 0px);
+    min-height: calc(72px + env(safe-area-inset-top, 0px));
+  }
+
+  .table-responsive,
+  .iq-table,
+  .vuejs-datatable {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .iq-card .card-body {
+    padding: 1rem;
+  }
+
+  .modal-dialog {
+    margin: 0.75rem;
+    max-width: calc(100% - 1.5rem);
+  }
+
+  .fc-toolbar.fc-header-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .fc-toolbar-title {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 991px) {
+  .iq-card .table td,
+  .iq-card .table th {
+    white-space: nowrap;
+  }
+}

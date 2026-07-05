@@ -1,6 +1,5 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../lib/prisma')
 const { v4: uuidv4 } = require('uuid')
-const prisma = new PrismaClient()
 const helper = require('../utils/helper')
 const errorCodes = require('../utils/errors/errorCodes')
 const { createError } = require('../utils/errors')

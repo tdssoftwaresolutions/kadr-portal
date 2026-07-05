@@ -1,9 +1,7 @@
 const cron = require('node-cron')
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../../lib/prisma')
 const helper = require('../../utils/helper')
 const { CaseSubTypes } = require('../../utils/caseConstants')
-
-const prisma = new PrismaClient()
 
 const DAILY_FEEDBACK_REMINDER_TITLE = 'DAILY_FEEDBACK_REMINDER'
 

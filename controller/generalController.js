@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma.js')
 const helper = require('../utils/helper')
 const errorCodes = require('../utils/errors/errorCodes')
 const { v4: uuidv4 } = require('uuid')
@@ -18,6 +17,7 @@ const {
   normalizeIncomingPermissions,
   defaultFullPermissions
 } = require('../utils/adminPermissionHelpers')
+const { runWithNotificationContext } = require('../services/notification/notificationContext')
 
 const calendarEventSelect = {
   id: true,
@@ -335,26 +335,35 @@ module.exports = {
 
     const priorUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { user_type: true, active: true, is_deleted: true }
+      select: { user_type: true, active: true, is_deleted: true, name: true, email: true }
     })
     if (!priorUser || priorUser.is_deleted) throw createError(errorCodes.NOT_FOUND)
 
-    const updatedUser = await prisma.user.update({
-      where: {
-        id: userId
+    const updatedUser = await runWithNotificationContext(
+      {
+        userId,
+        data: shouldSendWelcomeEmail
+          ? {
+              password: generatedPassword,
+              loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
+            }
+          : {}
       },
-      data: {
-        active: isActive,
-        ...(hashPassword ? { password_hash: hashPassword } : {})
-      },
-      select: {
-        name: true,
-        email: true,
-        phone_number: true,
-        user_type: true,
-        active: true
-      }
-    })
+      () => prisma.user.update({
+        where: { id: userId },
+        data: {
+          active: isActive,
+          ...(hashPassword ? { password_hash: hashPassword } : {})
+        },
+        select: {
+          name: true,
+          email: true,
+          phone_number: true,
+          user_type: true,
+          active: true
+        }
+      })
+    )
 
     if (isActive && priorUser.active === false && updatedUser.user_type === 'MEDIATOR') {
       try {
@@ -363,7 +372,6 @@ module.exports = {
         console.error('Reward on mediator approval:', rewardErr)
       }
     }
-    console.log(caseId)
     if (caseId) {
       let caseSubStatus = ''
       switch (caseType) {
@@ -377,7 +385,6 @@ module.exports = {
           caseSubStatus = CaseSubTypes.PENDING_NOTICE_PAYMENT
           break
       }
-      console.log(caseSubStatus)
       const newCase = await prisma.cases.update({
         where: {
           id: caseId
@@ -396,14 +403,7 @@ module.exports = {
         subStatusId: newCase.sub_status
       })
     }
-    if (shouldSendWelcomeEmail) {
-      await helper.sendTemplatedEmail('welcomeCredentials', updatedUser.email, {
-        recipientName: updatedUser.name,
-        email: updatedUser.email,
-        password: generatedPassword,
-        loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
-      })
-    }
+    // Welcome email: services/notification/registerCodeTriggers.js (user active + password in context).
     success(res, {}, 'User updated successfully')
   },
   newCase: async function (req, res, next) {
@@ -1100,8 +1100,6 @@ module.exports = {
           sub_status: null
         }
       })
-      console.log(caseRecord)
-      console.log(agreementRecord.id)
       const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.user_cases_first_partyTouser.id, null, agreementRecord.id)
 
       await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_first_partyTouser.email, {

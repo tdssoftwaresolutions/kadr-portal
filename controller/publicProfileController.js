@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../lib/prisma.js')
 const { success, error } = require('../utils/responses')
 const striptags = require('striptags')
 const { extractYoutubeVideoId } = require('../utils/youtube')

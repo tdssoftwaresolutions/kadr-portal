@@ -1,5 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = require('../../lib/prisma.js')
 const { ensureMediatorReferralCode } = require('../../utils/referralCode')
 
 const REWARD_SETTING_DEFAULTS = [
@@ -20,8 +19,27 @@ const REASON_LABELS = {
   blog_10_comments: '10 comments on your blog',
   meeting_feedback: 'Meeting feedback submitted',
   referral_invite: 'Referred a new mediator',
-  reward_redemption: 'Reward redemption'
+  reward_redemption: 'Reward redemption',
+  blog_published_reversal: 'Blog deleted — points reversed',
+  blog_10_comments_reversal: 'Blog deleted — comment milestone reversed',
+  video_reel_shared_reversal: 'Video reel deleted — points reversed'
 }
+
+const REVERSAL_REASON_CODES = {
+  blog_published: 'blog_published_reversal',
+  blog_10_comments: 'blog_10_comments_reversal',
+  video_reel_shared: 'video_reel_shared_reversal'
+}
+
+const EARNING_GUIDE = [
+  { reasonCode: 'mediator_join', title: 'Join KADR as a mediator', description: 'Earn points when your mediator account is approved.' },
+  { reasonCode: 'case_closed', title: 'Close a case successfully', description: 'Earn points when a case you mediated is marked closed.' },
+  { reasonCode: 'blog_published', title: 'Publish a blog post', description: 'Earn points when you publish an original blog on KADR. Editing an already-published blog does not earn again; deleting it reverses the points.' },
+  { reasonCode: 'blog_10_comments', title: 'Get 10 comments on your blog', description: 'Earn a bonus when one of your published blogs receives at least 10 comments.' },
+  { reasonCode: 'video_reel_shared', title: 'Share a video reel', description: 'Earn points when you add a new video reel. Updates do not earn again; deleting reverses the points.' },
+  { reasonCode: 'meeting_feedback', title: 'Submit meeting feedback', description: 'Earn points when you complete feedback for a mediation session.' },
+  { reasonCode: 'referral_invite', title: 'Refer another mediator', description: 'Earn points when someone you referred is approved as a mediator.' }
+]
 
 const REASON_TO_SETTING_KEY = {
   mediator_join: 'reward_points_mediator_join',
@@ -103,6 +121,102 @@ async function awardRewardPoints ({
 
   if (tx) return run(tx)
   return prisma.$transaction(run)
+}
+
+/**
+ * Reverse a prior award using the original transaction amount (not current admin settings).
+ */
+async function revokeRewardPointsForReference ({
+  mediatorId,
+  reasonCode,
+  referenceId,
+  tx = null
+}) {
+  if (!mediatorId || !reasonCode || referenceId == null) return null
+  const db = tx || prisma
+  const ref = String(referenceId)
+  const reversalCode = REVERSAL_REASON_CODES[reasonCode] || `${reasonCode}_reversal`
+
+  const award = await db.mediator_reward_transactions.findFirst({
+    where: {
+      mediator_id: mediatorId,
+      reason_code: reasonCode,
+      reference_id: ref
+    }
+  })
+  if (!award || award.points <= 0) return null
+
+  const existingReversal = await db.mediator_reward_transactions.findFirst({
+    where: {
+      mediator_id: mediatorId,
+      reason_code: reversalCode,
+      reference_id: ref
+    }
+  })
+  if (existingReversal) return existingReversal
+
+  const pointsToDeduct = award.points
+  const label = REASON_LABELS[reversalCode] || `Reversed: ${reasonCode}`
+
+  const run = async (client) => {
+    const user = await client.user.findUnique({
+      where: { id: mediatorId },
+      select: { reward_points_balance: true }
+    })
+    const currentBalance = user?.reward_points_balance ?? 0
+    const decrementBy = Math.min(pointsToDeduct, Math.max(0, currentBalance))
+
+    if (decrementBy > 0) {
+      await client.user.update({
+        where: { id: mediatorId },
+        data: { reward_points_balance: { decrement: decrementBy } }
+      })
+    }
+
+    return client.mediator_reward_transactions.create({
+      data: {
+        mediator_id: mediatorId,
+        points: -pointsToDeduct,
+        reason_code: reversalCode,
+        description: label,
+        reference_id: ref
+      }
+    })
+  }
+
+  if (tx) return run(tx)
+  return prisma.$transaction(run)
+}
+
+async function revokeContentRewards ({ mediatorId, referenceId, reasonCodes, tx = null }) {
+  if (!mediatorId || !referenceId || !Array.isArray(reasonCodes)) return []
+  const results = []
+  for (const reasonCode of reasonCodes) {
+    const row = await revokeRewardPointsForReference({
+      mediatorId,
+      reasonCode,
+      referenceId,
+      tx
+    })
+    if (row) results.push(row)
+  }
+  return results
+}
+
+async function listRewardEarningOptions () {
+  await ensureRewardSettings()
+  const options = []
+  for (const row of EARNING_GUIDE) {
+    const points = await getPointsForReason(row.reasonCode)
+    if (points <= 0) continue
+    options.push({
+      reasonCode: row.reasonCode,
+      title: row.title,
+      description: row.description,
+      points
+    })
+  }
+  return options
 }
 
 async function listActiveCatalogForMediator (balance) {
@@ -296,11 +410,13 @@ async function getMediatorRewardSummary (mediatorId, page = 1, perPage = 20) {
   ])
   const balance = user?.reward_points_balance ?? 0
   const catalog = await listActiveCatalogForMediator(balance)
+  const earningOptions = await listRewardEarningOptions()
 
   return {
     balance,
     referralCode: user?.referral_code ?? null,
     catalog,
+    earningOptions,
     transactions,
     total,
     page: Math.max(1, page),
@@ -346,9 +462,13 @@ async function onMediatorApproved (mediatorId, tx = null) {
 module.exports = {
   REWARD_SETTING_DEFAULTS,
   REASON_LABELS,
+  EARNING_GUIDE,
   ensureRewardSettings,
   getPointsForReason,
   awardRewardPoints,
+  revokeRewardPointsForReference,
+  revokeContentRewards,
+  listRewardEarningOptions,
   getMediatorRewardSummary,
   listActiveCatalogForMediator,
   listCatalogAdmin,

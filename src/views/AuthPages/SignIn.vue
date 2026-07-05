@@ -45,8 +45,9 @@ export default {
       loading: false
     }
   },
-  mounted () {
-    if (this.isSessionAvailable()) {
+  async mounted () {
+    const { hasStoredSession } = await import('../../utils/tokenStorage')
+    if (await hasStoredSession()) {
       this.$router.push({ name: 'dashboard.home' })
     }
   },

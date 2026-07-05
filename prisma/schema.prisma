@@ -46,6 +46,7 @@ model user {
   events                         events[]
   notes                          notes[]
   notifications                  notifications[]
+  push_devices                   user_push_devices[]
   transactions                   transactions[]
   blog_comments                  blog_comments[]
   mediator_bank_accounts         mediator_bank_accounts[]
@@ -584,6 +585,19 @@ model notifications {
   @@index([user_id], map: "fk_notifications_user")
 }
 
+model user_push_devices {
+  id         String   @id @default(uuid()) @db.Char(36)
+  user_id    String   @db.Char(36)
+  token      String   @db.VarChar(512)
+  platform   String   @db.VarChar(16)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  updated_at DateTime @updatedAt @db.DateTime(0)
+  user       user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_push_devices_user")
+
+  @@unique([user_id, token], map: "uq_push_user_token")
+  @@index([user_id], map: "idx_push_devices_user")
+}
+
 model case_events {
   id                String            @id @default(uuid()) @db.VarChar(36)
   status_id         String            @db.VarChar(255)
@@ -786,4 +800,185 @@ model website_contact_messages {
   admin       user?                          @relation("website_contact_message_admin", fields: [admin_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_website_contact_msg_admin")
 
   @@index([thread_id, created_at], map: "idx_website_contact_msg_thread_created")
+}
+
+enum notification_channel {
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+}
+
+enum notification_trigger_operator {
+  FIELD_CHANGED
+  CHANGED_TO
+  BECAME_TRUE
+  BECAME_FALSE
+  EQ
+  NEQ
+  NOT_EMPTY
+}
+
+model notification_templates {
+  id           String               @id @default(uuid()) @db.Char(36)
+  template_key String               @db.VarChar(120)
+  channel      notification_channel
+  name         String               @db.VarChar(255)
+  description  String?              @db.Text
+  subject      String?              @db.VarChar(500)
+  title        String?              @db.VarChar(255)
+  greeting     String?              @db.VarChar(500)
+  body_html    String?              @db.LongText
+  body_text    String?              @db.Text
+  variables    Json?
+  active       Boolean              @default(true)
+  created_at   DateTime?            @default(now()) @db.Timestamp(0)
+  updated_at   DateTime?            @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@unique([template_key, channel], map: "uq_notification_template_key_channel")
+  @@index([channel, active], map: "idx_notification_templates_channel_active")
+}
+
+model notification_channel_settings {
+  channel    notification_channel @id
+  enabled    Boolean              @default(true)
+  provider   String               @default("default") @db.VarChar(64)
+  config     Json?
+  updated_at DateTime?            @default(now()) @updatedAt @db.Timestamp(0)
+}
+
+model notification_trigger_rules {
+  id            String                        @id @default(uuid()) @db.Char(36)
+  rule_key      String                        @unique(map: "uq_notification_rule_key") @db.VarChar(120)
+  name          String                        @db.VarChar(255)
+  description   String?                       @db.Text
+  template_key  String                        @db.VarChar(120)
+  channel       notification_channel
+  table_name    String                        @db.VarChar(120)
+  field_name    String                        @db.VarChar(120)
+  operator      notification_trigger_operator @default(FIELD_CHANGED)
+  compare_value String?                       @db.VarChar(500)
+  active        Boolean                       @default(true)
+  created_at    DateTime?                     @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?                     @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@index([table_name, active], map: "idx_notification_rules_table_active")
+}
+
+model notification_send_logs {
+  id            String               @id @default(uuid()) @db.Char(36)
+  template_key  String               @db.VarChar(120)
+  channel       notification_channel
+  user_id       String?              @db.Char(36)
+  recipient     String?              @db.VarChar(255)
+  status        String               @default("sent") @db.VarChar(32)
+  error_message String?              @db.Text
+  metadata      Json?
+  created_at    DateTime?            @default(now()) @db.Timestamp(0)
+
+  @@index([created_at], map: "idx_notification_send_logs_created")
+  @@index([template_key, channel], map: "idx_notification_send_logs_template")
+}
+
+model website_settings {
+  id              String    @id @default("default") @db.VarChar(16)
+  email           String    @default("contact@kadr.live") @db.VarChar(255)
+  phone           String    @default("") @db.VarChar(64)
+  whatsapp        String    @default("") @db.VarChar(64)
+  address_en      String    @default("Delhi, India") @db.VarChar(500)
+  address_hi      String    @default("Delhi, India") @db.VarChar(500)
+  pricing_note_en String?   @db.Text
+  pricing_note_hi String?   @db.Text
+  updated_at      DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+}
+
+model website_banner {
+  id           String    @id @default("default") @db.VarChar(16)
+  active       Boolean   @default(true)
+  tag_en       String    @default("New") @db.VarChar(64)
+  tag_hi       String    @default("New") @db.VarChar(64)
+  text_en      String    @db.Text
+  text_hi      String    @db.Text
+  link_text_en String?   @db.VarChar(255)
+  link_text_hi String?   @db.VarChar(255)
+  link_url     String?   @db.VarChar(500)
+  updated_at   DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+}
+
+model website_testimonials {
+  id           String    @id @default(uuid()) @db.Char(36)
+  quote_en     String    @db.Text
+  quote_hi     String    @db.Text
+  author_name  String    @db.VarChar(120)
+  role_en      String    @db.VarChar(255)
+  role_hi      String    @db.VarChar(255)
+  avatar_emoji String    @default("🧑") @db.VarChar(8)
+  stars        Int       @default(5)
+  sort_order   Int       @default(0)
+  active       Boolean   @default(true)
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+  updated_at   DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@index([active, sort_order], map: "idx_website_testimonials_active_sort")
+}
+
+model website_pricing_plans {
+  id            String                     @id @default(uuid()) @db.Char(36)
+  name_en       String                     @db.VarChar(120)
+  name_hi       String                     @db.VarChar(120)
+  price_display String                     @db.VarChar(64)
+  period_en     String                     @db.VarChar(255)
+  period_hi     String                     @db.VarChar(255)
+  is_popular    Boolean                    @default(false)
+  badge_en      String?                    @db.VarChar(120)
+  badge_hi      String?                    @db.VarChar(120)
+  button_style  String                     @default("secondary") @db.VarChar(32)
+  sort_order    Int                        @default(0)
+  active        Boolean                    @default(true)
+  created_at    DateTime?                  @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?                  @default(now()) @updatedAt @db.Timestamp(0)
+  features      website_pricing_features[]
+
+  @@index([active, sort_order], map: "idx_website_pricing_plans_active_sort")
+}
+
+model website_pricing_features {
+  id         String                @id @default(uuid()) @db.Char(36)
+  plan_id    String                @db.Char(36)
+  text_en    String                @db.VarChar(500)
+  text_hi    String                @db.VarChar(500)
+  included   Boolean               @default(true)
+  sort_order Int                   @default(0)
+  plan       website_pricing_plans @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_website_pricing_feature_plan")
+
+  @@index([plan_id, sort_order], map: "idx_website_pricing_features_plan_sort")
+}
+
+model website_faq_categories {
+  id         String              @id @default(uuid()) @db.Char(36)
+  name_en    String              @db.VarChar(255)
+  name_hi    String              @db.VarChar(255)
+  sort_order Int                 @default(0)
+  active     Boolean             @default(true)
+  created_at DateTime?           @default(now()) @db.Timestamp(0)
+  updated_at DateTime?           @default(now()) @updatedAt @db.Timestamp(0)
+  items      website_faq_items[]
+
+  @@index([active, sort_order], map: "idx_website_faq_categories_active_sort")
+}
+
+model website_faq_items {
+  id          String                 @id @default(uuid()) @db.Char(36)
+  category_id String                 @db.Char(36)
+  question_en String                 @db.Text
+  question_hi String                 @db.Text
+  answer_en   String                 @db.Text
+  answer_hi   String                 @db.Text
+  sort_order  Int                    @default(0)
+  active      Boolean                @default(true)
+  created_at  DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at  DateTime?              @default(now()) @updatedAt @db.Timestamp(0)
+  category    website_faq_categories @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_website_faq_item_category")
+
+  @@index([category_id, sort_order], map: "idx_website_faq_items_category_sort")
 }

@@ -1,15 +1,12 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../../lib/prisma')
 const { activatePro, downgradeToFree } = require('../subscription/subscriptionService')
 const helper = require('../../utils/helper')
-const emailTemplates = require('../email/templates')
 const {
   compileFlowToSteps,
   normalizeFlowInput,
   parseFlowJson,
   summarizeFlow
 } = require('./fulfillmentFlowCompiler')
-
-const prisma = new PrismaClient()
 
 const ALLOWED_EMAIL_TEMPLATES = new Set([
   'proActivatedFromReward',
@@ -49,7 +46,7 @@ async function runStep (step, context) {
   }
   if (type === 'SEND_EMAIL' && step.template) {
     const templateKey = String(step.template).trim()
-    if (!ALLOWED_EMAIL_TEMPLATES.has(templateKey) || !emailTemplates[templateKey]) return
+    if (!ALLOWED_EMAIL_TEMPLATES.has(templateKey)) return
 
     const user = await prisma.user.findUnique({
       where: { id: context.mediatorId },

@@ -146,7 +146,9 @@ export default {
     MediatorProBadge
   },
   async created () {
-    if (!this.isSessionAvailable()) {
+    const { hasStoredSession } = await import('../utils/tokenStorage')
+    const sessionOk = await hasStoredSession()
+    if (!sessionOk) {
       this.$router.push({ path: '/auth/sign-in' })
     } else {
       const response = await this.$store.dispatch('getUserData')
@@ -211,11 +213,9 @@ export default {
     removeCompactSidebarState () {
       document.body.classList.remove('compact-sidebar')
     },
-    isSessionAvailable () {
-      if (this.$cookies.get('accessToken')) {
-        return true
-      }
-      return false
+    async isSessionAvailable () {
+      const { hasStoredSession } = await import('../utils/tokenStorage')
+      return hasStoredSession()
     },
     async validateData (data) {
       const response = await this.$store.dispatch('verifySignature', {
@@ -275,7 +275,6 @@ export default {
       const response = await this.$store.dispatch('logout')
       if (!response.errorCode) {
         this.$store.commit('clearMediatorSubscription')
-        this.$cookies.remove('accessToken')
         this.isMobileNavOpen = false
         this.$router.push({ path: '/auth/sign-in' })
       }

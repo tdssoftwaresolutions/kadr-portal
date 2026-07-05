@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../../lib/prisma')
 const CaseAssignmentService = require('../../utils/caseAssignment')
 const { CaseTypes, CaseSubTypes } = require('../../utils/caseConstants')
 const { getOrCreateSettings, settingsToMap } = require('../invoice/invoiceService')
@@ -8,7 +8,6 @@ const { createError } = require('../../utils/errors')
 const errorCodes = require('../../utils/errors/errorCodes')
 const { adminHasPage } = require('../../utils/adminPermissionHelpers')
 
-const prisma = new PrismaClient()
 const ACTIVE_STATUSES = [CaseTypes.NEW, CaseTypes.IN_PROGRESS]
 
 async function getActiveCasesForMediator (mediatorId) {

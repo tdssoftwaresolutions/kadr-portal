@@ -1,9 +1,9 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../../lib/prisma')
 const { getEffectiveTier } = require('./subscriptionService')
 const { createError } = require('../../utils/errors')
 const errorCodes = require('../../utils/errors/errorCodes')
 
-const prisma = new PrismaClient()
+let premiumCatalogEnsured = false
 
 const DEFAULT_FEATURES = [
   { feature_key: 'court_case_tracker', label: 'Court case tracker', description: 'Track eCourts cases by CNR', included_in_pro: true, sort_order: 10 },
@@ -12,6 +12,7 @@ const DEFAULT_FEATURES = [
 ]
 
 async function ensurePremiumFeatureCatalog () {
+  if (premiumCatalogEnsured) return
   for (const row of DEFAULT_FEATURES) {
     await prisma.premium_feature_catalog.upsert({
       where: { feature_key: row.feature_key },
@@ -19,6 +20,7 @@ async function ensurePremiumFeatureCatalog () {
       create: { ...row, active: true }
     })
   }
+  premiumCatalogEnsured = true
 }
 
 async function hasFeature (mediatorId, featureKey) {

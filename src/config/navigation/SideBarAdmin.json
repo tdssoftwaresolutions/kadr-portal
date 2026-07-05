@@ -73,6 +73,17 @@
         "class_name": "",
         "is_icon_class": true,
         "icon": "ri-price-tag-3-line"
+      },
+      {
+        "title": "Website content",
+        "name": "app.website-content",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "website-content",
+        "link": { "name": "app.website-content" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-global-line"
       }
     ]
   },
@@ -128,6 +139,17 @@
         "class_name": "",
         "is_icon_class": true,
         "icon": "ri-settings-4-line"
+      },
+      {
+        "title": "Notifications",
+        "name": "app.notifications",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "notifications",
+        "link": { "name": "app.notifications" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-notification-3-line"
       },
       {
         "title": "Admin management",

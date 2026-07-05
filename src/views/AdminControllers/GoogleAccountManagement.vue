@@ -51,7 +51,6 @@ export default {
         const checkPopupClosed = setInterval(() => {
           if (popup.closed) {
             clearInterval(checkPopupClosed)
-            console.log('Popup has been closed')
             ref.initCalendar(true)
           }
         }, 500)

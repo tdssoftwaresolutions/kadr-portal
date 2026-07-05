@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client')
+const prisma = require('../../lib/prisma')
 const { buildInvoiceDateRange } = require('../../utils/invoiceDateRange')
 const { hasFeature } = require('../subscription/entitlementService')
 const { serializeInvoice } = require('./privateInvoiceService')
@@ -10,8 +10,6 @@ const {
   normalizeFilterParam,
   repairInvalidPrivateInvoiceStatuses
 } = require('../../utils/privateInvoiceStatus')
-
-const prisma = new PrismaClient()
 
 function toNumber (value) {
   if (value == null) return 0

@@ -4,7 +4,6 @@ const crypto = require('crypto')
 const errorCodes = require('./errors/errorCodes')
 const { google } = require('googleapis')
 const { CaseTypes } = require('../utils/caseConstants')
-const qs = require('qs')
 const path = require('path')
 const fs = require('fs')
 const axios = require('axios')
@@ -584,6 +583,7 @@ class Helper {
   }
 
   static async deleteBlog (prisma, blogId, userId) {
+    const { revokeContentRewards } = require('../services/reward/rewardService')
     await prisma.$transaction(async (prisma) => {
       // First, verify the blog belongs to the user
       const blog = await prisma.blogs.findFirst({
@@ -595,6 +595,13 @@ class Helper {
       if (!blog) {
         throw new Error('Blog not found or access denied')
       }
+
+      await revokeContentRewards({
+        mediatorId: blog.author_id,
+        referenceId: blogId,
+        reasonCodes: ['blog_published', 'blog_10_comments'],
+        tx: prisma
+      })
 
       // Delete related records first due to foreign key constraints
       await prisma.blog_categories.deleteMany({
@@ -1002,8 +1009,6 @@ class Helper {
         data: languagesToInsert,
         skipDuplicates: true // Prevent errors for existing keys
       })
-
-      console.log('Languages added to database successfully!')
     } catch (error) {
       console.error('Error adding languages to database:', error)
     } finally {
@@ -1388,8 +1393,7 @@ class Helper {
 
     try {
       const tokenUser = await this.verifyToken(tokenWithoutBearer)
-      const { PrismaClient } = require('@prisma/client')
-      const prisma = new PrismaClient()
+      const prisma = require('../lib/prisma.js')
       const dbUser = await prisma.user.findUnique({
         where: { id: tokenUser.id },
         select: {
@@ -1442,40 +1446,33 @@ class Helper {
     return jwt.sign({ id: user.id, email: user.email, type: user.user_type ? user.user_type : user.type, name: user.name }, process.env.REFRESH_SECRET_KEY, { expiresIn: '7d' })
   }
 
+  static generateMobileRefreshToken (user) {
+    return jwt.sign({ id: user.id, email: user.email, type: user.user_type ? user.user_type : user.type, name: user.name }, process.env.REFRESH_SECRET_KEY, { expiresIn: '30d' })
+  }
+
   static async sendOtpSMS (otp, toNumber) {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID
-    const authToken = process.env.TWILIO_AUTH_TOKEN
-
-    const data = qs.stringify({
-      To: `+91${toNumber}`,
-      From: process.env.TWILIO_SENDER_NUMBER,
-      Body: `Your OTP for identity verification on KDR is ${otp}. Please enter this code to continue. Do not share it with anyone.`
-    })
-
     try {
-      const response = await axios.post(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        data,
-        {
-          auth: {
-            username: accountSid,
-            password: authToken
-          },
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        }
-      )
-      console.log('Message sent successfully:', response.data)
-    } catch (error) {
-      console.error('Error sending SMS:', error.response?.data || error.message)
+      const notificationService = require('../services/notification/notificationService')
+      await notificationService.send({
+        templateKey: 'identityVerificationOtp',
+        channel: 'SMS',
+        to: toNumber,
+        data: { otp }
+      })
+    } catch (err) {
+      console.error('Error sending SMS:', err.message)
     }
   }
 
   static async createEmail (customerName, content) {
-    return EmailService.renderLayout({
+    const { renderEmailLayout } = require('../services/email/emailLayoutRenderer')
+    const { getEmailLayout } = require('../services/notification/emailLayoutService')
+    const { headerHtml, footerHtml } = await getEmailLayout()
+    return renderEmailLayout({
       greeting: customerName ? `Hi ${customerName},` : 'Hello,',
-      bodyHtml: content || ''
+      bodyHtml: content || '',
+      headerHtml,
+      footerHtml
     })
   }
 
@@ -1549,7 +1546,49 @@ class Helper {
   }
 
   static async sendTemplatedEmail (templateName, to, variables = {}, attachments = []) {
-    return EmailService.sendTemplate({ templateName, to, variables, attachments })
+    const notificationService = require('../services/notification/notificationService')
+    return notificationService.send({
+      templateKey: templateName,
+      channel: 'EMAIL',
+      to,
+      data: variables,
+      attachments
+    })
+  }
+
+  /**
+   * Central notification API for all channels (email, SMS, WhatsApp, push).
+   * @see services/notification/notificationService.js
+   */
+  static async sendNotification ({ templateKey, channel, userId, to, data, attachments }) {
+    const notificationService = require('../services/notification/notificationService')
+    return notificationService.send({ templateKey, channel, userId, to, data, attachments })
+  }
+
+  static async sendNotificationBulk (payload) {
+    const notificationService = require('../services/notification/notificationService')
+    return notificationService.sendBulk(payload)
+  }
+
+  static async evaluateNotificationRules (payload) {
+    const triggerRuleEngine = require('../services/notification/triggerRuleEngine')
+    return triggerRuleEngine.evaluateContext(payload)
+  }
+
+  /** Pass extra template vars for the next Prisma write(s) (e.g. generated password). */
+  static runWithNotificationContext (context, fn) {
+    const { runWithNotificationContext } = require('../services/notification/notificationContext')
+    return runWithNotificationContext(context, fn)
+  }
+
+  static registerNotificationTableTrigger (tableName, handler) {
+    const { codeTriggerRegistry } = require('../services/notification/triggerRuleEngine')
+    return codeTriggerRegistry.registerTableTrigger(tableName, handler)
+  }
+
+  static registerNotificationRuleTrigger (ruleKey, handler) {
+    const { codeTriggerRegistry } = require('../services/notification/triggerRuleEngine')
+    return codeTriggerRegistry.registerRuleTrigger(ruleKey, handler)
   }
 
   static async createSignatureTrackingRecord (prisma, userId, caseId, caseAgreementId) {
