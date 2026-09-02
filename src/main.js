@@ -1,5 +1,7 @@
 import 'mutationobserver-shim'
 import { createApp } from 'vue'
+import { createBootstrap } from 'bootstrap-vue-next'
+import * as BootstrapVueNextComponents from 'bootstrap-vue-next'
 import './plugins/bootstrap-vue'
 import App from './App.vue'
 import router from './router'
@@ -20,6 +22,22 @@ async function startApp () {
 
   app.use(router)
   app.use(store)
+  app.use(createBootstrap())
+
+  // Globally register every BootstrapVueNext component (names start with "B", e.g.
+  // BButton) so existing kebab-case tags (<b-button>, <b-table>, …) resolve without
+  // per-file imports across the 75 files that use them. Vue maps PascalCase
+  // registrations to kebab-case tags automatically. Directives (vB*) are handled
+  // separately where needed.
+  Object.keys(BootstrapVueNextComponents).forEach((name) => {
+    if (/^B[A-Z]/.test(name)) {
+      const comp = BootstrapVueNextComponents[name]
+      if (comp && (typeof comp === 'object' || typeof comp === 'function')) {
+        app.component(name, comp)
+      }
+    }
+  })
+
   app.use(VueSignaturePad)
   app.use(datetimePlugin)
   app.use(i18nPlugin)

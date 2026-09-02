@@ -16,7 +16,12 @@ Branch: `migration/vue3` (off `stable-release`)
 | 4 | Store (Vuex 3 → 4) | ✅ Done (pulled into Phase 2) |
 | 5 | Router (vue-router 3 → 4) | ✅ Done (pulled into Phase 2) |
 | 6 | Non-UI third-party plugins | ✅ Done |
-| 7 | BootstrapVue removal (93/118 files) | ⬜ Not started |
+| 7 | BootstrapVue → BootstrapVueNext + BS5 (Option A) | 🔄 In progress |
+| 7a | Install BVN + BS5, register plugin/components, CSS | ✅ Done |
+| 7b | Bootstrap 4→5 CSS/utility class migration | ⬜ Not started |
+| 7c | Migrate b-* component APIs to BVN | ⬜ Not started |
+| 7d | Rewrite $bvModal/$bvToast call sites | ⬜ Not started |
+| 7e | Remove bootstrap-vue deps, verify | ⬜ Not started |
 | 8 | Component breaking-change sweep | ⬜ Not started |
 | 9 | Remove @vue/compat & finalize | ⬜ Not started |
 | 10 | Cross-platform verification | ⬜ Not started |
@@ -249,3 +254,24 @@ now fixed); `.native` in `StandardLayout.vue`; `$scopedSlots` in `iq-card.vue`;
 - `vue-signature-pad@2` — `ClientCases.vue` digital-signature pad.
 - `@guillaumebriday/vue-scroll-progress-bar@0.5` — `StandardLayout.vue` top progress bar.
 Both load under compat and the build passes; if either misbehaves in Phase 10, replace `vue-signature-pad` with the raw `signature_pad` pattern already used elsewhere, and drop/replace the scroll bar.
+
+---
+
+## Phase 7 — BootstrapVue → BootstrapVueNext + Bootstrap 5 (Option A, chosen by user)
+
+**Key discovery driving the approach:** BootstrapVueNext is **Bootstrap-5 only**, but this
+app is on **Bootstrap 4.6.2**. So Option A = component-library swap **plus** an app-wide
+Bootstrap 4→5 CSS/utility migration. Measured BS4 footprint: ~161 `float-right`,
+~90 `ml-*`/`mr-*`, `text-left/right`, **239 `form-group`**, `data-toggle` ×4, `badge-*`.
+b-* surface: **48 distinct component types across 75 files**; `$bvModal`/`$bvToast` in 4 files
+(one in `_unused/`). Split into sub-phases 7a–7e.
+
+### Phase 7a — Install + wire up ✅
+- Installed `bootstrap@5.3.8`, `bootstrap-vue-next@1.1.0` (+ its peers `@floating-ui/vue`, `@vueuse/core`, `reka-ui`, etc.), `--legacy-peer-deps` (bootstrap-vue@2 still present until 7e).
+- `src/plugins/bootstrap-vue.js`: now imports **Bootstrap 5 CSS** + `bootstrap-vue-next.css` (was BootstrapVue 2 CSS + `Vue.use(BootstrapVue)`).
+- `main.js`: added `app.use(createBootstrap())` (provides orchestrators/services).
+- **Global component registration:** `createBootstrap()` alone does NOT register global kebab components in this webpack (`@vue/cli-service`) setup — verified `<b-*>` tags rendered as *unresolved custom elements*. Fix: import `* as BootstrapVueNextComponents` and `app.component(name, comp)` for every `B*`-prefixed export (110 components). Chose global registration over the unplugin auto-import resolver for robustness with vue-cli's chained webpack config and to mirror the previous "everything global" behavior. Bundle-size cost acceptable for an admin app.
+- **Verified (temp /_migration-smoke route, since removed):** `<b-container/row/col/button/badge/link/alert/form-group/form-input/table>` all render to BS5 markup (`.btn`, `.badge`, `.alert`, `.form-control`, `.table`, `.row`, col classes), table shows 2 rows, **unresolvedBTags = [] (empty)**, 0 errors.
+- Production build passes.
+
+**Next:** 7b (BS4→5 CSS/utility classes), 7c (b-* API differences), 7d ($bvModal/$bvToast), 7e (remove bootstrap-vue, final verify).
