@@ -24,6 +24,41 @@ module.exports = {
       .rule('eslint')
       .exclude.add(path.resolve(__dirname, 'public/home'))
       .end()
+
+    // Vue 3 migration: run @vue/compat in "Vue 2 behavior" mode so the app keeps
+    // working while breaking changes are fixed phase by phase. Each SFC is compiled
+    // with MODE 2 (full Vue 2 compatibility). Individual features are tightened later.
+    config.module
+      .rule('vue')
+      .use('vue-loader')
+      .tap(options => {
+        options = options || {}
+        options.compilerOptions = {
+          ...(options.compilerOptions || {}),
+          compatConfig: {
+            MODE: 2
+          }
+        }
+        return options
+      })
+
+    // The refreshed dependency tree pulled a stricter cssnano/postcss selector
+    // parser that throws a false-positive "Unclosed comment" during the
+    // production `mergeRules` optimization on the bundled vendor CSS. Disable the
+    // two selector-rewriting optimizations so production minification completes.
+    // Source CSS is unchanged; only these micro-optimizations are turned off.
+    if (process.env.NODE_ENV === 'production') {
+      config.optimization.minimizer('css').tap(args => {
+        args[0] = args[0] || {}
+        args[0].minimizerOptions = {
+          preset: ['default', {
+            mergeRules: false,
+            discardComments: { removeAll: true }
+          }]
+        }
+        return args
+      })
+    }
   },
   configureWebpack: {
     plugins: [
@@ -43,7 +78,8 @@ module.exports = {
     ],
     resolve: {
       alias: {
-        'vue$': 'vue/dist/vue.common.js',
+        // Vue 3 migration build. Replaced with plain 'vue' in Phase 9.
+        'vue$': '@vue/compat',
         'jquery': 'jquery/src/jquery.js'
       }
     }

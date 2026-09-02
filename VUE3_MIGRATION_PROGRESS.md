@@ -10,7 +10,7 @@ Branch: `migration/vue3` (off `stable-release`)
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 0 | Baseline & safety net | ✅ Done |
-| 1 | Build tooling & deps + @vue/compat | ⬜ Not started |
+| 1 | Build tooling & deps + @vue/compat | ✅ Done |
 | 2 | Entry point (main.js → createApp) | ⬜ Not started |
 | 3 | Custom plugins (datetime, i18n, capacitor) | ⬜ Not started |
 | 4 | Store (Vuex 3 → 4) | ⬜ Not started |
@@ -100,3 +100,38 @@ primary interaction works.
 - [ ] Web: `npm run build`
 - [ ] Mobile: `npm run build:mobile` + `npm run cap:sync`
 - [ ] Desktop: `npm run electron:dev`
+
+---
+
+## Phase 1 — Build tooling & dependencies + @vue/compat ✅
+
+**Dependency changes (`package.json`)**
+- `vue` `^2.6.10` → `^3.5.42`
+- Added `@vue/compat` `^3.5.42` (migration build)
+- `vue-router` `^3.1.3` → `^4.6.4`
+- `vuex` `^3.0.1` → `^4.1.0`
+- `vue-loader` `^16.0.0` → `^17.4.2`
+- Removed `vue-template-compiler`; added `@vue/compiler-sfc` `^3.5.42`
+- Installed versions verified: vue/compat/compiler-sfc 3.5.42, vue-router 4.6.4, vuex 4.1.0, vue-loader 17.4.2
+
+**Install note**
+- `npm install` hit an expected ERESOLVE peer conflict: `@fullcalendar/vue@6` and other Vue-2-only plugins still peer-require Vue 2. Installed with `--legacy-peer-deps` (standard for compat-mode migration). These peers are replaced in Phases 6/7. **Reminder: keep using `--legacy-peer-deps` for installs until Phase 7 is done.**
+
+**`vue.config.js`**
+- `vue$` alias `vue/dist/vue.common.js` → `@vue/compat` (reverted in Phase 9).
+- Added vue-loader `compilerOptions.compatConfig.MODE = 2` (full Vue 2 behavior).
+- Added a production-only CSS minimizer tweak (`mergeRules: false`) to work around a false-positive "Unclosed comment" thrown by the newer cssnano/postcss selector parser. Verified no source CSS has mismatched `/* */` counts, so this is a tooling regression, not a code defect. CSS output size unchanged (~492 KiB app.css).
+
+**`.eslintrc.js`**
+- `plugin:vue/essential` → `plugin:vue/vue3-essential`.
+
+**Verification**
+- `npm run build` (production): **SUCCESS** (~8.5s, hash 2d7028cbedd063f1). App now builds as Vue 3 under compat.
+- Dev build also compiles all 118 `.vue` files via `@vue/compiler-sfc`.
+
+**Compat worklist surfaced (deferred to later phases — NOT blockers now):**
+- `beforeDestroy` → `beforeUnmount`: `HtmlCodeEditor.vue`, `sofbox/alert/Alert.vue`, `sofbox/sidebars/SideBarStyle1.vue`, `StandardLayout.vue`, `plugins/datetime.js`, `MediatorControllers/DashboardMediator.vue` → **Phase 3/8**
+- `.native` modifier: `StandardLayout.vue` (lines 48, 81) → **Phase 8**
+- `$scopedSlots`: `sofbox/cards/iq-card.vue` (line 42) → **Phase 8**
+- `>>>` / `/deep/` / `::v-deep` CSS combinators (many files) → **Phase 8**
+- `VueRouter default export not found` in `router/index.js` → **Phase 5** (expected; router not converted yet)
