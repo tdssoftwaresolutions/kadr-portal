@@ -2,10 +2,10 @@
   <div class="admin-page-perm-groups">
     <div v-if="standalonePages.length" class="admin-perm-group admin-perm-standalone mb-3">
       <b-form-checkbox-group
-        :checked="value"
+        :model-value="modelValue"
         :options="standaloneOptions"
         stacked
-        @input="onPagesInput"
+        @update:model-value="onPagesInput"
       />
     </div>
 
@@ -26,11 +26,11 @@
         </b-button>
       </div>
       <b-form-checkbox-group
-        :checked="value"
+        :model-value="modelValue"
         :options="groupOptions(group)"
         stacked
         class="admin-perm-group-options"
-        @input="onPagesInput"
+        @update:model-value="onPagesInput"
       />
     </div>
   </div>
@@ -42,11 +42,12 @@ import { ADMIN_PAGE_GROUPS, ADMIN_STANDALONE_PAGES } from '../../constants/admin
 export default {
   name: 'AdminPagePermissionGroups',
   props: {
-    value: {
+    modelValue: {
       type: Array,
       default: () => []
     }
   },
+  emits: ['update:modelValue'],
   computed: {
     standalonePages () {
       return ADMIN_STANDALONE_PAGES
@@ -60,7 +61,7 @@ export default {
   },
   methods: {
     onPagesInput (pages) {
-      this.$emit('input', pages)
+      this.$emit('update:modelValue', pages)
     },
     groupOptions (group) {
       return group.pages.map((p) => ({ value: p.key, text: p.label }))
@@ -70,20 +71,20 @@ export default {
     },
     isGroupFullySelected (group) {
       const keys = this.groupKeys(group)
-      return keys.length > 0 && keys.every((k) => this.value.includes(k))
+      return keys.length > 0 && keys.every((k) => this.modelValue.includes(k))
     },
     groupToggleLabel (group) {
       return this.isGroupFullySelected(group) ? 'Clear group' : 'Select all'
     },
     toggleGroup (group) {
       const keys = this.groupKeys(group)
-      const next = new Set(this.value)
+      const next = new Set(this.modelValue)
       if (this.isGroupFullySelected(group)) {
         keys.forEach((k) => next.delete(k))
       } else {
         keys.forEach((k) => next.add(k))
       }
-      this.$emit('input', [...next])
+      this.$emit('update:modelValue', [...next])
     }
   }
 }

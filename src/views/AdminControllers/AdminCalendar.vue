@@ -13,7 +13,7 @@
         </iq-card>
       </b-col>
     </b-row>
-    <b-modal id="admin-view-appointment-modal" ref="view-appointment-modal" size="lg" title="Meeting details" scrollable hide-footer>
+    <b-modal id="admin-view-appointment-modal" ref="view-appointment-modal" size="lg" title="Meeting details" scrollable no-footer>
       <div class="appointment-details" v-if="selectedAppointment != null">
         <div class="data-row">
           <div class="col-6">

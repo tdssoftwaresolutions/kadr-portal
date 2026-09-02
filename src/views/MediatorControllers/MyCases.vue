@@ -233,7 +233,7 @@
       </template>
     </case-workspace-layout>
 
-     <b-modal size="xl" id="resolve-modal" v-model="showResolveModal" title="Mark Case as Resolved" hide-footer>
+     <b-modal size="xl" id="resolve-modal" v-model="showResolveModal" title="Mark Case as Resolved" no-footer>
       <form @submit.prevent="submitResolve">
         <div class="form-group mb-3">
           <label>Status</label>

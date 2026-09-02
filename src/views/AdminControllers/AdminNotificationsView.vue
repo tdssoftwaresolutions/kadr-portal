@@ -3,6 +3,14 @@
     <kadr-page-header :title="ADMIN.NOTIFICATIONS_TITLE" :subtitle="ADMIN.NOTIFICATIONS_SUBTITLE" />
 
     <b-tabs v-model="activeTab" content-class="mt-3">
+      <b-tab title="My browser notifications">
+        <b-row>
+          <b-col lg="6">
+            <browser-notifications />
+          </b-col>
+        </b-row>
+      </b-tab>
+
       <b-tab title="Templates">
         <b-row class="mb-3 align-items-end">
           <b-col md="4">
@@ -132,7 +140,7 @@
                             ref="emailHeaderHtmlEditor"
                             :value="ch.headerHtml"
                             :rows="6"
-                            :visible="activeTab === 2 && emailLayoutTab === 0"
+                            :visible="channelsTabActive && emailLayoutTab === 0"
                             @input="(val) => onEmailLayoutFieldInput(ch, 'headerHtml', val)"
                           />
                         </b-form-group>
@@ -141,7 +149,7 @@
                             ref="emailFooterHtmlEditor"
                             :value="ch.footerHtml"
                             :rows="6"
-                            :visible="activeTab === 2 && emailLayoutTab === 0"
+                            :visible="channelsTabActive && emailLayoutTab === 0"
                             @input="(val) => onEmailLayoutFieldInput(ch, 'footerHtml', val)"
                           />
                         </b-form-group>
@@ -301,7 +309,7 @@
           Detected variables: {{ detectedVars.length ? detectedVars.join(', ') : 'none yet' }}
         </p>
       </b-form>
-      <template #modal-footer>
+      <template #footer>
         <b-button variant="secondary" @click="templateModal = false">Cancel</b-button>
         <b-button variant="primary" :disabled="savingTemplate" @click="saveTemplate">{{ savingTemplate ? 'Saving…' : 'Save' }}</b-button>
       </template>
@@ -314,6 +322,7 @@
 import { sofbox } from '../../config/pluginInit'
 import HtmlCodeEditor from '../../components/admin/HtmlCodeEditor.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import BrowserNotifications from '../../components/notifications/BrowserNotifications.vue'
 import { ADMIN } from '../../constants/messages'
 import { formatDateTime } from '../../utils/dateFormat'
 
@@ -367,7 +376,8 @@ export default {
   name: 'AdminNotificationsView',
   components: {
     HtmlCodeEditor,
-    KadrPageHeader
+    KadrPageHeader,
+    BrowserNotifications
   },
   data () {
     return {
@@ -431,6 +441,10 @@ export default {
     }
   },
   computed: {
+    // "Channels & logs" is the 4th tab (index 3) after the browser-notifications tab.
+    channelsTabActive () {
+      return this.activeTab === 3
+    },
     channelOptions () {
       return CHANNELS.map((c) => ({ value: c, text: c }))
     },
@@ -474,7 +488,7 @@ export default {
   },
   watch: {
     emailLayoutTab (val) {
-      if (val === 0 && this.activeTab === 2) {
+      if (val === 0 && this.channelsTabActive) {
         this.$nextTick(() => this.refreshEmailLayoutEditors())
       }
       if (val === 1) {
@@ -584,7 +598,7 @@ export default {
         const emailCh = this.channelSettings.find((c) => c.channel === 'EMAIL')
         if (emailCh) {
           this.refreshLayoutPreview(emailCh)
-          if (this.activeTab === 2) {
+          if (this.channelsTabActive) {
             this.$nextTick(() => this.refreshEmailLayoutEditors())
           }
         }

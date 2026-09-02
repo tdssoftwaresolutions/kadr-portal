@@ -182,7 +182,7 @@
         </iq-card>
       </b-col>
     </b-row>
-    <b-modal v-model="modalVisible" size="lg" title="User Details" hide-footer>
+    <b-modal v-model="modalVisible" size="lg" title="User Details" no-footer>
       <div v-if="selectedUser">
         <b-row>
           <b-col :md="selectedUser.profile_image || selectedUser.profile_picture_url ? 9 : 12">

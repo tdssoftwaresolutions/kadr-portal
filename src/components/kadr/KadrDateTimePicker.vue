@@ -42,7 +42,7 @@ export default {
   name: 'KadrDateTimePicker',
   components: { flatPickr },
   props: {
-    value: {
+    modelValue: {
       type: [String, Date, Number],
       default: null
     },
@@ -79,7 +79,7 @@ export default {
   },
   data () {
     return {
-      innerValue: this.value || null
+      innerValue: this.modelValue || null
     }
   },
   computed: {
@@ -122,14 +122,15 @@ export default {
       return cfg
     }
   },
+  emits: ['update:modelValue'],
   watch: {
-    value (next) {
+    modelValue (next) {
       if (next !== this.innerValue) {
         this.innerValue = next || null
       }
     },
     innerValue (next) {
-      this.$emit('input', next || '')
+      this.$emit('update:modelValue', next || '')
     }
   },
   methods: {

@@ -58,7 +58,7 @@
         />
       </b-form>
 
-      <template #modal-footer>
+      <template #footer>
         <b-button variant="secondary" @click="editorVisible = false">Cancel</b-button>
         <b-button variant="primary" :disabled="saving" @click="saveEditor">{{ saving ? 'Saving…' : 'Save rule' }}</b-button>
       </template>

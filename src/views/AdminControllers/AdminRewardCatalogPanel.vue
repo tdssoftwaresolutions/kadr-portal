@@ -62,7 +62,7 @@
             </p>
           </div>
         </b-form>
-        <template #modal-footer>
+        <template #footer>
           <b-button variant="secondary" @click="formVisible = false">Cancel</b-button>
           <b-button variant="primary" @click="saveItem">Save</b-button>
         </template>

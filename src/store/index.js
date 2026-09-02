@@ -18,6 +18,7 @@ import blogs from './modules/blogs'
 import reference from './modules/reference'
 import admin from './modules/admin'
 import correspondence from './modules/correspondence'
+import push from './modules/push'
 
 const plugin = (router) => (store) => {
   store.$cookies = VueCookies
@@ -42,7 +43,8 @@ export default (router) => {
       blogs,
       reference,
       admin,
-      correspondence
+      correspondence,
+      push
     },
     state: getDefaultState(),
     mutations: {

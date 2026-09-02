@@ -36,7 +36,11 @@ module.exports = {
         options.compilerOptions = {
           ...(options.compilerOptions || {}),
           compatConfig: {
-            MODE: 2
+            MODE: 2,
+            // BootstrapVueNext is a native Vue 3 lib and needs real Vue 3 v-model
+            // (modelValue/update:modelValue). Compile v-model with Vue 3 semantics.
+            // The matching RUNTIME flag is set via configureCompat() in main.js.
+            COMPONENT_V_MODEL: false
           }
         }
         return options

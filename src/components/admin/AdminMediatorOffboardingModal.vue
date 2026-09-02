@@ -8,7 +8,7 @@
   >
     <p v-if="loading" class="text-muted">Loading offboarding preview…</p>
     <template v-else-if="preview">
-      <b-alert show variant="warning">
+      <b-alert model-value variant="warning">
         Removing <strong>{{ preview.mediator.name }}</strong> will reassign active cases.
         Default is auto-assign using the same rules as new case assignment.
       </b-alert>
@@ -50,7 +50,7 @@
       </b-form-checkbox>
     </template>
 
-    <template #modal-footer>
+    <template #footer>
       <b-button variant="secondary" @click="$emit('close')">Cancel</b-button>
       <b-button variant="danger" :disabled="!canSubmit || submitting" @click="submit">
         {{ submitting ? 'Removing…' : 'Confirm removal' }}

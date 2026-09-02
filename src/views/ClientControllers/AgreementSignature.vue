@@ -142,7 +142,7 @@
       <p>Loading agreement details…</p>
     </div>
 
-    <b-modal v-model="showPhoneModal" hide-footer title="OTP verification" @hidden="resetPhoneModal">
+    <b-modal v-model="showPhoneModal" no-footer title="OTP verification" @hidden="resetPhoneModal">
       <div v-if="phoneStep === 1" class="phone-step-card">
         <h5 class="section-title">Verify your identity</h5>
         <small class="text-muted">We will send an OTP to your registered mobile number before signing this agreement.</small>

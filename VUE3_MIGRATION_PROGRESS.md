@@ -19,7 +19,7 @@ Branch: `migration/vue3` (off `stable-release`)
 | 7 | BootstrapVue → BootstrapVueNext + BS5 (Option A) | 🔄 In progress |
 | 7a | Install BVN + BS5, register plugin/components, CSS | ✅ Done |
 | 7b | Bootstrap 4→5 CSS/utility class migration | ✅ Done |
-| 7c | Migrate b-* component APIs to BVN | ⬜ Not started |
+| 7c | Migrate b-* component APIs to BVN | ✅ Done |
 | 7d | Rewrite $bvModal/$bvToast call sites | ⬜ Not started |
 | 7e | Remove bootstrap-vue deps, verify | ⬜ Not started |
 | 8 | Component breaking-change sweep | ⬜ Not started |
@@ -301,3 +301,28 @@ the renamed template classes.
 - `.sr-only` in `fontawesome.css` is FontAwesome's own vendor definition (untouched); templates that used `sr-only` now use BS5 `visually-hidden` which BS5 provides.
 
 **Verification:** production build passes; headless boot of `/admin/auth/sign-in` → app mounts, BS5 utility classes present in DOM, **0 leftover BS4 classes** rendered, 0 errors.
+
+### Phase 7c — b-* component API migration (BootstrapVue 2 → BootstrapVueNext) ✅
+
+**Scope kept small by checking actual usage** (many BVN APIs are compatible):
+- `b-table` `#cell(field)` / `#head(field)` slots → **unchanged** (BVN keeps same syntax).
+- `b-tabs`/`b-tab`, `b-col`/`b-row`/`b-container`/`b-button`/`b-link`/`b-badge`/`b-collapse` → compatible, no change.
+- `static` prop on modals → not used on any active `b-modal` (only in `_unused-sofbox-demos`).
+
+**Mechanical rewrites (temp `scripts/_bvn7c.js`, deleted; 24 .vue files):**
+- `b-alert`: `show` / `:show` → `model-value` / `:model-value` (documented "safe automatic rewrite").
+- `b-modal`: `hide-footer` → `no-footer`, `hide-header` → `no-header`, `hide-header-close` → `no-header-close`.
+- `b-modal` slots: `#modal-footer` → `#footer`, `#modal-header` → `#header`, `#modal-title` → `#title` (+ `v-slot:` forms).
+
+**ROOT-CAUSE FIX — Vue-3 v-model under compat (the important part):**
+- Symptom: BootstrapVueNext `<b-modal v-model>` rendered its body into the DOM but never opened (`display:none`, no `.show`). Rendered HTML showed `value="true"` on `<BModal>` instead of `modelValue`.
+- Cause: `@vue/compat` MODE 2 applies **Vue-2 `v-model` semantics globally** (`value`/`input`), but BootstrapVueNext is native Vue 3 and needs `modelValue`/`update:modelValue`. Confirmed via `COMPONENT_V_MODEL` compat warning on `<BModal>`.
+- Fix: `configureCompat({ COMPONENT_V_MODEL: false })` at runtime in `main.js` (NOT the vue-loader `compilerOptions.compatConfig`, which is compile-time only — that was an initial wrong turn). Also set the matching compile-time `COMPONENT_V_MODEL: false` in `vue.config.js`.
+- Consequence: our own 5 components that used the Vue-2 v-model pattern (`value` prop + `$emit('input')`) had to be migrated to Vue 3 `modelValue` + `update:modelValue` (this is Phase-8 work pulled forward, required to keep the app green):
+  - `sofbox/alert/Alert.vue` (also `beforeDestroy`→`beforeUnmount`)
+  - `admin/AdminPagePermissionGroups.vue` (also its inner `b-form-checkbox-group` `:checked`/`@input` → `:model-value`/`@update:model-value`)
+  - `admin/HtmlCodeEditor.vue` (also `beforeDestroy`→`beforeUnmount`; kept CodeMirror's own `value:` config key)
+  - `kadr/KadrDateTimePicker.vue`
+  - `MeetingFeedbackModal.vue`
+
+**Verification:** production build passes; interactive headless test on temp `/_migration-smoke` (since removed): modal **opens on click** via `v-model`, custom `#header` slot + body render, `no-footer` respected; `b-alert` renders via `model-value` and dismissible shows `.btn-close`; **0 errors, 0 v-model compat warnings**. No `$emit('input')` remains in active components.

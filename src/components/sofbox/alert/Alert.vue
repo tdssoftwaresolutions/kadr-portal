@@ -1,5 +1,5 @@
 <template>
-    <div v-if="value" :class="['alert', alertClass, textColor]" role="alert">
+    <div v-if="modelValue" :class="['alert', alertClass, textColor]" role="alert">
       <div class="iq-alert-text">{{ message }}</div>
     </div>
 </template>
@@ -28,7 +28,7 @@ export default {
         ].includes(value)
       }
     },
-    value: {
+    modelValue: {
       type: Boolean,
       default: false
     },
@@ -51,8 +51,9 @@ export default {
       autoHideTimeout: null
     }
   },
+  emits: ['update:modelValue'],
   watch: {
-    value (newValue) {
+    modelValue (newValue) {
       if (newValue) {
         this.startAutoHide()
       }
@@ -60,7 +61,7 @@ export default {
   },
   methods: {
     closeAlert () {
-      this.$emit('input', false)
+      this.$emit('update:modelValue', false)
     },
     startAutoHide () {
       if (this.autoHideTimeout) {
@@ -72,7 +73,7 @@ export default {
       }, this.timeout)
     }
   },
-  beforeDestroy () {
+  beforeUnmount () {
     if (this.autoHideTimeout) {
       clearTimeout(this.autoHideTimeout)
     }

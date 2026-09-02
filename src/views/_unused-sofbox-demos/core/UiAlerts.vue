@@ -43,25 +43,25 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant="primary">
+            <b-alert :model-value="true" variant="primary">
               <div class="iq-alert-text">A simple <b>primary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="secondary">
+            <b-alert :model-value="true" variant="secondary">
               <div class="iq-alert-text">A simple <b>secondary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="success">
+            <b-alert :model-value="true" variant="success">
               <div class="iq-alert-text">A simple <b>success</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="danger">
+            <b-alert :model-value="true" variant="danger">
               <div class="iq-alert-text">A simple <b>danger</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="warning">
+            <b-alert :model-value="true" variant="warning">
               <div class="iq-alert-text">A simple <b>warning</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="info">
+            <b-alert :model-value="true" variant="info">
               <div class="iq-alert-text">A simple <b>info</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="light">
+            <b-alert :model-value="true" variant="light">
               <div class="iq-alert-text">A simple <b>light</b> alert—check it out!</div>
             </b-alert>
           </template>
@@ -130,43 +130,43 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant="primary">
+            <b-alert :model-value="true" variant="primary">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>primary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="secondary">
+            <b-alert :model-value="true" variant="secondary">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>secondary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="success">
+            <b-alert :model-value="true" variant="success">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>success</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="danger">
+            <b-alert :model-value="true" variant="danger">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>danger</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="warning">
+            <b-alert :model-value="true" variant="warning">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>warning</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="info">
+            <b-alert :model-value="true" variant="info">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>info</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="light">
+            <b-alert :model-value="true" variant="light">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
@@ -219,25 +219,25 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant="primary" class="bg-white">
+            <b-alert :model-value="true" variant="primary" class="bg-white">
               <div class="iq-alert-text">A simple <b>primary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="secondary" class="bg-white">
+            <b-alert :model-value="true" variant="secondary" class="bg-white">
               <div class="iq-alert-text">A simple <b>secondary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="success" class="bg-white">
+            <b-alert :model-value="true" variant="success" class="bg-white">
               <div class="iq-alert-text">A simple <b>success</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="danger" class="bg-white">
+            <b-alert :model-value="true" variant="danger" class="bg-white">
               <div class="iq-alert-text">A simple <b>danger</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="warning" class="bg-white">
+            <b-alert :model-value="true" variant="warning" class="bg-white">
               <div class="iq-alert-text">A simple <b>warning</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="info" class="bg-white">
+            <b-alert :model-value="true" variant="info" class="bg-white">
               <div class="iq-alert-text">A simple <b>info</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="light" class="bg-white">
+            <b-alert :model-value="true" variant="light" class="bg-white">
               <div class="iq-alert-text">A simple <b>light</b> alert—check it out!</div>
             </b-alert>
           </template>
@@ -306,43 +306,43 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant="primary" class="bg-white">
+            <b-alert :model-value="true" variant="primary" class="bg-white">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>primary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="secondary" class="bg-white">
+            <b-alert :model-value="true" variant="secondary" class="bg-white">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>secondary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="success" class="bg-white">
+            <b-alert :model-value="true" variant="success" class="bg-white">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>success</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="danger" class="bg-white">
+            <b-alert :model-value="true" variant="danger" class="bg-white">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>danger</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="warning" class="bg-white">
+            <b-alert :model-value="true" variant="warning" class="bg-white">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>warning</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="info" class="bg-white">
+            <b-alert :model-value="true" variant="info" class="bg-white">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>info</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant="light" class="bg-white">
+            <b-alert :model-value="true" variant="light" class="bg-white">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
@@ -395,25 +395,25 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant=" " class="text-white bg-primary">
+            <b-alert :model-value="true" variant=" " class="text-white bg-primary">
               <div class="iq-alert-text">A simple <b>primary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="text-white bg-secondary">
+            <b-alert :model-value="true" variant=" " class="text-white bg-secondary">
               <div class="iq-alert-text">A simple <b>secondary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="text-white bg-success">
+            <b-alert :model-value="true" variant=" " class="text-white bg-success">
               <div class="iq-alert-text">A simple <b>success</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="text-white bg-danger">
+            <b-alert :model-value="true" variant=" " class="text-white bg-danger">
               <div class="iq-alert-text">A simple <b>danger</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="text-white bg-warning">
+            <b-alert :model-value="true" variant=" " class="text-white bg-warning">
               <div class="iq-alert-text">A simple <b>warning</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" "  class="text-white bg-info">
+            <b-alert :model-value="true" variant=" "  class="text-white bg-info">
               <div class="iq-alert-text">A simple <b>info</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="bg-light">
+            <b-alert :model-value="true" variant=" " class="bg-light">
               <div class="iq-alert-text">A simple <b>light</b> alert—check it out!</div>
             </b-alert>
           </template>
@@ -482,43 +482,43 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant=" " class="text-white bg-primary">
+            <b-alert :model-value="true" variant=" " class="text-white bg-primary">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>primary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="text-white bg-secondary">
+            <b-alert :model-value="true" variant=" " class="text-white bg-secondary">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>secondary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="text-white bg-success">
+            <b-alert :model-value="true" variant=" " class="text-white bg-success">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>success</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="text-white bg-danger">
+            <b-alert :model-value="true" variant=" " class="text-white bg-danger">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>danger</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="text-white bg-warning">
+            <b-alert :model-value="true" variant=" " class="text-white bg-warning">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>warning</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="text-white bg-info">
+            <b-alert :model-value="true" variant=" " class="text-white bg-info">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>info</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " class="bg-light">
+            <b-alert :model-value="true" variant=" " class="bg-light">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
@@ -571,25 +571,25 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-primary">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-primary">
               <div class="iq-alert-text">A simple <b>primary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-secondary">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-secondary">
               <div class="iq-alert-text">A simple <b>secondary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-success">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-success">
               <div class="iq-alert-text">A simple <b>success</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-danger">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-danger">
               <div class="iq-alert-text">A simple <b>danger</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-warning">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-warning">
               <div class="iq-alert-text">A simple <b>warning</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade  class="text-white bg-info">
+            <b-alert :model-value="true" variant=" " dismissible fade  class="text-white bg-info">
               <div class="iq-alert-text">A simple <b>info</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="bg-light">
+            <b-alert :model-value="true" variant=" " dismissible fade class="bg-light">
               <div class="iq-alert-text">A simple <b>light</b> alert—check it out!</div>
             </b-alert>
           </template>
@@ -658,43 +658,43 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-primary">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-primary">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>primary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-secondary">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-secondary">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>secondary</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-success">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-success">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>success</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-danger">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-danger">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>danger</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-warning">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-warning">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>warning</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="text-white bg-info">
+            <b-alert :model-value="true" variant=" " dismissible fade class="text-white bg-info">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple <b>info</b> alert—check it out!</div>
             </b-alert>
-            <b-alert :show="true" variant=" " dismissible fade class="bg-light">
+            <b-alert :model-value="true" variant=" " dismissible fade class="bg-light">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
@@ -747,25 +747,25 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant="primary">
+            <b-alert :model-value="true" variant="primary">
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="secondary">
+            <b-alert :model-value="true" variant="secondary">
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="success">
+            <b-alert :model-value="true" variant="success">
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="danger">
+            <b-alert :model-value="true" variant="danger">
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="warning">
+            <b-alert :model-value="true" variant="warning">
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="info">
+            <b-alert :model-value="true" variant="info">
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="light">
+            <b-alert :model-value="true" variant="light">
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link">an example link</a>. Give it a click if you like.</div>
             </b-alert>
           </template>
@@ -834,43 +834,43 @@
                 </kbd>
               </div>
             </b-collapse>
-            <b-alert :show="true" variant="primary" class="text-white bg-primary">
+            <b-alert :model-value="true" variant="primary" class="text-white bg-primary">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link text-white ">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="secondary" class="text-white bg-secondary">
+            <b-alert :model-value="true" variant="secondary" class="text-white bg-secondary">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link text-white">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="success" class="text-white bg-success">
+            <b-alert :model-value="true" variant="success" class="text-white bg-success">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link text-white">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="danger" class="text-white bg-danger">
+            <b-alert :model-value="true" variant="danger" class="text-white bg-danger">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link text-white">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="warning" class="text-white bg-warning">
+            <b-alert :model-value="true" variant="warning" class="text-white bg-warning">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link text-white">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="info" class="text-white bg-info">
+            <b-alert :model-value="true" variant="info" class="text-white bg-info">
               <div class="iq-alert-icon">
                 <i class="ri-information-line"></i>
               </div>
               <div class="iq-alert-text">A simple light alert with <a href="#" class="alert-link text-white">an example link</a>. Give it a click if you like.</div>
             </b-alert>
-            <b-alert :show="true" variant="light" class="bg-light">
+            <b-alert :model-value="true" variant="light" class="bg-light">
               <div class="iq-alert-icon">
                 <i class="ri-alert-line"></i>
               </div>
@@ -922,7 +922,7 @@
             </b-collapse>
             <div class="row">
               <div class="col-6">
-                <b-alert :show="true" variant="primary">
+                <b-alert :model-value="true" variant="primary">
                   <div class="iq-alert-text">
                     <h5 class="alert-heading">Well done!</h5>
                     <p>Aww yeah, you successfully read this important alert message. This example text is going to run a bit longer so that you can see how spacing within an alert works with this kind of content.</p>
@@ -932,7 +932,7 @@
                 </b-alert>
               </div>
               <div class="col-6">
-                <b-alert :show="true" variant="success">
+                <b-alert :model-value="true" variant="success">
                   <div class="iq-alert-text">
                     <h5 class="alert-heading">Well done!</h5>
                     <p>Aww yeah, you successfully read this important alert message. This example text is going to run a bit longer so that you can see how spacing within an alert works with this kind of content.</p>

@@ -43,7 +43,7 @@
       </div>
     </template>
 
-    <template #modal-footer>
+    <template #footer>
       <b-button variant="secondary" @click="localVisible = false">Cancel</b-button>
       <b-button variant="primary" :disabled="!canSubmit || submitting" @click="onSubmit">
         <span v-if="submitting" class="spinner-border spinner-border-sm me-1" role="status" />
@@ -57,7 +57,7 @@
 export default {
   name: 'MeetingFeedbackModal',
   props: {
-    value: {
+    modelValue: {
       type: Boolean,
       default: false
     },
@@ -97,7 +97,7 @@ export default {
   },
   data () {
     return {
-      localVisible: this.value,
+      localVisible: this.modelValue,
       form: {
         meeting_summary: '',
         mediator_next_steps: '',
@@ -125,13 +125,14 @@ export default {
       return this.form.rating >= 1 && this.form.rating <= 5
     }
   },
+  emits: ['update:modelValue'],
   watch: {
-    value (v) {
+    modelValue (v) {
       this.localVisible = v
       if (v) this.resetFromProps()
     },
     localVisible (v) {
-      this.$emit('input', v)
+      this.$emit('update:modelValue', v)
     }
   },
   methods: {

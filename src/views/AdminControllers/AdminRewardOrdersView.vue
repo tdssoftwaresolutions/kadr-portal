@@ -62,7 +62,7 @@
             <b-form-textarea v-model="fulfillNotes" rows="3" placeholder="e.g. Gift card code sent via email on …" />
           </b-form-group>
           <p class="small text-muted mb-0">Confirm after you have delivered the reward by email or phone.</p>
-          <template #modal-footer>
+          <template #footer>
             <b-button variant="secondary" @click="fulfillVisible = false">Cancel</b-button>
             <b-button variant="success" @click="submitFulfill">Mark as fulfilled</b-button>
           </template>

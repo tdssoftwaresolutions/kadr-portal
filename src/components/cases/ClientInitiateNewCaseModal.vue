@@ -3,7 +3,7 @@
     :visible="visible"
     title="Start a new case"
     size="lg"
-    hide-footer
+    no-footer
     scrollable
     @change="onVisibilityChange"
     @hidden="onHidden"

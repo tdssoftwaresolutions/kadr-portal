@@ -402,7 +402,7 @@
       v-model="startModalVisible"
       :title="startModalTitle"
       size="lg"
-      hide-footer
+      no-footer
       @hidden="onStartModalHidden"
     >
       <div v-if="startWizardStep === 1" class="start-wizard-step">

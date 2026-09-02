@@ -30,7 +30,7 @@
           </b-col>
         </b-row>
       </b-form>
-      <template #modal-footer>
+      <template #footer>
         <b-button variant="secondary" @click="templateModalVisible = false">Close</b-button>
         <b-button variant="primary" @click="saveSettings">Save template</b-button>
       </template>

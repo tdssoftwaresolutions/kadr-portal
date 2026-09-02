@@ -86,7 +86,7 @@
         modal-class="court-case-modal"
         content-class="court-case-modal__content"
         body-class="court-case-modal__body"
-        hide-header
+        no-header
         @hidden="onModalHidden"
       >
         <div class="court-case-modal__toolbar">
@@ -117,7 +117,7 @@
         <p v-else class="text-muted small mb-0 px-1">
           Use &ldquo;Get latest status&rdquo; to fetch case details from eCourts.
         </p>
-        <template v-slot:modal-footer>
+        <template v-slot:footer>
           <b-button
             size="sm"
             variant="primary"

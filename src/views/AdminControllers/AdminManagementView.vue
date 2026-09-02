@@ -8,7 +8,7 @@
           </template>
           <template v-slot:body>
             <div class="mb-3" v-if="!isMasterAdmin">
-              <b-alert show variant="info">You have view-only access. Only master admins can create/edit/inactivate admins or change permissions.</b-alert>
+              <b-alert model-value variant="info">You have view-only access. Only master admins can create/edit/inactivate admins or change permissions.</b-alert>
             </div>
 
             <b-row class="mb-4" v-if="isMasterAdmin">

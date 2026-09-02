@@ -119,7 +119,7 @@
       size="xl"
       modal-class="case-detail-modal"
       title="Case details"
-      hide-footer
+      no-footer
       scrollable
       @hidden="onDetailModalHidden"
     >
@@ -386,7 +386,7 @@
       </div>
     </b-modal>
 
-    <b-modal v-model="approveTypeModalVisible" title="Approve case type" hide-footer>
+    <b-modal v-model="approveTypeModalVisible" title="Approve case type" no-footer>
       <p class="text-muted small mb-3">
         Assign Mediation, Arbitrator, or Counsellor. After approval the case moves to notice payment — the same flow as a newly approved signup case.
       </p>
@@ -410,7 +410,7 @@
       </div>
     </b-modal>
 
-    <b-modal v-model="assignModalVisible" size="lg" :title="assignModalTitle" hide-footer scrollable>
+    <b-modal v-model="assignModalVisible" size="lg" :title="assignModalTitle" no-footer scrollable>
       <p class="text-muted small mb-3">
         Choose an active dispute resolution expert. They will receive a notification. Calendar scheduling can still be done from the mediator workflow if needed.
       </p>

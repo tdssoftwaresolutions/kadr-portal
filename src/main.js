@@ -1,6 +1,12 @@
 import 'mutationobserver-shim'
-import { createApp } from 'vue'
+import { createApp, configureCompat } from 'vue'
 import { createBootstrap } from 'bootstrap-vue-next'
+
+// BootstrapVueNext (native Vue 3) requires real Vue 3 v-model semantics
+// (modelValue / update:modelValue). Disable the Vue-2 v-model compat behavior
+// globally at runtime; our own components using the old value/input pattern are
+// migrated to modelValue accordingly.
+configureCompat({ COMPONENT_V_MODEL: false })
 import * as BootstrapVueNextComponents from 'bootstrap-vue-next'
 import './plugins/bootstrap-vue'
 import App from './App.vue'

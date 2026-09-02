@@ -20,7 +20,7 @@
                 <b-badge variant="info" class="ms-1">{{ data.mediator.subscription_tier || 'FREE' }}</b-badge>
               </div>
             </div>
-            <b-alert show variant="info" class="small">Read-only audit view. Data is retained for deleted mediators.</b-alert>
+            <b-alert model-value variant="info" class="small">Read-only audit view. Data is retained for deleted mediators.</b-alert>
 
             <div class="mediator-360-summary mb-4">
               <div class="mediator-360-stat" v-for="stat in summaryStats" :key="stat.label">

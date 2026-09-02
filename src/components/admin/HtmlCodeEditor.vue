@@ -11,7 +11,7 @@
         size="sm"
         variant="outline-primary"
         class="html-code-editor__format-btn"
-        :disabled="disabled || !String(value || '').trim()"
+        :disabled="disabled || !String(modelValue || '').trim()"
         @click="formatCode"
       >
         Format HTML
@@ -58,7 +58,7 @@ registerHtmlMode()
 export default {
   name: 'HtmlCodeEditor',
   props: {
-    value: {
+    modelValue: {
       type: String,
       default: ''
     },
@@ -114,8 +114,9 @@ export default {
       return styles
     }
   },
+  emits: ['update:modelValue'],
   watch: {
-    value (next) {
+    modelValue (next) {
       if (!this.editor || this.skipExternalSync) return
       this.syncEditorValue(next)
     },
@@ -138,7 +139,7 @@ export default {
   mounted () {
     const heightPx = this.editorHeightPx()
     this.editor = CodeMirror(this.$refs.host, {
-      value: this.value || '',
+      value: this.modelValue || '',
       mode: 'kadr-html',
       lineNumbers: true,
       lineWrapping: true,
@@ -167,9 +168,9 @@ export default {
     this.editor.on('blur', () => { this.focused = false })
 
     this.bindVisibilityObservers()
-    this.syncEditorValue(this.value)
+    this.syncEditorValue(this.modelValue)
   },
-  beforeDestroy () {
+  beforeUnmount () {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect()
       this.resizeObserver = null
@@ -239,19 +240,19 @@ export default {
     },
     onEditorChange (editor) {
       const next = editor.getValue()
-      if (next === this.value) return
+      if (next === this.modelValue) return
       this.skipExternalSync = true
-      this.$emit('input', next)
+      this.$emit('update:modelValue', next)
       this.$nextTick(() => {
         this.skipExternalSync = false
       })
     },
     formatCode () {
       if (this.disabled || !this.editor) return
-      const formatted = formatHtml(this.value)
-      if (formatted !== this.value) {
+      const formatted = formatHtml(this.modelValue)
+      if (formatted !== this.modelValue) {
         this.editor.setValue(formatted)
-        this.$emit('input', formatted)
+        this.$emit('update:modelValue', formatted)
       }
     }
   }

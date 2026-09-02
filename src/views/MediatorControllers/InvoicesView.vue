@@ -40,7 +40,7 @@
                 </div>
               </div>
 
-              <b-alert v-if="!hasPrivateInvoices" show variant="light" class="small border mb-3">
+              <b-alert v-if="!hasPrivateInvoices" model-value variant="light" class="small border mb-3">
                 <router-link :to="{ name: 'app.edit' }">Upgrade to Pro</router-link> to create private invoices with your branding and GST line items.
               </b-alert>
 

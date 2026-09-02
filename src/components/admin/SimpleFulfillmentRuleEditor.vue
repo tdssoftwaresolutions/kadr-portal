@@ -52,7 +52,7 @@
       </template>
     </div>
 
-    <b-alert v-if="validationError" show variant="warning" class="small mt-3 mb-0">{{ validationError }}</b-alert>
+    <b-alert v-if="validationError" model-value variant="warning" class="small mt-3 mb-0">{{ validationError }}</b-alert>
   </div>
 </template>
 
