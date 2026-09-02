@@ -15,7 +15,7 @@ Branch: `migration/vue3` (off `stable-release`)
 | 3 | Custom plugins (datetime, i18n, capacitor) | ✅ Done |
 | 4 | Store (Vuex 3 → 4) | ✅ Done (pulled into Phase 2) |
 | 5 | Router (vue-router 3 → 4) | ✅ Done (pulled into Phase 2) |
-| 6 | Non-UI third-party plugins | ⬜ Not started |
+| 6 | Non-UI third-party plugins | ✅ Done |
 | 7 | BootstrapVue removal (93/118 files) | ⬜ Not started |
 | 8 | Component breaking-change sweep | ⬜ Not started |
 | 9 | Remove @vue/compat & finalize | ⬜ Not started |
@@ -212,3 +212,40 @@ checkpoint, per the "keep it green at runtime" principle.
 `StandardLayout.vue`, `MediatorControllers/DashboardMediator.vue` (datetime.js one is
 now fixed); `.native` in `StandardLayout.vue`; `$scopedSlots` in `iq-card.vue`;
 `>>>`/`::v-deep` CSS across many files.
+
+---
+
+## Phase 6 — Non-UI third-party plugins ✅
+
+**Inventory first (only migrated what's actually used):**
+- `@fullcalendar/vue` → used only in wrapper `src/components/sofbox/calendar/FullCalendar.vue` (views use the wrapper).
+- `vue2-tinymce-editor` → used in 3 files: `Blog/MyBlogs.vue`, `MediatorControllers/MyCases.vue`, `admin/SimpleFulfillmentRuleEditor.vue`.
+- `vue-flatpickr-component` → used only in `components/kadr/KadrDateTimePicker.vue`.
+- `portal-vue` → **not used anywhere** (grep confirmed; "portal" hits are unrelated names). No `<Teleport>` migration needed; just drop the dep in Phase 9.
+- `vue-signature-pad` (VueSignaturePad) → used only in `ClientControllers/ClientCases.vue`. Other signature screens use raw `signature_pad` (framework-agnostic, untouched).
+- `@guillaumebriday/vue-scroll-progress-bar` → used in `StandardLayout.vue`.
+
+**Dependency changes**
+- Added: `@fullcalendar/vue3@6.1.21` (matches installed FullCalendar core 6.1.21), `@tinymce/tinymce-vue@5`, `vue-flatpickr-component@11`, and explicit `tinymce@^5.10.9` (was transitive via the removed editor).
+- Removed from package.json: `@fullcalendar/vue`, `vue2-tinymce-editor`.
+- Installed with `--legacy-peer-deps` (still needed until Phase 7).
+
+**Code changes**
+- `FullCalendar.vue`: `import('@fullcalendar/vue')` → `import('@fullcalendar/vue3')`; replaced Vue-2 `this.$set(this.calendarOptions, 'plugins', …)` with plain assignment (Vue 3 objects are deeply reactive).
+- New shared module `src/plugins/tinymce.js`: self-hosts TinyMCE 5 (theme/icons/skin CSS + the plugins referenced by the editor options) once, imported by all 3 editor files (DRY, consistent).
+- 3 editor files: `<vue2-tinymce-editor v-model :options>` → `<editor v-model :init license-key="gpl">`; import `Editor` from `@tinymce/tinymce-vue` + the shared tinymce module; registered as `editor`. Added `skin: false` + `content_css: false` to each options object (skin CSS is bundled, avoids runtime asset 404s).
+- `KadrDateTimePicker.vue` (flatpickr): **no code change** — v11 default export + `<flat-pickr v-model :config @on-change>` API is identical to v8; the package swap suffices.
+
+**Verification**
+- `npm run build` (production): **SUCCESS**, no "Module not found"/resolve errors.
+- **Real runtime render check** via a temporary `/_migration-smoke` route + view that mounted all three swapped components (route & view since removed):
+  - FullCalendar: `.fc` element rendered ✅
+  - TinyMCE: `.tox-tinymce` + edit-area **iframe** rendered ✅ (proves self-hosted skin/plugins loaded)
+  - flatpickr: input rendered ✅
+  - **0 page errors, 0 non-network console errors**
+- Confirmed no lingering `@fullcalendar/vue'` or `vue2-tinymce-editor` imports in `src` (only a doc comment mentions the old name).
+
+**Still on Vue-2 builds under @vue/compat (verify during Phase 10 authenticated smoke test — they live on auth-gated screens unreachable without a backend session):**
+- `vue-signature-pad@2` — `ClientCases.vue` digital-signature pad.
+- `@guillaumebriday/vue-scroll-progress-bar@0.5` — `StandardLayout.vue` top progress bar.
+Both load under compat and the build passes; if either misbehaves in Phase 10, replace `vue-signature-pad` with the raw `signature_pad` pattern already used elsewhere, and drop/replace the scroll bar.

@@ -198,7 +198,7 @@
         <!-- Description (Rich Text Editor) -->
         <div class="mb-3">
           <label for="description" class="form-label fw-semibold">Content</label>
-          <vue2-tinymce-editor v-model="selectedBlog.content" :options="options"></vue2-tinymce-editor>
+          <editor v-model="selectedBlog.content" :init="options" license-key="gpl"></editor>
         </div>
 
         <div class="mb-3 border rounded p-3 bg-light">
@@ -227,12 +227,13 @@ import { sofbox } from '../../config/pluginInit'
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
-import { Vue2TinymceEditor } from 'vue2-tinymce-editor'
+import '../../plugins/tinymce'
+import Editor from '@tinymce/tinymce-vue'
 
 export default {
   name: 'MyBlogs',
   components: {
-    Alert, Vue2TinymceEditor, Spinner, KadrEmptyState
+    Alert, editor: Editor, Spinner, KadrEmptyState
   },
   mounted () {
     sofbox.index()
@@ -441,6 +442,10 @@ export default {
       blogAssets: {},
       paginatedData: { data: { blogs: [], total: 0 } },
       options: {
+        // Self-hosted TinyMCE 5: skin CSS is imported in src/plugins/tinymce.js,
+        // so disable runtime skin/content_css fetching to avoid HTTP 404s.
+        skin: false,
+        content_css: false,
         height: 800,
         plugins: [
           'autosave lists link image table media fullscreen color preview',

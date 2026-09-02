@@ -33,11 +33,12 @@
         </b-form-group>
         <div class="ml-4 email-editor-wrap">
           <label class="small font-weight-bold d-block mb-1">Message</label>
-          <vue2-tinymce-editor
+          <editor
             v-if="emailEditorReady"
             :key="emailEditorKey"
             v-model="emailMessageHtml"
-            :options="editorOptions"
+            :init="editorOptions"
+            license-key="gpl"
             @input="onEmailInput"
           />
           <b-form-textarea
@@ -56,12 +57,13 @@
 </template>
 
 <script>
-import { Vue2TinymceEditor } from 'vue2-tinymce-editor'
+import '../../plugins/tinymce'
+import Editor from '@tinymce/tinymce-vue'
 import { defaultSimpleRule, validateSimpleRule } from '../../utils/fulfillmentRuleSimple'
 
 export default {
   name: 'SimpleFulfillmentRuleEditor',
-  components: { Vue2TinymceEditor },
+  components: { editor: Editor },
   props: {
     /** Initial values when modal opens; do not sync continuously from parent. */
     initialRule: {
@@ -77,6 +79,9 @@ export default {
       emailEditorKey: 0,
       validationError: '',
       editorOptions: {
+        // Self-hosted TinyMCE 5 (skin CSS imported in src/plugins/tinymce.js).
+        skin: false,
+        content_css: false,
         height: 260,
         menubar: false,
         branding: false,

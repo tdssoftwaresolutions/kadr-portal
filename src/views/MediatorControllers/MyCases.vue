@@ -256,7 +256,7 @@
         </div>
         <div class="form-group mb-3">
           <label>Agreed terms</label>
-          <vue2-tinymce-editor v-model="resolveForm.agreementText" :options="options"></vue2-tinymce-editor>
+          <editor v-model="resolveForm.agreementText" :init="options" license-key="gpl"></editor>
         </div>
         <div class="form-group mb-3">
           <label>Signature:</label>
@@ -361,7 +361,8 @@ import CaseWorkspaceLayout from '../../components/kadr/CaseWorkspaceLayout.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
 import KadrDateTimePicker from '../../components/kadr/KadrDateTimePicker.vue'
 import SignaturePad from 'signature_pad'
-import { Vue2TinymceEditor } from 'vue2-tinymce-editor'
+import '../../plugins/tinymce'
+import Editor from '@tinymce/tinymce-vue'
 import { CASES } from '../../constants/messages'
 
 import {
@@ -377,7 +378,7 @@ export default {
     KadrDateTimePicker,
     FilePreview,
     MeetingFeedbackModal,
-    Vue2TinymceEditor,
+    editor: Editor,
     CaseCorrespondencePanel,
     CaseProgressPanel,
     CaseWorkspaceLayout,
@@ -686,6 +687,9 @@ export default {
   data () {
     return {
       options: {
+        // Self-hosted TinyMCE 5 (skin CSS imported in src/plugins/tinymce.js).
+        skin: false,
+        content_css: false,
         height: 400,
         plugins: [
           'autosave lists link image table media fullscreen color preview',

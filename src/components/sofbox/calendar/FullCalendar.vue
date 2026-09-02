@@ -78,19 +78,20 @@ export default {
       interactionPlugin,
       listPlugin
     ] = await Promise.all([
-      import('@fullcalendar/vue'),
+      import('@fullcalendar/vue3'),
       import('@fullcalendar/daygrid'),
       import('@fullcalendar/timegrid'),
       import('@fullcalendar/interaction'),
       import('@fullcalendar/list')
     ])
     this.FullCalendarComponent = fcVue.default
-    this.$set(this.calendarOptions, 'plugins', [
+    // Vue 3 objects are deeply reactive; plain assignment replaces the old this.$set.
+    this.calendarOptions.plugins = [
       dayGridPlugin.default,
       timeGridPlugin.default,
       listPlugin.default,
       interactionPlugin.default
-    ])
+    ]
     // Do not set validRange — past dates must remain visible for review
     this.calendarReady = true
   },
