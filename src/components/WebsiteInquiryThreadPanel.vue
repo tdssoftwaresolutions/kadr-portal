@@ -19,7 +19,7 @@
       </article>
     </div>
     <form class="composer mt-2" @submit.prevent="onSubmit">
-      <label class="sr-only" for="website-reply-body">Reply</label>
+      <label class="visually-hidden" for="website-reply-body">Reply</label>
       <textarea
         id="website-reply-body"
         v-model="draft"
@@ -176,7 +176,7 @@ export default {
   padding: 0.5rem 0.65rem;
   font-size: 0.9rem;
 }
-.sr-only {
+.visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;

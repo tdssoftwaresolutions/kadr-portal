@@ -919,7 +919,7 @@ export default {
   }
 
   /* Form Row */
-  .form-row {
+  .row {
     margin-bottom: 20px;
   }
 

@@ -105,7 +105,7 @@
         </div>
 
         <div v-if="detailsLoading" class="court-case-modal__loading">
-          <b-spinner small class="mr-2" />
+          <b-spinner small class="me-2" />
           Loading saved case data…
         </div>
         <p v-else-if="detailsError" class="text-danger small mb-0 px-1">{{ detailsError }}</p>

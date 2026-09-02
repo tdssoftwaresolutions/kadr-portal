@@ -3,7 +3,7 @@
     <a
       :class="'nav-link ' + className"
       :id="id"
-      :data-toggle="dataToggle"
+      :data-bs-toggle="dataToggle"
       :href="url"
       :role="role"
       :aria-controls="ariaControls"

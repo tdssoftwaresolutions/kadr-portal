@@ -15,7 +15,7 @@
         <!--BreadCrumbStyle1 :items="breadCrumb"/-->
       </div>
       <nav class="navbar navbar-expand-lg navbar-light p-0">
-        <!--<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <!--<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
         </button>-->
         <b-navbar-toggle target="nav-collapse">
           <i class="ri-menu-3-line"></i>

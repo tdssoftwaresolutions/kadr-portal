@@ -7,7 +7,7 @@
             <h4 class="card-title">Equal-width multi-row</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-1 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-1 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -83,7 +83,7 @@
             <h4 class="card-title">Order</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-2 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-2 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -161,7 +161,7 @@
             <h4 class="card-title">Media object</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-3 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-3 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -237,7 +237,7 @@
             <h4 class="card-title">Media list</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-4 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-4 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>

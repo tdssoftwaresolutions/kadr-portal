@@ -5,7 +5,7 @@
       :subtitle="ADMIN.INVOICES_SUBTITLE"
     >
       <template v-if="!isAdmin && hasPrivateInvoices" #actions>
-        <b-button size="sm" variant="outline-secondary" class="mr-1" @click="openBranding">
+        <b-button size="sm" variant="outline-secondary" class="me-1" @click="openBranding">
           Invoice template
         </b-button>
         <b-button size="sm" variant="primary" @click="openPrivateCreate">
@@ -78,12 +78,12 @@
                     <b-badge :variant="statusVariant(row.item)">{{ incomeStatusLabel(row.item) }}</b-badge>
                   </template>
                   <template #cell(actions)="row">
-                    <b-button size="sm" variant="outline-primary" class="mr-1" @click="downloadRowPdf(row.item)">PDF</b-button>
+                    <b-button size="sm" variant="outline-primary" class="me-1" @click="downloadRowPdf(row.item)">PDF</b-button>
                     <b-button
                       v-if="row.item.source === 'PRIVATE' && hasPrivateInvoices"
                       size="sm"
                       variant="outline-secondary"
-                      class="mr-1"
+                      class="me-1"
                       @click="editPrivateRow(row.item)"
                     >
                       Edit
@@ -121,12 +121,12 @@
                   </div>
                   <div class="small text-muted mb-2">{{ formatDate(item.issue_date) }}</div>
                   <div class="d-flex flex-wrap">
-                    <b-button size="sm" variant="outline-primary" class="mr-1 mb-1" @click="downloadRowPdf(item)">PDF</b-button>
+                    <b-button size="sm" variant="outline-primary" class="me-1 mb-1" @click="downloadRowPdf(item)">PDF</b-button>
                     <b-button
                       v-if="item.source === 'PRIVATE' && hasPrivateInvoices"
                       size="sm"
                       variant="outline-secondary"
-                      class="mr-1 mb-1"
+                      class="me-1 mb-1"
                       @click="editPrivateRow(item)"
                     >
                       Edit
@@ -170,8 +170,8 @@
               </b-row>
 
               <div class="mb-3">
-                <b-badge variant="primary" class="mr-2">Total: INR {{ totals.total.toFixed(2) }}</b-badge>
-                <b-badge variant="success" class="mr-2">Paid: INR {{ totals.paid.toFixed(2) }}</b-badge>
+                <b-badge variant="primary" class="me-2">Total: INR {{ totals.total.toFixed(2) }}</b-badge>
+                <b-badge variant="success" class="me-2">Paid: INR {{ totals.paid.toFixed(2) }}</b-badge>
                 <b-badge variant="warning">Pending: INR {{ totals.pending.toFixed(2) }}</b-badge>
               </div>
               <div class="mb-3">
@@ -189,7 +189,7 @@
                   <span v-else class="text-muted">Not available</span>
                 </template>
                 <template #cell(actions)="row">
-                  <b-button size="sm" variant="outline-primary" class="mr-1" @click="downloadPdf(row.item)">PDF</b-button>
+                  <b-button size="sm" variant="outline-primary" class="me-1" @click="downloadPdf(row.item)">PDF</b-button>
                   <b-button v-if="row.item.status !== 'PAID'" size="sm" variant="success" @click="markPaid(row.item)">Mark paid</b-button>
                 </template>
               </b-table>
@@ -288,7 +288,7 @@ export default {
         { key: 'invoice_number', label: 'Invoice #' },
         { key: 'source', label: 'Source' },
         { key: 'label', label: 'Case / client' },
-        { key: 'amount', label: 'Amount', class: 'text-right' },
+        { key: 'amount', label: 'Amount', class: 'text-end' },
         { key: 'issue_date', label: 'Date' },
         { key: 'status', label: 'Status' },
         { key: 'actions', label: '' }

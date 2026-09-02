@@ -18,7 +18,7 @@
         <span class="small">{{ row.item.summary || '—' }}</span>
       </template>
       <template #cell(actions)="row">
-        <b-button size="sm" variant="outline-primary" class="mr-1" @click="openEditor(row.item)">Edit</b-button>
+        <b-button size="sm" variant="outline-primary" class="me-1" @click="openEditor(row.item)">Edit</b-button>
         <b-button size="sm" variant="outline-danger" @click="removeRule(row.item)">Delete</b-button>
       </template>
     </b-table>

@@ -42,7 +42,7 @@
                 class="clear-filters-btn"
                 v-if="statusFilter !== 'All' || categoryFilter !== 'All' || tagFilter !== 'All'"
               >
-                <i class="ri-close-line mr-1"></i>
+                <i class="ri-close-line me-1"></i>
                 Clear Filters
               </b-button>
               <b-button
@@ -51,7 +51,7 @@
                 @click="newBlog"
                 class="professional-btn"
               >
-                <i class="ri-add-line mr-1"></i>
+                <i class="ri-add-line me-1"></i>
                 New Blog
               </b-button>
             </div>
@@ -70,7 +70,7 @@
                       <small class="text-muted">{{ formatDateTime(blog.created_at) }}</small>
                     </div>
                     <div class="category-section" v-if="blog.categories && blog.categories.length > 0">
-                      <b-badge v-for="category in blog.categories" :key="category.id" pill class="category-badge mr-1">{{ category.name }}</b-badge>
+                      <b-badge v-for="category in blog.categories" :key="category.id" pill class="category-badge me-1">{{ category.name }}</b-badge>
                     </div>
                     <div class="mt-auto d-flex justify-content-between">
                       <b-button variant="outline-primary" size="sm" @click="onClickBlog(blog)">Edit</b-button>
@@ -517,11 +517,11 @@ export default {
         wordcount_cleanregex: /<\/?[a-z][^>]*>/g
       },
       columns: [
-        { label: 'Title', key: 'title', class: 'text-left', sortable: true },
-        { label: 'Date', key: 'created_at', class: 'text-left', sortable: true },
-        { label: 'Categories', key: 'categories', class: 'text-left', sortable: true },
-        { label: 'Tags', key: 'tags', class: 'text-left', sortable: true },
-        { label: 'Status', key: 'status', class: 'text-left', sortable: true }
+        { label: 'Title', key: 'title', class: 'text-start', sortable: true },
+        { label: 'Date', key: 'created_at', class: 'text-start', sortable: true },
+        { label: 'Categories', key: 'categories', class: 'text-start', sortable: true },
+        { label: 'Tags', key: 'tags', class: 'text-start', sortable: true },
+        { label: 'Status', key: 'status', class: 'text-start', sortable: true }
       ],
       blogsCache: {},
       alert: {

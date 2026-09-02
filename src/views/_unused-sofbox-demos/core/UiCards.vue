@@ -142,7 +142,7 @@
           <b-button href="#" block variant="primary">Go somewhere</b-button>
         </b-card>
       </b-col>
-      <b-col lg="4" class="text-right">
+      <b-col lg="4" class="text-end">
         <b-card
           title="Special title treatment"
           class="iq-mb-3"
@@ -201,7 +201,7 @@
       </b-col>
       <b-col lg="6">
         <b-card no-body class="iq-mb-3">
-          <b-row no-gutters>
+          <b-row g-0>
             <b-col md="4">
               <b-card-img :src="require('../../assets/images/page-img/08.jpg')"></b-card-img>
             </b-col>
@@ -218,7 +218,7 @@
       </b-col>
       <b-col lg="6">
         <b-card no-body class="iq-mb-3">
-          <b-row no-gutters class="flex-row-reverse">
+          <b-row g-0 class="flex-row-reverse">
             <b-col md="4">
               <b-card-img :src="require('../../assets/images/page-img/09.jpg')"></b-card-img>
             </b-col>
@@ -516,7 +516,7 @@
             no-body
           >
           </b-card>
-          <b-card no-body class="iq-mb-3 text-right">
+          <b-card no-body class="iq-mb-3 text-end">
             <blockquote class="blockquote mb-0 card-body">
               <p class="font-size-14">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante.</p>
               <footer class="blockquote-footer">

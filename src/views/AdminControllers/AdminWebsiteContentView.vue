@@ -84,7 +84,7 @@
                   <b-col md="6" class="d-flex align-items-end"><b-form-checkbox v-model="testimonialForm.active" switch>Show on website</b-form-checkbox></b-col>
                 </b-row>
                 <p class="small text-muted mb-2">Newest testimonials appear first on the homepage.</p>
-                <b-button type="submit" variant="primary" size="sm" class="mr-2">{{ testimonialForm.id ? 'Update' : 'Add' }}</b-button>
+                <b-button type="submit" variant="primary" size="sm" class="me-2">{{ testimonialForm.id ? 'Update' : 'Add' }}</b-button>
                 <b-button v-if="testimonialForm.id" size="sm" variant="outline-secondary" @click="resetTestimonialForm">Cancel edit</b-button>
               </b-form>
             </template>
@@ -128,13 +128,13 @@
                     <b-col md="5"><b-form-input v-model="feat.text_hi" placeholder="Feature (HI)" /></b-col>
                     <b-col md="2" class="d-flex align-items-center">
                       <b-form-checkbox v-model="feat.included" switch>Included</b-form-checkbox>
-                      <b-button size="sm" variant="link" class="text-danger ml-auto" @click="planForm.features.splice(idx, 1)">×</b-button>
+                      <b-button size="sm" variant="link" class="text-danger ms-auto" @click="planForm.features.splice(idx, 1)">×</b-button>
                     </b-col>
                   </b-row>
                 </div>
                 <b-button size="sm" variant="outline-secondary" class="mb-3" @click="planForm.features.push(emptyFeature())">Add feature</b-button>
                 <div>
-                  <b-button type="submit" variant="primary" size="sm" class="mr-2">{{ planForm.id ? 'Update plan' : 'Add plan' }}</b-button>
+                  <b-button type="submit" variant="primary" size="sm" class="me-2">{{ planForm.id ? 'Update plan' : 'Add plan' }}</b-button>
                   <b-button v-if="planForm.id" size="sm" variant="outline-secondary" @click="resetPlanForm">Cancel edit</b-button>
                 </div>
               </b-form>
@@ -160,7 +160,7 @@
                     <b-form-group label="Name (HI)"><b-form-input v-model="categoryForm.name_hi" required /></b-form-group>
                     <b-form-group label="Sort order"><b-form-input v-model.number="categoryForm.sort_order" type="number" /></b-form-group>
                     <b-form-checkbox v-model="categoryForm.active" switch class="mb-3">Active</b-form-checkbox>
-                    <b-button type="submit" size="sm" variant="primary" class="mr-2">{{ categoryForm.id ? 'Update' : 'Add' }}</b-button>
+                    <b-button type="submit" size="sm" variant="primary" class="me-2">{{ categoryForm.id ? 'Update' : 'Add' }}</b-button>
                     <b-button v-if="categoryForm.id" size="sm" variant="outline-secondary" @click="resetCategoryForm">Cancel</b-button>
                   </b-form>
                   <hr />
@@ -188,7 +188,7 @@
                       <b-col md="4"><b-form-group label="Sort order"><b-form-input v-model.number="faqForm.sort_order" type="number" /></b-form-group></b-col>
                       <b-col md="4" class="d-flex align-items-end"><b-form-checkbox v-model="faqForm.active" switch>Active</b-form-checkbox></b-col>
                     </b-row>
-                    <b-button type="submit" size="sm" variant="primary" class="mr-2">{{ faqForm.id ? 'Update' : 'Add' }}</b-button>
+                    <b-button type="submit" size="sm" variant="primary" class="me-2">{{ faqForm.id ? 'Update' : 'Add' }}</b-button>
                     <b-button v-if="faqForm.id" size="sm" variant="outline-secondary" @click="resetFaqForm">Cancel</b-button>
                   </b-form>
                   <hr />

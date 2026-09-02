@@ -8,7 +8,7 @@
             <b-card class="h-100 user-card">
               <b-card-body class="d-flex flex-column">
                 <div class="d-flex align-items-center mb-3">
-                  <img v-if="user.profile_picture_url" :src="user.profile_picture_url" class="rounded-circle mr-3" width="50" height="50" alt="Profile" />
+                  <img v-if="user.profile_picture_url" :src="user.profile_picture_url" class="rounded-circle me-3" width="50" height="50" alt="Profile" />
                   <div>
                     <h5 class="mb-1">{{ user.name || 'N/A' }}</h5>
                     <p class="mb-1 text-muted">{{ user.email || 'N/A' }}</p>

@@ -58,10 +58,10 @@
               </template>
               <template #cell(actions)="row">
                 <b-button size="sm" variant="outline-secondary" :disabled="!isMasterAdmin" @click="openPermissionModal(row.item)">Access</b-button>
-                <b-button size="sm" variant="outline-primary" class="ml-1" :disabled="!isMasterAdmin" @click="saveAdmin(row.item)">Save</b-button>
+                <b-button size="sm" variant="outline-primary" class="ms-1" :disabled="!isMasterAdmin" @click="saveAdmin(row.item)">Save</b-button>
                 <b-button
                   size="sm"
-                  class="ml-1"
+                  class="ms-1"
                   :variant="row.item.active ? 'outline-danger' : 'outline-success'"
                   :disabled="!isMasterAdmin"
                   @click="toggleAdminActive(row.item)"

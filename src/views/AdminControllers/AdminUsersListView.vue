@@ -10,11 +10,11 @@
                 v-model="tableFilter"
                 type="search"
                 placeholder="Filter by name or email…"
-                class="mb-2 mr-2"
+                class="mb-2 me-2"
                 style="max-width: 280px;"
               />
               <div class="d-flex flex-wrap">
-                <b-form-checkbox v-model="showInactive" switch class="mr-3 mb-2" @change="onToggleFilters">
+                <b-form-checkbox v-model="showInactive" switch class="me-3 mb-2" @change="onToggleFilters">
                   Show inactive users
                 </b-form-checkbox>
                 <b-form-checkbox v-model="showDeleted" switch class="mb-2" @change="onToggleFilters">
@@ -41,7 +41,7 @@
                         <img
                           v-if="row.item.profile_image || row.item.profile_picture_url"
                           :src="row.item.profile_image || row.item.profile_picture_url"
-                          class="rounded-circle mr-2"
+                          class="rounded-circle me-2"
                           width="32"
                           height="32"
                           alt=""
@@ -56,7 +56,7 @@
                       <b-badge :variant="statusVariant(row.item)">{{ statusLabel(row.item) }}</b-badge>
                     </template>
                     <template #cell(actions)="row">
-                      <b-button variant="outline-primary" size="sm" class="mr-1 mb-1" @click="openModal(row.item)">View</b-button>
+                      <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(row.item)">View</b-button>
                       <b-button
                         v-if="!row.item.is_deleted"
                         size="sm"
@@ -118,7 +118,7 @@
                         <img
                           v-if="row.item.profile_image || row.item.profile_picture_url"
                           :src="row.item.profile_image || row.item.profile_picture_url"
-                          class="rounded-circle mr-2"
+                          class="rounded-circle me-2"
                           width="32"
                           height="32"
                           alt=""
@@ -133,8 +133,8 @@
                       <b-badge :variant="statusVariant(row.item)">{{ statusLabel(row.item) }}</b-badge>
                     </template>
                     <template #cell(actions)="row">
-                      <b-button variant="outline-primary" size="sm" class="mr-1 mb-1" @click="openModal(row.item)">View</b-button>
-                      <b-button size="sm" class="mr-1 mb-1" variant="outline-info" @click="openMediator360(row.item)">360°</b-button>
+                      <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(row.item)">View</b-button>
+                      <b-button size="sm" class="me-1 mb-1" variant="outline-info" @click="openMediator360(row.item)">360°</b-button>
                       <b-button
                         v-if="!row.item.is_deleted"
                         size="sm"

@@ -11,7 +11,7 @@
 
       <div class="d-inline-block w-100">
         <button type="button" class="btn btn-secondary" @click="onClickBack">Back</button>
-        <button type="button" class="btn btn-primary float-right ml" @click="onClickResetPassword">Reset Password</button>
+        <button type="button" class="btn btn-primary float-end ml" @click="onClickResetPassword">Reset Password</button>
       </div>
     </form>
     <form v-else class="mt-4">
@@ -31,7 +31,7 @@
       </div>
       <div class="d-inline-block w-100">
         <button type="button" class="btn btn-secondary" @click="onClickBackOTP">Back</button>
-        <button type="button" class="btn btn-primary float-right ml" @click="onClickConfirmPassword">Reset Password</button>
+        <button type="button" class="btn btn-primary float-end ml" @click="onClickConfirmPassword">Reset Password</button>
       </div>
     </form>
   </div>

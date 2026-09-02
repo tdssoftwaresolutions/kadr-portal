@@ -97,7 +97,7 @@
             <div class="d-flex justify-content-between">
                 <div>
                 <button type="button" class="btn btn-secondary" @click="prevStep(2)">Previous</button>
-                <button type="button" class="btn btn-primary float-right ml" @click="nextStep(2)">Next</button>
+                <button type="button" class="btn btn-primary float-end ml" @click="nextStep(2)">Next</button>
                 </div>
                 <div class="align-self-center">
                 <span class="dark-color d-inline-block line-height-2">
@@ -125,7 +125,7 @@
               </b-form-checkbox>
             </div>
             <button type="button" class="btn btn-secondary" @click="prevStep(3)">Previous</button>
-            <button type="button" class="btn btn-success float-right ml" @click="submitClientForm">Submit</button>
+            <button type="button" class="btn btn-success float-end ml" @click="submitClientForm">Submit</button>
         </div>
     </div>
 </template>

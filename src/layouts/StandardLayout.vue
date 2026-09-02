@@ -21,7 +21,7 @@
     <div class="mobile-top-nav-shell">
       <div class="mobile-nav-brand">
         <span>Kadr.live</span>
-        <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ml-2" />
+        <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ms-2" />
       </div>
       <button v-if="user && mobileNavTree.length" class="mobile-top-nav-toggle" @click="toggleMobileNav" type="button" aria-label="Open navigation">
         <i class="ri-menu-line" style="font-size:18px"></i>
@@ -91,7 +91,7 @@
             <div class="mobile-top-nav-link">
               <i class="ri-user-line"></i>
               <span>Profile</span>
-              <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ml-auto" />
+              <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ms-auto" />
             </div>
           </li>
           <li key="language" class="mobile-top-nav-list-item" @click="toggleLocale">
@@ -576,7 +576,7 @@ export default {
       align-items: center;
       gap: 0.5rem;
     }
-    .mobile-top-nav-link .ml-auto {
+    .mobile-top-nav-link .ms-auto {
       margin-left: auto;
     }
 

@@ -7,7 +7,7 @@
             <h4 class="card-title">Breadcrumb</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-1 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-1 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -75,7 +75,7 @@ export default {
             <h4 class="card-title">Breadcrumb With Icon</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-2 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-2 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -96,13 +96,13 @@ export default {
     return {
       itemsIcon1: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           active: true
         }
       ],
       itemsIcon2: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           href: '#'
         },
         {
@@ -112,7 +112,7 @@ export default {
       ],
       itemsIcon3: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           href: '#'
         },
         {
@@ -145,7 +145,7 @@ export default {
             <h4 class="card-title">Breadcrumb</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-3 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-3 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -213,7 +213,7 @@ export default {
             <h4 class="card-title">Breadcrumb With Icon</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-4 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-4 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -234,13 +234,13 @@ export default {
     return {
       itemsIcon1: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           active: true
         }
       ],
       itemsIcon2: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           href: '#'
         },
         {
@@ -250,7 +250,7 @@ export default {
       ],
       itemsIcon3: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           href: '#'
         },
         {
@@ -283,7 +283,7 @@ export default {
             <h4 class="card-title">Breadcrumb With Icon</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-5 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-5 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -304,13 +304,13 @@ export default {
     return {
       itemsIcon1: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           active: true
         }
       ],
       itemsIcon2: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           href: '#'
         },
         {
@@ -320,7 +320,7 @@ export default {
       ],
       itemsIcon3: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           href: '#'
         },
         {
@@ -351,7 +351,7 @@ export default {
             <h4 class="card-title">Breadcrumb With Icon</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-6 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-6 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -372,13 +372,13 @@ export default {
     return {
       itemsIcon1: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           active: true
         }
       ],
       itemsIcon2: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           href: '#'
         },
         {
@@ -388,7 +388,7 @@ export default {
       ],
       itemsIcon3: [
         {
-          html: '&lt;i class="ri-home-4-line ms-1 float-left"&gt;&lt;/i&gt;Home',
+          html: '&lt;i class="ri-home-4-line ms-1 float-start"&gt;&lt;/i&gt;Home',
           href: '#'
         },
         {
@@ -458,13 +458,13 @@ export default {
       ],
       itemsIcon1: [
         {
-          html: '<i class="ri-home-4-line ms-1 float-left"></i>Home',
+          html: '<i class="ri-home-4-line ms-1 float-start"></i>Home',
           active: true
         }
       ],
       itemsIcon2: [
         {
-          html: '<i class="ri-home-4-line ms-1 float-left"></i>Home',
+          html: '<i class="ri-home-4-line ms-1 float-start"></i>Home',
           href: '#'
         },
         {
@@ -474,7 +474,7 @@ export default {
       ],
       itemsIcon3: [
         {
-          html: '<i class="ri-home-4-line ms-1 float-left"></i>Home',
+          html: '<i class="ri-home-4-line ms-1 float-start"></i>Home',
           href: '#'
         },
         {

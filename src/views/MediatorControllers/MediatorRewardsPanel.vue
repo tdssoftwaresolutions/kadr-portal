@@ -18,7 +18,7 @@
             Share your referral code. When they sign up and are approved, you earn referral points.
           </p>
           <div class="d-flex flex-wrap align-items-center">
-            <code class="referral-code mr-2 mb-2">{{ referralCode || '—' }}</code>
+            <code class="referral-code me-2 mb-2">{{ referralCode || '—' }}</code>
             <b-button size="sm" variant="outline-primary" class="mb-2" @click="copyReferral">
               {{ copied ? 'Copied' : 'Copy code' }}
             </b-button>
@@ -133,7 +133,7 @@ export default {
       tableFields: [
         { key: 'created_at', label: 'Date', formatter: this.formatDate },
         { key: 'description', label: 'Activity' },
-        { key: 'points', label: 'Points', class: 'text-right' }
+        { key: 'points', label: 'Points', class: 'text-end' }
       ]
     }
   },

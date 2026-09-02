@@ -14,7 +14,7 @@
           <b-badge :variant="row.item.active ? 'success' : 'secondary'">{{ row.item.active ? 'Active' : 'Hidden' }}</b-badge>
         </template>
         <template #cell(actions)="row">
-          <b-button size="sm" variant="outline-primary" class="mr-1" @click="openForm(row.item)">Edit</b-button>
+          <b-button size="sm" variant="outline-primary" class="me-1" @click="openForm(row.item)">Edit</b-button>
           <b-button size="sm" variant="outline-danger" @click="removeItem(row.item)">Remove</b-button>
         </template>
       </b-table>
@@ -50,7 +50,7 @@
               No fulfillment rules yet. Create one to define what runs when this reward is redeemed (e.g. extend Pro, send email).
             </p>
             <div class="d-flex flex-wrap align-items-center">
-              <b-button size="sm" variant="outline-primary" class="mr-2 mb-1" @click="requestCreateRule">
+              <b-button size="sm" variant="outline-primary" class="me-2 mb-1" @click="requestCreateRule">
                 Create new rule
               </b-button>
               <b-button size="sm" variant="link" class="p-0 mb-1" @click="loadRules">
@@ -87,7 +87,7 @@ export default {
       ],
       catalogFields: [
         { key: 'title', label: 'Reward' },
-        { key: 'points_cost', label: 'Points', class: 'text-right' },
+        { key: 'points_cost', label: 'Points', class: 'text-end' },
         { key: 'sort_order', label: 'Order', class: 'text-center' },
         { key: 'active', label: 'Status' },
         { key: 'actions', label: '' }

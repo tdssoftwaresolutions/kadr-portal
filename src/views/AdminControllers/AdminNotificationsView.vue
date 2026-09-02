@@ -10,7 +10,7 @@
               <b-form-select v-model="filterChannel" :options="channelFilterOptions" size="sm" @change="loadTemplates" />
             </b-form-group>
           </b-col>
-          <b-col class="text-right">
+          <b-col class="text-end">
             <b-button size="sm" variant="primary" @click="openTemplateEditor()">New template</b-button>
           </b-col>
         </b-row>
@@ -23,7 +23,7 @@
             <b-badge :variant="row.item.active ? 'success' : 'secondary'">{{ row.item.active ? 'On' : 'Off' }}</b-badge>
           </template>
           <template #cell(actions)="row">
-            <b-button size="sm" variant="outline-primary" class="mr-1" @click="openTemplateEditor(row.item)">Edit</b-button>
+            <b-button size="sm" variant="outline-primary" class="me-1" @click="openTemplateEditor(row.item)">Edit</b-button>
             <b-button size="sm" variant="outline-danger" @click="removeTemplate(row.item)">Delete</b-button>
           </template>
         </b-table>

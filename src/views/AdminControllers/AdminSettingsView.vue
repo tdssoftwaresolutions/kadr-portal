@@ -58,7 +58,7 @@
           @fulfillment-rules-changed="onFulfillmentRulesChanged"
         />
         <admin-premium-settings-panel ref="premiumPanel" @fulfillment-rules-changed="onFulfillmentRulesChanged" />
-        <div class="text-right mt-2">
+        <div class="text-end mt-2">
           <router-link :to="{ name: 'app.reward-orders' }" class="btn btn-sm btn-outline-secondary">
             View redemption orders →
           </router-link>

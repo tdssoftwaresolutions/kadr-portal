@@ -88,7 +88,7 @@
         </kadr-form-field>
       </div>
       <div class="d-inline-block w-100">
-        <button type="button" class="btn btn-primary float-right" @click="onClickLogin">Sign in</button>
+        <button type="button" class="btn btn-primary float-end" @click="onClickLogin">Sign in</button>
       </div>
       <div class="google-signin-divider">
         <span>or</span>

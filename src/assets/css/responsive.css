@@ -164,7 +164,7 @@ NOTE: This file contains the styling for responsive Template.
 	.navbar-nav.navbar-list { float: right; display: inline-block; }
 	.iq-top-navbar .iq-navbar-custom .iq-menu-bt { right: 130px; top: 18px; }
 	.animation-card .an-img .bodymovin { margin-bottom: 0; margin-left: 0; width: 100%; }
-	.iq-footer, .iq-footer .col-lg-6.text-right { text-align: center !important; }
+	.iq-footer, .iq-footer .col-lg-6.text-end { text-align: center !important; }
 	.iq-booking-index { overflow-x: scroll; }
 	.seat-booking { width: 980px; position: relative; }
 	.seat-booking .col-sm-1 { -ms-flex: 0 0 8.333333%; flex: 0 0 8.333333%; max-width: 8.333333%; width: 8.333333%; }
@@ -222,7 +222,7 @@ NOTE: This file contains the styling for responsive Template.
 	.profile-img { text-align: center; padding-right: 0 !important }
 	.profile-feed-items { width: 100%; justify-content: center; }
 	.iq-edit-profile .nav-link { border: none; }
-	.user-list-files.d-flex.float-right { display: block !important; text-align: center; margin-top: 30px; width: 100%; }
+	.user-list-files.d-flex.float-end { display: block !important; text-align: center; margin-top: 30px; width: 100%; }
 	.table-responsive #exampleInputSearch { width: 100%; }
 	.wizard-step { width: 50%; }
 	.Products ul.product_list { text-align: center; }

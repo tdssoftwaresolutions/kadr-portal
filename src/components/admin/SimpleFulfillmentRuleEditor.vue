@@ -8,7 +8,7 @@
       <b-form-checkbox v-model="local.grantPro" switch class="mb-0 font-weight-bold" @change="emitUpdate">
         Give Pro subscription
       </b-form-checkbox>
-      <b-form-group v-if="local.grantPro" label="For how many days?" label-size="sm" class="mt-2 mb-0 ml-4">
+      <b-form-group v-if="local.grantPro" label="For how many days?" label-size="sm" class="mt-2 mb-0 ms-4">
         <b-form-input v-model.number="local.proDays" type="number" min="1" max="3650" style="max-width: 120px" @input="emitUpdate" />
       </b-form-group>
     </div>
@@ -17,7 +17,7 @@
       <b-form-checkbox v-model="local.markFulfilled" switch class="mb-0 font-weight-bold" @change="emitUpdate">
         Mark reward as completed
       </b-form-checkbox>
-      <p v-if="local.markFulfilled" class="small text-muted mb-0 mt-2 ml-4">Closes the redemption so it shows as fulfilled.</p>
+      <p v-if="local.markFulfilled" class="small text-muted mb-0 mt-2 ms-4">Closes the redemption so it shows as fulfilled.</p>
     </div>
 
     <div class="action-card mb-0">
@@ -25,13 +25,13 @@
         Send email to mediator
       </b-form-checkbox>
       <template v-if="local.sendEmail">
-        <p class="small text-muted mt-2 mb-2 ml-4">
+        <p class="small text-muted mt-2 mb-2 ms-4">
           Write only the main message. We add greeting, header, and footer automatically.
         </p>
-        <b-form-group label="Email subject" label-size="sm" class="ml-4 mb-2">
+        <b-form-group label="Email subject" label-size="sm" class="ms-4 mb-2">
           <b-form-input v-model="local.emailSubject" placeholder="Your reward from Kadr" @input="emitUpdate" />
         </b-form-group>
-        <div class="ml-4 email-editor-wrap">
+        <div class="ms-4 email-editor-wrap">
           <label class="small font-weight-bold d-block mb-1">Message</label>
           <editor
             v-if="emailEditorReady"

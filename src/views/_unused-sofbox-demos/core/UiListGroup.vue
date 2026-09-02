@@ -7,7 +7,7 @@
             <h4 class="card-title">List group</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-1 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-1 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -43,7 +43,7 @@
             <h4 class="card-title">Disabled items</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-2 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-2 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -79,7 +79,7 @@
             <h4 class="card-title">Flush</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-3 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-3 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -115,7 +115,7 @@
             <h4 class="card-title">Contextual classes</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-4 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-4 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -159,7 +159,7 @@
             <h4 class="card-title">With badges</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-5 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-5 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -209,7 +209,7 @@
             <h4 class="card-title">With badges</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-6 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-6 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -261,7 +261,7 @@
             <h4 class="card-title">List Active</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-7 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-7 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -297,7 +297,7 @@
             <h4 class="card-title">Links and buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-8 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-8 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -334,7 +334,7 @@
             <h4 class="card-title">Horizontal</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-9 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-9 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -367,7 +367,7 @@
             <h4 class="card-title">Contextual classes Action</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-10 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-10 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -411,7 +411,7 @@
             <h4 class="card-title">Links and buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-12 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-12 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>

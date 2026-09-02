@@ -2,8 +2,8 @@
   <ul class="iq-timeline">
     <li v-for="(item,index) in items" :key="index">
       <div class="timeline-dots" :class="'border-' + getDotColor(item, index)"></div>
-      <h6 class="float-left mb-1" v-html="item.title"></h6>
-      <small class="float-right mt-1" v-html="item.right"></small>
+      <h6 class="float-start mb-1" v-html="item.title"></h6>
+      <small class="float-end mt-1" v-html="item.right"></small>
       <div class="d-inline-block w-100">
         <p v-html="item.description"></p>
       </div>

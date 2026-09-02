@@ -7,7 +7,7 @@
             <h4 class="card-title">Notifications</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-1 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-1 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -25,7 +25,7 @@
     &lt;/svg&gt;
     &lt;strong class="ms-auto"&gt;Bootstrap&lt;/strong&gt;
     &lt;small&gt;11 mins ago&lt;/small&gt;
-    &lt;button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close"&gt;
+    &lt;button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close"&gt;
       &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
     &lt;/button&gt;
   &lt;/template&gt;
@@ -42,7 +42,7 @@
                 </svg>
                 <strong class="ms-auto">Bootstrap</strong>
                 <small>11 mins ago</small>
-                <button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                <button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close">
                   <span aria-hidden="true">×</span>
                 </button>
               </template>
@@ -55,7 +55,7 @@
             <h4 class="card-title">Stacking</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-2 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-2 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -73,7 +73,7 @@
     &lt;/svg&gt;
     &lt;strong class="ms-auto"&gt;Bootstrap&lt;/strong&gt;
     &lt;small class="text-muted"&gt;just now&lt;/small&gt;
-    &lt;button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close"&gt;
+    &lt;button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close"&gt;
       &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
     &lt;/button&gt;
   &lt;/template&gt;
@@ -86,7 +86,7 @@
     &lt;/svg&gt;
     &lt;strong class="ms-auto"&gt;Bootstrap&lt;/strong&gt;
     &lt;small class="text-muted"&gt;2 seconds ago&lt;/small&gt;
-    &lt;button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close"&gt;
+    &lt;button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close"&gt;
       &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
     &lt;/button&gt;
   &lt;/template&gt;
@@ -103,7 +103,7 @@
                 </svg>
                 <strong class="ms-auto">Bootstrap</strong>
                 <small class="text-muted">just now</small>
-                <button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                <button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close">
                   <span aria-hidden="true">×</span>
                 </button>
               </template>
@@ -116,7 +116,7 @@
                 </svg>
                 <strong class="ms-auto">Bootstrap</strong>
                 <small class="text-muted">2 seconds ago</small>
-                <button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                <button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close">
                   <span aria-hidden="true">×</span>
                 </button>
               </template>
@@ -129,7 +129,7 @@
             <h4 class="card-title">Notifications horizontally and/or vertically</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-3 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-3 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -149,7 +149,7 @@
         &lt;/svg&gt;
         &lt;strong class="ms-auto"&gt;Bootstrap&lt;/strong&gt;
         &lt;small&gt;11 mins ago&lt;/small&gt;
-        &lt;button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close"&gt;
+        &lt;button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close"&gt;
           &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
         &lt;/button&gt;
       &lt;/template&gt;
@@ -170,7 +170,7 @@
                     </svg>
                     <strong class="ms-auto">Bootstrap</strong>
                     <small>11 mins ago</small>
-                    <button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close">
                       <span aria-hidden="true">×</span>
                     </button>
                   </template>
@@ -187,7 +187,7 @@
             <h4 class="card-title">Notifications</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-4 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-4 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -206,7 +206,7 @@
       &lt;/svg&gt;
       &lt;strong class="ms-auto"&gt;Bootstrap&lt;/strong&gt;
       &lt;small&gt;11 mins ago&lt;/small&gt;
-      &lt;button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close"&gt;
+      &lt;button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close"&gt;
         &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
       &lt;/button&gt;
     &lt;/template&gt;
@@ -225,7 +225,7 @@
                     </svg>
                     <strong class="ms-auto">Bootstrap</strong>
                     <small>11 mins ago</small>
-                    <button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close">
                       <span aria-hidden="true">×</span>
                     </button>
                   </template>
@@ -239,7 +239,7 @@
             <h4 class="card-title">Stacking Placement</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-5 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-5 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -259,7 +259,7 @@
         &lt;/svg&gt;
         &lt;strong class="ms-auto"&gt;Bootstrap&lt;/strong&gt;
         &lt;small&gt;11 mins ago&lt;/small&gt;
-        &lt;button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close"&gt;
+        &lt;button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close"&gt;
           &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
         &lt;/button&gt;
       &lt;/template&gt;
@@ -278,7 +278,7 @@
         &lt;/svg&gt;
         &lt;strong class="ms-auto"&gt;Bootstrap&lt;/strong&gt;
         &lt;small class="text-muted"&gt;just now&lt;/small&gt;
-        &lt;button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close"&gt;
+        &lt;button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close"&gt;
           &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
         &lt;/button&gt;
       &lt;/template&gt;
@@ -291,7 +291,7 @@
         &lt;/svg&gt;
         &lt;strong class="ms-auto"&gt;Bootstrap&lt;/strong&gt;
         &lt;small class="text-muted"&gt;2 seconds ago&lt;/small&gt;
-        &lt;button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close"&gt;
+        &lt;button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close"&gt;
           &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
         &lt;/button&gt;
       &lt;/template&gt;
@@ -313,7 +313,7 @@
                     </svg>
                     <strong class="ms-auto">Bootstrap</strong>
                     <small>11 mins ago</small>
-                    <button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close">
                       <span aria-hidden="true">×</span>
                     </button>
                   </template>
@@ -332,7 +332,7 @@
                     </svg>
                     <strong class="ms-auto">Bootstrap</strong>
                     <small class="text-muted">just now</small>
-                    <button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close">
                       <span aria-hidden="true">×</span>
                     </button>
                   </template>
@@ -345,7 +345,7 @@
                     </svg>
                     <strong class="ms-auto">Bootstrap</strong>
                     <small class="text-muted">2 seconds ago</small>
-                    <button type="button" class="ms-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <button type="button" class="ms-2 mb-1 close" data-bs-dismiss="toast" aria-label="Close">
                       <span aria-hidden="true">×</span>
                     </button>
                   </template>
@@ -363,7 +363,7 @@
             <h4 class="card-title">Notifications</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-6 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-6 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -381,7 +381,7 @@
     &lt;/svg&gt;
     &lt;strong class="ms-auto text-white"&gt;Bootstrap&lt;/strong&gt;
     &lt;small class="text-white"&gt;11 mins ago&lt;/small&gt;
-    &lt;button type="button" class="ms-2 mb-1 close text-white" data-dismiss="toast" aria-label="Close"&gt;
+    &lt;button type="button" class="ms-2 mb-1 close text-white" data-bs-dismiss="toast" aria-label="Close"&gt;
       &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
     &lt;/button&gt;
   &lt;/template&gt;
@@ -394,7 +394,7 @@
     &lt;/svg&gt;
     &lt;strong class="ms-auto text-white"&gt;Bootstrap&lt;/strong&gt;
     &lt;small class="text-white"&gt;11 mins ago&lt;/small&gt;
-    &lt;button type="button" class="ms-2 mb-1 close text-white" data-dismiss="toast" aria-label="Close"&gt;
+    &lt;button type="button" class="ms-2 mb-1 close text-white" data-bs-dismiss="toast" aria-label="Close"&gt;
       &lt;span aria-hidden="true"&gt;×&lt;/span&gt;
     &lt;/button&gt;
   &lt;/template&gt;
@@ -411,7 +411,7 @@
                 </svg>
                 <strong class="ms-auto text-white">Bootstrap</strong>
                 <small class="text-white">11 mins ago</small>
-                <button type="button" class="ms-2 mb-1 close text-white" data-dismiss="toast" aria-label="Close">
+                <button type="button" class="ms-2 mb-1 close text-white" data-bs-dismiss="toast" aria-label="Close">
                   <span aria-hidden="true">×</span>
                 </button>
               </template>
@@ -424,7 +424,7 @@
                 </svg>
                 <strong class="ms-auto text-white">Bootstrap</strong>
                 <small class="text-white">11 mins ago</small>
-                <button type="button" class="ms-2 mb-1 close text-white" data-dismiss="toast" aria-label="Close">
+                <button type="button" class="ms-2 mb-1 close text-white" data-bs-dismiss="toast" aria-label="Close">
                   <span aria-hidden="true">×</span>
                 </button>
               </template>

@@ -7,7 +7,7 @@
             <h4 class="card-title">Pagination Examples</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-1 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-1 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -37,7 +37,7 @@
             <h4 class="card-title">Disabled and active states</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-2 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-2 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -65,7 +65,7 @@
             <h4 class="card-title">Pagination With Color</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-3 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-3 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -95,7 +95,7 @@
             <h4 class="card-title">Working with icons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-4 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-4 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -121,7 +121,7 @@
             <h4 class="card-title">Pagination Sizing</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-5 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-5 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -149,7 +149,7 @@
             <h4 class="card-title">Alignment</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-6 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-6 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -171,7 +171,7 @@
 &lt;/div&gt;
 
 &lt;div class="mt-3"&gt;
-  &lt;h6 class="text-right"&gt;Right (end) alignment&lt;/h6&gt;
+  &lt;h6 class="text-end"&gt;Right (end) alignment&lt;/h6&gt;
   &lt;b-pagination :value="1" :total-rows="50" align="right" /&gt;
 &lt;/div&gt;
 
@@ -194,7 +194,7 @@
             </div>
 
             <div class="mt-3">
-              <h6 class="text-right">Right (end) alignment</h6>
+              <h6 class="text-end">Right (end) alignment</h6>
               <b-pagination :value="1" :total-rows="50" align="right" />
             </div>
 

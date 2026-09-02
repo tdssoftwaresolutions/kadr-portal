@@ -7,7 +7,7 @@
               <h4 class="card-title">Basic Alerts</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-1  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-1  role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -16,7 +16,7 @@
             <b-collapse id="collapse-1" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-<!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+<!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="basic-alert"><code>
 &lt;b-alert :show="true" variant="primary"&gt;
   &lt;div class="iq-alert-text"&gt;A simple &lt;b&gt;primary&lt;/b&gt; alert—check it out!&lt;/div&gt;
@@ -73,7 +73,7 @@
             <h4 class="card-title">Basic Alerts With Icons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-2  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-2  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -82,7 +82,7 @@
             <b-collapse id="collapse-2" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="basic-alert-icon"><code>
 &lt;b-alert :show="true" variant="primary"&gt;
   &lt;div class="iq-alert-icon"&gt;
@@ -183,7 +183,7 @@
             <h4 class="card-title">Basic Line Alerts</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-3  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-3  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -192,7 +192,7 @@
             <b-collapse id="collapse-3" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="basic-line-alert"><code>
 &lt;b-alert :show="true" variant="primary" class="bg-white"&gt;
   &lt;div class="iq-alert-text"&gt;A simple &lt;b&gt;primary&lt;/b&gt; alert—check it out!&lt;/div&gt;
@@ -249,7 +249,7 @@
             <h4 class="card-title">Basic Line Alerts With Icons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-4  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-4  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -258,7 +258,7 @@
             <b-collapse id="collapse-4" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="basic-line-alert-icon"><code>
 &lt;b-alert :show="true" variant="primary" class="bg-white"&gt;
   &lt;div class="iq-alert-icon"&gt;
@@ -359,7 +359,7 @@
             <h4 class="card-title">Alerts With Background</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-5  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-5  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -368,7 +368,7 @@
             <b-collapse id="collapse-5" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="alert-with-background"><code>
 &lt;b-alert :show="true" variant=" " class="text-white bg-primary"&gt;
   &lt;div class="iq-alert-text"&gt;A simple &lt;b&gt;primary&lt;/b&gt; alert—check it out!&lt;/div&gt;
@@ -425,7 +425,7 @@
             <h4 class="card-title">Background Alerts With Icons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-6  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-6  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -434,7 +434,7 @@
             <b-collapse id="collapse-6" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="alert-with-background-icon"><code>
 &lt;b-alert :show="true" variant=" " class="text-white bg-primary"&gt;
   &lt;div class="iq-alert-icon"&gt;
@@ -535,7 +535,7 @@
             <h4 class="card-title">Alerts Dismissing</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-7  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-7  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -544,7 +544,7 @@
             <b-collapse id="collapse-7" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="alert-with-dismiss"><code>
 &lt;b-alert :show="true" variant=" " dismissible fade class="text-white bg-primary"&gt;
   &lt;div class="iq-alert-text"&gt;A simple &lt;b&gt;primary&lt;/b&gt; alert—check it out!&lt;/div&gt;
@@ -601,7 +601,7 @@
             <h4 class="card-title">Alerts Dismissing With Icons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-8  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-8  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -610,7 +610,7 @@
             <b-collapse id="collapse-8" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="alert-with-dismiss-icon"><code>
 &lt;b-alert :show="true" variant=" " dismissible fade class="text-white bg-primary"&gt;
   &lt;div class="iq-alert-icon"&gt;
@@ -711,7 +711,7 @@
             <h4 class="card-title">Alerts With Background</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-9  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-9  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -720,7 +720,7 @@
             <b-collapse id="collapse-9" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="alert-with-link"><code>
 &lt;b-alert :show="true" variant="primary"&gt;
   &lt;div class="iq-alert-text"&gt;A simple light alert with &lt;a href="#" class="alert-link"&gt;an example link&lt;/a&gt;. Give it a click if you like.&lt;/div&gt;
@@ -777,7 +777,7 @@
             <h4 class="card-title">Background Alerts With Icons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-10  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-10  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -786,7 +786,7 @@
             <b-collapse id="collapse-10" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="alert-with-link-icon"><code>
 &lt;b-alert :show="true" variant="primary" class="text-white bg-primary"&gt;
   &lt;div class="iq-alert-icon"&gt;
@@ -885,7 +885,7 @@
             <h4 class="card-title">Additional content</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-11  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-11  role="button">
               <i class="ri-code-s-slash-line"></i>
             </a>
           </template>
@@ -894,7 +894,7 @@
             <b-collapse id="collapse-11" class="mb-2">
               <div class="card">
                 <kbd class="bg-dark">
-                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-right" data-copy="true">Copy</a>-->
+                  <!--                  <a href="javascript:void(0)" v-b-tooltip.hover data-copy-target="#basic-alert" title="Copy" class="text-white float-end" data-copy="true">Copy</a>-->
                   <pre class="text-white" id="alert-with-link-additional"><code>
 &lt;div class="col-6"&gt;
   &lt;b-alert :show="true" variant="primary"&gt;

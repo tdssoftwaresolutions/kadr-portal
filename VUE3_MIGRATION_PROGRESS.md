@@ -18,7 +18,7 @@ Branch: `migration/vue3` (off `stable-release`)
 | 6 | Non-UI third-party plugins | ✅ Done |
 | 7 | BootstrapVue → BootstrapVueNext + BS5 (Option A) | 🔄 In progress |
 | 7a | Install BVN + BS5, register plugin/components, CSS | ✅ Done |
-| 7b | Bootstrap 4→5 CSS/utility class migration | ⬜ Not started |
+| 7b | Bootstrap 4→5 CSS/utility class migration | ✅ Done |
 | 7c | Migrate b-* component APIs to BVN | ⬜ Not started |
 | 7d | Rewrite $bvModal/$bvToast call sites | ⬜ Not started |
 | 7e | Remove bootstrap-vue deps, verify | ⬜ Not started |
@@ -275,3 +275,29 @@ b-* surface: **48 distinct component types across 75 files**; `$bvModal`/`$bvToa
 - Production build passes.
 
 **Next:** 7b (BS4→5 CSS/utility classes), 7c (b-* API differences), 7d ($bvModal/$bvToast), 7e (remove bootstrap-vue, final verify).
+
+### Phase 7b — Bootstrap 4 → 5 CSS/utility class migration ✅
+
+Applied via a temporary Node script (`scripts/_bs4to5.js`, since deleted) using JS regex
+with proper `\b` boundaries. **Lesson learned:** an initial BSD-`sed` attempt was unreliable
+(`\b` unsupported in BSD sed) and was fully reverted via `git checkout` before redoing in Node.
+
+**Renames across `src/**\/*.vue` (60 files, 314 substitutions):**
+- `ml-* → ms-*`, `mr-* → me-*`, `pl-* → ps-*`, `pr-* → pe-*` (incl. responsive `-sm/md/lg/xl/xxl-` variants, sizes 0–5/auto/negative)
+- `float-left/right → float-start/end`
+- `text-left/right → text-start/end`
+- `no-gutters → g-0`
+- `sr-only → visually-hidden`
+- `form-row → row`
+- `data-toggle= → data-bs-toggle=`, `data-dismiss= → data-bs-dismiss=`, `data-target= → data-bs-target=`
+
+**CSS assets:** updated 2 responsive-override selectors in `assets/css/responsive.css`
+(`.col-lg-6.text-right → .text-end`, `.float-right → .float-end`) so they keep matching
+the renamed template classes.
+
+**Notes / non-issues found:**
+- Codebase already contained some BS5 classes (`btn-close`, `ms-1`) — it was a BS4/BS5 mix; only BS4 stragglers were converted.
+- `.close` occurrences in templates are custom classes (`modal-close-btn`, `mobile-top-nav-close`, `kadr-support-fab-close`), not the Bootstrap `.close` utility → no change needed. The only literal `.close` is in `_unused-sofbox-demos`.
+- `.sr-only` in `fontawesome.css` is FontAwesome's own vendor definition (untouched); templates that used `sr-only` now use BS5 `visually-hidden` which BS5 provides.
+
+**Verification:** production build passes; headless boot of `/admin/auth/sign-in` → app mounts, BS5 utility classes present in DOM, **0 leftover BS4 classes** rendered, 0 errors.

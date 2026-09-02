@@ -1,6 +1,6 @@
 <template>
   <div class="container-fluid p-0">
-    <div class="row no-gutters">
+    <div class="row g-0">
       <div class="col-12 text-center">
         <div class="iq-error">
           <h1>{{ this.$route.params.code }}</h1>

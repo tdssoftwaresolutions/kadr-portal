@@ -50,7 +50,7 @@
                   <b-card-body class="d-flex flex-column">
                     <div class="mb-2">
                       <h5 class="mb-1">{{ c.caseId || 'Case' }}</h5>
-                      <b-badge variant="info" class="mr-1">{{ statusLabel(c) }}</b-badge>
+                      <b-badge variant="info" class="me-1">{{ statusLabel(c) }}</b-badge>
                       <b-badge variant="secondary">{{ subStatusLabel(c) }}</b-badge>
                     </div>
                     <p class="mb-2"><strong>First party:</strong> {{ partyName(c.user_cases_first_partyTouser) }}</p>
@@ -68,7 +68,7 @@
                       <strong>Mediator revenue share:</strong> {{ Number(c.mediator_commission || 0).toFixed(2) }}% of mediation amount
                     </p>
                     <div class="mt-auto d-flex flex-wrap justify-content-end">
-                      <b-button variant="outline-primary" size="sm" class="mr-1 mb-1" @click="openDetailModal(c)">
+                      <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openDetailModal(c)">
                         View details
                       </b-button>
                       <b-button
@@ -188,7 +188,7 @@
               <h6 class="detail-section-title">Mediator revenue share (% of mediation amount)</h6>
               <div class="d-flex flex-wrap align-items-center">
                 <b-form-input v-model.number="selectedCaseCommission" type="number" min="0" step="0.01" class="commission-input" />
-                <b-button size="sm" variant="primary" class="ml-2" @click="saveCaseCommission">Save</b-button>
+                <b-button size="sm" variant="primary" class="ms-2" @click="saveCaseCommission">Save</b-button>
               </div>
             </div>
           </b-tab>
@@ -369,7 +369,7 @@
           <b-button
             v-if="needsCaseTypeApproval(selectedCase)"
             variant="warning"
-            class="ml-2"
+            class="ms-2"
             @click="openApproveTypeModal(selectedCase)"
           >
             Approve case type
@@ -377,7 +377,7 @@
           <b-button
             v-else
             variant="primary"
-            class="ml-2"
+            class="ms-2"
             @click="openAssignFromDetail"
           >
             Assign / change mediator
@@ -402,9 +402,9 @@
         />
       </b-form-group>
       <div class="d-flex justify-content-end">
-        <b-button variant="secondary" class="mr-2" @click="approveTypeModalVisible = false">Cancel</b-button>
+        <b-button variant="secondary" class="me-2" @click="approveTypeModalVisible = false">Cancel</b-button>
         <b-button variant="success" :disabled="!selectedCaseType || approvingCaseType" @click="confirmApproveCaseType">
-          <span v-if="approvingCaseType" class="spinner-border spinner-border-sm mr-1" role="status" />
+          <span v-if="approvingCaseType" class="spinner-border spinner-border-sm me-1" role="status" />
           Approve
         </b-button>
       </div>
@@ -423,7 +423,7 @@
                 <img
                   v-if="m.profile_picture_url"
                   :src="m.profile_picture_url"
-                  class="rounded-circle mr-2"
+                  class="rounded-circle me-2"
                   width="44"
                   height="44"
                   alt=""
@@ -452,7 +452,7 @@
       <div v-if="filteredMediators.length === 0" class="text-center text-muted py-3">No mediators match your search.</div>
       <div class="d-flex justify-content-end mt-3">
         <b-button variant="secondary" @click="assignModalVisible = false">Cancel</b-button>
-        <b-button variant="primary" class="ml-2" :disabled="!selectedMediatorId" @click="confirmAssignMediator">
+        <b-button variant="primary" class="ms-2" :disabled="!selectedMediatorId" @click="confirmAssignMediator">
           Confirm assignment
         </b-button>
       </div>

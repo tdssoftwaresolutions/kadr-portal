@@ -97,7 +97,7 @@
                       </b-button>
                     </div>
                   </div>
-                  <button type="submit" class="btn btn-primary mr-2">
+                  <button type="submit" class="btn btn-primary me-2">
                     <span>Save</span>
                   </button>
                 </b-form>
@@ -131,7 +131,7 @@
                       Receive notification emails
                     </b-form-checkbox>
                   </div>
-                  <button type="submit" class="btn btn-primary mr-2">Save preferences</button>
+                  <button type="submit" class="btn btn-primary me-2">Save preferences</button>
                 </b-form>
               </div>
               <div v-show="activeTab==='subscription' && isMediator" class="profile-section">
@@ -196,7 +196,7 @@
                       </template>
                     </kadr-form-field>
                   </div>
-                  <button type="submit" class="btn btn-primary mr-2">
+                  <button type="submit" class="btn btn-primary me-2">
                     <span>Change Password</span>
                   </button>
                 </b-form>

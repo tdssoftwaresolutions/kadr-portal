@@ -111,7 +111,7 @@
     </div>
 
     <form v-if="canCompose" class="composer" @submit.prevent="onSubmit">
-      <label class="sr-only" for="correspondence-body">Message</label>
+      <label class="visually-hidden" for="correspondence-body">Message</label>
       <textarea
         id="correspondence-body"
         v-model="draft"
@@ -801,7 +801,7 @@ export default {
   border: 1px solid #f1aeb5;
 }
 
-.sr-only {
+.visually-hidden {
   position: absolute;
   width: 1px;
   height: 1px;

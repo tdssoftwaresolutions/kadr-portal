@@ -9,12 +9,12 @@
           <template v-slot:body>
             <div class="d-flex mb-3">
               <b-form-input v-model="newCategory" placeholder="Add category" />
-              <b-button class="ml-2" variant="primary" @click="createCategory">Add</b-button>
+              <b-button class="ms-2" variant="primary" @click="createCategory">Add</b-button>
             </div>
             <div v-for="item in categories" :key="item.id" class="d-flex align-items-center mb-2">
               <b-form-input v-model="item.name" />
               <small class="mx-2 text-muted">Used: {{ item._count.blog_categories }}</small>
-              <b-button size="sm" variant="outline-primary" class="mr-2" @click="updateCategory(item)">Save</b-button>
+              <b-button size="sm" variant="outline-primary" class="me-2" @click="updateCategory(item)">Save</b-button>
               <b-button size="sm" variant="outline-danger" @click="deleteCategory(item.id)">Delete</b-button>
             </div>
           </template>
@@ -28,12 +28,12 @@
           <template v-slot:body>
             <div class="d-flex mb-3">
               <b-form-input v-model="newTag" placeholder="Add tag" />
-              <b-button class="ml-2" variant="primary" @click="createTag">Add</b-button>
+              <b-button class="ms-2" variant="primary" @click="createTag">Add</b-button>
             </div>
             <div v-for="item in tags" :key="item.id" class="d-flex align-items-center mb-2">
               <b-form-input v-model="item.name" />
               <small class="mx-2 text-muted">Used: {{ item._count.blog_tags }}</small>
-              <b-button size="sm" variant="outline-primary" class="mr-2" @click="updateTag(item)">Save</b-button>
+              <b-button size="sm" variant="outline-primary" class="me-2" @click="updateTag(item)">Save</b-button>
               <b-button size="sm" variant="outline-danger" @click="deleteTag(item.id)">Delete</b-button>
             </div>
           </template>

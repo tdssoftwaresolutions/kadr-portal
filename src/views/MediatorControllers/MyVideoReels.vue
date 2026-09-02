@@ -8,7 +8,7 @@
       </template>
       <template v-slot:headerAction>
         <b-button variant="primary" size="sm" @click="newReel" class="professional-btn">
-          <i class="ri-add-line mr-1"></i>
+          <i class="ri-add-line me-1"></i>
           New video
         </b-button>
       </template>

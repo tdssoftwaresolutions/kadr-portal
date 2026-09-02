@@ -233,10 +233,10 @@ export default {
       },
       loading: false,
       caseColumns: [
-        { label: 'Start Date Time', key: 'start_datetime', class: 'text-left', sortable: true },
-        { label: 'End Date Time', key: 'end_datetime', class: 'text-left', sortable: true },
-        { label: 'Status', key: 'status', class: 'text-left' },
-        { label: 'Meeting', key: 'meeting_link', class: 'text-left' }
+        { label: 'Start Date Time', key: 'start_datetime', class: 'text-start', sortable: true },
+        { label: 'End Date Time', key: 'end_datetime', class: 'text-start', sortable: true },
+        { label: 'Status', key: 'status', class: 'text-start' },
+        { label: 'Meeting', key: 'meeting_link', class: 'text-start' }
       ]
     }
   }

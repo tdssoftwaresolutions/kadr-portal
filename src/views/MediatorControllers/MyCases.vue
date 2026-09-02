@@ -284,7 +284,7 @@
             </button>
           </div>
         </div>
-        <div class="text-right" style="margin-top: 24px; display: flex; gap: 16px; justify-content: flex-end;">
+        <div class="text-end" style="margin-top: 24px; display: flex; gap: 16px; justify-content: flex-end;">
           <b-button variant="secondary" @click="showResolveModal = false" type="button">Cancel</b-button>
           <b-button type="submit" variant="primary">Save</b-button>
         </div>

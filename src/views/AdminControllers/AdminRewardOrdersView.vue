@@ -96,7 +96,7 @@ export default {
         { key: 'created_at', label: 'Ordered' },
         { key: 'mediator', label: 'Mediator' },
         { key: 'reward', label: 'Reward' },
-        { key: 'points_spent', label: 'Points', class: 'text-right' },
+        { key: 'points_spent', label: 'Points', class: 'text-end' },
         { key: 'status', label: 'Status' },
         { key: 'actions', label: '' }
       ]

@@ -39,11 +39,11 @@
         <label for="new-case-evidence">Upload Evidence</label>
         <div class="file-upload">
           <input id="new-case-evidence" type="file" class="form-control-file" @change="onEvidenceChange" />
-          <span v-if="form.evidence" class="file-name ml-2">{{ form.evidence.name }}</span>
+          <span v-if="form.evidence" class="file-name ms-2">{{ form.evidence.name }}</span>
         </div>
       </div>
       <div class="d-flex justify-content-end">
-        <b-button variant="secondary" class="mr-2" @click="$emit('close')">Cancel</b-button>
+        <b-button variant="secondary" class="me-2" @click="$emit('close')">Cancel</b-button>
         <b-button variant="primary" @click="goNext">Next</b-button>
       </div>
     </div>
@@ -69,9 +69,9 @@
       <div class="d-flex justify-content-between">
         <b-button variant="secondary" @click="step = 1">Previous</b-button>
         <div>
-          <b-button variant="secondary" class="mr-2" @click="$emit('close')">Cancel</b-button>
+          <b-button variant="secondary" class="me-2" @click="$emit('close')">Cancel</b-button>
           <b-button variant="success" :disabled="submitting" @click="submit">
-            <span v-if="submitting" class="spinner-border spinner-border-sm mr-1" role="status" />
+            <span v-if="submitting" class="spinner-border spinner-border-sm me-1" role="status" />
             Submit case
           </b-button>
         </div>

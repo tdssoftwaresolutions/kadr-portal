@@ -13,11 +13,11 @@
               <div>
                 <h5 class="mb-1">{{ data.mediator.name }}</h5>
                 <p class="text-muted mb-0">{{ data.mediator.email }}</p>
-                <b-badge v-if="data.mediator.is_deleted" variant="secondary" class="mr-1">Deleted</b-badge>
+                <b-badge v-if="data.mediator.is_deleted" variant="secondary" class="me-1">Deleted</b-badge>
                 <b-badge :variant="data.mediator.active ? 'success' : 'warning'">
                   {{ data.mediator.active ? 'Active' : 'Inactive' }}
                 </b-badge>
-                <b-badge variant="info" class="ml-1">{{ data.mediator.subscription_tier || 'FREE' }}</b-badge>
+                <b-badge variant="info" class="ms-1">{{ data.mediator.subscription_tier || 'FREE' }}</b-badge>
               </div>
             </div>
             <b-alert show variant="info" class="small">Read-only audit view. Data is retained for deleted mediators.</b-alert>

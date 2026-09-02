@@ -1,7 +1,7 @@
 <template>
   <div class="mt-5 iq-maintenance">
     <div class="container-fluid p-0">
-      <div class="row no-gutters">
+      <div class="row g-0">
         <div class="col-12 text-center">
           <div class="iq-maintenance">
             <img :src="require('../../assets/images/error/02.png')" class="img-fluid" alt="error">

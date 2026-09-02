@@ -7,7 +7,7 @@
             <h4 class="card-title">Default Buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-1 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-1 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -49,7 +49,7 @@
             <h4 class="card-title">Default Buttons Rounded Shape</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-2 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-2 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -93,7 +93,7 @@
             <h4 class="card-title">Outline Buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-3 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-3 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -133,7 +133,7 @@
             <h4 class="card-title">Rounded Outline Buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-4 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-4 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -175,7 +175,7 @@
             <h4 class="card-title">Default Buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-5 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-5 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -217,7 +217,7 @@
             <h4 class="card-title">Default Buttons Rounded Shape</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-6 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-6 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -261,7 +261,7 @@
             <h4 class="card-title">Outline Buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-7 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-7 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -301,7 +301,7 @@
             <h4 class="card-title">Rounded Outline Buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-8 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-8 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -343,7 +343,7 @@
             <h4 class="card-title">Button Tags</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-9 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-9 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -377,7 +377,7 @@
             <h4 class="card-title">Button Sizes</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-10 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-10 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -409,7 +409,7 @@
             <h4 class="card-title">Block Buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-11 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-11 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -437,7 +437,7 @@
             <h4 class="card-title">Icons Buttons</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-12 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-12 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -495,7 +495,7 @@
             <h4 class="card-title">Social Disabled State</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-13 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-13 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -525,7 +525,7 @@
             <h4 class="card-title">Buttons Toggle States</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-14 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-14 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -536,12 +536,12 @@
                 <kbd class="bg-dark">
                   <pre class="text-white" id="buttons-toggle-states">
                     <code>
-&lt;button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false"&gt;Single toggle&lt;/button&gt;
+&lt;button type="button" class="btn btn-primary" data-bs-toggle="button" aria-pressed="false"&gt;Single toggle&lt;/button&gt;
 </code></pre>
                 </kbd>
               </div>
             </b-collapse>
-            <button type="button" class="btn btn-primary" data-toggle="button" aria-pressed="false">Single toggle</button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="button" aria-pressed="false">Single toggle</button>
           </template>
         </iq-card>
       </b-col>
@@ -553,7 +553,7 @@
             <h4 class="card-title">Default Buttons Active</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-15 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-15 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -589,7 +589,7 @@
             <h4 class="card-title">Button Group Sizing</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-16 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-16 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -653,7 +653,7 @@
             <h4 class="card-title">Buttons Group</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-17 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-17 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -719,7 +719,7 @@
             <h4 class="card-title">Buttons Dropdown</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-18 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-18 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>

@@ -8,7 +8,7 @@
             <h4 class="card-title mb-0">Threads</h4>
           </template>
           <template v-slot:headerAction>
-            <b-button size="sm" variant="primary" class="mr-1" @click="openStartModal">New</b-button>
+            <b-button size="sm" variant="primary" class="me-1" @click="openStartModal">New</b-button>
             <b-button size="sm" variant="outline-secondary" :disabled="loadingThreads" @click="loadThreads">
               <i class="fas fa-sync-alt" :class="{ 'fa-spin': loadingThreads }" aria-hidden="true" />
             </b-button>
@@ -24,7 +24,7 @@
                 <b-form-select
                   v-model="inboxSourceFilter"
                   size="sm"
-                  class="inbox-source-filter ml-md-2"
+                  class="inbox-source-filter ms-md-2"
                   style="max-width: 200px"
                   :options="inboxSourceOptions"
                 />
@@ -49,11 +49,11 @@
               >
                 <div class="inbox-row-top">
                   <span class="inbox-case">
-                    <b-badge :variant="inboxRowBadgeVariant(t)" class="mr-1">{{ inboxRowKindLabel(t) }}</b-badge>
+                    <b-badge :variant="inboxRowBadgeVariant(t)" class="me-1">{{ inboxRowKindLabel(t) }}</b-badge>
                     <template v-if="t.kind === 'case'">#{{ t.case_reference }}</template>
                     <template v-else-if="t.thread_origin === 'PORTAL'">{{ supportTopicShort(t.support_topic) }}</template>
                     <template v-else>Lead</template>
-                    <b-badge v-if="(t.unread_count || 0) > 0" variant="danger" pill class="ml-1">{{ t.unread_count }}</b-badge>
+                    <b-badge v-if="(t.unread_count || 0) > 0" variant="danger" pill class="ms-1">{{ t.unread_count }}</b-badge>
                   </span>
                   <time class="inbox-time">{{ t.last_message_at ? formatShort(t.last_message_at) : '—' }}</time>
                 </div>
@@ -73,7 +73,7 @@
           </template>
           <template v-slot:body>
             <p class="small text-muted mb-2 text-break">
-              <b-badge variant="primary" class="mr-1">Case</b-badge>
+              <b-badge variant="primary" class="me-1">Case</b-badge>
               <strong>{{ selected.participant_label }}</strong>
               <span class="text-muted"> · Case #{{ selected.case_reference }}</span>
             </p>
@@ -99,7 +99,7 @@
           </template>
           <template v-slot:body>
             <p class="small text-muted mb-2 text-break">
-              <b-badge :variant="selected.thread_origin === 'PORTAL' ? 'info' : 'warning'" class="mr-1">
+              <b-badge :variant="selected.thread_origin === 'PORTAL' ? 'info' : 'warning'" class="me-1">
                 {{ selected.thread_origin === 'PORTAL' ? 'Portal' : 'Website' }}
               </b-badge>
               <strong class="text-break">{{ selected.thread_title }}</strong>
@@ -232,7 +232,7 @@
                         <div class="c360-meeting-row-actions">
                           <b-button v-if="meeting.meeting_link" size="sm" variant="outline-primary" :href="meeting.meeting_link" target="_blank" rel="noopener">Join</b-button>
                           <b-button v-if="meeting.google_calendar_link" size="sm" variant="outline-secondary" :href="meeting.google_calendar_link" target="_blank" rel="noopener">Calendar</b-button>
-                          <b-button size="sm" variant="primary" class="ml-auto" @click="openC360MeetingDetail(meeting)">View details</b-button>
+                          <b-button size="sm" variant="primary" class="ms-auto" @click="openC360MeetingDetail(meeting)">View details</b-button>
                         </div>
                       </article>
                     </div>
@@ -415,7 +415,7 @@
             v-for="c in pickerCases"
             :key="c.id"
             type="button"
-            class="picker-row d-block w-100 text-left"
+            class="picker-row d-block w-100 text-start"
             :class="{ active: pickerCase && pickerCase.id === c.id }"
             @click="pickerCase = c"
           >
@@ -477,7 +477,7 @@
       <div v-if="c360MeetingModalMeeting" class="c360-meeting-modal">
         <p class="text-muted small mb-3">
           <span class="text-break">{{ c360MeetingModalMeeting.start }} – {{ c360MeetingModalMeeting.end }}</span>
-          <b-badge variant="light" class="border ml-2">{{ c360MeetingModalMeeting.statusLabel }}</b-badge>
+          <b-badge variant="light" class="border ms-2">{{ c360MeetingModalMeeting.statusLabel }}</b-badge>
         </p>
         <div class="c360-meeting-modal-actions mb-3">
           <b-button v-if="c360MeetingModalMeeting.meeting_link" size="sm" variant="outline-primary" :href="c360MeetingModalMeeting.meeting_link" target="_blank" rel="noopener">Join link</b-button>

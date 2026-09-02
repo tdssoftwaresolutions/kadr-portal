@@ -3,7 +3,7 @@
     <Loader />
     <section class="sign-in-page bg-white">
       <div class="container-fluid p-0">
-        <div class="row no-gutters">
+        <div class="row g-0">
           <div class="col-12 col-md-6 align-self-center">
             <div class="sign-in-from">
               <div class="auth-language-switcher">
@@ -12,7 +12,7 @@
                   class="btn btn-sm btn-outline-secondary"
                   @click="toggleLocale"
                 >
-                  <i class="ri-translate-2 mr-1"></i>
+                  <i class="ri-translate-2 me-1"></i>
                   {{ $i18n.locale === 'hi' ? 'English' : 'हिन्दी' }}
                 </button>
               </div>

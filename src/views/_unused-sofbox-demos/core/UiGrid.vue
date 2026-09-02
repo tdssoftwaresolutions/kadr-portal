@@ -36,7 +36,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <th class="text-nowrap text-left" scope="row">Max container width</th>
+                  <th class="text-nowrap text-start" scope="row">Max container width</th>
                   <td>None (auto)</td>
                   <td>540px</td>
                   <td>720px</td>
@@ -44,7 +44,7 @@
                   <td>1140px</td>
                 </tr>
                 <tr>
-                  <th class="text-nowrap text-left" scope="row">Prop</th>
+                  <th class="text-nowrap text-start" scope="row">Prop</th>
                   <td><code>cols="*"</code></td>
                   <td><code>sm="*"</code></td>
                   <td><code>md="*"</code></td>
@@ -52,19 +52,19 @@
                   <td><code>xl="*"</code></td>
                 </tr>
                 <tr>
-                  <th class="text-nowrap text-left" scope="row"># of columns</th>
+                  <th class="text-nowrap text-start" scope="row"># of columns</th>
                   <td colspan="5">12</td>
                 </tr>
                 <tr>
-                  <th class="text-nowrap text-left" scope="row">Gutter width</th>
+                  <th class="text-nowrap text-start" scope="row">Gutter width</th>
                   <td colspan="5">30px (15px on each side of a column)</td>
                 </tr>
                 <tr>
-                  <th class="text-nowrap text-left" scope="row">Nestable</th>
+                  <th class="text-nowrap text-start" scope="row">Nestable</th>
                   <td colspan="5">Yes</td>
                 </tr>
                 <tr>
-                  <th class="text-nowrap text-left" scope="row">Offset</th>
+                  <th class="text-nowrap text-start" scope="row">Offset</th>
                   <td><code>offset="*"</code></td>
                   <td><code>offset-sm="*"</code></td>
                   <td><code>offset-md="*"</code></td>
@@ -72,7 +72,7 @@
                   <td><code>offset-xl="*"</code></td>
                 </tr>
                 <tr>
-                  <th class="text-nowrap text-left" scope="row">Column ordering</th>
+                  <th class="text-nowrap text-start" scope="row">Column ordering</th>
                   <td><code>order="*"</code></td>
                   <td><code>order-sm="*"</code></td>
                   <td><code>order-md="*"</code></td>
@@ -88,7 +88,7 @@
             <h4 class="card-title">Equal-width</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-2 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-2 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -150,7 +150,7 @@
             <h4 class="card-title">Setting one column width</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-3 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-3 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -200,7 +200,7 @@
             <h4 class="card-title">Variable width content</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-4 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-4 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -250,7 +250,7 @@
             <h4 class="card-title">Equal-width multi-row</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-5 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-5 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -294,7 +294,7 @@
             <h4 class="card-title">Responsive classes</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-6 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-6 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -346,7 +346,7 @@
             <h4 class="card-title">Stacked to horizontal</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-7 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-7 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -394,7 +394,7 @@
             <h4 class="card-title">Mix and match</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-8 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-8 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -456,7 +456,7 @@
             <h4 class="card-title">Gutters</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-9 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-9 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -495,7 +495,7 @@
             <h4 class="card-title">Alignment</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-10 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-10 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -570,7 +570,7 @@
             <h4 class="card-title">Horizontal alignment</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-11 role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-11 role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>

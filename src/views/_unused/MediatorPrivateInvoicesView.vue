@@ -54,7 +54,7 @@
                 ₹{{ formatMoney(row.item.grand_total) }}
               </template>
               <template #cell(actions)="row">
-                <b-button size="sm" variant="outline-primary" class="mr-1" @click="editInvoice(row.item)">Edit</b-button>
+                <b-button size="sm" variant="outline-primary" class="me-1" @click="editInvoice(row.item)">Edit</b-button>
                 <b-button size="sm" variant="outline-secondary" @click="downloadPdf(row.item.id)">PDF</b-button>
               </template>
             </b-table>

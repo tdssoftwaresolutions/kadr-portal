@@ -46,7 +46,7 @@
     <template #modal-footer>
       <b-button variant="secondary" @click="localVisible = false">Cancel</b-button>
       <b-button variant="primary" :disabled="!canSubmit || submitting" @click="onSubmit">
-        <span v-if="submitting" class="spinner-border spinner-border-sm mr-1" role="status" />
+        <span v-if="submitting" class="spinner-border spinner-border-sm me-1" role="status" />
         Save
       </b-button>
     </template>

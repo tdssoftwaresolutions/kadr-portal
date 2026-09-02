@@ -7,7 +7,7 @@
             <h4 class="card-title">Display headings</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-1  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-1  role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -43,7 +43,7 @@
             <h4 class="card-title">Typography</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-2  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-2  role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -77,7 +77,7 @@
             <h4 class="card-title">Inline text elements</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-3  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-3  role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -115,7 +115,7 @@
             <h4 class="card-title">Lists Inline</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-4  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-4  role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -149,7 +149,7 @@
             <h4 class="card-title">Headings</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-5  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-5  role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -183,7 +183,7 @@
             <h4 class="card-title">Lists Unstyled</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-6  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-6  role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -241,7 +241,7 @@
             <h4 class="card-title">Blockquotes</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-7  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-7  role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
@@ -273,7 +273,7 @@
             <h4 class="card-title">Description list alignment</h4>
           </template>
           <template v-slot:headerAction>
-            <a class="text-primary float-right" v-b-toggle.collapse-8  role="button">
+            <a class="text-primary float-end" v-b-toggle.collapse-8  role="button">
               <i class="ri-code-s-slash-line" />
             </a>
           </template>
