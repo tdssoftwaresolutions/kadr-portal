@@ -13,7 +13,7 @@
         </iq-card>
       </b-col>
     </b-row>
-    <b-modal id="admin-view-appointment-modal" ref="view-appointment-modal" size="lg" title="Meeting details" scrollable no-footer>
+    <b-modal id="admin-view-appointment-modal" v-model="showDetailsModal" size="lg" title="Meeting details" scrollable no-footer>
       <div class="appointment-details" v-if="selectedAppointment != null">
         <div class="data-row">
           <div class="col-6">
@@ -52,7 +52,7 @@
           <div class="data-title">Description</div>
           <textarea rows="5" readonly :value="selectedAppointment.description"></textarea>
         </div>
-        <b-button class="btn btn-primary mt-3" style="float:right;background: #0084ff;" @click="$bvModal.hide('admin-view-appointment-modal')">Close</b-button>
+        <b-button class="btn btn-primary mt-3" style="float:right;background: #0084ff;" @click="showDetailsModal = false">Close</b-button>
       </div>
     </b-modal>
   </b-container>
@@ -68,6 +68,7 @@ export default {
   name: 'AdminCalendar',
   data () {
     return {
+      showDetailsModal: false,
       selectedAppointment: null,
       events: []
     }
@@ -113,7 +114,7 @@ export default {
         caseNumber: xp.caseNumber,
         type: xp.type
       }
-      this.$refs['view-appointment-modal'].show()
+      this.showDetailsModal = true
     }
   }
 }

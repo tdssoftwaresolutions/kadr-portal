@@ -20,7 +20,7 @@ Branch: `migration/vue3` (off `stable-release`)
 | 7a | Install BVN + BS5, register plugin/components, CSS | ✅ Done |
 | 7b | Bootstrap 4→5 CSS/utility class migration | ✅ Done |
 | 7c | Migrate b-* component APIs to BVN | ✅ Done |
-| 7d | Rewrite $bvModal/$bvToast call sites | ⬜ Not started |
+| 7d | Rewrite $bvModal/$bvToast call sites | ✅ Done |
 | 7e | Remove bootstrap-vue deps, verify | ⬜ Not started |
 | 8 | Component breaking-change sweep | ⬜ Not started |
 | 9 | Remove @vue/compat & finalize | ⬜ Not started |
@@ -326,3 +326,17 @@ the renamed template classes.
   - `MeetingFeedbackModal.vue`
 
 **Verification:** production build passes; interactive headless test on temp `/_migration-smoke` (since removed): modal **opens on click** via `v-model`, custom `#header` slot + body render, `no-footer` respected; `b-alert` renders via `model-value` and dismissible shows `.btn-close`; **0 errors, 0 v-model compat warnings**. No `$emit('input')` remains in active components.
+
+### Phase 7d — programmatic $bvModal/$bvToast call sites ✅
+
+All active usages were `$bvModal.hide('id')` (close-by-id) plus ref-based `.show()`/`.hide()`
+in the three calendar views. Converted each modal to `v-model` state (the verified pattern),
+which is cleaner than the orchestrator/ref mix:
+
+- **`AdminControllers/AdminCalendar.vue`**: modal `ref` → `v-model="showDetailsModal"`; `openDetailsModal` `.show()` → `showDetailsModal = true`; close button `$bvModal.hide(...)` → `showDetailsModal = false`; added `showDetailsModal` data.
+- **`ClientControllers/Calendar.vue`**: same `v-model="showDetailsModal"` conversion; open `.show()` → `= true`; close button + `openFeedbackFromCalendar`'s `$bvModal.hide` → `= false`.
+- **`MediatorControllers/Calendar.vue`**: **two** modals converted — `new-appointment-modal` → `v-model="showNewAppointmentModal"` (openModal/onDateClick `.show()` → `= true`, `closeModal` `.hide()` → `= false`), and `view-appointment-modal` → `v-model="showDetailsModal"` (open `.show()` → `= true`; `closeViewModal` `.hide()`, close button, `openFeedbackFromCalendar` `$bvModal.hide` → `= false`). The `@ok="onSave"` handler with `preventDefault()` (validation-keep-open) still works — BVN's ok event is a triggerable event supporting `preventDefault()`.
+
+**Not migrated:** `views/_unused/ViewCaseDetail.vue` has a `$bvToast.toast(...)` call, but it's an unused view (not in the router) — left as-is; harmless to the build. Flag for cleanup if that view is ever revived.
+
+**Verification:** production build passes; interactive headless test of the exact converted calendar-modal pattern (temp route, since removed): modal **opens on trigger** with data + closes on the close button, **0 errors**. No `$bvModal`/`$bvToast` or ref-based modal calls remain in active files.

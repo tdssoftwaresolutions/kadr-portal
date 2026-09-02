@@ -78,7 +78,7 @@
     </b-row>
     <b-modal
       id="new-appointment-modal-id"
-      ref="new-appointment-modal"
+      v-model="showNewAppointmentModal"
       size="lg"
       :title="bookingPrefillDate ? `Book for ${bookingPrefillDateLabel}` : 'Book Appointment'"
       @ok="onSave"
@@ -192,7 +192,7 @@
         </div>
       </div>
     </b-modal>
-    <b-modal id="view-appointment-modal-id" cancel-disabled ref="view-appointment-modal" size="lg" title="View Appointment" scrollable no-footer>
+    <b-modal id="view-appointment-modal-id" cancel-disabled v-model="showDetailsModal" size="lg" title="View Appointment" scrollable no-footer>
       <div class="appointment-details" v-if="selectedAppointment != null">
         <div class="data-row">
             <div class="col-6">
@@ -235,7 +235,7 @@
             {{ calendarFeedbackButtonLabel }}
           </b-button>
         </div>
-        <b-button class="btn btn-primary modal-close-btn" @click="$bvModal.hide('view-appointment-modal-id')">Close</b-button>
+        <b-button class="btn btn-primary modal-close-btn" @click="showDetailsModal = false">Close</b-button>
       </div>
     </b-modal>
 
@@ -299,6 +299,8 @@ export default {
       incrementalId: 1,
       personalEventColor: PERSONAL_EVENT_COLOR,
       kadrEventColor: KADR_EVENT_COLOR,
+      showNewAppointmentModal: false,
+      showDetailsModal: false,
       selectedAppointment: null,
       /** When set (Y-m-d), booking was opened from a calendar day click — time only */
       bookingPrefillDate: null,
@@ -510,10 +512,10 @@ export default {
       return this.$formatDateTime(dateString)
     },
     closeModal () {
-      this.$refs['new-appointment-modal'].hide()
+      this.showNewAppointmentModal = false
     },
     closeViewModal () {
-      this.$refs['view-appointment-modal'].hide()
+      this.showDetailsModal = false
     },
     onSave (bvModalEvt) {
       if (bvModalEvt && typeof bvModalEvt.preventDefault === 'function') {
@@ -637,7 +639,7 @@ export default {
         first_party_rating: xp.first_party_rating,
         second_party_rating: xp.second_party_rating
       }
-      this.$refs['view-appointment-modal'].show()
+      this.showDetailsModal = true
     },
     openFeedbackFromCalendar () {
       const ut = this.$store.state.user && this.$store.state.user.type
@@ -648,7 +650,7 @@ export default {
       }
       this.calendarFeedbackEventId = this.selectedAppointment && this.selectedAppointment.id
       this.calendarFeedbackModalVisible = true
-      this.$bvModal.hide('view-appointment-modal-id')
+      this.showDetailsModal = false
     },
     async onCalendarMeetingFeedbackSubmit (payload) {
       const id = this.calendarFeedbackEventId || (this.selectedAppointment && this.selectedAppointment.id)
@@ -675,7 +677,7 @@ export default {
     },
     openModal () {
       this.resetForm({ clearPrefill: true })
-      this.$refs['new-appointment-modal'].show()
+      this.showNewAppointmentModal = true
     },
     onDateClick (selectedInfo) {
       if (this._openingAppointmentModal) return
@@ -689,7 +691,7 @@ export default {
       this.bookingPrefillDate = parts.date
       this.appointmentTime = parts.time
       this.syncStartFromPrefillTime()
-      this.$refs['new-appointment-modal'].show()
+      this.showNewAppointmentModal = true
       this.$nextTick(() => {
         this._openingAppointmentModal = false
       })
