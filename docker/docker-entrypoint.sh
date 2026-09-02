@@ -19,4 +19,4 @@ if [ "$attempt" -ge "$max_attempts" ]; then
 fi
 
 echo "[docker] Starting Kadr Portal..."
-exec node server.js
+exec node backend/server.js

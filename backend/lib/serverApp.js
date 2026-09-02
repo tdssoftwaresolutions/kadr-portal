@@ -36,11 +36,11 @@ function shouldServeWebsiteStatic (options = {}) {
 }
 
 function resolveDistPath (distPath) {
-  return distPath || path.join(__dirname, '..', 'dist')
+  return distPath || path.join(__dirname, '..', '..', 'dist')
 }
 
 function resolveWebsitePath (websitePath) {
-  return websitePath || path.join(__dirname, '..', 'public', 'website')
+  return websitePath || path.join(__dirname, '..', '..', 'public', 'website')
 }
 
 function createApp (options = {}) {

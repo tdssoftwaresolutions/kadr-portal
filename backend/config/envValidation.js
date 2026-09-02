@@ -55,7 +55,7 @@ function validateEnv ({ exitOnError = true } = {}) {
       return val.length < 32 || val.includes('change-me') || val.includes('example')
     })
     if (weakSecrets.length) {
-      const msg = `[env] SECURITY WARNING: Weak or placeholder secrets detected: ${weakSecrets.join(', ')}. Run "node scripts/generateSecrets.js" to generate strong secrets.`
+      const msg = `[env] SECURITY WARNING: Weak or placeholder secrets detected: ${weakSecrets.join(', ')}. Run "npm run vapid:generate" or "node backend/scripts/generateSecrets.js" to generate strong secrets.`
       console.error(msg)
       if (exitOnError) {
         process.exit(1)

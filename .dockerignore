@@ -12,9 +12,9 @@ coverage
 .cursor
 agent-transcripts
 docs
-tests
+backend/tests
 .github
-desktop
+backend/desktop
 android
 ios
 capacitor.config.json

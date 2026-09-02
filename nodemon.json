@@ -1,14 +1,14 @@
 {
   "watch": [
-    "server.js",
-    "controller",
-    "services",
-    "routes",
-    "middleware",
-    "utils",
-    "lib",
-    "config",
-    "desktop"
+    "backend/server.js",
+    "backend/controller",
+    "backend/services",
+    "backend/routes",
+    "backend/middleware",
+    "backend/utils",
+    "backend/lib",
+    "backend/config",
+    "backend/desktop"
   ],
   "ignore": [
     "public/**",
@@ -17,7 +17,7 @@
     "android/**",
     "ios/**",
     "node_modules/**",
-    "prisma/migrations/**",
+    "db/prisma/migrations/**",
     "*.html",
     "*.sample"
   ],

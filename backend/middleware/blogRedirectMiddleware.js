@@ -30,7 +30,7 @@ async function blogRedirectMiddleware (req, res, next) {
     }
 
     // No redirect found: show the custom 404 page for deleted/missing blog URLs
-    return res.status(404).sendFile(path.join(__dirname, '..', 'public', 'website', '404.html'))
+    return res.status(404).sendFile(path.join(__dirname, '..', '..', 'public', 'website', '404.html'))
   } catch (error) {
     console.error('Error in blogRedirectMiddleware:', error)
     next()

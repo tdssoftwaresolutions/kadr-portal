@@ -2,7 +2,7 @@ const path = require('path')
 const fs = require('fs')
 const Helper = require('../../utils/helper')
 
-const WEBSITE_ROOT = path.join(__dirname, '..', '..', 'public', 'website')
+const WEBSITE_ROOT = path.join(__dirname, '..', '..', '..', 'public', 'website')
 
 function esc (value) {
   return Helper.escapeHtml(value || '')

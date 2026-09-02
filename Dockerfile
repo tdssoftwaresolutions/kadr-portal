@@ -14,7 +14,7 @@ ARG BASE_URL=http://localhost:3000
 ENV BASE_URL=${BASE_URL}
 COPY package.json package-lock.json ./
 # Schema must exist before npm ci — package.json postinstall runs `prisma generate`
-COPY prisma ./prisma
+COPY db ./db
 # Do not set NODE_ENV=production before npm ci — that skips devDependencies
 # (vue-cli-service, sass-loader, etc.) required to build the SPA.
 RUN npm ci
@@ -46,17 +46,18 @@ COPY --from=build /app/node_modules/prisma ./node_modules/prisma
 COPY --from=build /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/db ./db
 COPY --from=build /app/public ./public
-COPY package.json package-lock.json server.js ./
-COPY controller ./controller
-COPY config ./config
-COPY lib ./lib
-COPY middleware ./middleware
-COPY routes ./routes
-COPY services ./services
-COPY utils ./utils
-COPY scripts ./scripts
+COPY package.json package-lock.json ./
+COPY backend/server.js ./backend/server.js
+COPY backend/controller ./backend/controller
+COPY backend/config ./backend/config
+COPY backend/lib ./backend/lib
+COPY backend/middleware ./backend/middleware
+COPY backend/routes ./backend/routes
+COPY backend/services ./backend/services
+COPY backend/utils ./backend/utils
+COPY backend/scripts ./backend/scripts
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 

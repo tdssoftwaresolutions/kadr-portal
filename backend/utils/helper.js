@@ -337,9 +337,9 @@ class Helper {
   }
 
   static async writeStaticBlogPage (blog, previousUrl) {
-    const templatePath = path.join(__dirname, '..', 'blog.sample')
+    const templatePath = path.join(__dirname, '..', '..', 'blog.sample')
     const outputFileName = blog.url ? `${blog.url}.html` : `blog/${Helper.generateBlogSlug(blog.title)}.html`
-    const outputFilePath = path.join(__dirname, '..', 'public', 'website', outputFileName)
+    const outputFilePath = path.join(__dirname, '..', '..', 'public', 'website', outputFileName)
     const outputFolder = path.dirname(outputFilePath)
     await fs.promises.mkdir(outputFolder, { recursive: true })
     const template = await fs.promises.readFile(templatePath, 'utf8')
@@ -362,7 +362,7 @@ class Helper {
     }
 
     if (previousUrl && previousUrl !== outputFileName) {
-      const oldFilePath = path.join(__dirname, '..', 'public', 'website', previousUrl + '.html')
+      const oldFilePath = path.join(__dirname, '..', '..', 'public', 'website', previousUrl + '.html')
       await fs.promises.unlink(oldFilePath).catch(() => {})
     }
 
@@ -610,7 +610,7 @@ class Helper {
 
       // Delete HTML file if blog has a URL
       if (blog.url) {
-        const filePath = path.join(__dirname, '..', 'public', 'website', blog.url + '.html')
+        const filePath = path.join(__dirname, '..', '..', 'public', 'website', blog.url + '.html')
         await fs.promises.unlink(filePath).catch(() => {})
       }
 
@@ -980,7 +980,7 @@ class Helper {
   static async addLanguagesToDatabase (languageKeys, prisma) {
     try {
       // Path to languages.json
-      const filePath = path.join(__dirname, 'public/website', 'languages.json')
+      const filePath = path.join(__dirname, '..', '..', 'public', 'website', 'languages.json')
 
       // Read and parse the JSON file
       const languagesJson = JSON.parse(fs.readFileSync(filePath, 'utf8'))

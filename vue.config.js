@@ -49,7 +49,7 @@ module.exports = {
     // app.js contains no eval()/new Function(), so it satisfies the strict CSP
     // (no 'unsafe-eval'). Development keeps fast eval-based source maps.
     if (process.env.NODE_ENV === 'production') {
-      
+
     }
     config.devtool = 'source-map'
 

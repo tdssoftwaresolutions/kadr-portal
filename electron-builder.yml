@@ -8,15 +8,16 @@ directories:
 
 files:
   - dist/**
-  - desktop/**
-  - lib/**
-  - routes/**
-  - controller/**
-  - services/**
-  - middleware/**
-  - utils/**
-  - prisma/**
-  - server.js
+  - backend/desktop/**
+  - backend/lib/**
+  - backend/routes/**
+  - backend/controller/**
+  - backend/services/**
+  - backend/middleware/**
+  - backend/config/**
+  - backend/utils/**
+  - backend/server.js
+  - db/prisma/**
   - package.json
   - node_modules/.prisma/**/*
   - node_modules/@prisma/**/*
