@@ -18,24 +18,24 @@ import {
  * `this.$formatDateTime(value)` without importing.
  */
 export default {
-  install (Vue) {
+  install (app) {
     ensureTimezoneInitialized()
 
-    Vue.prototype.$formatDateTime = formatDateTime
-    Vue.prototype.$formatDate = formatDate
-    Vue.prototype.$formatTime = formatTime
-    Vue.prototype.$formatRelativeDay = formatRelativeDay
-    Vue.prototype.$formatMeetingRange = formatMeetingRange
-    Vue.prototype.$getTimezone = getEffectiveTimezone
-    Vue.prototype.$getLocale = getEffectiveLocale
-    Vue.prototype.$timezoneLabel = getTimezoneLabel
+    app.config.globalProperties.$formatDateTime = formatDateTime
+    app.config.globalProperties.$formatDate = formatDate
+    app.config.globalProperties.$formatTime = formatTime
+    app.config.globalProperties.$formatRelativeDay = formatRelativeDay
+    app.config.globalProperties.$formatMeetingRange = formatMeetingRange
+    app.config.globalProperties.$getTimezone = getEffectiveTimezone
+    app.config.globalProperties.$getLocale = getEffectiveLocale
+    app.config.globalProperties.$timezoneLabel = getTimezoneLabel
 
-    Vue.filter('formatDateTime', formatDateTime)
-    Vue.filter('formatDate', formatDate)
-    Vue.filter('formatTime', formatTime)
+    // Vue 3 removed template filters. The `formatDateTime`/`formatDate`/`formatTime`
+    // filters were unused in templates (verified), so they are dropped; the
+    // `$formatX` global methods above remain available everywhere.
 
     // Keep reactive UI in sync when prefs change (optional mixin hook)
-    Vue.mixin({
+    app.mixin({
       created () {
         if (this.$options.watchTimezone === true) {
           this._unsubPrefs = onPreferencesChanged(() => {
@@ -43,7 +43,7 @@ export default {
           })
         }
       },
-      beforeDestroy () {
+      beforeUnmount () {
         if (typeof this._unsubPrefs === 'function') {
           this._unsubPrefs()
           this._unsubPrefs = null

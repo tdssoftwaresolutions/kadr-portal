@@ -1,4 +1,4 @@
-import Vue from 'vue'
+import { reactive } from 'vue'
 import en from './locales/en.json'
 import hi from './locales/hi.json'
 
@@ -93,12 +93,12 @@ class I18n {
 
 const i18n = new I18n()
 
-// Make reactive via Vue.observable
-const state = Vue.observable({ locale: i18n.locale })
+// Make reactive via Vue 3 reactive()
+const state = reactive({ locale: i18n.locale })
 
 const i18nPlugin = {
-  install (Vue) {
-    Vue.prototype.$i18n = {
+  install (app) {
+    app.config.globalProperties.$i18n = {
       get locale () { return state.locale },
       set locale (val) {
         i18n.setLocale(val)
@@ -106,7 +106,7 @@ const i18nPlugin = {
       },
       availableLocales: SUPPORTED_LOCALES
     }
-    Vue.prototype.$t = function (key, params) {
+    app.config.globalProperties.$t = function (key, params) {
       // Access state.locale to trigger reactivity
       const _ = state.locale // eslint-disable-line no-unused-vars
       return i18n.t(key, params)

@@ -12,7 +12,7 @@ Branch: `migration/vue3` (off `stable-release`)
 | 0 | Baseline & safety net | ✅ Done |
 | 1 | Build tooling & deps + @vue/compat | ✅ Done |
 | 2 | Entry point (main.js → createApp) | ✅ Done |
-| 3 | Custom plugins (datetime, i18n, capacitor) | ⬜ Not started |
+| 3 | Custom plugins (datetime, i18n, capacitor) | ✅ Done |
 | 4 | Store (Vuex 3 → 4) | ✅ Done (pulled into Phase 2) |
 | 5 | Router (vue-router 3 → 4) | ✅ Done (pulled into Phase 2) |
 | 6 | Non-UI third-party plugins | ⬜ Not started |
@@ -180,3 +180,35 @@ checkpoint, per the "keep it green at runtime" principle.
 - Temp smoke script created under `scripts/` for the check, then deleted.
 
 **Remaining deferred compat items unchanged** (still owned by Phase 3/8): `beforeDestroy`, `.native`, `$scopedSlots`, `>>>`/`::v-deep` CSS.
+
+---
+
+## Phase 3 — Custom plugins ✅
+
+**`src/plugins/datetime.js`**
+- `install (Vue)` → `install (app)`.
+- All `Vue.prototype.$formatX` → `app.config.globalProperties.$formatX` (8 helpers: `$formatDateTime`, `$formatDate`, `$formatTime`, `$formatRelativeDay`, `$formatMeetingRange`, `$getTimezone`, `$getLocale`, `$timezoneLabel`).
+- Removed the three `Vue.filter('formatDateTime'|'formatDate'|'formatTime')` registrations — verified **unused in all templates** (no `| formatX` usages). The `$formatX` methods cover the same need.
+- `Vue.mixin({ ... beforeDestroy })` → `app.mixin({ ... beforeUnmount })`. Clears this file's Phase-1 `beforeDestroy` compat error.
+
+**`src/i18n/index.js`**
+- `import Vue from 'vue'` → `import { reactive } from 'vue'`.
+- `Vue.observable({ locale })` → `reactive({ locale })`.
+- `install (Vue)` → `install (app)`; `Vue.prototype.$t` / `$i18n` → `app.config.globalProperties.$t` / `$i18n`.
+
+**`src/plugins/capacitor.js`**
+- Reviewed — **no changes needed**. Contains no `Vue` / `Vue.prototype` / global-Vue usage; pure session/push logic.
+
+**Verification**
+- `npm run build` (production): **SUCCESS**, no errors.
+- **Runtime check (headless, dev server /admin/auth/sign-in):**
+  - `$formatDate(new Date('2026-01-15'))` → `"15 Jan 2026"` (datetime works)
+  - `$t('nonexistent.key')` → `"nonexistent.key"` (i18n fallback works)
+  - `$i18n.locale` → `"en"` (reactive locale wired)
+  - app mounted; **0 page errors, 0 non-network console errors**
+
+**Compat worklist now remaining (Phase 8):** `beforeDestroy`→`beforeUnmount` still in
+`HtmlCodeEditor.vue`, `sofbox/alert/Alert.vue`, `sofbox/sidebars/SideBarStyle1.vue`,
+`StandardLayout.vue`, `MediatorControllers/DashboardMediator.vue` (datetime.js one is
+now fixed); `.native` in `StandardLayout.vue`; `$scopedSlots` in `iq-card.vue`;
+`>>>`/`::v-deep` CSS across many files.
