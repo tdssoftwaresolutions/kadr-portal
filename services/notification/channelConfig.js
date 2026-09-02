@@ -11,7 +11,7 @@ const DEFAULTS = {
   },
   SMS: { enabled: true, provider: 'twilio', config: { countryCode: '91' } },
   WHATSAPP: { enabled: false, provider: 'twilio', config: { countryCode: '91' } },
-  PUSH: { enabled: true, provider: 'fcm', config: {} }
+  PUSH: { enabled: true, provider: 'web-push', config: {} }
 }
 
 async function getChannelSettings (channel) {

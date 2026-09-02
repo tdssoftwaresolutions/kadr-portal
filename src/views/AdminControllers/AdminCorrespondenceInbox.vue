@@ -1031,7 +1031,7 @@ export default {
       })
       if (idx === -1) return
       const row = { ...this.threads[idx], unread_count: n }
-      this.$set(this.threads, idx, row)
+      this.threads[idx] = row
       if (this.selected && this.isSelected(t)) {
         this.selected = { ...this.selected, unread_count: n }
       }

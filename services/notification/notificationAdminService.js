@@ -1,7 +1,7 @@
 const prisma = require('../../lib/prisma.js')
 const { extractVariables } = require('./templateRenderer')
 const { describeTemplateVariables } = require('./templateRepository')
-const { listAllChannelSettings, saveChannelSettings } = require('./channelConfig')
+const channelConfig = require('./channelConfig')
 
 const { titleToCamelCase } = require('../../utils/titleToCamelCase')
 
@@ -201,6 +201,54 @@ async function listSendLogs ({ limit = 50 } = {}) {
   return prisma.notification_send_logs.findMany({
     take: Math.min(parseInt(limit, 10) || 50, 200),
     orderBy: { created_at: 'desc' }
+  })
+}
+
+// Keys within a channel's config that must never be sent to the browser.
+const SECRET_CONFIG_KEYS = ['vapidPrivateKey']
+
+function redactChannelConfig (channel) {
+  if (!channel || !channel.config) return channel
+  const config = { ...channel.config }
+  let hasPrivateKey = false
+  for (const key of SECRET_CONFIG_KEYS) {
+    if (config[key]) {
+      hasPrivateKey = true
+      delete config[key]
+    }
+  }
+  return { ...channel, config, hasPrivateKey }
+}
+
+/** Lists channel settings with secret config values (e.g. VAPID private key) redacted. */
+async function listAllChannelSettings () {
+  const channels = await channelConfig.listAllChannelSettings()
+  return channels.map(redactChannelConfig)
+}
+
+/**
+ * Saves channel settings. Because the admin UI never receives secret values,
+ * any redacted secret in the incoming config is preserved from the stored row
+ * rather than being overwritten with a blank.
+ */
+async function saveChannelSettings (input) {
+  const incomingConfig = input.config || {}
+  const existing = await channelConfig.getChannelSettings(input.channel)
+  const existingConfig = existing?.config || {}
+
+  const mergedConfig = { ...incomingConfig }
+  for (const key of SECRET_CONFIG_KEYS) {
+    if (mergedConfig[key] === undefined && existingConfig[key] !== undefined) {
+      mergedConfig[key] = existingConfig[key]
+    }
+  }
+
+  const saved = await channelConfig.saveChannelSettings({ ...input, config: mergedConfig })
+  return redactChannelConfig({
+    channel: saved.channel,
+    enabled: saved.enabled,
+    provider: saved.provider,
+    config: saved.config || {}
   })
 }
 

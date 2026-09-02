@@ -25,27 +25,6 @@ module.exports = {
       .exclude.add(path.resolve(__dirname, 'public/home'))
       .end()
 
-    // Vue 3 migration: run @vue/compat in "Vue 2 behavior" mode so the app keeps
-    // working while breaking changes are fixed phase by phase. Each SFC is compiled
-    // with MODE 2 (full Vue 2 compatibility). Individual features are tightened later.
-    config.module
-      .rule('vue')
-      .use('vue-loader')
-      .tap(options => {
-        options = options || {}
-        options.compilerOptions = {
-          ...(options.compilerOptions || {}),
-          compatConfig: {
-            MODE: 2,
-            // BootstrapVueNext is a native Vue 3 lib and needs real Vue 3 v-model
-            // (modelValue/update:modelValue). Compile v-model with Vue 3 semantics.
-            // The matching RUNTIME flag is set via configureCompat() in main.js.
-            COMPONENT_V_MODEL: false
-          }
-        }
-        return options
-      })
-
     // The refreshed dependency tree pulled a stricter cssnano/postcss selector
     // parser that throws a false-positive "Unclosed comment" during the
     // production `mergeRules` optimization on the bundled vendor CSS. Disable the
@@ -64,28 +43,36 @@ module.exports = {
       })
     }
   },
-  configureWebpack: {
-    plugins: [
-      {
-        apply: (compiler) => {
-          compiler.hooks.emit.tapAsync('ExcludeFolderPlugin', (compilation, callback) => {
-            const excludedFolder = 'home'
-            Object.keys(compilation.assets).forEach((asset) => {
-              if (asset.startsWith(excludedFolder)) {
-                delete compilation.assets[asset]
-              }
-            })
-            callback()
+  configureWebpack: config => {
+    // Never emit eval-based bundles in production. Vue CLI defaults to a
+    // `source-map` devtool for production, but forcing it guarantees the built
+    // app.js contains no eval()/new Function(), so it satisfies the strict CSP
+    // (no 'unsafe-eval'). Development keeps fast eval-based source maps.
+    if (process.env.NODE_ENV === 'production') {
+      
+    }
+    config.devtool = 'source-map'
+
+    config.plugins.push({
+      apply: (compiler) => {
+        compiler.hooks.emit.tapAsync('ExcludeFolderPlugin', (compilation, callback) => {
+          const excludedFolder = 'home'
+          Object.keys(compilation.assets).forEach((asset) => {
+            if (asset.startsWith(excludedFolder)) {
+              delete compilation.assets[asset]
+            }
           })
-        }
+          callback()
+        })
       }
-    ],
-    resolve: {
-      alias: {
-        // Vue 3 migration build. Replaced with plain 'vue' in Phase 9.
-        'vue$': '@vue/compat',
-        'jquery': 'jquery/src/jquery.js'
-      }
+    })
+
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      // Pure Vue 3 (migration complete; @vue/compat removed).
+      'vue$': 'vue/dist/vue.runtime.esm-bundler.js',
+      'jquery': 'jquery/src/jquery.js'
     }
   }
 }

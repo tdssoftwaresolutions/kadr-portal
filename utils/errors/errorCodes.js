@@ -131,6 +131,10 @@ const ERROR_CODES = {
     errorCode: 'E306',
     message: 'OTP Expired, please request a new one'
   },
+  OTP_TOO_MANY_ATTEMPTS: {
+    errorCode: 'E328',
+    message: 'Too many incorrect attempts. Please request a new OTP.'
+  },
   REQUIRED_CASE_ID: {
     errorCode: 'E307',
     message: 'Case ID is required'

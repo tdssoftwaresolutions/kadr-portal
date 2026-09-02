@@ -75,6 +75,64 @@ findings from the legacy audit (guide §43). OWASP API Security is the baseline.
 | Direct entity exposure | DTO boundary everywhere |
 | Mixed god-helper | Decomposed into domain services |
 
+## Data security at rest (P0 data — implemented in the Node/Prisma backend)
+
+Sensitive ("P0") data is protected at rest using two primitives, both in
+`utils/crypto.js`:
+
+- **One-way hashing** for secrets that must never be reversible. Verification
+  hashes the incoming value and compares in constant time.
+- **Reversible encryption (AES-256-GCM)** for data the application must read
+  back. Output is versioned (`enc:v1:<iv>:<tag>:<ciphertext>`, all base64) with
+  a random 96-bit IV per value and an authentication tag (tamper detection).
+
+The symmetric key comes from `DATA_ENCRYPTION_KEY` (32 bytes; 64 hex chars or
+32-byte base64). It is validated at startup in `config/envValidation.js` and is
+**required**.
+
+### What is protected and how
+
+| Data | Model / field | Method | Touch points |
+|---|---|---|---|
+| Password | `user.password_hash` | bcrypt (pre-existing) | `utils/helper.js` |
+| OTP / verification code | `otp_resets.otp` | scrypt hash + secure RNG (`crypto.randomInt`) + attempt limit | `controller/authController.js` |
+| Bank account holder / number / IFSC / UPI | `mediator_bank_accounts.*` | AES-256-GCM | `controller/financeController.js` |
+| Google OAuth token | `google_connect.google_auth_token` | AES-256-GCM | `utils/helper.js` |
+| Payment gateway raw payload | `payment_orders.gateway_response` | AES-256-GCM (JSON) | `services/payment/paymentOrderService.js` |
+
+Deliberately **not** app-encrypted (queried/indexed operational data; protect via
+transport TLS + storage/volume encryption + access control instead): `user.email`,
+`phone_number`, name, address fields, case content, and payment `metadata`
+(`{ productInfo }`, non-sensitive).
+
+### OTP hardening
+OTPs are now generated with a CSPRNG (`crypto.randomInt`), stored only as a
+scrypt hash, verified in constant time, capped at 5 incorrect attempts
+(`OTP_TOO_MANY_ATTEMPTS`), and expire after 10 minutes. The code is invalidated
+on expiry or attempt-limit breach.
+
+### Display masking
+Bank account numbers are masked (last 4 shown) in the admin/mediator invoice
+**list** view. The full value is decrypted only for the owner's / payout invoice
+PDF, which legitimately needs it.
+
+### Schema change
+`otp_resets.otp` changed from `Int?` to `VarChar(255)` (to hold the hash), and a
+new `attempts Int @default(0)` column was added. Apply with `npm run prisma:push`
+(this is a db-push project; there is no migrations directory).
+
+### Backfill / rotation plan
+- **OTP:** no backfill needed — existing rows are short-lived; expire or delete
+  them (`DELETE FROM otp_resets;`) after deploy. New OTPs are hashed automatically.
+- **Bank accounts / Google token / gateway responses:** `decrypt()` passes
+  legacy plaintext through unchanged, so reads keep working during a gradual
+  backfill. Run a one-time script that reads each row, re-writes it through the
+  encrypting write path, and confirms `isEncrypted()` before removing plaintext.
+- **Key rotation:** rotating `DATA_ENCRYPTION_KEY` makes existing ciphertext
+  unreadable. Rotation requires decrypting with the old key and re-encrypting
+  with the new key; the `enc:v1:` version marker exists to support a future
+  multi-key scheme.
+
 ## Compliance note
 Full WCAG accessibility conformance and penetration testing require manual
 testing with assistive technologies / security review and are tracked separately.

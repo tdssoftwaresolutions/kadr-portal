@@ -196,7 +196,7 @@ export default {
       }
     },
     onContentChange (index) {
-      this.$set(this.notes[index], 'isModified', true)
+      this.notes[index].isModified = true
     },
     onClickNewAdd (content, id) {
       this.notes.push({
@@ -214,7 +214,7 @@ export default {
         if (!response.errorCode) {
           this.showAlert('Your note has been successfully saved!', 'success')
         }
-        this.$set(note, 'isModified', false)
+        note.isModified = false
       }
     }
   },

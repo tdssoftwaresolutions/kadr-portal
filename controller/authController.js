@@ -1,7 +1,11 @@
 const jwt = require('jsonwebtoken')
 const prisma = require('../lib/prisma.js')
 const helper = require('../utils/helper')
+const dataCrypto = require('../utils/crypto')
 const errorCodes = require('../utils/errors/errorCodes')
+
+// Max incorrect OTP attempts before the code is invalidated.
+const MAX_OTP_ATTEMPTS = 5
 const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
 const { canLogin } = require('../utils/userAccess')
@@ -78,12 +82,16 @@ module.exports = {
           idToken: credential,
           audience: process.env.GOOGLE_CLIENT_ID
         })
+        console.log(ticket)
       } catch (verifyErr) {
+        console.log('-----')
+        console.log(verifyErr)
         throw createError(errorCodes.INVALID_CREDENTIALS)
       }
 
       const payload = ticket.getPayload()
       const email = payload.email
+      console.log(payload)
       if (!email) throw createError(errorCodes.INVALID_CREDENTIALS)
 
       // Look up matching users by email
@@ -339,12 +347,13 @@ module.exports = {
 
       if (!phoneNumber) throw createError(errorCodes.INVALID_REQUEST)
 
-      const otp = Math.floor(100000 + Math.random() * 900000)
+      const otp = dataCrypto.generateNumericOtp(6)
       const createdAt = new Date()
       const expiresAt = new Date(createdAt.getTime() + 10 * 60000)
       const response = await prisma.otp_resets.create({
         data: {
-          otp,
+          otp: dataCrypto.hashOtp(otp),
+          attempts: 0,
           created_at: createdAt,
           expires_at: expiresAt,
           type: 'MEDIATION'
@@ -373,15 +382,30 @@ module.exports = {
         },
         select: {
           otp: true,
+          attempts: true,
           expires_at: true
         }
       })
 
       if (!otpReset) throw createError(errorCodes.INVALID_REQUEST)
 
-      if (Number(otpReset.otp) !== Number(otp)) throw createError(errorCodes.INVALID_OTP)
+      if (otpReset.expires_at < new Date()) {
+        await prisma.otp_resets.delete({ where: { id: requestId } })
+        throw createError(errorCodes.OTP_EXPIRED)
+      }
 
-      if (otpReset.expires_at < new Date()) throw createError(errorCodes.OTP_EXPIRED)
+      if ((otpReset.attempts || 0) >= MAX_OTP_ATTEMPTS) {
+        await prisma.otp_resets.delete({ where: { id: requestId } })
+        throw createError(errorCodes.OTP_TOO_MANY_ATTEMPTS)
+      }
+
+      if (!dataCrypto.compareOtp(otp, otpReset.otp)) {
+        await prisma.otp_resets.update({
+          where: { id: requestId },
+          data: { attempts: { increment: 1 } }
+        })
+        throw createError(errorCodes.INVALID_OTP)
+      }
 
       await prisma.otp_resets.delete({
         where: {
@@ -421,7 +445,8 @@ module.exports = {
 
       const createdAt = new Date()
       const expiresAt = new Date(createdAt.getTime() + 10 * 60000)
-      const otp = Math.floor(100000 + Math.random() * 900000)
+      const otp = dataCrypto.generateNumericOtp(6)
+      const otpHash = dataCrypto.hashOtp(otp)
       await prisma.otp_resets.upsert({
         where: {
           unique_email_type: {
@@ -430,13 +455,15 @@ module.exports = {
           }
         },
         update: {
-          otp,
+          otp: otpHash,
+          attempts: 0,
           created_at: createdAt,
           expires_at: expiresAt
         },
         create: {
           email,
-          otp,
+          otp: otpHash,
+          attempts: 0,
           created_at: createdAt,
           expires_at: expiresAt,
           type: 'RESET_PASSWORD'
@@ -463,15 +490,31 @@ module.exports = {
           type: 'RESET_PASSWORD'
         },
         select: {
+          id: true,
           otp: true,
+          attempts: true,
           expires_at: true
         }
       })
       if (!otpReset) throw createError(errorCodes.INVALID_REQUEST)
 
-      if (Number(otpReset.otp) !== Number(otp)) throw createError(errorCodes.INVALID_OTP)
+      if (otpReset.expires_at < new Date()) {
+        await prisma.otp_resets.deleteMany({ where: { email: emailAddress, type: 'RESET_PASSWORD' } })
+        throw createError(errorCodes.OTP_EXPIRED)
+      }
 
-      if (otpReset.expires_at < new Date()) throw createError(errorCodes.OTP_EXPIRED)
+      if ((otpReset.attempts || 0) >= MAX_OTP_ATTEMPTS) {
+        await prisma.otp_resets.deleteMany({ where: { email: emailAddress, type: 'RESET_PASSWORD' } })
+        throw createError(errorCodes.OTP_TOO_MANY_ATTEMPTS)
+      }
+
+      if (!dataCrypto.compareOtp(otp, otpReset.otp)) {
+        await prisma.otp_resets.update({
+          where: { id: otpReset.id },
+          data: { attempts: { increment: 1 } }
+        })
+        throw createError(errorCodes.INVALID_OTP)
+      }
 
       const hashPassword = await helper.hashPassword(password)
       const normalizedType = userType ? String(userType).toUpperCase() : null

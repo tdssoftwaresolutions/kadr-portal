@@ -98,7 +98,7 @@ export default {
   },
   computed: {
     currentUserId () {
-      return this.$store.state.user && this.$store.state.user.id
+      return this.$store.state.currentUser && this.$store.state.currentUser.id
     },
     calendarSyntheticCase () {
       const sa = this.selectedAppointment

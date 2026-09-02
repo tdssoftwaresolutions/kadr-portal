@@ -1,6 +1,7 @@
 [
   {
     "title": "Home",
+    "i18nKey": "nav.home",
     "name": "sidebar.dashboard",
     "is_heading": false,
     "is_active": false,
@@ -12,6 +13,7 @@
   },
   {
     "title": "Operations",
+    "i18nKey": "nav.operations",
     "name": "sidebar.operations",
     "is_heading": false,
     "is_group": true,
@@ -21,6 +23,7 @@
     "children": [
       {
         "title": "Meetings calendar",
+        "i18nKey": "nav.meetingsCalendar",
         "name": "app.admin-calendar",
         "is_heading": false,
         "is_active": false,
@@ -32,6 +35,7 @@
       },
       {
         "title": "Case management",
+        "i18nKey": "nav.caseManagement",
         "name": "app.cases",
         "is_heading": false,
         "is_active": false,
@@ -43,6 +47,7 @@
       },
       {
         "title": "Messages",
+        "i18nKey": "nav.messages",
         "name": "app.messages",
         "is_heading": false,
         "is_active": false,
@@ -54,6 +59,7 @@
       },
       {
         "title": "Clients & Experts",
+        "i18nKey": "nav.clientsAndExperts",
         "name": "app.users",
         "is_heading": false,
         "is_active": false,
@@ -65,6 +71,7 @@
       },
       {
         "title": "Blog taxonomy",
+        "i18nKey": "nav.blogTaxonomy",
         "name": "app.blog-taxonomy",
         "is_heading": false,
         "is_active": false,
@@ -76,6 +83,7 @@
       },
       {
         "title": "Website content",
+        "i18nKey": "nav.websiteContent",
         "name": "app.website-content",
         "is_heading": false,
         "is_active": false,
@@ -89,6 +97,7 @@
   },
   {
     "title": "Finance",
+    "i18nKey": "nav.finance",
     "name": "sidebar.finance",
     "is_heading": false,
     "is_group": true,
@@ -98,6 +107,7 @@
     "children": [
       {
         "title": "Payments & Invoices",
+        "i18nKey": "nav.paymentsAndInvoices",
         "name": "app.invoices",
         "is_heading": false,
         "is_active": false,
@@ -109,6 +119,7 @@
       },
       {
         "title": "Reward orders",
+        "i18nKey": "nav.rewardOrders",
         "name": "app.reward-orders",
         "is_heading": false,
         "is_active": false,
@@ -122,6 +133,7 @@
   },
   {
     "title": "System",
+    "i18nKey": "nav.system",
     "name": "sidebar.system",
     "is_heading": false,
     "is_group": true,
@@ -131,6 +143,7 @@
     "children": [
       {
         "title": "Settings",
+        "i18nKey": "nav.settings",
         "name": "app.settings",
         "is_heading": false,
         "is_active": false,
@@ -142,6 +155,7 @@
       },
       {
         "title": "Notifications",
+        "i18nKey": "nav.notifications",
         "name": "app.notifications",
         "is_heading": false,
         "is_active": false,
@@ -153,6 +167,7 @@
       },
       {
         "title": "Admin management",
+        "i18nKey": "nav.adminManagement",
         "name": "app.admins",
         "is_heading": false,
         "is_active": false,

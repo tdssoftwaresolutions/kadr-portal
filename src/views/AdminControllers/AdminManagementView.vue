@@ -43,10 +43,10 @@
             <b-table :items="admins" :fields="fields" small responsive>
               <template #cell(master)="row">
                 <b-form-checkbox
-                  :checked="row.item.master"
+                  :model-value="row.item.master"
                   switch
                   :disabled="!isMasterAdmin"
-                  @change="onMasterChange(row.item, $event)"
+                  @update:model-value="onMasterChange(row.item, $event)"
                 />
               </template>
               <template #cell(active)="row">

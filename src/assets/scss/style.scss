@@ -4,6 +4,27 @@
 @import "../../theme/tokens.css";
 @import "./workspace";
 
+// --- Bootstrap 4 -> 5 card padding fix ---------------------------------------
+// Bootstrap 5 changed `.card-body` padding from a hardcoded value to
+// `padding: var(--bs-card-spacer-y) var(--bs-card-spacer-x)`, and it only
+// defines those two variables on the `.card` element. The theme's `iq-card`
+// component wraps its content in a `.card-body` but the outer element uses the
+// class `.iq-card` (not `.card`), so the spacer variables are undefined and the
+// card body renders with no padding — making content stick to the edges across
+// every view. Define the variables on `.iq-card` so nested card bodies inherit
+// real spacing, and give the theme's `.iq-card-body` an explicit fallback.
+.iq-card {
+  --bs-card-spacer-y: 1rem;
+  --bs-card-spacer-x: 1rem;
+  --bs-card-cap-padding-y: 0.5rem;
+  --bs-card-cap-padding-x: 1rem;
+}
+
+.iq-card .iq-card-body,
+.iq-card > .card-body {
+  padding: 20px;
+}
+
 // Font awesome icon Css
 @import "~@fortawesome/fontawesome-free/css/all.min.css";
 

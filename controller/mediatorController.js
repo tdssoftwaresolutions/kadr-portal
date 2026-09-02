@@ -51,6 +51,7 @@ module.exports = {
         where: { id: mediatorId },
         select: { name: true, email: true }
       })
+      const pushEvents = require('../services/push/pushEvents')
       await Promise.all([
         emailMediatorCaseAssigned({
           mediatorEmail: mediatorProfile?.email,
@@ -67,7 +68,15 @@ module.exports = {
           ],
           mediatorName: mediatorProfile?.name,
           caseNumber: caseDetails.caseId
-        })
+        }),
+        // Web push: notify the mediator of the new assignment.
+        pushEvents.notifyUser({
+          userId: mediatorId,
+          category: 'case_assignment',
+          title: 'New case assigned',
+          body: `You have been assigned to case ${caseDetails.caseId}.`,
+          data: { url: '/admin/cases', caseId: caseDetails.caseId }
+        }).catch((err) => console.error('[assignMediator] mediator push failed', err.message))
       ])
 
       if (!mediator.google_token) throw createError(errorCodes.GOOGLE_CALENDAR_NOT_CONNECTED)

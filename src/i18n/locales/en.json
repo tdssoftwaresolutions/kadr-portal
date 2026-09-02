@@ -28,6 +28,7 @@
     "required": "This field is required.",
     "logout": "Logout",
     "profile": "Profile",
+    "editProfile": "Edit profile",
     "settings": "Settings",
     "dashboard": "Dashboard",
     "notifications": "Notifications"
@@ -155,6 +156,23 @@
     "reject": "Reject",
     "activate": "Activate",
     "deactivate": "Deactivate"
+  },
+  "nav": {
+    "home": "Home",
+    "operations": "Operations",
+    "meetingsCalendar": "Meetings calendar",
+    "caseManagement": "Case management",
+    "messages": "Messages",
+    "clientsAndExperts": "Clients & Experts",
+    "blogTaxonomy": "Blog taxonomy",
+    "websiteContent": "Website content",
+    "finance": "Finance",
+    "paymentsAndInvoices": "Payments & Invoices",
+    "rewardOrders": "Reward orders",
+    "system": "System",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "adminManagement": "Admin management"
   },
   "validation": {
     "required": "{field} is required.",

@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma.js')
+const dataCrypto = require('../utils/crypto')
 const { createError } = require('../utils/errors')
 const errorCodes = require('../utils/errors/errorCodes')
 const { success } = require('../utils/responses')
@@ -23,6 +24,32 @@ function buildDateRange (range) {
   if (range === 'LAST_3_MONTHS') return { gte: new Date(now.getFullYear(), now.getMonth() - 2, 1), lt: end }
   if (range === 'LAST_6_MONTHS') return { gte: new Date(now.getFullYear(), now.getMonth() - 5, 1), lt: end }
   return null
+}
+
+// Fields on mediator_bank_accounts that are encrypted at rest (P0 financial data).
+const BANK_ENCRYPTED_FIELDS = ['account_holder', 'account_number', 'ifsc_code', 'upi_id']
+
+// Encrypt sensitive bank fields before persisting. Mutates a shallow copy.
+function encryptBankFields (data) {
+  const out = { ...data }
+  for (const field of BANK_ENCRYPTED_FIELDS) {
+    if (out[field] !== undefined && out[field] !== null && out[field] !== '') {
+      out[field] = dataCrypto.encrypt(String(out[field]))
+    }
+  }
+  return out
+}
+
+// Decrypt sensitive bank fields after reading. Tolerates legacy plaintext rows.
+function decryptBankAccount (row) {
+  if (!row) return row
+  const out = { ...row }
+  for (const field of BANK_ENCRYPTED_FIELDS) {
+    if (out[field] !== undefined && out[field] !== null) {
+      out[field] = dataCrypto.decrypt(out[field])
+    }
+  }
+  return out
 }
 
 module.exports = {
@@ -82,20 +109,28 @@ module.exports = {
       if (req.user.type !== 'MEDIATOR') throw createError(errorCodes.FORBIDDEN)
       const { bank_name, account_holder, account_number, ifsc_code, branch_name, upi_id } = req.body
       if (!bank_name || !account_holder || !account_number || !ifsc_code) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      const encrypted = encryptBankFields({ account_holder, account_number, ifsc_code, upi_id })
       const saved = await prisma.mediator_bank_accounts.upsert({
         where: { mediator_id: req.user.id },
-        update: { bank_name, account_holder, account_number, ifsc_code, branch_name, upi_id },
+        update: {
+          bank_name,
+          branch_name,
+          account_holder: encrypted.account_holder,
+          account_number: encrypted.account_number,
+          ifsc_code: encrypted.ifsc_code,
+          upi_id: encrypted.upi_id
+        },
         create: {
           mediator_id: req.user.id,
           bank_name,
-          account_holder,
-          account_number,
-          ifsc_code,
           branch_name,
-          upi_id
+          account_holder: encrypted.account_holder,
+          account_number: encrypted.account_number,
+          ifsc_code: encrypted.ifsc_code,
+          upi_id: encrypted.upi_id
         }
       })
-      success(res, { bankAccount: saved }, 'Bank details saved successfully')
+      success(res, { bankAccount: decryptBankAccount(saved) }, 'Bank details saved successfully')
     } catch (error) {
       next(error)
     }
@@ -108,7 +143,7 @@ module.exports = {
       const bankAccount = await prisma.mediator_bank_accounts.findUnique({
         where: { mediator_id: mediatorId }
       })
-      success(res, { bankAccount })
+      success(res, { bankAccount: decryptBankAccount(bankAccount) })
     } catch (error) {
       next(error)
     }
@@ -180,7 +215,12 @@ module.exports = {
         ? await prisma.mediator_bank_accounts.findMany({ where: { mediator_id: { in: mediatorIds } } })
         : []
       const bankMap = bankByMediator.reduce((acc, row) => {
-        acc[row.mediator_id] = row
+        const decrypted = decryptBankAccount(row)
+        // List view: reveal only the last 4 digits of the account number.
+        acc[row.mediator_id] = {
+          ...decrypted,
+          account_number: dataCrypto.maskSecret(decrypted.account_number, 4)
+        }
         return acc
       }, {})
 
@@ -283,9 +323,9 @@ module.exports = {
       if (!invoice) throw createError(errorCodes.NOT_FOUND)
       if (req.user.type === 'MEDIATOR' && invoice.mediator_id !== req.user.id) throw createError(errorCodes.FORBIDDEN)
 
-      const bankAccount = await prisma.mediator_bank_accounts.findUnique({
+      const bankAccount = decryptBankAccount(await prisma.mediator_bank_accounts.findUnique({
         where: { mediator_id: invoice.mediator_id }
-      })
+      }))
       const html = `
         <div style="font-family: Arial, sans-serif; padding: 24px; color: #222;">
           <h2 style="margin:0;">kADR.live</h2>

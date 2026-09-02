@@ -195,7 +195,7 @@ export default {
         const tracker = this.normalizeRow(payload.tracker)
         const idx = this.trackers.findIndex((t) => t.id === tracker.id)
         if (idx >= 0) {
-          this.$set(this.trackers, idx, tracker)
+          this.trackers[idx] = tracker
         }
         if (this.selectedTracker && this.selectedTracker.id === tracker.id) {
           this.selectedTracker = this.trackers[idx] || tracker

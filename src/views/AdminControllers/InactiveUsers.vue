@@ -243,7 +243,7 @@ export default {
       })
       if (response.success) {
         this.showAlert(response.message, 'success')
-        this.$set(item, 'approved', true)
+        item.approved = true
         if (this.modalVisible && this.selectedUser === item) {
           this.modalVisible = false
         }

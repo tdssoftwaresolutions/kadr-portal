@@ -6,27 +6,27 @@
       :class="menuItemClass(item)"
     >
       <i v-if="item.is_heading" class="ri-subtract-line" />
-      <span v-if="item.is_heading">{{ item.title }}</span>
+      <span v-if="item.is_heading">{{ label(item) }}</span>
       <router-link
         v-if="!item.is_heading && !isGroup(item)"
         :to="item.link"
-        :title="depth === 0 ? item.title : null"
-        :data-flyout-label="depth === 0 ? item.title : null"
+        :title="depth === 0 ? label(item) : null"
+        :data-flyout-label="depth === 0 ? label(item) : null"
         :class="menuLinkClass(item)"
       >
         <span class="menu-icon-wrap">
           <i :class="item.icon" v-if="item.is_icon_class" style="margin-right: 0px;"/>
           <template v-else v-html="item.icon"></template>
         </span>
-        <span class="menu-title">{{ item.title }}</span>
+        <span class="menu-title">{{ label(item) }}</span>
         <small v-html="item.append" :class="item.append_class" />
       </router-link>
       <button
         v-else-if="!item.is_heading && isGroup(item)"
         type="button"
-        :data-flyout-label="depth === 0 ? item.title : null"
-        :title="depth === 0 ? item.title : null"
-        :aria-label="item.title"
+        :data-flyout-label="depth === 0 ? label(item) : null"
+        :title="depth === 0 ? label(item) : null"
+        :aria-label="label(item)"
         :aria-expanded="isGroupOpen(item)"
         :class="menuLinkClass(item)"
       >
@@ -34,7 +34,7 @@
           <i :class="item.icon" v-if="item.is_icon_class" style="margin-right: 0px;"/>
           <template v-else v-html="item.icon"></template>
         </span>
-        <span class="menu-title">{{ item.title }}</span>
+        <span class="menu-title">{{ label(item) }}</span>
         <i class="ri-arrow-right-s-line iq-arrow-right menu-group-chevron" />
         <small v-html="item.append" :class="item.append_class" />
       </button>
@@ -68,6 +68,20 @@ export default {
     List
   },
   methods: {
+    // Resolve a menu item's display label. When the item carries an `i18nKey`
+    // (admin sidebar), translate it via $t so it updates live when the locale
+    // changes. Falls back to the static `title` when there's no key or the key
+    // is missing from the dictionary (client/mediator sidebars keep working).
+    label (item) {
+      // Read the reactive locale so this binding re-evaluates on every locale
+      // change, including in recursively-rendered child <List> instances.
+      const locale = this.$i18n && this.$i18n.locale // eslint-disable-line no-unused-vars
+      if (item.i18nKey && typeof this.$t === 'function') {
+        const translated = this.$t(item.i18nKey)
+        if (translated && translated !== item.i18nKey) return translated
+      }
+      return item.title
+    },
     isGroup (item) {
       return !!(item.children && item.children.length && (!item.link || item.is_group))
     },

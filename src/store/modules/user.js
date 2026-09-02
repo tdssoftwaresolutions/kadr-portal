@@ -39,7 +39,7 @@ export default {
         const updatedUser = data.user || data.data?.user
         if (updatedUser) {
           commit('setUser', {
-            ...(state.user || {}),
+            ...(state.currentUser || {}),
             ...updatedUser
           })
         }

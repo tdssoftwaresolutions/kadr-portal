@@ -1,7 +1,7 @@
 <template>
   <div>
     <Loader/>
-    <vue-scroll-progress-bar @complete="handleComplete" height="0.2rem" backgroundColor="linear-gradient(to right, var(--kadr-primary), var(--kadr-primary-hover))" style="z-index: 10000" />
+    <scroll-progress-bar />
     <div class="wrapper">
       <SideBarStyle1
         :items="sidebar"
@@ -13,9 +13,12 @@
         @logout="onClickSignOut"
       />
       <div id="content-page" class="content-page">
-        <transition name="router-anim" v-if="user!= null">
-          <router-view :user="user"/>
-        </transition>
+        <push-notification-banner v-if="user" />
+        <router-view v-if="user != null" v-slot="{ Component }">
+          <transition name="router-anim">
+            <component :is="Component" :user="user" />
+          </transition>
+        </router-view>
       </div>
     </div>
     <div class="mobile-top-nav-shell">
@@ -124,9 +127,12 @@
 </template>
 <script>
 import Loader from '../components/sofbox/loader/Loader'
+import ScrollProgressBar from '../components/ScrollProgressBar.vue'
 import KadrSupportFab from '../components/KadrSupportFab.vue'
 import SideBarStyle1 from '../components/sofbox/sidebars/SideBarStyle1'
 import MediatorProBadge from '../components/mediator/MediatorProBadge.vue'
+import PushNotificationBanner from '../components/notifications/PushNotificationBanner.vue'
+import { reconcilePushState } from '../utils/webPush'
 import SideBarItemsClient from '../config/navigation/SideBarClient.json'
 import SideBarItemsMediator from '../config/navigation/SideBarMediator.json'
 import SideBarItemAdmin from '../config/navigation/SideBarAdmin.json'
@@ -148,9 +154,11 @@ export default {
   name: 'StandardLayout',
   components: {
     Loader,
+    ScrollProgressBar,
     KadrSupportFab,
     SideBarStyle1,
-    MediatorProBadge
+    MediatorProBadge,
+    PushNotificationBanner
   },
   async created () {
     const { hasStoredSession } = await import('../utils/tokenStorage')
@@ -245,6 +253,11 @@ export default {
       this.user = userData
       this.userProfile = userData.photo || profile
 
+      // Keep browser push permission and the stored subscription in sync.
+      // If permission lapsed (e.g. site data cleared) while a subscription still
+      // exists server-side, this purges the stale row. Non-blocking, best-effort.
+      reconcilePushState().catch(() => {})
+
       if (userData.timezone) {
         applyServerPreferences({
           timezone: userData.timezone,
@@ -332,7 +345,7 @@ export default {
       return !!this.mobileExpandedGroups[item.name]
     },
     toggleMobileGroup (groupName) {
-      this.$set(this.mobileExpandedGroups, groupName, !this.mobileExpandedGroups[groupName])
+      this.mobileExpandedGroups[groupName] = !this.mobileExpandedGroups[groupName]
     },
     isMobileGroupActive (item) {
       return sofbox.getActiveLink(item, this.$route.name)
@@ -342,7 +355,7 @@ export default {
       if (!routeName) return
       this.mobileNavTree.forEach((item) => {
         if (this.isMobileGroup(item) && sofbox.getActiveLink(item, routeName)) {
-          this.$set(this.mobileExpandedGroups, item.name, true)
+          this.mobileExpandedGroups[item.name] = true
         }
       })
     },

@@ -4,7 +4,7 @@
       :text="currentLabel"
       size="sm"
       variant="outline-secondary"
-      right
+      end
     >
       <b-dropdown-item
         v-for="locale in $i18n.availableLocales"

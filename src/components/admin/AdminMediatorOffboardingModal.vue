@@ -1,10 +1,10 @@
 <template>
   <b-modal
-    :visible="visible"
+    :model-value="visible"
     size="xl"
     title="Remove mediator from platform"
     scrollable
-    @hide="$emit('close')"
+    @update:model-value="(val) => { if (!val) $emit('close') }"
   >
     <p v-if="loading" class="text-muted">Loading offboarding preview…</p>
     <template v-else-if="preview">
@@ -107,7 +107,7 @@ export default {
         if (previewRes.success) {
           this.preview = previewRes.data || previewRes
           for (const c of this.preview.activeCases || []) {
-            this.$set(this.assignments, c.id, c.suggestedMediator?.id || '')
+            this.assignments[c.id] = c.suggestedMediator?.id || ''
           }
           if (!(this.preview.pendingPayouts?.invoices?.length)) {
             this.ackPayouts = true

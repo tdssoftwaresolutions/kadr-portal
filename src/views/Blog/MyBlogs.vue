@@ -376,7 +376,7 @@ export default {
       const index = this.paginatedData.blogs.findIndex(b => b.id === blog.id)
       if (index !== -1) {
         // Update existing
-        this.$set(this.paginatedData.blogs, index, blog)
+        this.paginatedData.blogs[index] = blog
       } else {
         // New blog
         if (this.currentPage === 1) {

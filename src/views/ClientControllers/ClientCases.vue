@@ -285,6 +285,7 @@
   </div>
 </template>
 <script>
+import { defineAsyncComponent } from 'vue'
 import { sofbox } from '../../config/pluginInit'
 import FilePreview from '../../components/DocumentPreview.vue'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
@@ -308,7 +309,7 @@ export default {
     MeetingFeedbackModal,
     CaseCorrespondencePanel,
     CaseProgressPanel,
-    PaymentCheckout: () => import('../../components/payment/PaymentCheckout.vue'),
+    PaymentCheckout: defineAsyncComponent(() => import('../../components/payment/PaymentCheckout.vue')),
     CaseWorkspaceLayout,
     KadrEmptyState,
     ClientInitiateNewCaseModal

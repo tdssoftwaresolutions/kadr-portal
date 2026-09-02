@@ -179,8 +179,8 @@ export default {
         const res = await this.$store.dispatch('uploadPrivateInvoiceAsset', { fileContent, assetType })
         const url = res.url || res.data?.url
         if (res.success && url) {
-          if (assetType === 'logo') this.$set(this.settings, 'logo_url', url)
-          else this.$set(this.settings, 'signature_url', url)
+          if (assetType === 'logo') this.settings.logo_url = url
+          else this.settings.signature_url = url
           await this.$store.dispatch('savePrivateInvoiceSettings', this.settings)
           this.$emit('changed')
         }

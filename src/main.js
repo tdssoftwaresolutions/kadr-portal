@@ -1,19 +1,11 @@
-import 'mutationobserver-shim'
-import { createApp, configureCompat } from 'vue'
+import { createApp } from 'vue'
 import { createBootstrap } from 'bootstrap-vue-next'
-
-// BootstrapVueNext (native Vue 3) requires real Vue 3 v-model semantics
-// (modelValue / update:modelValue). Disable the Vue-2 v-model compat behavior
-// globally at runtime; our own components using the old value/input pattern are
-// migrated to modelValue accordingly.
-configureCompat({ COMPONENT_V_MODEL: false })
 import * as BootstrapVueNextComponents from 'bootstrap-vue-next'
 import './plugins/bootstrap-vue'
 import App from './App.vue'
 import router from './router'
 import createStore from './store'
 import VueCookies from 'vue-cookies'
-import VueScrollProgressBar from '@guillaumebriday/vue-scroll-progress-bar'
 import VueSignaturePad from 'vue-signature-pad'
 import datetimePlugin from './plugins/datetime'
 import i18nPlugin from './i18n'
@@ -44,17 +36,38 @@ async function startApp () {
     }
   })
 
+  // Globally register BootstrapVueNext directives so template directives like
+  // v-b-toggle, v-b-tooltip, v-b-modal, v-b-popover resolve. Exports are named
+  // in the form `vBToggle` -> registered as directive `b-toggle` (usable as
+  // `v-b-toggle`). Without this, those directives silently fail to resolve.
+  Object.keys(BootstrapVueNextComponents).forEach((name) => {
+    if (/^vB[A-Z]/.test(name)) {
+      const directive = BootstrapVueNextComponents[name]
+      if (directive && (typeof directive === 'object' || typeof directive === 'function')) {
+        // vBToggle -> 'b-toggle'
+        const directiveName = name
+          .slice(1)
+          .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+          .toLowerCase()
+        app.directive(directiveName, directive)
+      }
+    }
+  })
+
   app.use(VueSignaturePad)
   app.use(datetimePlugin)
   app.use(i18nPlugin)
-  app.use(VueScrollProgressBar)
   app.use(VueCookies)
 
   // Auto-register all sofbox base components globally (was Vue.component in Vue 2).
-  const components = require.context('./components/sofbox')
+  // Explicit: recurse subfolders, match only .vue files, register each name once.
+  const components = require.context('./components/sofbox', true, /\.vue$/)
+  const registered = new Set()
   components.keys().forEach((fileName) => {
+    const componentName = fileName.split('/').pop().replace(/\.vue$/, '')
+    if (registered.has(componentName)) return
+    registered.add(componentName)
     const componentConfig = components(fileName)
-    const componentName = fileName.split('/').pop().split('.')[0]
     app.component(componentName, componentConfig.default || componentConfig)
   })
 

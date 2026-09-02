@@ -14,8 +14,11 @@ router.get('/getDashboardContent', generalController.getDashboardContent)
 router.post('/updateUserProfile', generalController.updateUserProfile)
 router.post('/deleteMyAccount', generalController.deleteMyAccount)
 
+router.get('/push/vapid-public-key', pushController.vapidPublicKey)
 router.post('/push/register', pushController.register)
 router.post('/push/unregister', pushController.unregister)
+router.get('/push/preferences', pushController.getPreferences)
+router.post('/push/preferences', pushController.savePreferences)
 
 router.get('/portal/support/threads', websiteContactController.listPortalSupportThreads)
 router.get('/portal/support/thread/:id', websiteContactController.getPortalSupportThread)

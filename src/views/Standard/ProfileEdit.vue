@@ -293,7 +293,7 @@ export default {
   },
   computed: {
     isMediator () {
-      return this.$store.state.user && this.$store.state.user.type === 'MEDIATOR'
+      return this.$store.state.currentUser && this.$store.state.currentUser.type === 'MEDIATOR'
     },
     subscriptionExpiryLabel () {
       if (this.subscription.expiresAtLabel) return this.subscription.expiresAtLabel
@@ -332,9 +332,9 @@ export default {
           })
           this.prefs = getUserPreferences()
         }
-        if (this.$store.state.user) {
+        if (this.$store.state.currentUser) {
           this.$store.commit('setUser', {
-            ...this.$store.state.user,
+            ...this.$store.state.currentUser,
             name: user.name,
             phone: user.phone,
             photo: user.photo

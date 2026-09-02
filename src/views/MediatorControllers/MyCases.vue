@@ -294,7 +294,7 @@
     <b-modal
       size="lg"
       id="schedule-meeting-modal"
-      ref="scheduleMeetingModal"
+      v-model="showScheduleMeetingModal"
       title="Schedule Case Meeting"
       @ok="submitMeeting"
       scrollable
@@ -579,14 +579,19 @@ export default {
         start: '',
         description: this.getDefaultMeetingDescription()
       }
-      this.$refs.scheduleMeetingModal.show()
+      this.showScheduleMeetingModal = true
     },
     getDefaultMeetingDescription () {
       return `Case #${this.selectedCase.caseId || '-'}\n1st Party: ${this.selectedCase.user_cases_first_partyTouser?.name || '-'}\n2nd Party: ${this.selectedCase.user_cases_second_partyTouser?.name || '-'}`
     },
     async submitMeeting (event) {
-      if (!this.meetingForm.start) {
+      // Keep the modal open by default; we close it explicitly via v-model only
+      // on success. (bootstrap-vue-next resolves the ok event synchronously, so
+      // calling preventDefault() after an await is unreliable.)
+      if (event && typeof event.preventDefault === 'function') {
         event.preventDefault()
+      }
+      if (!this.meetingForm.start) {
         this.showAlert('Please select date and time for the meeting.', 'danger')
         return
       }
@@ -607,10 +612,10 @@ export default {
         const response = await this.$store.dispatch('newCalendarEvent', { event: payload })
         if (response.success || !response.error) {
           this.showAlert('Meeting scheduled successfully.', 'success')
+          this.showScheduleMeetingModal = false
           this.$emit('refresh-dashboard')
         } else {
           this.showAlert(response.message || 'Unable to schedule meeting.', 'danger')
-          event.preventDefault()
         }
       } finally {
         this.loading = false
@@ -768,6 +773,7 @@ export default {
         start: '',
         description: ''
       },
+      showScheduleMeetingModal: false,
       paginatedData: {},
       signatureType: 'digital',
       feedbackModalVisible: false,

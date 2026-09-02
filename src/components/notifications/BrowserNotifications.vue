@@ -9,11 +9,11 @@
         You control which updates are pushed below.
       </p>
 
-      <b-alert :show="!supported" variant="warning" class="small">
+      <b-alert :model-value="!supported" variant="warning" class="small">
         This browser does not support push notifications. Try the latest Chrome, Edge, or Firefox.
       </b-alert>
 
-      <b-alert :show="supported && permission === 'denied'" variant="warning" class="small">
+      <b-alert :model-value="supported && permission === 'denied'" variant="warning" class="small">
         Notifications are blocked in your browser settings for this site. Enable them in the
         browser’s site permissions, then reload this page.
       </b-alert>

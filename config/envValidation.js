@@ -2,8 +2,21 @@ const REQUIRED_ENV = [
   'DATABASE_URL',
   'SECRET_KEY',
   'REFRESH_SECRET_KEY',
-  'SIGN_SECRET_KEY'
+  'SIGN_SECRET_KEY',
+  'DATA_ENCRYPTION_KEY'
 ]
+
+// A valid DATA_ENCRYPTION_KEY decodes to exactly 32 bytes (256-bit AES key),
+// supplied as 64 hex chars or a 32-byte base64 value.
+function isValidDataEncryptionKey (raw) {
+  if (!raw) return false
+  if (/^[0-9a-fA-F]{64}$/.test(raw)) return true
+  try {
+    return Buffer.from(raw, 'base64').length === 32
+  } catch (e) {
+    return false
+  }
+}
 
 const RECOMMENDED_ENV = [
   'BASE_URL',
@@ -54,6 +67,14 @@ function validateEnv ({ exitOnError = true } = {}) {
     const uniqueSecrets = new Set(secretValues)
     if (uniqueSecrets.size < secretValues.length) {
       console.error('[env] SECURITY WARNING: JWT secrets must be unique. SECRET_KEY, REFRESH_SECRET_KEY, and SIGN_SECRET_KEY should all be different.')
+      if (exitOnError) {
+        process.exit(1)
+      }
+    }
+
+    // DATA_ENCRYPTION_KEY must be a valid 32-byte key or field encryption will fail at runtime.
+    if (!isValidDataEncryptionKey(process.env.DATA_ENCRYPTION_KEY)) {
+      console.error('[env] SECURITY WARNING: DATA_ENCRYPTION_KEY must decode to 32 bytes (64 hex chars or 32-byte base64). Generate one with "node -e \\"console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))\\"".')
       if (exitOnError) {
         process.exit(1)
       }

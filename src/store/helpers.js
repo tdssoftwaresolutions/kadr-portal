@@ -36,7 +36,7 @@ export const debug = process.env.NODE_ENV !== 'production'
 export const getDefaultState = () => {
   return {
     loader: false,
-    user: null,
+    currentUser: null,
     availableLanguages: null,
     availableStates: null,
     allLanguages: null,

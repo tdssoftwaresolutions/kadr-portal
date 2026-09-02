@@ -97,6 +97,51 @@ export async function subscribe () {
   return subscription
 }
 
+/**
+ * Keeps the browser permission and the stored subscription in sync.
+ *
+ * A subscription can outlive its display permission — e.g. the user clears site
+ * data or the browser revokes permission — leaving a "dead" row on the server
+ * that the push service still accepts but that can never be displayed. On app
+ * load we detect that mismatch and purge the stale subscription (locally and
+ * server-side) so the UI and DB reflect reality.
+ *
+ * Returns a summary: { supported, permission, subscribed, reconciled }.
+ *  - reconciled=true means a stale subscription was removed during this call.
+ */
+export async function reconcilePushState () {
+  if (!isWebPushSupported()) {
+    return { supported: false, permission: 'unsupported', subscribed: false, reconciled: false }
+  }
+
+  const permission = getPermissionState()
+
+  let subscription = null
+  try {
+    subscription = await getExistingSubscription()
+  } catch (e) {
+    subscription = null
+  }
+
+  // Permission is no longer granted but a subscription still exists -> stale.
+  // Remove it both locally and on the server so nothing lingers in the DB.
+  if (permission !== 'granted' && subscription) {
+    try {
+      await unsubscribe()
+    } catch (e) {
+      /* best-effort cleanup; ignore */
+    }
+    return { supported: true, permission, subscribed: false, reconciled: true }
+  }
+
+  return {
+    supported: true,
+    permission,
+    subscribed: Boolean(subscription),
+    reconciled: false
+  }
+}
+
 /** Unsubscribes locally and removes the subscription from the backend. */
 export async function unsubscribe () {
   if (!isWebPushSupported()) return { removed: false }

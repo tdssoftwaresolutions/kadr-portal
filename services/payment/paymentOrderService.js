@@ -13,8 +13,23 @@ const { getProMonthlyPriceInr } = require('../subscription/subscriptionService')
 const { fulfillPaymentOrder } = require('./paymentFulfillmentService')
 const { alertPaymentFailure } = require('../alerting/criticalAlertService')
 
+const dataCrypto = require('../../utils/crypto')
+
 function generateOrderId () {
   return `KADR-${Date.now()}-${uuidv4().slice(0, 8).toUpperCase()}`
+}
+
+// Raw gateway payloads can carry payment-instrument metadata, so we encrypt
+// them at rest. They are write-only today; use this helper if a read path is
+// ever added. Stored as an encrypted JSON string in the gateway_response
+// Json? column.
+function encryptGatewayResponse (payload) {
+  if (payload === null || payload === undefined) return payload
+  return dataCrypto.encryptJson(payload)
+}
+
+function decryptGatewayResponse (stored) {
+  return dataCrypto.decryptJson(stored)
 }
 
 async function resolveAmount (purpose, amountOverride) {
@@ -78,7 +93,7 @@ async function markOrderSuccess (order, { gatewayPaymentId, gatewayResponse }) {
     data: {
       status: PAYMENT_STATUS.SUCCESS,
       gateway_payment_id: gatewayPaymentId || order.gateway_payment_id,
-      gateway_response: gatewayResponse || order.gateway_response,
+      gateway_response: gatewayResponse ? encryptGatewayResponse(gatewayResponse) : order.gateway_response,
       fulfilled_at: order.fulfilled_at || new Date()
     }
   })
@@ -91,7 +106,7 @@ async function markOrderFailed (order, gatewayResponse) {
     where: { id: order.id },
     data: {
       status: PAYMENT_STATUS.FAILED,
-      gateway_response: gatewayResponse
+      gateway_response: encryptGatewayResponse(gatewayResponse)
     }
   })
 }
@@ -142,5 +157,6 @@ module.exports = {
   getOrderByOrderId,
   markOrderSuccess,
   markOrderFailed,
-  verifyAndCompleteOrder
+  verifyAndCompleteOrder,
+  decryptGatewayResponse
 }

@@ -364,7 +364,7 @@ export default {
       return this.bookingPrefillDate || 'any'
     },
     currentUserId () {
-      return this.$store.state.user && this.$store.state.user.id
+      return this.$store.state.currentUser && this.$store.state.currentUser.id
     },
     calendarSyntheticCase () {
       const sa = this.selectedAppointment
@@ -381,7 +381,7 @@ export default {
       const sa = this.selectedAppointment
       const ev = this.calendarEventPayload(sa)
       if (!ev || !isPastKadrCaseMeeting(ev)) return ''
-      const ut = this.$store.state.user && this.$store.state.user.type
+      const ut = this.$store.state.currentUser && this.$store.state.currentUser.type
       if (ut === 'MEDIATOR' && sa.mediator === this.currentUserId && mediatorNeedsMeetingFeedback(ev)) {
         return 'This case meeting has ended. Please add your summary and next steps.'
       }
@@ -391,7 +391,7 @@ export default {
       return ''
     },
     calendarFeedbackButtonLabel () {
-      const ut = this.$store.state.user && this.$store.state.user.type
+      const ut = this.$store.state.currentUser && this.$store.state.currentUser.type
       return ut === 'MEDIATOR' ? 'Add meeting notes' : 'Rate meeting'
     },
     calendarFeedbackEventTitle () {
@@ -642,7 +642,7 @@ export default {
       this.showDetailsModal = true
     },
     openFeedbackFromCalendar () {
-      const ut = this.$store.state.user && this.$store.state.user.type
+      const ut = this.$store.state.currentUser && this.$store.state.currentUser.type
       if (ut === 'MEDIATOR') {
         this.calendarFeedbackRole = 'mediator'
       } else {

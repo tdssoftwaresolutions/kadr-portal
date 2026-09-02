@@ -9,14 +9,15 @@
   </div>
 </template>
 <script>
+import { defineAsyncComponent } from 'vue'
 import { sofbox } from '../../config/pluginInit'
 
 export default {
   name: 'Dashboard',
   components: {
-    DashboardClient: () => import('../ClientControllers/DashboardClient.vue'),
-    DashboardMediator: () => import('../MediatorControllers/DashboardMediator.vue'),
-    DashboardAdmin: () => import('../AdminControllers/DashboardAdmin.vue')
+    DashboardClient: defineAsyncComponent(() => import('../ClientControllers/DashboardClient.vue')),
+    DashboardMediator: defineAsyncComponent(() => import('../MediatorControllers/DashboardMediator.vue')),
+    DashboardAdmin: defineAsyncComponent(() => import('../AdminControllers/DashboardAdmin.vue'))
   },
   props: {
     user: null

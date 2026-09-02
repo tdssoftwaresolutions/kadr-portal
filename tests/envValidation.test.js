@@ -27,6 +27,7 @@ describe('environment validation', () => {
     process.env.SECRET_KEY = 'test-secret'
     process.env.REFRESH_SECRET_KEY = 'test-refresh'
     process.env.SIGN_SECRET_KEY = 'test-sign'
+    process.env.DATA_ENCRYPTION_KEY = require('node:crypto').randomBytes(32).toString('hex')
     const result = validateEnv({ exitOnError: false })
     assert.equal(result.ok, true)
   })

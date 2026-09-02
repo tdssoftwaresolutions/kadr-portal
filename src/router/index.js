@@ -29,6 +29,7 @@ const PastMediationsView = () => import(/* webpackChunkName: "dashboard" */ '../
 const PortalSupportView = () => import(/* webpackChunkName: "dashboard" */ '../views/Standard/PortalSupportView.vue')
 const PaymentReturn = () => import(/* webpackChunkName: "dashboard" */ '../views/Standard/PaymentReturn.vue')
 const ProfileEdit = () => import(/* webpackChunkName: "user" */ '../views/Standard/ProfileEdit.vue')
+const NotificationSettings = () => import(/* webpackChunkName: "user" */ '../views/Standard/NotificationSettings.vue')
 
 const AgreementSignature = () => import(/* webpackChunkName: "client" */ '../views/ClientControllers/AgreementSignature.vue')
 const Signature = () => import(/* webpackChunkName: "client" */ '../views/ClientControllers/Signature.vue')
@@ -218,6 +219,12 @@ const userChildRoute = (prop) => [
     path: 'profile-edit',
     name: prop + '.edit',
     component: ProfileEdit
+  },
+  {
+    path: 'notification-settings',
+    name: prop + '.notifications',
+    meta: { name: 'Notification settings' },
+    component: NotificationSettings
   }
 ]
 

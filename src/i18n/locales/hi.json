@@ -28,6 +28,7 @@
     "required": "यह फ़ील्ड आवश्यक है।",
     "logout": "लॉग आउट",
     "profile": "प्रोफ़ाइल",
+    "editProfile": "प्रोफ़ाइल संपादित करें",
     "settings": "सेटिंग्स",
     "dashboard": "डैशबोर्ड",
     "notifications": "सूचनाएं"
@@ -155,6 +156,23 @@
     "reject": "अस्वीकार करें",
     "activate": "सक्रिय करें",
     "deactivate": "निष्क्रिय करें"
+  },
+  "nav": {
+    "home": "होम",
+    "operations": "संचालन",
+    "meetingsCalendar": "बैठक कैलेंडर",
+    "caseManagement": "मामला प्रबंधन",
+    "messages": "संदेश",
+    "clientsAndExperts": "पक्षकार और विशेषज्ञ",
+    "blogTaxonomy": "ब्लॉग वर्गीकरण",
+    "websiteContent": "वेबसाइट सामग्री",
+    "finance": "वित्त",
+    "paymentsAndInvoices": "भुगतान और चालान",
+    "rewardOrders": "पुरस्कार ऑर्डर",
+    "system": "सिस्टम",
+    "settings": "सेटिंग्स",
+    "notifications": "सूचनाएं",
+    "adminManagement": "प्रशासक प्रबंधन"
   },
   "validation": {
     "required": "{field} आवश्यक है।",

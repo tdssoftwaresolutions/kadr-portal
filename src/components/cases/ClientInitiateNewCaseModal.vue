@@ -1,11 +1,11 @@
 <template>
   <b-modal
-    :visible="visible"
+    :model-value="visible"
     title="Start a new case"
     size="lg"
     no-footer
     scrollable
-    @change="onVisibilityChange"
+    @update:model-value="onVisibilityChange"
     @hidden="onHidden"
   >
     <p class="text-muted small mb-3">

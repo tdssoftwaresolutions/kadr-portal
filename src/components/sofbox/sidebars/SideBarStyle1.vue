@@ -28,29 +28,29 @@
           <button
             type="button"
             class="compact-action-button"
-            title="Logout"
-            data-flyout-label="Logout"
-            aria-label="Logout"
+            :title="logoutLabel"
+            :data-flyout-label="logoutLabel"
+            :aria-label="logoutLabel"
             @click="$emit('logout')"
           >
             <span class="compact-action-icon">
               <i class="ri-logout-box-line"></i>
             </span>
-            <span class="compact-action-label">Logout</span>
+            <span class="compact-action-label">{{ logoutLabel }}</span>
           </button>
           <button
             type="button"
             class="compact-profile-button"
-            :title="profileName || 'Edit profile'"
-            :data-flyout-label="profileName || 'Edit profile'"
-            aria-label="Edit profile"
+            :title="profileName || editProfileLabel"
+            :data-flyout-label="profileName || editProfileLabel"
+            :aria-label="editProfileLabel"
             @click="$emit('edit-profile')"
           >
             <span class="compact-profile-avatar">
               <img :src="userProfile" alt="profile">
               <mediator-pro-badge v-if="showProBadge" size="sm" class="compact-profile-pro-badge" />
             </span>
-            <span class="compact-action-label">Profile</span>
+            <span class="compact-action-label">{{ profileLabel }}</span>
           </button>
         </div>
       </div>
@@ -111,6 +111,15 @@ export default {
     },
     currentLocaleShort () {
       return this.$i18n && this.$i18n.locale === 'hi' ? 'हि' : 'EN'
+    },
+    logoutLabel () {
+      return typeof this.$t === 'function' ? this.$t('common.logout') : 'Logout'
+    },
+    profileLabel () {
+      return typeof this.$t === 'function' ? this.$t('common.profile') : 'Profile'
+    },
+    editProfileLabel () {
+      return typeof this.$t === 'function' ? this.$t('common.editProfile') : 'Edit profile'
     }
   },
   methods: {

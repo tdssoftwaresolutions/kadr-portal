@@ -297,7 +297,7 @@ export default {
   },
   computed: {
     isAdmin () {
-      return this.$store.state.user && this.$store.state.user.type === 'ADMIN'
+      return this.$store.state.currentUser && this.$store.state.currentUser.type === 'ADMIN'
     },
     fields () {
       const fields = [

@@ -55,7 +55,7 @@ export default (router) => {
         state.loader = data
       },
       setUser (state, user) {
-        state.user = user
+        state.currentUser = user
       },
       setAvailableLanguages (state, data) {
         state.availableLanguages = data
@@ -92,7 +92,7 @@ export default (router) => {
     },
     getters: {
       loader: state => state.loader,
-      user: (state) => state.user,
+      user: (state) => state.currentUser,
       availableLanguages: (state) => state.availableLanguages,
       availableStates: (state) => state.availableStates,
       allLanguages: (state) => state.allLanguages,

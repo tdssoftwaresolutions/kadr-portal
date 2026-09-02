@@ -8,6 +8,7 @@ const path = require('path')
 const fs = require('fs')
 const axios = require('axios')
 const EmailService = require('../services/email/emailService')
+const dataCrypto = require('./crypto')
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -1142,7 +1143,8 @@ class Helper {
   static async getGoogleToken (prisma) {
     const record = await prisma.google_connect.findFirst()
     if (record) {
-      return JSON.parse(record.google_auth_token)
+      // decrypt() passes through legacy plaintext rows unchanged.
+      return JSON.parse(dataCrypto.decrypt(record.google_auth_token))
     }
     return null
   }
@@ -1205,7 +1207,7 @@ class Helper {
         await prisma.google_connect.update({
           where: { id: record.id },
           data: {
-            google_auth_token: JSON.stringify(tokens)
+            google_auth_token: dataCrypto.encrypt(JSON.stringify(tokens))
           }
         })
       }
