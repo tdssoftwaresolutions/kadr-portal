@@ -406,7 +406,7 @@ export default {
 </style>
 
 <style>
-.mediator-tool-card >>> .iq-card-body {
+.mediator-tool-card :deep(.iq-card-body) {
   height: 320px;
   display: flex;
   flex-direction: column;

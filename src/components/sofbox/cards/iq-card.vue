@@ -37,9 +37,8 @@ export default {
       return !!this.$slots.headerAction
     },
     hasBodySlot () {
-      // Vue 2: v-slot:body populates $scopedSlots.body; $slots.body can be empty on first paint
-      // before parent finishes rendering, which left b-card-body permanently hidden.
-      return !!(this.$slots.body || (this.$scopedSlots && this.$scopedSlots.body))
+      // Vue 3: scoped and non-scoped slots are unified under $slots.
+      return !!this.$slots.body
     },
     hasFooterSlot () {
       return !!this.$slots.footer

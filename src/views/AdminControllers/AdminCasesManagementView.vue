@@ -757,7 +757,7 @@ export default {
 </script>
 
 <style scoped>
-::v-deep .card-header {
+:deep(.card-header) {
   background-color: unset !important;
   border-bottom: unset !important;
 }
@@ -786,11 +786,11 @@ export default {
   gap: 0.35rem;
   flex-wrap: wrap;
 }
-::v-deep .detail-tab-nav {
+:deep(.detail-tab-nav) {
   flex-wrap: wrap;
   gap: 0.25rem;
 }
-::v-deep .detail-tab-nav .nav-link {
+:deep(.detail-tab-nav .nav-link) {
   font-size: 0.85rem;
   padding: 0.4rem 0.75rem;
 }
@@ -906,7 +906,7 @@ export default {
   font-size: 0.9rem;
   line-height: 1.5;
 }
-.agreed-terms-html ::v-deep p:last-child {
+.agreed-terms-html :deep(p:last-child) {
   margin-bottom: 0;
 }
 .docs-grid {
@@ -971,15 +971,15 @@ export default {
   border-radius: 8px;
   padding: 0.5rem;
 }
-.feedback-tabs ::v-deep .nav-pills .nav-link {
+.feedback-tabs :deep(.nav-pills .nav-link) {
   font-size: 0.8rem;
   padding: 0.35rem 0.7rem;
 }
-.feedback-tabs ::v-deep .nav-pills .nav-link.active {
+.feedback-tabs :deep(.nav-pills .nav-link.active) {
   background-color: #007bff;
   color: white;
 }
-.feedback-tabs ::v-deep .tab-content {
+.feedback-tabs :deep(.tab-content) {
   border-top: 1px solid #edf1fb;
 }
 .feedback-box {

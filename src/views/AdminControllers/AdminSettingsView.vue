@@ -173,12 +173,12 @@ export default {
   line-height: 1.3;
   display: block;
 }
-.admin-settings-compact >>> .table td,
-.admin-settings-compact >>> .table th {
+.admin-settings-compact :deep(.table td),
+.admin-settings-compact :deep(.table th) {
   padding: 0.35rem 0.5rem;
   vertical-align: middle;
 }
-.admin-settings-compact >>> .card-body {
+.admin-settings-compact :deep(.card-body) {
   padding-top: 0.75rem;
 }
 </style>

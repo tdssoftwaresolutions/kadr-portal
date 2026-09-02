@@ -132,7 +132,7 @@ export default {
 }
 </script>
 <style scoped>
-::v-deep .card-header {
+:deep(.card-header) {
   background-color: unset !important;
   border-bottom: unset !important;
 }

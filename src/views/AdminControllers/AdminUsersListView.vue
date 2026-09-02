@@ -475,7 +475,7 @@ export default {
   margin-top: 0.75rem;
 }
 
-::v-deep .card-header {
+:deep(.card-header) {
   background-color: unset !important;
   border-bottom: unset !important;
 }

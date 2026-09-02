@@ -117,7 +117,7 @@ export default {
   margin: 0;
 }
 
-.admin-perm-group-options >>> .custom-control {
+.admin-perm-group-options :deep(.custom-control) {
   margin-bottom: 0.35rem;
 }
 </style>

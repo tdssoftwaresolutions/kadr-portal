@@ -238,7 +238,7 @@ export default {
     }
     document.addEventListener('keydown', this._keydownHandler)
   },
-  beforeDestroy () {
+  beforeUnmount () {
     if (this._keydownHandler) {
       document.removeEventListener('keydown', this._keydownHandler)
     }

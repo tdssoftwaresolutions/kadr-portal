@@ -97,7 +97,7 @@ export default {
       setTimeout(() => this.bindCompactFlyoutTips(), 0)
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     window.removeEventListener('resize', this._onFlyoutResize)
     this.clearSubmenuHideTimer()
     this.unbindCompactFlyoutTips()

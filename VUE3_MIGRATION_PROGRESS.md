@@ -22,7 +22,7 @@ Branch: `migration/vue3` (off `stable-release`)
 | 7c | Migrate b-* component APIs to BVN | ✅ Done |
 | 7d | Rewrite $bvModal/$bvToast call sites | ✅ Done |
 | 7e | Remove bootstrap-vue deps, verify | ✅ Done |
-| 8 | Component breaking-change sweep | ⬜ Not started |
+| 8 | Component breaking-change sweep | ✅ Done |
 | 9 | Remove @vue/compat & finalize | ⬜ Not started |
 | 10 | Cross-platform verification | ⬜ Not started |
 
@@ -353,3 +353,20 @@ which is cleaner than the orchestrator/ref mix:
 
 **Note for Phase 9:** `COMPONENT_V_MODEL: false` runtime compat flag (set in 7c) must remain
 until `@vue/compat` is removed; after Phase 9 it becomes the default Vue 3 behavior.
+
+---
+
+## Phase 8 — Component breaking-change sweep ✅
+
+Cleared all remaining `@vue/compat` items in **our** source (Alert.vue + HtmlCodeEditor.vue
+`beforeDestroy` were already done in 7c):
+
+- **`beforeDestroy` → `beforeUnmount`** (3 files): `sofbox/sidebars/SideBarStyle1.vue`, `layouts/StandardLayout.vue`, `MediatorControllers/DashboardMediator.vue`.
+- **`.native` modifier removed** (2 sites): `StandardLayout.vue` `@click.native` → `@click` on `<router-link>` (Vue 3 forwards native events directly).
+- **`$scopedSlots` → `$slots`**: `sofbox/cards/iq-card.vue` (`hasBodySlot` simplified — Vue 3 unifies scoped + normal slots under `$slots`).
+- **`>>>` / `::v-deep` → `:deep()`** (14 occurrences, 6 files): `AdminPagePermissionGroups.vue`, `MediatorCourtCaseTracker.vue`, `DashboardAdmin.vue`, `AdminUsersListView.vue`, `AdminCasesManagementView.vue` (6), `AdminSettingsView.vue` (3). Combinator forms `.parent ::v-deep .child` → `.parent :deep(.child)`; standalone `::v-deep .x` → `:deep(.x)`.
+- **`$listeners`**: none found.
+
+**Verification:** production build passes. Headless boot warning capture: **compat/deprecation warnings dropped to 1**, and it is `GLOBAL_PROTOTYPE` from the **`vue-cookies` dependency** (uses `Vue.prototype.$cookies` under compat) — NOT our code (our only `Vue.prototype` reference is a comment in `utils/dateFormat.js`). 0 other errors, app mounts.
+
+**Phase 9 note:** `vue-cookies@1.8.6` DOES support Vue 3 (has Vue-3 install path). The `GLOBAL_PROTOTYPE` warning should clear once `@vue/compat` is removed and vue-cookies installs via `app.config.globalProperties`. Used as direct `VueCookies.get/set/remove` in `utils/apiClient.js` + `utils/tokenStorage.js` (framework-agnostic) and `this.$cookies` in `Standard/Dashboard.vue`. Verify in Phase 9.

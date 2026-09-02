@@ -45,7 +45,7 @@
                 :to="item.link"
                 class="mobile-top-nav-link"
                 :class="{ active: isNavItemActive(item) }"
-                @click.native="closeMobileNav"
+                @click="closeMobileNav"
               >
                 <i v-if="item.is_icon_class" :class="item.icon"></i>
                 <span>{{ item.title }}</span>
@@ -78,7 +78,7 @@
                     :to="child.link"
                     class="mobile-top-nav-link mobile-top-nav-sublink"
                     :class="{ active: isNavItemActive(child) }"
-                    @click.native="closeMobileNav"
+                    @click="closeMobileNav"
                   >
                     <i v-if="child.is_icon_class" :class="child.icon"></i>
                     <span>{{ child.title }}</span>
@@ -166,7 +166,7 @@ export default {
     sofbox.mainIndex()
     this.applyCompactSidebarState()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.removeCompactSidebarState()
   },
   watch: {
