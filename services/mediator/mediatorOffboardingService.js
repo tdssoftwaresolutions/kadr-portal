@@ -129,23 +129,30 @@ async function reassignCase ({
   })
 
   const label = caseRow.caseId || 'your case'
-  const title = 'Mediator change on your case'
-  const description = `A new dispute resolution expert (${assigned.name}) has been assigned to case ${label}.`
-  const notifications = []
-  if (caseRow.first_party) {
-    notifications.push(db.notifications.create({ data: { user_id: caseRow.first_party, title, description } }))
-  }
-  if (caseRow.second_party) {
-    notifications.push(db.notifications.create({ data: { user_id: caseRow.second_party, title, description } }))
-  }
-  notifications.push(db.notifications.create({
-    data: {
-      user_id: assigned.id,
-      title: 'New case assignment',
-      description: `You have been assigned to case ${label} (reassigned from another mediator).`
-    }
-  }))
-  await Promise.all(notifications)
+  const {
+    emailMediatorCaseAssigned,
+    emailPartiesMediatorAssigned
+  } = require('../meeting/meetingInvitationService')
+
+  await Promise.all([
+    emailMediatorCaseAssigned({
+      mediatorEmail: assigned.email,
+      mediatorName: assigned.name,
+      caseNumber: label,
+      firstPartyName: caseRow.user_cases_first_partyTouser?.name,
+      secondPartyName: caseRow.user_cases_second_partyTouser?.name,
+      category: caseRow.category,
+      isReassignment: true
+    }).catch((err) => console.error('[offboarding] mediator email failed', err.message)),
+    emailPartiesMediatorAssigned({
+      parties: [
+        caseRow.user_cases_first_partyTouser,
+        caseRow.user_cases_second_partyTouser
+      ],
+      mediatorName: assigned.name,
+      caseNumber: label
+    })
+  ])
 
   return { caseId, newMediator: assigned }
 }
@@ -252,18 +259,6 @@ async function notifyAdminsMediatorLeft ({ departedMediator, reassignments, trig
       bodyHtml
     })
   }
-
-  await Promise.all(
-    eligible.map((admin) =>
-      prisma.notifications.create({
-        data: {
-          user_id: admin.id,
-          title: 'Mediator left platform — cases reassigned',
-          description: `${departedMediator.name} left; ${reassignments.length} case(s) reassigned. Please review.`
-        }
-      })
-    )
-  )
 }
 
 /**

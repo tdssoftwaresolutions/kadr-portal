@@ -4,6 +4,7 @@ const errorCodes = require('../utils/errors/errorCodes')
 const { success } = require('../utils/responses')
 const helper = require('../utils/helper')
 const { renderPdfFromHtml, sendPdfResponse } = require('../utils/pdfFromHtml')
+const { parsePagination, paginatedResponse } = require('../utils/pagination')
 const { assertAdminPage } = require('../utils/adminPermissionHelpers')
 const { getMediatorIncomeOverview } = require('../services/invoice/mediatorIncomeService')
 
@@ -159,14 +160,20 @@ module.exports = {
       if (req.query.status) where.status = req.query.status
       const range = buildDateRange(req.query.range)
       if (range) where.invoice_month = range
-      const invoices = await prisma.mediator_invoices.findMany({
-        where,
-        orderBy: [{ invoice_month: 'desc' }, { created_at: 'desc' }],
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-          cases: { select: { id: true, caseId: true, mediator_commission: true } }
-        }
-      })
+      const { page, perPage, skip, take } = parsePagination(req.query, { defaultPerPage: 50, maxPerPage: 200 })
+      const [invoices, total] = await prisma.$transaction([
+        prisma.mediator_invoices.findMany({
+          where,
+          orderBy: [{ invoice_month: 'desc' }, { created_at: 'desc' }],
+          skip,
+          take,
+          include: {
+            user: { select: { id: true, name: true, email: true } },
+            cases: { select: { id: true, caseId: true, mediator_commission: true } }
+          }
+        }),
+        prisma.mediator_invoices.count({ where })
+      ])
 
       const mediatorIds = [...new Set(invoices.map(i => i.mediator_id))]
       const bankByMediator = mediatorIds.length
@@ -190,6 +197,7 @@ module.exports = {
           ...inv,
           bank_details: bankMap[inv.mediator_id] || null
         })),
+        ...paginatedResponse(invoices, total, { page, perPage }),
         totals: {
           total: toMoney(totals.total),
           paid: toMoney(totals.paid),

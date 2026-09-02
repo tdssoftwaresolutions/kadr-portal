@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
-<title>KADR.live — Video reels</title>
+<title>Video Reels — KADR.live</title>
+<meta name="description" content="Short videos explaining KADR mediation, how the platform works, and tips for settling disputes online in India."/>
 <link rel="apple-touch-icon" sizes="180x180" href="/admin/img/icons/apple-touch-icon.png"/>
 <link rel="apple-touch-icon" sizes="152x152" href="/admin/img/icons/apple-touch-icon-152x152.png"/>
 <link rel="apple-touch-icon" sizes="120x120" href="/admin/img/icons/apple-touch-icon-120x120.png"/>
@@ -288,6 +289,7 @@ span.copy-en,span.copy-hi{display:inline}
   :root{--kadr-header-h:52px}
 }
 </style>
+<link rel="stylesheet" href="css/site-core.css"/>
 <link rel="stylesheet" href="css/site-responsive.css"/>
 </head>
 <body class="lang-en kadr-reels-page">
@@ -327,8 +329,9 @@ function navigateTo(pageName) {
 }
 
 function goToLogin() {
-  const adminUrl = localStorage.getItem('adminUrl') || '/admin';
-  window.location.href = adminUrl;
+  let adminBase = localStorage.getItem('adminUrl') || '/admin';
+  if (adminBase.endsWith('/')) adminBase = adminBase.slice(0, -1);
+  window.location.href = adminBase + '/auth/sign-in';
 }
 
 function setLanguage(lang, ev) {

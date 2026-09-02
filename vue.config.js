@@ -10,6 +10,8 @@ module.exports = {
         ? process.env.BASE_URL + '/admin/'
         : '/admin/'),
   devServer: {
+    // Keep Vue off Express's PORT (.env PORT=3000). 8081 avoids common 8080 clashes.
+    port: 8081,
     proxy: {
       '/api': {
         target: 'http://localhost:3000', // Your Express server's port

@@ -4,6 +4,10 @@ const prisma = require('../../lib/prisma.js')
 /**
  * Registers a device push token. FCM/APNs delivery is wired when
  * PUSH_FCM_SERVER_KEY (or platform-specific credentials) are configured.
+ *
+ * NOTE: The legacy FCM HTTP API (fcm.googleapis.com/fcm/send) is deprecated.
+ * When mobile app is ready, migrate to FCM v1 HTTP API with service account credentials.
+ * See: https://firebase.google.com/docs/cloud-messaging/migrate-v1
  */
 async function registerDevice ({ userId, token, platform }) {
   const normalizedPlatform = String(platform || 'unknown').toLowerCase()

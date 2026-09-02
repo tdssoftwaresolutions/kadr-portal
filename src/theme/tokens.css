@@ -1,0 +1,89 @@
+:root {
+  /* Brand */
+  --kadr-primary: #0084ff;
+  --kadr-primary-hover: #0062cc;
+  --kadr-hero-from: #2b4ecf;
+  --kadr-hero-to: #5e7df7;
+  --kadr-accent: #3758d5;
+
+  /* Text */
+  --kadr-text-primary: #374948;
+  --kadr-text-secondary: #777d74;
+  --kadr-text-muted: #6d7693;
+  --kadr-text-label: #707a98;
+  --kadr-text-on-primary: #ffffff;
+
+  /* Surfaces */
+  --kadr-bg-page: #f3f7fd;
+  --kadr-bg-surface: #ffffff;
+  --kadr-surface-muted: #f8faff;
+  --kadr-surface-info: #fcfdff;
+
+  /* Borders */
+  --kadr-border: #e8ebf5;
+  --kadr-border-strong: #d8deef;
+  --kadr-border-info: #ebeffa;
+
+  /* Status */
+  --kadr-error: #c03020;
+  --kadr-success: #28a745;
+  --kadr-warning: #ffc107;
+  --kadr-danger: #dc3545;
+  --kadr-info: #17a2b8;
+
+  --kadr-status-secondary-bg: #eceff5;
+  --kadr-status-warning-bg: #fff2d9;
+  --kadr-status-warning-text: #7a5700;
+  --kadr-status-success-bg: #dff7e8;
+  --kadr-status-success-text: #115f31;
+  --kadr-status-danger-bg: #fde2e4;
+  --kadr-status-danger-text: #842029;
+
+  /* Radius scale */
+  --kadr-radius-sm: 6px;
+  --kadr-radius: 8px;
+  --kadr-radius-md: 10px;
+  --kadr-radius-lg: 12px;
+  --kadr-radius-xl: 14px;
+  --kadr-radius-2xl: 16px;
+
+  /* Shadows */
+  --kadr-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --kadr-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  /* Spacing (8px base) */
+  --kadr-spacing-unit: 8px;
+  --kadr-space-1: 4px;
+  --kadr-space-2: 8px;
+  --kadr-space-3: 12px;
+  --kadr-space-4: 16px;
+  --kadr-space-5: 24px;
+  --kadr-space-6: 32px;
+}
+
+.btn-primary {
+  background-color: var(--kadr-primary);
+  border-color: var(--kadr-primary);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--kadr-primary-hover);
+  border-color: var(--kadr-primary-hover);
+}
+
+.text-primary {
+  color: var(--kadr-primary) !important;
+}
+
+.text-muted-kadr {
+  color: var(--kadr-text-muted) !important;
+}
+
+.bg-primary {
+  background-color: var(--kadr-primary) !important;
+}
+
+.border-kadr {
+  border-color: var(--kadr-border) !important;
+}

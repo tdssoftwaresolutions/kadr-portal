@@ -1,7 +1,7 @@
 <template>
   <div>
     <Loader/>
-    <vue-scroll-progress-bar @complete="handleComplete" height="0.2rem" backgroundColor="linear-gradient(to right, #067bfe, #0885ff)" style="z-index: 10000" />
+    <vue-scroll-progress-bar @complete="handleComplete" height="0.2rem" backgroundColor="linear-gradient(to right, var(--kadr-primary), var(--kadr-primary-hover))" style="z-index: 10000" />
     <div class="wrapper">
       <SideBarStyle1
         :items="sidebar"
@@ -24,7 +24,7 @@
         <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ml-2" />
       </div>
       <button v-if="user && mobileNavTree.length" class="mobile-top-nav-toggle" @click="toggleMobileNav" type="button" aria-label="Open navigation">
-        <i class="las la-bars" style="font-size:18px"></i>
+        <i class="ri-menu-line" style="font-size:18px"></i>
         <span>Menu</span>
       </button>
     </div>
@@ -94,6 +94,12 @@
               <mediator-pro-badge v-if="isMediatorPro" size="sm" class="ml-auto" />
             </div>
           </li>
+          <li key="language" class="mobile-top-nav-list-item" @click="toggleLocale">
+            <div class="mobile-top-nav-link">
+              <i class="ri-translate-2"></i>
+              <span>{{ $i18n.locale === 'hi' ? 'English' : 'हिन्दी' }}</span>
+            </div>
+          </li>
           <li key="logout" class="mobile-top-nav-list-item" @click="onClickSignOut">
             <div class="mobile-top-nav-link">
               <i class="ri-logout-box-line"></i>
@@ -111,7 +117,7 @@
         <li class="list-inline-item"><a href="#">Terms of Use</a></li>
       </template>
       <template v-slot:right>
-        Copyright 2020 <a href="#">KADR.live</a> All Rights Reserved.
+        Copyright {{ currentYear }} <a href="https://kadr.live">KADR.live</a> All Rights Reserved.
       </template>
     </FooterStyle1>
   </div>
@@ -136,6 +142,7 @@ import {
   filterMediatorSidebar,
   mediatorCanAccessRoute
 } from '../utils/mediatorEntitlements'
+import { applyServerPreferences } from '../utils/timezone'
 
 export default {
   name: 'StandardLayout',
@@ -196,6 +203,9 @@ export default {
     }
   },
   computed: {
+    currentYear () {
+      return new Date().getFullYear()
+    },
     mobileNavTree () {
       return (this.sidebar || []).filter((item) => !item.is_heading)
     },
@@ -218,32 +228,53 @@ export default {
       return hasStoredSession()
     },
     async validateData (data) {
-      const response = await this.$store.dispatch('verifySignature', {
-        signature: data.signature,
-        userData: data.userData
-      })
+      const userData = data.userData
 
-      if (response.success) {
-        switch (data.userData.type) {
-          case 'MEDIATOR':
-            await this.$store.dispatch('loadMediatorSubscription')
-            this.applyMediatorSidebar()
-            break
-          case 'CLIENT':
-            this.sidebar = SideBarItemsClient
-            break
-          case 'ADMIN':
-            this.sidebar = filterAdminSidebarItems(SideBarItemAdmin, data.userData)
-            break
-        }
-        this.user = data.userData
-        this.userProfile = data.userData.photo || profile
-        if (data.userData.type === 'ADMIN') {
-          this.$nextTick(() => this.enforceAdminRouteAccess())
-        }
-        if (data.userData.type === 'MEDIATOR') {
-          this.$nextTick(() => this.enforceMediatorRouteAccess())
-        }
+      // Unblock router-view immediately; verify + subscription run in parallel after.
+      switch (userData.type) {
+        case 'MEDIATOR':
+          this.applyMediatorSidebar()
+          break
+        case 'CLIENT':
+          this.sidebar = SideBarItemsClient
+          break
+        case 'ADMIN':
+          this.sidebar = filterAdminSidebarItems(SideBarItemAdmin, userData)
+          break
+      }
+      this.user = userData
+      this.userProfile = userData.photo || profile
+
+      if (userData.timezone) {
+        applyServerPreferences({
+          timezone: userData.timezone,
+          locale: userData.locale
+        })
+      }
+
+      const verifyPromise = this.$store.dispatch('verifySignature', {
+        signature: data.signature,
+        userData,
+        silent: true
+      })
+      const subscriptionPromise = userData.type === 'MEDIATOR'
+        ? this.$store.dispatch('loadMediatorSubscription')
+        : Promise.resolve({ success: true })
+
+      const [verifyResponse] = await Promise.all([verifyPromise, subscriptionPromise])
+
+      if (!verifyResponse.success) {
+        this.user = null
+        this.$router.push({ path: '/auth/sign-in' })
+        return
+      }
+
+      if (userData.type === 'MEDIATOR') {
+        this.applyMediatorSidebar()
+        this.$nextTick(() => this.enforceMediatorRouteAccess())
+      }
+      if (userData.type === 'ADMIN') {
+        this.$nextTick(() => this.enforceAdminRouteAccess())
       }
     },
     applyMediatorSidebar () {
@@ -277,6 +308,12 @@ export default {
         this.$store.commit('clearMediatorSubscription')
         this.isMobileNavOpen = false
         this.$router.push({ path: '/auth/sign-in' })
+      }
+    },
+    toggleLocale () {
+      if (this.$i18n) {
+        this.$i18n.locale = this.$i18n.locale === 'en' ? 'hi' : 'en'
+        this.$forceUpdate()
       }
     },
     toggleMobileNav () {

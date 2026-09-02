@@ -4,26 +4,40 @@ const helper = require('../utils/helper')
 const errorCodes = require('../utils/errors/errorCodes')
 const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
-const CaseAssignmentService = require('../utils/caseAssignment')
 const { canLogin } = require('../utils/userAccess')
 const { isMobileClientRequest } = require('../utils/mobileClient')
+const { getRefreshCookieOptions, getRefreshCookieClearOptions } = require('../utils/cookieOptions')
+const { OAuth2Client } = require('google-auth-library')
 
 module.exports = {
   login: async function (req, res, next) {
     try {
-      const { username, password } = req.body
-      const user = await prisma.user.findFirst({
+      const { username, password, userType } = req.body
+      const normalizedType = userType ? String(userType).toUpperCase() : null
+      const candidates = await prisma.user.findMany({
         where: {
-          email: username
+          email: username,
+          ...(normalizedType ? { user_type: normalizedType } : {})
         }
       })
-      if (!user) throw createError(errorCodes.INVALID_CREDENTIALS)
+      if (!candidates.length) throw createError(errorCodes.INVALID_CREDENTIALS)
 
+      const passwordMatches = []
+      for (const candidate of candidates) {
+        const ok = await helper.comparePassword(password, candidate.password_hash)
+        if (ok) passwordMatches.push(candidate)
+      }
+      if (!passwordMatches.length) throw createError(errorCodes.INVALID_CREDENTIALS)
+
+      if (passwordMatches.length > 1 && !normalizedType) {
+        throw createError(errorCodes.ACCOUNT_TYPE_REQUIRED, {
+          availableTypes: passwordMatches.map((u) => u.user_type)
+        })
+      }
+
+      const user = passwordMatches[0]
       if (user.is_deleted === true) throw createError(errorCodes.USER_ACCOUNT_DELETED)
       if (!canLogin(user)) throw createError(errorCodes.USER_NOT_ACTIVE)
-
-      const isPasswordValid = await helper.comparePassword(password, user.password_hash)
-      if (!isPasswordValid) throw createError(errorCodes.INVALID_CREDENTIALS)
 
       const isMobile = isMobileClientRequest(req)
       const accessToken = helper.generateAccessToken(user)
@@ -33,16 +47,13 @@ module.exports = {
       const refreshMaxAgeMs = isMobile
         ? 30 * 24 * 60 * 60 * 1000
         : 7 * 24 * 60 * 60 * 1000
+      const cookieOptions = getRefreshCookieOptions(refreshMaxAgeMs)
       try {
-        res.cookie('refresh_token', refreshToken, {
-          httpOnly: true,
-          secure: true,
-          maxAge: refreshMaxAgeMs,
-          sameSite: 'None',
-          path: '/'
-        })
+        res.cookie('refresh_token', refreshToken, cookieOptions)
       } catch (e) {
-        res.setHeader('Set-Cookie', `refresh_token=${refreshToken}; HttpOnly; Max-Age=${refreshMaxAgeMs}; Path=/; Secure=true`)
+        const secureFlag = cookieOptions.secure ? '; Secure' : ''
+        const sameSite = cookieOptions.sameSite ? `; SameSite=${cookieOptions.sameSite}` : ''
+        res.setHeader('Set-Cookie', `refresh_token=${refreshToken}; HttpOnly; Max-Age=${Math.floor(refreshMaxAgeMs / 1000)}; Path=/${secureFlag}${sameSite}`)
       }
       const payload = { accessToken }
       if (isMobile) {
@@ -54,32 +65,121 @@ module.exports = {
       next(error)
     }
   },
+  googleLogin: async function (req, res, next) {
+    try {
+      const { credential, userType } = req.body
+      if (!credential) throw createError(errorCodes.INVALID_REQUEST)
+
+      // Verify the Google ID token
+      const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+      let ticket
+      try {
+        ticket = await googleClient.verifyIdToken({
+          idToken: credential,
+          audience: process.env.GOOGLE_CLIENT_ID
+        })
+      } catch (verifyErr) {
+        throw createError(errorCodes.INVALID_CREDENTIALS)
+      }
+
+      const payload = ticket.getPayload()
+      const email = payload.email
+      if (!email) throw createError(errorCodes.INVALID_CREDENTIALS)
+
+      // Look up matching users by email
+      const normalizedType = userType ? String(userType).toUpperCase() : null
+      const candidates = await prisma.user.findMany({
+        where: {
+          email,
+          ...(normalizedType ? { user_type: normalizedType } : {})
+        }
+      })
+
+      if (!candidates.length) {
+        throw createError(errorCodes.INVALID_CREDENTIALS)
+      }
+
+      // If multiple accounts for same email (different user types), ask user to choose
+      if (candidates.length > 1 && !normalizedType) {
+        throw createError(errorCodes.ACCOUNT_TYPE_REQUIRED, {
+          availableTypes: candidates.map((u) => u.user_type)
+        })
+      }
+
+      const user = candidates[0]
+      if (user.is_deleted === true) throw createError(errorCodes.USER_ACCOUNT_DELETED)
+      if (!canLogin(user)) throw createError(errorCodes.USER_NOT_ACTIVE)
+
+      const isMobile = isMobileClientRequest(req)
+      const accessToken = helper.generateAccessToken(user)
+      const refreshToken = isMobile
+        ? helper.generateMobileRefreshToken(user)
+        : helper.generateRefreshToken(user)
+      const refreshMaxAgeMs = isMobile
+        ? 30 * 24 * 60 * 60 * 1000
+        : 7 * 24 * 60 * 60 * 1000
+      const cookieOptions = getRefreshCookieOptions(refreshMaxAgeMs)
+      try {
+        res.cookie('refresh_token', refreshToken, cookieOptions)
+      } catch (e) {
+        const secureFlag = cookieOptions.secure ? '; Secure' : ''
+        const sameSite = cookieOptions.sameSite ? `; SameSite=${cookieOptions.sameSite}` : ''
+        res.setHeader('Set-Cookie', `refresh_token=${refreshToken}; HttpOnly; Max-Age=${Math.floor(refreshMaxAgeMs / 1000)}; Path=/${secureFlag}${sameSite}`)
+      }
+      const responsePayload = { accessToken }
+      if (isMobile) {
+        responsePayload.refreshToken = refreshToken
+        responsePayload.refreshExpiresIn = Math.floor(refreshMaxAgeMs / 1000)
+      }
+      success(res, responsePayload)
+    } catch (error) {
+      next(error)
+    }
+  },
   logout: function (req, res, next) {
     try {
-      res.clearCookie('refresh_token', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None',
-        path: '/'
-      })
+      res.clearCookie('refresh_token', getRefreshCookieClearOptions())
     } catch (e) {
-      res.setHeader('Set-Cookie', 'refresh_token=; Max-Age=0; Path=/; Secure=true; SameSite=None')
+      const opts = getRefreshCookieClearOptions()
+      const secureFlag = opts.secure ? '; Secure' : ''
+      res.setHeader('Set-Cookie', `refresh_token=; Max-Age=0; Path=/; SameSite=${opts.sameSite}${secureFlag}`)
     }
     success(res, {}, 'Logged out successfully')
   },
   isEmailExist: async function (req, res, next) {
     try {
-      const user = await prisma.user.findUnique({
-        where: {
-          email: req.query.email
-        },
-        select: {
-          id: true,
-          active: true,
-          is_deleted: true,
-          is_self_signed_up: true
-        }
-      })
+      const email = req.query.email
+      // Prefer (email, user_type) — same email may exist as CLIENT and MEDIATOR
+      const type = req.query.type ? String(req.query.type).toUpperCase() : null
+      if (!email) {
+        throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      }
+      const user = type
+        ? await prisma.user.findUnique({
+          where: {
+            email_user_type: {
+              email,
+              user_type: type
+            }
+          },
+          select: {
+            id: true,
+            active: true,
+            is_deleted: true,
+            is_self_signed_up: true,
+            user_type: true
+          }
+        })
+        : await prisma.user.findFirst({
+          where: { email },
+          select: {
+            id: true,
+            active: true,
+            is_deleted: true,
+            is_self_signed_up: true,
+            user_type: true
+          }
+        })
       if (!user) {
         success(res, { exists: false }, 'Email does not exist')
         return
@@ -89,10 +189,32 @@ module.exports = {
         return
       }
       if (user.active === false && user.is_self_signed_up === true) {
-        success(res, { exists: true, pendingApproval: true }, 'Your registration is pending approval.')
+        success(res, {
+          exists: true,
+          pendingApproval: true,
+          userType: user.user_type
+        }, 'Your registration is pending approval. Please wait for the Kadr team to activate your account.')
         return
       }
-      success(res, { exists: true }, 'Email address already exist, please login instead.')
+
+      let message = 'An account with this email already exists. Please log in instead.'
+      let action = 'login'
+      if (user.user_type === 'CLIENT' || type === 'CLIENT') {
+        message = errorCodes.CLIENT_ACCOUNT_EXISTS.message
+        action = 'login_and_new_case'
+      } else if (user.user_type === 'MEDIATOR' || type === 'MEDIATOR') {
+        message = errorCodes.MEDIATOR_ACCOUNT_EXISTS.message
+        action = 'login'
+      } else if (user.user_type === 'ADMIN' || type === 'ADMIN') {
+        message = errorCodes.ADMIN_ACCOUNT_EXISTS.message
+        action = 'login'
+      }
+
+      success(res, {
+        exists: true,
+        userType: user.user_type,
+        action
+      }, message)
     } catch (error) {
       next(error)
     }
@@ -109,16 +231,26 @@ module.exports = {
   },
   getGoogleToken: async function (req, res, next) {
     try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
       const googleAuth = await helper.getGoogleToken(prisma)
       if (googleAuth == null) throw createError(errorCodes.GOOGLE_AUTH_FAILED)
-      success(res, { ...googleAuth }, '')
+      success(res, { connected: Boolean(googleAuth) }, '')
     } catch (error) {
       next(error)
     }
   },
   googleCallback: async function (req, res, next) {
     try {
-      const code = decodeURIComponent(req.query.code)
+      const code = decodeURIComponent(req.query.code || '')
+      const stateUserId = req.query.state
+      if (!code) throw createError(errorCodes.INVALID_REQUEST)
+      if (stateUserId) {
+        const stateUser = await prisma.user.findUnique({
+          where: { id: stateUserId },
+          select: { id: true, user_type: true }
+        })
+        if (!stateUser) throw createError(errorCodes.UNAUTHORIZED)
+      }
       const accessTokenStatus = await helper.getGoogleAccessToken(prisma, code)
       if (!accessTokenStatus) throw createError(errorCodes.AUTHENTICATION_FAILED)
 
@@ -265,21 +397,27 @@ module.exports = {
   resetPassword: async function (req, res, next) {
     try {
       const email = req.body.emailAddress
-      const user = await prisma.user.findFirst({
+      const userType = req.body.userType ? String(req.body.userType).toUpperCase() : null
+      const users = await prisma.user.findMany({
         where: {
           email,
           active: true,
           is_deleted: false,
-          user_type: {
-            not: 'ADMIN'
-          }
+          user_type: userType || { not: 'ADMIN' }
         },
         select: {
           id: true,
-          name: true
+          name: true,
+          user_type: true
         }
       })
-      if (!user) throw createError(errorCodes.INVALID_REQUEST)
+      if (!users.length) throw createError(errorCodes.INVALID_REQUEST)
+      if (users.length > 1 && !userType) {
+        throw createError(errorCodes.ACCOUNT_TYPE_REQUIRED, {
+          availableTypes: users.map((u) => u.user_type)
+        })
+      }
+      const user = users[0]
 
       const createdAt = new Date()
       const expiresAt = new Date(createdAt.getTime() + 10 * 60000)
@@ -315,10 +453,14 @@ module.exports = {
   },
   confirmPasswordChange: async function (req, res, next) {
     try {
-      const { emailAddress, otp, password } = req.body
+      const { emailAddress, otp, password, userType } = req.body
+      if (!password || password.length < 8) {
+        throw createError(errorCodes.INVALID_REQUEST, { message: 'Password must be at least 8 characters.' })
+      }
       const otpReset = await prisma.otp_resets.findFirst({
         where: {
-          email: emailAddress
+          email: emailAddress,
+          type: 'RESET_PASSWORD'
         },
         select: {
           otp: true,
@@ -332,16 +474,24 @@ module.exports = {
       if (otpReset.expires_at < new Date()) throw createError(errorCodes.OTP_EXPIRED)
 
       const hashPassword = await helper.hashPassword(password)
-      const user = await prisma.user.update({
+      const normalizedType = userType ? String(userType).toUpperCase() : null
+      const users = await prisma.user.findMany({
         where: {
-          email: emailAddress
+          email: emailAddress,
+          user_type: normalizedType || { not: 'ADMIN' }
         },
-        data: {
-          password_hash: hashPassword
-        },
-        select: {
-          name: true
-        }
+        select: { id: true, name: true, user_type: true }
+      })
+      if (!users.length) throw createError(errorCodes.INVALID_REQUEST)
+      if (users.length > 1 && !normalizedType) {
+        throw createError(errorCodes.ACCOUNT_TYPE_REQUIRED, {
+          availableTypes: users.map((u) => u.user_type)
+        })
+      }
+
+      await prisma.user.update({
+        where: { id: users[0].id },
+        data: { password_hash: hashPassword }
       })
       await prisma.otp_resets.deleteMany({
         where: {
@@ -349,50 +499,45 @@ module.exports = {
         }
       })
       await helper.sendTemplatedEmail('passwordResetSuccess', emailAddress, {
-        recipientName: user.name
+        recipientName: users[0].name
       })
       success(res, {}, 'Password reset successfully!')
     } catch (error) {
       next(error)
     }
   },
-  test: async function (req, res, next) {
-    try {
-      const service = new CaseAssignmentService({ prisma })
-      const response = await service.assign({
-        caseId: 'KDR-12234',
-        clientLanguage: 'bn',
-        clientState: 'DELHI',
-        category: 'MEDIATION'
-      })
-      success(res, response)
-    } catch (error) {
-      next(error)
-    }
-  },
-  refreshToken: function (req, res, next) {
+  refreshToken: async function (req, res, next) {
     try {
       const refreshToken =
         req.body?.refreshToken ||
         req.cookies?.refresh_token
       if (!refreshToken) throw createError(errorCodes.NO_REFRESH_TOKEN)
 
-      jwt.verify(refreshToken, process.env.REFRESH_SECRET_KEY, (err, user) => {
+      jwt.verify(refreshToken, process.env.REFRESH_SECRET_KEY, async (err, tokenUser) => {
         if (err) {
           return res.status(403).json(errorCodes.REFRESH_TOKEN_EXPIRED)
         }
-        const newAccessToken = helper.generateAccessToken(user)
-        const isMobile = isMobileClientRequest(req)
-
-        if (isMobile) {
-          return res.json({
-            success: true,
-            data: {
-              accessToken: newAccessToken
-            }
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: tokenUser.id },
+            select: { id: true, email: true, name: true, user_type: true, active: true, is_deleted: true }
           })
+          if (!dbUser || dbUser.is_deleted || !dbUser.active) {
+            return res.status(403).json(errorCodes.REFRESH_TOKEN_EXPIRED)
+          }
+          const newAccessToken = helper.generateAccessToken(dbUser)
+          const isMobile = isMobileClientRequest(req)
+
+          if (isMobile) {
+            return res.json({
+              success: true,
+              data: { accessToken: newAccessToken }
+            })
+          }
+          res.json({ accessToken: newAccessToken })
+        } catch (verifyErr) {
+          next(verifyErr)
         }
-        res.json({ accessToken: newAccessToken })
       })
     } catch (error) {
       next(error)

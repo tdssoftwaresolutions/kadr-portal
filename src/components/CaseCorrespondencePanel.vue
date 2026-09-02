@@ -306,14 +306,7 @@ export default {
       return msg.author.name
     },
     formatTime (d) {
-      if (!d) return ''
-      return new Date(d).toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return this.$formatDateTime(d)
     },
     setReplyTo (msg) {
       this.replyTo = msg

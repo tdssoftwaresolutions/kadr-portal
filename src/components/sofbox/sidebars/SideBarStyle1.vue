@@ -15,6 +15,19 @@
           <button
             type="button"
             class="compact-action-button"
+            :title="currentLocaleLabel"
+            :data-flyout-label="currentLocaleLabel"
+            aria-label="Switch language"
+            @click="toggleLocale"
+          >
+            <span class="compact-action-icon">
+              <i class="ri-translate-2"></i>
+            </span>
+            <span class="compact-action-label">{{ currentLocaleShort }}</span>
+          </button>
+          <button
+            type="button"
+            class="compact-action-button"
             title="Logout"
             data-flyout-label="Logout"
             aria-label="Logout"
@@ -92,7 +105,21 @@ export default {
     this.hideSubmenuFlyout()
     this.removeFlyoutElement()
   },
+  computed: {
+    currentLocaleLabel () {
+      return this.$i18n && this.$i18n.locale === 'hi' ? 'हिन्दी' : 'English'
+    },
+    currentLocaleShort () {
+      return this.$i18n && this.$i18n.locale === 'hi' ? 'हि' : 'EN'
+    }
+  },
   methods: {
+    toggleLocale () {
+      if (this.$i18n) {
+        this.$i18n.locale = this.$i18n.locale === 'en' ? 'hi' : 'en'
+        this.$forceUpdate()
+      }
+    },
     isCompactFlyoutEnabled () {
       return typeof window !== 'undefined' &&
         window.matchMedia('(min-width: 992px)').matches &&
@@ -332,15 +359,22 @@ export default {
       const trigger = groupLi.querySelector('.menu-group-trigger') || groupLi
       const rect = trigger.getBoundingClientRect()
       this.flyoutActiveSubmenu = submenu
+      // Position first with transitions disabled so left/top don't animate from the
+      // in-sidebar absolute coords (that looked like the menu "flying" into place).
+      submenu.style.transition = 'none'
       submenu.classList.add('iq-submenu--flyout')
       submenu.style.position = 'fixed'
       submenu.style.left = `${rect.right + COMPACT_SUBMENU_GAP}px`
-      submenu.style.top = `${rect.top}px`
+      submenu.style.top = `${Math.max(8, Math.min(rect.top, window.innerHeight - 48))}px`
       submenu.style.zIndex = '12001'
+      submenu.style.pointerEvents = 'auto'
+      submenu.style.transform = 'none'
+      // Force layout, then fade in
+      // eslint-disable-next-line no-unused-expressions
+      submenu.offsetHeight
+      submenu.style.transition = ''
       submenu.style.opacity = '1'
       submenu.style.visibility = 'visible'
-      submenu.style.pointerEvents = 'auto'
-      submenu.style.transform = 'translateX(0)'
 
       submenu.removeEventListener('mouseenter', this._onSubmenuMouseEnter)
       submenu.removeEventListener('mouseleave', this._onSubmenuMouseLeave)
@@ -352,6 +386,7 @@ export default {
       if (!submenu) return
       submenu.removeEventListener('mouseenter', this._onSubmenuMouseEnter)
       submenu.removeEventListener('mouseleave', this._onSubmenuMouseLeave)
+      submenu.style.transition = 'none'
       submenu.classList.remove('iq-submenu--flyout')
       submenu.style.position = ''
       submenu.style.left = ''
@@ -361,6 +396,7 @@ export default {
       submenu.style.visibility = ''
       submenu.style.pointerEvents = ''
       submenu.style.transform = ''
+      submenu.style.transition = ''
       this.flyoutActiveSubmenu = null
     }
   }
@@ -618,8 +654,8 @@ export default {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translateX(-10px);
-    transition: all 0.18s ease;
+    /* Fade only — never transition left/top/position (JS flyout would "fly" across the screen) */
+    transition: opacity 0.14s ease, visibility 0.14s ease;
     z-index: 1104;
   }
 
@@ -644,7 +680,6 @@ export default {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: translateX(0);
   }
 
   body.compact-sidebar .compact-sidebar-menu .iq-submenu.iq-submenu--flyout {
@@ -655,6 +690,9 @@ export default {
     margin-left: 0;
     padding-left: 16px;
     background-clip: padding-box;
+    /* Appear in place next to the icon — no slide/translate animation */
+    transition: opacity 0.12s ease, visibility 0.12s ease !important;
+    transform: none !important;
   }
 
   body.compact-sidebar .compact-sidebar-menu .iq-submenu.iq-submenu--flyout::before {

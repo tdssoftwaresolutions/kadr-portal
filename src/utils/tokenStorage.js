@@ -21,8 +21,16 @@ async function getSecureStorage () {
   }
 }
 
+function useSecureCookies () {
+  if (typeof window !== 'undefined') {
+    return window.location.protocol === 'https:'
+  }
+  return false
+}
+
 function setWebAccessCookie (token) {
-  VueCookies.set('accessToken', token, '1d', '/', '', true, 'None')
+  const secure = useSecureCookies()
+  VueCookies.set('accessToken', token, '1d', '/', '', secure, secure ? 'None' : 'Lax')
 }
 
 export async function getAccessToken () {

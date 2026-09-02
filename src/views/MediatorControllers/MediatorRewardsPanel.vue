@@ -152,8 +152,7 @@ export default {
   },
   methods: {
     formatDate (value) {
-      if (!value) return '—'
-      return new Date(value).toLocaleString()
+      return this.$formatDateTime(value)
     },
     async loadRewards (page) {
       this.page = page || this.page

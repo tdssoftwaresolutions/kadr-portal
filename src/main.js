@@ -1,19 +1,21 @@
 import 'mutationobserver-shim'
 import Vue from 'vue'
 import './plugins/bootstrap-vue'
-import { VuejsDatatableFactory } from 'vuejs-datatable'
 import App from './App.vue'
 import router from './router'
 import createStore from './store'
-import _ from 'lodash'
 import VueCookies from 'vue-cookies'
 import VueScrollProgressBar from '@guillaumebriday/vue-scroll-progress-bar'
 import VueSignaturePad from 'vue-signature-pad'
+import datetimePlugin from './plugins/datetime'
+import i18nPlugin from './i18n'
 
 Vue.use(VueSignaturePad)
+Vue.use(datetimePlugin)
+Vue.use(i18nPlugin)
 
 const components = require.context('./components/sofbox')
-_.forEach(components.keys(), (fileName) => {
+components.keys().forEach((fileName) => {
   const componentConfig = components(fileName)
   const componentName = fileName.split('/').pop().split('.')[0]
   Vue.component(componentName, componentConfig.default || componentConfig)
@@ -27,8 +29,6 @@ Vue.use(VueScrollProgressBar)
 Vue.use(VueCookies)
 
 Vue.config.productionTip = false
-
-Vue.use(VuejsDatatableFactory)
 
 async function startApp () {
   const { bootstrapMobileSession, initCapacitorPlugins } = await import('./plugins/capacitor')

@@ -110,7 +110,7 @@ function buildPricingHtml (plans, settings) {
       `<div class="price-period copy-en">${esc(plan.period_en)}</div>` +
       `<div class="price-period copy-hi">${esc(plan.period_hi)}</div>` +
       `<div style="margin:20px 0">${features}</div>` +
-      `<button class="btn ${btnClass}" style="width:100%;padding:12px;justify-content:center"><span class="copy-en">Start This Case</span><span class="copy-hi">Shuru Karo</span></button>` +
+      `<a href="/admin/auth/sign-up" class="btn ${btnClass}" style="width:100%;padding:12px;justify-content:center;text-decoration:none"><span class="copy-en">Start This Case</span><span class="copy-hi">Shuru Karo</span></a>` +
       '</div>'
     )
   }).join('\n')

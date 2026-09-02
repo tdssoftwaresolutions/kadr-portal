@@ -1,54 +1,50 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 
-/* Layouts */
+/* Layouts — kept eager (shell) */
 import StandardLayout from '../layouts/StandardLayout.vue'
 import Default from '../layouts/BlankLayout'
 import AuthLayout from '../layouts/AuthLayout.vue'
 
-/** Admin */
-import AdminUsersListView from '../views/AdminControllers/AdminUsersListView.vue'
-import AdminCasesManagementView from '../views/AdminControllers/AdminCasesManagementView.vue'
-import GoogleAccountManagement from '../views/AdminControllers/GoogleAccountManagement.vue'
-import AdminBlogTaxonomyView from '../views/AdminControllers/AdminBlogTaxonomyView.vue'
-import AdminManagementView from '../views/AdminControllers/AdminManagementView.vue'
-import AdminSettingsView from '../views/AdminControllers/AdminSettingsView.vue'
-import AdminNotificationsView from '../views/AdminControllers/AdminNotificationsView.vue'
-import AdminWebsiteContentView from '../views/AdminControllers/AdminWebsiteContentView.vue'
-import AdminCalendar from '../views/AdminControllers/AdminCalendar.vue'
-import AdminCorrespondenceInbox from '../views/AdminControllers/AdminCorrespondenceInbox.vue'
-/** Mediator */
-import InvoicesView from '../views/MediatorControllers/InvoicesView.vue'
-import MediatorRewardsView from '../views/MediatorControllers/MediatorRewardsView.vue'
-import AdminRewardOrdersView from '../views/AdminControllers/AdminRewardOrdersView.vue'
-import AdminMediator360View from '../views/AdminControllers/AdminMediator360View.vue'
-import PortalSupportView from '../views/Standard/PortalSupportView.vue'
+/* Lazy-loaded views */
+const AdminUsersListView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminUsersListView.vue')
+const AdminCasesManagementView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminCasesManagementView.vue')
+const GoogleAccountManagement = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/GoogleAccountManagement.vue')
+const AdminBlogTaxonomyView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminBlogTaxonomyView.vue')
+const AdminManagementView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminManagementView.vue')
+const AdminSettingsView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminSettingsView.vue')
+const AdminNotificationsView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminNotificationsView.vue')
+const AdminWebsiteContentView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminWebsiteContentView.vue')
+const AdminCalendar = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminCalendar.vue')
+const AdminCorrespondenceInbox = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminCorrespondenceInbox.vue')
+const AdminRewardOrdersView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminRewardOrdersView.vue')
+const AdminMediator360View = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminMediator360View.vue')
 
-/** Client  */
+const InvoicesView = () => import(/* webpackChunkName: "mediator" */ '../views/MediatorControllers/InvoicesView.vue')
+const MediatorRewardsView = () => import(/* webpackChunkName: "mediator" */ '../views/MediatorControllers/MediatorRewardsView.vue')
+const MediatorCalendar = () => import(/* webpackChunkName: "mediator" */ '../views/MediatorControllers/Calendar.vue')
+const MyVideoReels = () => import(/* webpackChunkName: "mediator" */ '../views/MediatorControllers/MyVideoReels.vue')
 
-/** Dashboards View */
-import Dashboard from '../views/Standard/Dashboard.vue'
-import PastMediationsView from '../views/Standard/PastMediationsView.vue'
+const Dashboard = () => import(/* webpackChunkName: "dashboard" */ '../views/Standard/Dashboard.vue')
+const PastMediationsView = () => import(/* webpackChunkName: "dashboard" */ '../views/Standard/PastMediationsView.vue')
+const PortalSupportView = () => import(/* webpackChunkName: "dashboard" */ '../views/Standard/PortalSupportView.vue')
+const PaymentReturn = () => import(/* webpackChunkName: "dashboard" */ '../views/Standard/PaymentReturn.vue')
+const ProfileEdit = () => import(/* webpackChunkName: "user" */ '../views/Standard/ProfileEdit.vue')
 
-/** Auth & User Management */
-import AgreementSignature from '../views/ClientControllers/AgreementSignature.vue'
-import Signature from '../views/ClientControllers/Signature.vue'
+const AgreementSignature = () => import(/* webpackChunkName: "client" */ '../views/ClientControllers/AgreementSignature.vue')
+const Signature = () => import(/* webpackChunkName: "client" */ '../views/ClientControllers/Signature.vue')
+const ClientCalendar = () => import(/* webpackChunkName: "client" */ '../views/ClientControllers/Calendar.vue')
 
-/** Blog */
-import MyBlogs from '../views/Blog/MyBlogs.vue'
-import MyVideoReels from '../views/MediatorControllers/MyVideoReels.vue'
+const MyBlogs = () => import(/* webpackChunkName: "blog" */ '../views/Blog/MyBlogs.vue')
 
-import SignIn from '../views/AuthPages/SignIn.vue'
-import SignUp from '../views/AuthPages/SignUp.vue'
-import RecoverPassword from '../views/AuthPages/RecoverPassword.vue'
-import ProfileEdit from '../views/Standard/ProfileEdit.vue'
+const SignIn = () => import(/* webpackChunkName: "auth" */ '../views/AuthPages/SignIn.vue')
+const SignUp = () => import(/* webpackChunkName: "auth" */ '../views/AuthPages/SignUp.vue')
+const RecoverPassword = () => import(/* webpackChunkName: "auth" */ '../views/AuthPages/RecoverPassword.vue')
 
-import ErrorPage from '../views/Pages/ErrorPage.vue'
-import ComingSoon from '../views/Pages/ComingSoon.vue'
-import Maintenance from '../views/Pages/Maintenance.vue'
-import BlankPage from '../views/Pages/BlankPage.vue'
-import ClientCalendar from '../views/ClientControllers/Calendar.vue'
-import MediatorCalendar from '../views/MediatorControllers/Calendar.vue'
+const ErrorPage = () => import(/* webpackChunkName: "pages" */ '../views/Pages/ErrorPage.vue')
+const ComingSoon = () => import(/* webpackChunkName: "pages" */ '../views/Pages/ComingSoon.vue')
+const Maintenance = () => import(/* webpackChunkName: "pages" */ '../views/Pages/Maintenance.vue')
+const BlankPage = () => import(/* webpackChunkName: "pages" */ '../views/Pages/BlankPage.vue')
 
 Vue.use(VueRouter)
 
@@ -60,6 +56,7 @@ const childRoutes = (prop) => [
     component: Dashboard
   }
 ]
+
 const appChildRoute = (prop) => [
   {
     path: 'past-mediations',
@@ -74,19 +71,26 @@ const appChildRoute = (prop) => [
     component: PortalSupportView
   },
   {
+    path: 'payment/return',
+    name: prop + '.payment-return',
+    meta: { name: 'Payment confirmation' },
+    component: PaymentReturn
+  },
+  {
     path: 'calendar',
     name: prop + '.calendar',
     component: MediatorCalendar
   },
   {
-    path: 'calendar2',
-    name: prop + '.calendar2',
+    path: 'client-calendar',
+    name: prop + '.client-calendar',
     component: ClientCalendar
   },
   {
-    path: 'signature',
-    name: 'signature',
-    component: Signature
+    // Legacy name used by older bookmarks / nav configs
+    path: 'calendar2',
+    name: prop + '.calendar2',
+    redirect: { name: prop + '.client-calendar' }
   },
   {
     path: 'users',
@@ -252,6 +256,11 @@ const routes = [
     name: 'dashboard',
     component: StandardLayout,
     children: childRoutes('dashboard')
+  },
+  {
+    path: '/signature',
+    name: 'signature',
+    component: Signature
   },
   {
     path: '/agreement-signature',

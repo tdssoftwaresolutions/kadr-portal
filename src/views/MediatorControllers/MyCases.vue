@@ -1,19 +1,16 @@
 <template>
-  <div class="cases-workspace">
+  <div>
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
     <Spinner :isVisible="loading" />
 
-    <section v-if="myCases.length" class="cases-overview">
-      <div class="overview-head">
-        <h4>{{ isPastView ? 'Past Mediation Workspace' : 'Mediator Case Workspace' }}</h4>
-        <p>
-          {{ isPastView
-            ? 'Review completed, cancelled, and failed mediations with all case details and artifacts.'
-            : 'Switch between assigned cases, schedule meetings, track status and keep case-level notes.' }}
-        </p>
-      </div>
-
-      <div class="case-selector" v-if="myCases.length > 1">
+    <case-workspace-layout
+      :has-cases="myCases.length > 0"
+      :title="workspaceTitle"
+      :subtitle="workspaceSubtitle"
+      :empty-title="emptyTitle"
+      :empty-description="emptyDescription"
+    >
+      <template v-if="myCases.length > 1" #selector>
         <button
           v-for="caseItem in myCases"
           :key="caseItem.id"
@@ -25,216 +22,216 @@
           <span>{{ caseItem.caseId }}</span>
           <small>{{ caseItem.case_statuses?.name || 'Unknown' }}</small>
         </button>
-      </div>
+      </template>
 
-      <div class="workspace-layout">
-        <div class="workspace-main">
-          <div class="quick-info-grid">
-            <article class="info-card">
-              <label>Case ID</label>
-              <strong>{{ selectedCase.caseId || '-' }}</strong>
-            </article>
-            <article class="info-card">
-              <label>Status</label>
-              <strong class="status-chip" :class="statusBadgeClass">{{ selectedCase.case_statuses?.name || '-' }}</strong>
-            </article>
-            <article class="info-card">
-              <label>Sub Status</label>
-              <strong>{{ selectedCase.case_sub_statuses?.name || '-' }}</strong>
-            </article>
-            <article class="info-card">
-              <label>Filed On</label>
-              <strong>{{ formatDateTime(selectedCase.created_at) }}</strong>
-            </article>
-            <article class="info-card">
-              <label>Type</label>
-              <strong>{{ selectedCase.case_type || '-' }}</strong>
-            </article>
-            <article class="info-card">
-              <label>Category</label>
-              <strong>{{ selectedCase.category || '-' }}</strong>
-            </article>
-          </div>
-
-          <section  class="info-card">
-            <label>Case Description</label>
-            <strong>
-              {{ selectedCase.description || 'No description provided for this case.' }}
-            </strong>
-          </section>
-
-          <section v-if="!isPastView" class="section-card action-required-section">
-            <div class="section-head">
-              <h5>
-                <i class="fas fa-exclamation-circle section-icon"></i>
-                Action Required
-              </h5>
-              <small>Complete pending steps for this case.</small>
-            </div>
-            <div v-if="mediatorActionCards.length" class="action-grid">
-              <article
-                v-for="item in mediatorActionCards"
-                :key="item.key"
-                class="action-card"
-                :class="item.variant"
-              >
-                <h6>
-                  <i class="fas fa-angle-right action-card-icon"></i>
-                  {{ item.title }}
-                </h6>
-                <p>{{ item.description }}</p>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light"
-                  :disabled="item.loading"
-                  @click="item.action"
-                >
-                  {{ item.buttonText }}
-                </button>
-              </article>
-            </div>
-            <div v-else class="empty-box">No immediate action is required for this case.</div>
-          </section>
-
-          <section v-if="!isPastView" class="section-card">
-            <div class="section-head">
-              <h5>Mediator Actions</h5>
-              <small>Run key workflows directly from this case workspace.</small>
-            </div>
-            <div class="action-grid">
-              <article class="action-card primary">
-                <h6><i class="fas fa-calendar-plus action-card-icon"></i> Schedule Meeting</h6>
-                <p>Create a meeting for this case without leaving the dashboard.</p>
-                <button class="btn btn-sm btn-light" @click="openMeetingModal">Create Meeting</button>
-              </article>
-              <article class="action-card warning">
-                <h6><i class="fas fa-random action-card-icon"></i>Close Case</h6>
-                <p>Update internal tracking stage to move to close stage.</p>
-                <button class="btn btn-sm btn-primary" @click="applyWorkflowStatus">Apply</button>
-              </article>
-            </div>
-          </section>
-
-          <section class="section-card">
-            <div class="section-head">
-              <h5>Parties</h5>
-              <small>Both disputing parties attached to this case.</small>
-            </div>
-            <div class="party-grid">
-              <article class="party-card">
-                <h6>First Party</h6>
-                <p><span>Name:</span>{{ selectedCase.user_cases_first_partyTouser?.name || '-' }}</p>
-                <p><span>Email:</span>{{ selectedCase.user_cases_first_partyTouser?.email || '-' }}</p>
-                <p><span>Phone:</span>{{ selectedCase.user_cases_first_partyTouser?.phone_number || '-' }}</p>
-              </article>
-              <article class="party-card">
-                <h6>Second Party</h6>
-                <p><span>Name:</span>{{ selectedCase.user_cases_second_partyTouser?.name || '-' }}</p>
-                <p><span>Email:</span>{{ selectedCase.user_cases_second_partyTouser?.email || '-' }}</p>
-                <p><span>Phone:</span>{{ selectedCase.user_cases_second_partyTouser?.phone_number || '-' }}</p>
-              </article>
-            </div>
-          </section>
-          <section class="section-card documents-section">
-            <div class="section-head">
-              <h5>
-                Documents
-              </h5>
-              <small>Access case files and supporting documents directly from here.</small>
-            </div>
-            <div v-if="selectedCase.evidence_document_url" class="docs-grid">
-                <FilePreview
-                  :key="selectedCase.evidence_document_url"
-                  :url="selectedCase.evidence_document_url"
-                  name="Evidence Document"
-                />
-            </div>
-            <div v-else class="empty-box">No documents attached to this case.</div>
-          </section>
-
-          <section class="section-card">
-            <div class="section-head">
-              <h5>Meetings</h5>
-              <small>Upcoming and past sessions; add summary and next steps after each past case meeting.</small>
-            </div>
-            <div v-if="caseMeetingsSorted.length" class="meeting-list">
-              <article v-for="meeting in caseMeetingsSorted" :key="meeting.id" class="meeting-item">
-                <div class="meeting-item-body">
-                  <div class="meeting-badges">
-                    <span class="badge-soft" :class="meetingPast(meeting) ? 'badge-past' : 'badge-upcoming'">
-                      {{ meetingPast(meeting) ? 'Past' : 'Upcoming' }}
-                    </span>
-                  </div>
-                  <h6>{{ meeting.title || `Case #${selectedCase.caseId}` }}</h6>
-                  <p>{{ formatDateTime(meeting.start_datetime || meeting.startDate) }}</p>
-                  <div v-if="meetingPast(meeting) && isKadrMeeting(meeting)" class="feedback-summary">
-                    <p v-if="meeting.meeting_summary && userId === selectedCase.user_cases_mediatorTouser?.id"><span>Summary:</span> {{ meeting.meeting_summary }}</p>
-                    <p v-if="meeting.mediator_next_steps && userId === selectedCase.user_cases_mediatorTouser?.id"><span>Next steps:</span> {{ meeting.mediator_next_steps }}</p>
-                   </div>
-                </div>
-                <div class="meeting-actions">
-                  <a
-                    v-if="(meeting.meeting_link || meeting.meetingLink) && !meetingPast(meeting)"
-                    :href="meeting.meeting_link || meeting.meetingLink"
-                    target="_blank"
-                    class="btn btn-outline-primary btn-sm"
-                  >
-                    Join
-                  </a>
-                  <button
-                    v-if="showMediatorFeedbackButton(meeting)"
-                    type="button"
-                    class="btn btn-warning btn-sm"
-                    @click="openMeetingFeedbackModal(meeting)"
-                  >
-                    Add meeting notes
-                  </button>
-                </div>
-              </article>
-            </div>
-            <div v-else class="empty-box">No meetings are currently scheduled for this case.</div>
-          </section>
+      <template #main>
+        <div class="quick-info-grid">
+          <article class="info-card">
+            <label>Case ID</label>
+            <strong>{{ selectedCase.caseId || '-' }}</strong>
+          </article>
+          <article class="info-card">
+            <label>Status</label>
+            <strong class="status-chip" :class="statusBadgeClass">{{ selectedCase.case_statuses?.name || '-' }}</strong>
+          </article>
+          <article class="info-card">
+            <label>Sub Status</label>
+            <strong>{{ selectedCase.case_sub_statuses?.name || '-' }}</strong>
+          </article>
+          <article class="info-card">
+            <label>Filed On</label>
+            <strong>{{ formatDateTime(selectedCase.created_at) }}</strong>
+          </article>
+          <article class="info-card">
+            <label>Type</label>
+            <strong>{{ selectedCase.case_type || '-' }}</strong>
+          </article>
+          <article class="info-card">
+            <label>Category</label>
+            <strong>{{ selectedCase.category || '-' }}</strong>
+          </article>
         </div>
 
-        <aside v-if="selectedCase.id" class="workspace-side">
-          <div class="workspace-side-stack">
-            <section class="section-card side-progress-card">
-              <div class="section-head">
-                <h5>Case progress</h5>
-                <small>Current stage, coming up, and activity.</small>
-              </div>
-              <CaseProgressPanel
-                :progress="selectedCase.case_progress"
-                :is-past-view="isPastView"
-                @action="handleProgressAction"
-              />
-            </section>
-            <section v-if="showCorrespondencePanel" class="section-card side-correspondence-card">
-              <CaseCorrespondencePanel
-                embedded
-                variant="sidebar"
-                :case-id="selectedCase.id"
-                :user-id="userId"
-                user-type="MEDIATOR"
-                mode="mediator"
-                :has-mediator="true"
-                :read-only="isPastView"
-              />
-            </section>
-          </div>
-        </aside>
-      </div>
-    </section>
+        <section class="info-card">
+          <label>Case Description</label>
+          <strong>
+            {{ selectedCase.description || 'No description provided for this case.' }}
+          </strong>
+        </section>
 
-    <section v-else class="empty-state">
-      <i class="fas fa-folder-open fa-3x"></i>
-      <h4>{{ isPastView ? 'No Past Mediations' : 'No Assigned Cases' }}</h4>
-      <p>
-        {{ isPastView
-          ? 'No completed, cancelled, or failed mediation cases are available right now.'
-          : 'Assigned mediator cases will appear here with complete case context and actions.' }}
-      </p>
-    </section>
+        <section v-if="!isPastView" class="section-card action-required-section">
+          <div class="section-head">
+            <h5>
+              <i class="fas fa-exclamation-circle section-icon"></i>
+              Action Required
+            </h5>
+            <small>Complete pending steps for this case.</small>
+          </div>
+          <div v-if="mediatorActionCards.length" class="action-grid">
+            <article
+              v-for="item in mediatorActionCards"
+              :key="item.key"
+              class="action-card"
+              :class="item.variant"
+            >
+              <h6>
+                <i class="fas fa-angle-right action-card-icon"></i>
+                {{ item.title }}
+              </h6>
+              <p>{{ item.description }}</p>
+              <button
+                type="button"
+                class="btn btn-sm btn-light"
+                :disabled="item.loading"
+                @click="item.action"
+              >
+                {{ item.buttonText }}
+              </button>
+            </article>
+          </div>
+          <kadr-empty-state
+            v-else
+            compact
+            icon=""
+            description="No immediate action is required for this case."
+          />
+        </section>
+
+        <section v-if="!isPastView" class="section-card">
+          <div class="section-head">
+            <h5>Mediator Actions</h5>
+            <small>Run key workflows directly from this case workspace.</small>
+          </div>
+          <div class="action-grid">
+            <article class="action-card primary">
+              <h6><i class="fas fa-calendar-plus action-card-icon"></i> Schedule Meeting</h6>
+              <p>Create a meeting for this case without leaving the dashboard.</p>
+              <button class="btn btn-sm btn-light" @click="openMeetingModal">Create Meeting</button>
+            </article>
+            <article class="action-card warning">
+              <h6><i class="fas fa-random action-card-icon"></i>Close Case</h6>
+              <p>Update internal tracking stage to move to close stage.</p>
+              <button class="btn btn-sm btn-primary" @click="applyWorkflowStatus">Apply</button>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-card">
+          <div class="section-head">
+            <h5>Parties</h5>
+            <small>Both disputing parties attached to this case.</small>
+          </div>
+          <div class="party-grid">
+            <article class="party-card">
+              <h6>First Party</h6>
+              <p><span>Name:</span>{{ selectedCase.user_cases_first_partyTouser?.name || '-' }}</p>
+              <p><span>Email:</span>{{ selectedCase.user_cases_first_partyTouser?.email || '-' }}</p>
+              <p><span>Phone:</span>{{ selectedCase.user_cases_first_partyTouser?.phone_number || '-' }}</p>
+            </article>
+            <article class="party-card">
+              <h6>Second Party</h6>
+              <p><span>Name:</span>{{ selectedCase.user_cases_second_partyTouser?.name || '-' }}</p>
+              <p><span>Email:</span>{{ selectedCase.user_cases_second_partyTouser?.email || '-' }}</p>
+              <p><span>Phone:</span>{{ selectedCase.user_cases_second_partyTouser?.phone_number || '-' }}</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-card documents-section">
+          <div class="section-head">
+            <h5>Documents</h5>
+            <small>Access case files and supporting documents directly from here.</small>
+          </div>
+          <div v-if="selectedCase.evidence_document_url" class="docs-grid">
+            <FilePreview
+              :key="selectedCase.evidence_document_url"
+              :url="selectedCase.evidence_document_url"
+              name="Evidence Document"
+            />
+          </div>
+          <kadr-empty-state
+            v-else
+            compact
+            icon=""
+            :description="CASES.NO_DOCUMENTS"
+          />
+        </section>
+
+        <section class="section-card">
+          <div class="section-head">
+            <h5>Meetings</h5>
+            <small>Upcoming and past sessions; add summary and next steps after each past case meeting.</small>
+          </div>
+          <div v-if="caseMeetingsSorted.length" class="meeting-list">
+            <article v-for="meeting in caseMeetingsSorted" :key="meeting.id" class="meeting-item">
+              <div class="meeting-item-body">
+                <div class="meeting-badges">
+                  <span class="badge-soft" :class="meetingPast(meeting) ? 'badge-past' : 'badge-upcoming'">
+                    {{ meetingPast(meeting) ? 'Past' : 'Upcoming' }}
+                  </span>
+                </div>
+                <h6>{{ meeting.title || `Case #${selectedCase.caseId}` }}</h6>
+                <p>{{ formatDateTime(meeting.start_datetime || meeting.startDate) }}</p>
+                <div v-if="meetingPast(meeting) && isKadrMeeting(meeting)" class="feedback-summary">
+                  <p v-if="meeting.meeting_summary && userId === selectedCase.user_cases_mediatorTouser?.id"><span>Summary:</span> {{ meeting.meeting_summary }}</p>
+                  <p v-if="meeting.mediator_next_steps && userId === selectedCase.user_cases_mediatorTouser?.id"><span>Next steps:</span> {{ meeting.mediator_next_steps }}</p>
+                </div>
+              </div>
+              <div class="meeting-actions">
+                <a
+                  v-if="(meeting.meeting_link || meeting.meetingLink) && !meetingPast(meeting)"
+                  :href="meeting.meeting_link || meeting.meetingLink"
+                  target="_blank"
+                  class="btn btn-outline-primary btn-sm"
+                >
+                  Join
+                </a>
+                <button
+                  v-if="showMediatorFeedbackButton(meeting)"
+                  type="button"
+                  class="btn btn-warning btn-sm"
+                  @click="openMeetingFeedbackModal(meeting)"
+                >
+                  Add meeting notes
+                </button>
+              </div>
+            </article>
+          </div>
+          <kadr-empty-state
+            v-else
+            compact
+            icon=""
+            :description="CASES.NO_MEETING"
+          />
+        </section>
+      </template>
+
+      <template v-if="selectedCase.id" #side>
+        <section class="section-card side-progress-card">
+          <div class="section-head">
+            <h5>Case progress</h5>
+            <small>Current stage, coming up, and activity.</small>
+          </div>
+          <CaseProgressPanel
+            :progress="selectedCase.case_progress"
+            :is-past-view="isPastView"
+            @action="handleProgressAction"
+          />
+        </section>
+        <section v-if="showCorrespondencePanel" class="section-card side-correspondence-card">
+          <CaseCorrespondencePanel
+            embedded
+            variant="sidebar"
+            :case-id="selectedCase.id"
+            :user-id="userId"
+            user-type="MEDIATOR"
+            mode="mediator"
+            :has-mediator="true"
+            :read-only="isPastView"
+          />
+        </section>
+      </template>
+    </case-workspace-layout>
 
      <b-modal size="xl" id="resolve-modal" v-model="showResolveModal" title="Mark Case as Resolved" hide-footer>
       <form @submit.prevent="submitResolve">
@@ -310,8 +307,7 @@
             type="text"
             v-model="meetingForm.title"
             required
-            style="background: white;border: 1px solid black;"
-            class="form-input"
+            class="form-control"
           />
         </div>
       </div>
@@ -323,7 +319,7 @@
             v-model="meetingForm.description"
             placeholder="Enter description.."
             rows="3"
-            style="background: white;border: 1px solid black;"
+            class="form-control"
             max-rows="6"
           ></b-form-textarea>
         </div>
@@ -331,12 +327,11 @@
       <div class="data-row">
         <div class="col-12">
             <div class="data-title">Select Date and Time</div>
-            <VueMaterialDateTimePicker
+            <kadr-date-time-picker
               id="appointment-datetime"
               v-model="meetingForm.start"
-              :disabled-dates-and-times="disabledDatesAndTime"
-              :is-date-only="false"
-              class="form-input"
+              min-date="today"
+              placeholder="Select date and time"
             />
         </div>
       </div>
@@ -358,13 +353,16 @@
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import Spinner from '../../components/sofbox/spinner/spinner.vue'
-import VueMaterialDateTimePicker from 'vue-material-date-time-picker'
-import FilePreview from '../core/DocumentPreview.vue'
+import FilePreview from '../../components/DocumentPreview.vue'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
 import CaseCorrespondencePanel from '../../components/CaseCorrespondencePanel.vue'
 import CaseProgressPanel from '../../components/cases/CaseProgressPanel.vue'
+import CaseWorkspaceLayout from '../../components/kadr/CaseWorkspaceLayout.vue'
+import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import KadrDateTimePicker from '../../components/kadr/KadrDateTimePicker.vue'
 import SignaturePad from 'signature_pad'
 import { Vue2TinymceEditor } from 'vue2-tinymce-editor'
+import { CASES } from '../../constants/messages'
 
 import {
   isPastKadrCaseMeeting,
@@ -374,7 +372,16 @@ import {
 export default {
   name: 'MyCases',
   components: {
-    Alert, Spinner, VueMaterialDateTimePicker, FilePreview, MeetingFeedbackModal, Vue2TinymceEditor, CaseCorrespondencePanel, CaseProgressPanel
+    Alert,
+    Spinner,
+    KadrDateTimePicker,
+    FilePreview,
+    MeetingFeedbackModal,
+    Vue2TinymceEditor,
+    CaseCorrespondencePanel,
+    CaseProgressPanel,
+    CaseWorkspaceLayout,
+    KadrEmptyState
   },
   props: {
     cases: {
@@ -410,6 +417,25 @@ export default {
     }
   },
   computed: {
+    CASES () {
+      return CASES
+    },
+    workspaceTitle () {
+      return this.isPastView ? CASES.PAST_TITLE : 'Mediator Case Workspace'
+    },
+    workspaceSubtitle () {
+      return this.isPastView
+        ? CASES.PAST_SUBTITLE
+        : 'Switch between assigned cases, schedule meetings, track status and keep case-level notes.'
+    },
+    emptyTitle () {
+      return this.isPastView ? 'No Past Mediations' : 'No Assigned Cases'
+    },
+    emptyDescription () {
+      return this.isPastView
+        ? 'No completed, cancelled, or failed mediation cases are available right now.'
+        : 'Assigned mediator cases will appear here with complete case context and actions.'
+    },
     resolveUserInitials () {
       // Use the mediator's name or fallback
       return (this.userName)
@@ -531,14 +557,7 @@ export default {
       }
     },
     formatDateTime (dateString) {
-      if (!dateString) return '-'
-      return new Date(dateString).toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return this.$formatDateTime(dateString)
     },
     showAlert (message, type) {
       this.alert = {
@@ -745,13 +764,6 @@ export default {
         start: '',
         description: ''
       },
-      disabledDatesAndTime: {
-        to: (() => {
-          const yesterday = new Date()
-          yesterday.setDate(yesterday.getDate() - 1)
-          return yesterday
-        })()
-      },
       paginatedData: {},
       signatureType: 'digital',
       feedbackModalVisible: false,
@@ -778,33 +790,6 @@ export default {
 }
 </script>
 <style scoped>
-.cases-workspace {
-  margin-top: 1rem;
-}
-
-.cases-overview {
-  background: #fff;
-  border: 1px solid #e8ebf5;
-  border-radius: 14px;
-  padding: 1rem;
-}
-
-.overview-head h4 {
-  margin: 0;
-}
-
-.overview-head p {
-  margin: 0.35rem 0 0.9rem;
-  color: #6d7693;
-}
-
-.case-selector {
-  display: flex;
-  gap: 0.6rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-}
-
 .signature-type-selector {
   display: flex;
   gap: 10px;
@@ -813,44 +798,48 @@ export default {
 
 .signature-type-selector button {
   padding: 8px 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #f0f0f0;
+  border: 1px solid var(--kadr-border-strong);
+  border-radius: var(--kadr-radius-sm);
+  background-color: var(--kadr-surface-muted);
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.3s, color 0.3s;
-  color: black; /* Default text color for non-selected buttons */
+  color: var(--kadr-text-primary);
 }
 
 .signature-type-selector button.active {
-  background-color: #2c6faf;
-  color: white;
-  border-color: #2c6faf;
+  background-color: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
+  border-color: var(--kadr-primary);
 }
 
 .signature-type-selector button:hover {
   background-color: #d9e6f2;
 }
+
 .signature-btn {
   padding: 8px 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #f0f0f0;
+  border: 1px solid var(--kadr-border-strong);
+  border-radius: var(--kadr-radius-sm);
+  background-color: var(--kadr-surface-muted);
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.3s, color 0.3s;
-  color: black;
+  color: var(--kadr-text-primary);
 }
+
 .signature-btn.active {
-  background-color: #2c6faf;
-  color: white;
-  border-color: #2c6faf;
+  background-color: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
+  border-color: var(--kadr-primary);
 }
+
 .signature-btn:hover {
   background-color: #d9e6f2;
 }
+
 .digital-signature-box {
-  border: 1px solid #ccc;
+  border: 1px solid var(--kadr-border-strong);
   width: 100%;
   height: 150px;
   display: flex;
@@ -859,64 +848,62 @@ export default {
   margin-top: 10px;
   text-align: center;
 }
+
 .digital-signature-box.full-width {
   width: 100%;
 }
+
 .cursive-signature {
   font-family: Cursive;
   font-size: 24px;
-  color: #2c6faf;
+  color: var(--kadr-primary);
 }
+
 .manual-signature {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
+
 .signature-canvas {
-  border: 1px solid #ccc;
+  border: 1px solid var(--kadr-border-strong);
   width: 100%;
   height: 150px;
   margin-top: 10px;
   cursor: crosshair;
 }
+
 .resolve-status-selector {
   display: flex;
   gap: 10px;
   margin-bottom: 10px;
 }
+
 .resolve-status-btn {
   padding: 8px 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #f0f0f0;
+  border: 1px solid var(--kadr-border-strong);
+  border-radius: var(--kadr-radius-sm);
+  background-color: var(--kadr-surface-muted);
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.3s, color 0.3s;
-  color: black;
-}
-.resolve-status-btn.active.success {
-  background-color: #28a745;
-  color: white;
-  border-color: #28a745;
-}
-.resolve-status-btn.active.failed {
-  background-color: #dc3545;
-  color: white;
-  border-color: #dc3545;
-}
-.resolve-status-btn:hover {
-  background-color: #d9e6f2;
+  color: var(--kadr-text-primary);
 }
 
-.case-pill {
-  border: 1px solid #d8deef;
-  background: #f8faff;
-  border-radius: 10px;
-  min-width: 160px;
-  padding: 0.55rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+.resolve-status-btn.active.success {
+  background-color: var(--kadr-success);
+  color: var(--kadr-text-on-primary);
+  border-color: var(--kadr-success);
+}
+
+.resolve-status-btn.active.failed {
+  background-color: var(--kadr-danger);
+  color: var(--kadr-text-on-primary);
+  border-color: var(--kadr-danger);
+}
+
+.resolve-status-btn:hover {
+  background-color: #d9e6f2;
 }
 
 .docs-grid {
@@ -930,46 +917,15 @@ export default {
   width: 100%;
 }
 
-.form-input:focus {
-  border-color: #007bff;
-  background-color: #fff;
-}
-
 .data-title {
   font-weight: bold;
 }
 
-.case-pill.active {
-  border-color: #3758d5;
-  background: #edf2ff;
-}
-
-.case-pill span {
-  font-weight: 600;
-}
-
-.case-pill small {
-  color: #6d7693;
-}
-
-.workspace-layout {
-  margin-top: 0.9rem;
-  display: grid;
-  grid-template-columns: 1.4fr 0.72fr;
-  gap: 1rem;
-  align-items: start;
-}
-
-.workspace-layout--single {
-  grid-template-columns: 1fr;
-}
-
-.workspace-side-stack {
-  position: sticky;
-  top: 1rem;
+.data-row {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--kadr-border);
 }
 
 .side-progress-card {
@@ -984,128 +940,6 @@ export default {
   padding: 0.65rem 0.75rem;
 }
 
-.workspace-main {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.quick-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 0.7rem;
-}
-
-.info-card {
-  border: 1px solid #ebeffa;
-  border-radius: 10px;
-  padding: 0.8rem;
-  background: #fcfdff;
-}
-
-.info-card label {
-  display: block;
-  margin: 0;
-  font-size: 0.75rem;
-  color: #707a98;
-}
-
-.info-card strong {
-  display: block;
-  margin-top: 0.15rem;
-  font-size: 0.95rem;
-}
-
-.section-icon {
-  font-size: 1rem;
-  color: #d94430;
-}
-
-.status-chip {
-  width: fit-content;
-  border-radius: 99px;
-  padding: 0.22rem 0.6rem;
-}
-
-.status-chip.secondary {
-  background: #eceff5;
-}
-
-.status-chip.warning {
-  background: #fff2d9;
-  color: #7a5700;
-}
-
-.status-chip.success {
-  background: #dff7e8;
-  color: #115f31;
-}
-
-.status-chip.danger {
-  background: #fde2e4;
-  color: #842029;
-}
-
-.section-card {
-  border: 1px solid #ebeffa;
-  border-radius: 12px;
-  padding: 0.9rem;
-}
-
-.section-head h5 {
-  margin: 0;
-}
-
-.section-head small {
-  color: #6d7693;
-}
-
-.action-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.action-card {
-  border-radius: 10px;
-  padding: 0.9rem;
-  color: #3d2716;
-  border: 1px solid #f4c7b0;
-  background: linear-gradient(135deg, #fff2ec 0%, #ffe4d6 100%);
-}
-
-.action-card.primary {
-  background: linear-gradient(135deg, #eff4ff, #dfe8ff);
-  border-color: #bfd0ff;
-}
-
-.data-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid #f1f1f1;
-}
-
-.action-card.warning {
-  background: linear-gradient(135deg, #fff6e4, #ffe1c1);
-  border-color: #f1c08a;
-}
-
-.action-card h6 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.action-card p {
-  margin: 0 0 0.5rem;
-}
-
-.action-card-icon {
-  color: #3758d5;
-}
-
 .status-move-row {
   display: flex;
   gap: 0.45rem;
@@ -1118,8 +952,8 @@ export default {
 .note-input {
   width: 100%;
   min-height: 120px;
-  border: 1px solid #d8dff1;
-  border-radius: 8px;
+  border: 1px solid var(--kadr-border-strong);
+  border-radius: var(--kadr-radius);
   padding: 0.65rem 0.75rem;
   resize: vertical;
 }
@@ -1138,9 +972,9 @@ export default {
 }
 
 .party-card {
-  background: #f9fbff;
-  border: 1px solid #e5eaf8;
-  border-radius: 10px;
+  background: var(--kadr-surface-muted);
+  border: 1px solid var(--kadr-border-info);
+  border-radius: var(--kadr-radius-md);
   padding: 0.8rem;
 }
 
@@ -1149,11 +983,11 @@ export default {
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
-  color: #2f3752;
+  color: var(--kadr-text-primary);
 }
 
 .party-card p span {
-  color: #6b7694;
+  color: var(--kadr-text-muted);
 }
 
 .meeting-list {
@@ -1163,8 +997,8 @@ export default {
 }
 
 .meeting-item {
-  border: 1px solid #e5eaf8;
-  border-radius: 10px;
+  border: 1px solid var(--kadr-border-info);
+  border-radius: var(--kadr-radius-md);
   padding: 0.8rem;
   display: flex;
   justify-content: space-between;
@@ -1178,7 +1012,7 @@ export default {
 }
 
 .meeting-item p {
-  color: #6d7693;
+  color: var(--kadr-text-muted);
   margin-top: 0.25rem;
 }
 
@@ -1198,23 +1032,23 @@ export default {
   font-size: 0.68rem;
   font-weight: 600;
   padding: 0.2rem 0.5rem;
-  border-radius: 6px;
+  border-radius: var(--kadr-radius-sm);
 }
 
 .badge-past {
-  background: #edeef3;
-  color: #4a5168;
+  background: var(--kadr-status-secondary-bg);
+  color: var(--kadr-text-muted);
 }
 
 .badge-upcoming {
   background: #e8f2ff;
-  color: #1d4ed8;
+  color: var(--kadr-accent);
 }
 
 .feedback-summary {
   margin-top: 0.5rem;
   font-size: 0.86rem;
-  color: #4a5472;
+  color: var(--kadr-text-primary);
 }
 
 .feedback-summary p {
@@ -1222,7 +1056,7 @@ export default {
 }
 
 .feedback-summary span {
-  color: #6b7694;
+  color: var(--kadr-text-muted);
   font-weight: 600;
   margin-right: 0.35rem;
 }
@@ -1234,20 +1068,9 @@ export default {
   align-items: center;
 }
 
-.action-required-section .section-head h5 {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.workspace-side .sticky {
-  position: sticky;
-  top: 1rem;
-}
-
 .timeline {
   margin-top: 0.8rem;
-  border-left: 2px solid #d8deef;
+  border-left: 2px solid var(--kadr-border-strong);
   padding-left: 0.9rem;
 }
 
@@ -1265,64 +1088,32 @@ export default {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: #b8c0d8;
+  background: var(--kadr-border-strong);
 }
 
 .timeline-step.completed::before {
-  background: #2da65f;
+  background: var(--kadr-success);
 }
 
 .timeline-step.active::before {
-  background: #3758d5;
+  background: var(--kadr-accent);
 }
 
 .timeline-step p {
   margin: 0;
-  color: #535c79;
+  color: var(--kadr-text-muted);
 }
 
 .timeline-step.completed p {
-  color: #1f7f47;
+  color: var(--kadr-status-success-text);
 }
 
 .timeline-step.active p {
-  color: #2f4bc0;
+  color: var(--kadr-accent);
   font-weight: 600;
-}
-
-.empty-box {
-  margin-top: 0.75rem;
-  border: 1px dashed #d7deef;
-  border-radius: 10px;
-  padding: 0.85rem;
-  color: #6d7693;
-}
-
-.empty-state {
-  background: #fff;
-  border: 1px dashed #d7deef;
-  border-radius: 12px;
-  padding: 2rem 1rem;
-  text-align: center;
-  color: #5f6988;
-}
-
-.empty-state i {
-  color: #a3acc7;
-  margin-bottom: 0.7rem;
 }
 
 .form-group {
   margin-bottom: 0.8rem;
-}
-
-@media (max-width: 991px) {
-  .workspace-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .workspace-side-stack {
-    position: static;
-  }
 }
 </style>

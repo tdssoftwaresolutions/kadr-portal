@@ -6,6 +6,10 @@ const { success } = require('../utils/responses')
 const { CaseTypes } = require('../utils/caseConstants')
 const { v4: uuidv4 } = require('uuid')
 
+const CLIENT_EMAIL_KEY = (email) => ({
+  email_user_type: { email, user_type: 'CLIENT' }
+})
+
 module.exports = {
 
   newUserSignup: async function (req, res, next) {
@@ -38,9 +42,7 @@ module.exports = {
         userRequestData.active = true
         userRequestData.password_hash = hashPassword
         await prisma.user.update({
-          where: {
-            email
-          },
+          where: CLIENT_EMAIL_KEY(email),
           data: userRequestData
         })
         await helper.sendTemplatedEmail('welcomeCredentials', email, {
@@ -52,7 +54,7 @@ module.exports = {
         success(res, {}, 'You are all set! Please check your email for the next steps.')
       } else {
         const existing = await prisma.user.findUnique({
-          where: { email },
+          where: CLIENT_EMAIL_KEY(email),
           select: { id: true, active: true, is_deleted: true, is_self_signed_up: true }
         })
         if (existing) {
@@ -64,26 +66,22 @@ module.exports = {
           } else if (existing.active === false && existing.is_self_signed_up) {
             throw createError(errorCodes.REGISTRATION_PENDING_APPROVAL)
           } else {
-            throw createError(errorCodes.YOU_USER_ALREADY_EXISTS)
+            throw createError(errorCodes.CLIENT_ACCOUNT_EXISTS)
           }
         }
         let uploadedFileResponse = null
         if (evidenceContent) uploadedFileResponse = await helper.deployToS3Bucket(evidenceContent, `evidence-${uuidv4()}`)
         const user = existing?.is_deleted
-          ? await prisma.user.findUnique({ where: { email } })
+          ? await prisma.user.findUnique({ where: CLIENT_EMAIL_KEY(email) })
           : await prisma.user.create({
             data: userRequestData
           })
         const oppositePartyUser = await prisma.user.upsert({
-          where: {
-            email: oppositeEmail
-          },
-          update: {
-
-          },
+          where: CLIENT_EMAIL_KEY(String(oppositeEmail).trim().toLowerCase()),
+          update: {},
           create: {
             name: oppositeName,
-            email: oppositeEmail,
+            email: String(oppositeEmail).trim().toLowerCase(),
             phone_number: oppositePhone,
             password_hash: '',
             is_self_signed_up: false,
@@ -127,13 +125,55 @@ module.exports = {
         return
       }
       try {
-        if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
-          throw createError(errorCodes.YOU_USER_ALREADY_EXISTS)
+        if (error.code === 'P2002' && (error.meta?.target?.includes('email') || error.meta?.target?.includes('uq_user_email_type'))) {
+          throw createError(errorCodes.CLIENT_ACCOUNT_EXISTS)
         }
         throw createError(errorCodes.INVALID_REQUEST)
       } catch (err) {
         next(err)
       }
+    }
+  },
+
+  /**
+   * Logged-in client starts an additional case (no new user account).
+   * Case stays in status "new" until admin sets case_type via approveCaseType.
+   */
+  initiateNewCase: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'CLIENT') throw createError(errorCodes.FORBIDDEN)
+      const {
+        description,
+        category,
+        evidenceContent,
+        oppositeName,
+        oppositeEmail,
+        oppositePhone,
+        adultPlatformLiabilityAck
+      } = req.body
+      if (!adultPlatformLiabilityAck) {
+        throw createError(errorCodes.INVALID_REQUEST, {
+          message: 'Please confirm that you are 18+ and accept responsibility for your use of the platform.'
+        })
+      }
+      const { createClientInitiatedCase } = require('../services/case/clientCaseService')
+      const created = await createClientInitiatedCase({
+        firstPartyUserId: req.user.id,
+        description,
+        category,
+        evidenceContent,
+        oppositeName,
+        oppositeEmail,
+        oppositePhone
+      })
+      try {
+        await helper.sendTemplatedEmail('registrationUnderReview', req.user.email, {
+          recipientName: req.user.name || 'Client'
+        })
+      } catch (_) { /* non-blocking */ }
+      success(res, { case: created }, 'Your new case has been submitted. Our team will review and assign a case type shortly.')
+    } catch (error) {
+      next(error)
     }
   }
 }

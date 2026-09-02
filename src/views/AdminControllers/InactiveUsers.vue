@@ -30,11 +30,12 @@
             </b-card>
           </b-col>
         </b-row>
-        <section v-else class="empty-state">
-          <i class="fas fa-folder-open fa-3x"></i>
-          <h4>No record pending</h4>
-          <p>There are currently no items awaiting your approval. Please check back later.</p>
-        </section>
+        <kadr-empty-state
+          v-else
+          icon="fas fa-folder-open"
+          :title="ADMIN.NO_PENDING"
+          :description="ADMIN.NO_PENDING_DESCRIPTION"
+        />
         <b-pagination
           v-if="paginatedData.total > 0"
           v-model="currentPage"
@@ -114,13 +115,16 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import Alert from '../../components/sofbox/alert/Alert.vue'
-import FilePreview from '../core/DocumentPreview.vue'
+import FilePreview from '../../components/DocumentPreview.vue'
+import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import { ADMIN } from '../../constants/messages'
 
 export default {
   name: 'InactiveUsers',
   components: {
     Alert,
-    FilePreview
+    FilePreview,
+    KadrEmptyState
   },
   props: {
     users: {
@@ -204,17 +208,7 @@ export default {
       }
     },
     formatDate (dateString) {
-      const date = new Date(dateString)
-      return date.toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        hour12: true
-      })
+      return this.$formatDateTime(dateString)
     },
     formatKey (key) {
       if (typeof key !== 'string') return key
@@ -300,6 +294,7 @@ export default {
   },
   data () {
     return {
+      ADMIN,
       categoryOptions: [
         { value: null, text: 'Please select type' },
         { value: 'Mediation', text: 'Mediation' },
@@ -348,38 +343,20 @@ export default {
 
 .certificate-card {
   transition: all 0.3s ease;
-  border: 2px solid #e9ecef;
-}
-
-.empty-state {
-  background: #fff;
-  border: 1px dashed #d7deef;
-  border-radius: 12px;
-  padding: 2rem 1rem;
-  text-align: center;
-  color: #5f6988;
-}
-
-.empty-state i {
-  color: #a3acc7;
-  margin-bottom: 0.7rem;
+  border: 2px solid var(--kadr-border);
 }
 
 .certificate-card:hover {
-  border-color: #007bff;
-  box-shadow: 0 4px 12px rgba(0,123,255,0.15);
+  border-color: var(--kadr-primary);
+  box-shadow: var(--kadr-shadow-md);
   transform: translateY(-2px);
 }
 
 .certificate-icon {
-  color: #007bff;
+  color: var(--kadr-primary);
 }
 
 .rounded-circle {
   object-fit: cover;
-}
-
-.text-muted {
-  color: #6c757d !important;
 }
 </style>

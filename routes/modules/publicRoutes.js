@@ -1,0 +1,37 @@
+const express = require('express')
+const signatureController = require('../../controller/signatureController')
+const clientController = require('../../controller/clientController')
+const mediatorController = require('../../controller/mediatorController')
+const websiteContactController = require('../../controller/websiteContactController')
+const blogController = require('../../controller/blogController')
+const publicProfileController = require('../../controller/publicProfileController')
+const videoReelController = require('../../controller/videoReelController')
+const generalController = require('../../controller/generalController')
+const websiteContentController = require('../../controller/websiteContentController')
+const { signupLimiter, signatureLimiter } = require('../../middleware/rateLimitMiddleware')
+const validate = require('../../middleware/validate')
+const { clientSignupSchema, mediatorSignupSchema } = require('../../utils/validationSchemas')
+
+const router = express.Router()
+
+router.post('/newUserSignup', signupLimiter, validate(clientSignupSchema), clientController.newUserSignup)
+router.post('/newMediatorSignup', signupLimiter, validate(mediatorSignupSchema), mediatorController.newMediatorSignup)
+router.post('/public/website-contact-lead', websiteContactController.submitPublicLead)
+
+router.get('/getSignatureRequestDetails', signatureLimiter, signatureController.getSignatureRequestDetails)
+router.post('/submitSignature', signatureLimiter, signatureController.submitSignature)
+router.get('/getAgreementDetailsForSignature', signatureLimiter, signatureController.getAgreementDetailsForSignature)
+router.post('/submitAgreementSignature', signatureLimiter, signatureController.submitAgreementSignature)
+
+router.get('/getBlogs', blogController.geAllBlogs)
+router.get('/getPublicBlogAssets', blogController.getPublicBlogAssets)
+router.get('/public/website-faq', websiteContentController.getPublicFaq)
+router.get('/getBlog', blogController.getBlog)
+router.get('/getBlogComments', blogController.getBlogComments)
+router.get('/getPublicMediatorProfile', publicProfileController.getPublicMediatorProfile)
+router.get('/getBlogAssets', blogController.getBlogAssets)
+router.get('/getPublicVideoReels', videoReelController.getPublicVideoReels)
+router.get('/getAvailableLanguages', generalController.getAvailableLanguages)
+router.get('/getExistingUser', generalController.getExistingUser)
+
+module.exports = router

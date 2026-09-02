@@ -6,8 +6,8 @@ let cachedTransporter
 const getTransporter = () => {
   if (cachedTransporter) return cachedTransporter
   cachedTransporter = nodemailer.createTransport({
-    host: process.env.EMAIL_SMTP_HOST || 'smtp.hostinger.com',
-    port: Number(process.env.EMAIL_SMTP_PORT || 465),
+    host: process.env.EMAIL_SMTP_HOST,
+    port: Number(process.env.EMAIL_SMTP_PORT),
     secure: String(process.env.EMAIL_SMTP_SECURE || 'true') === 'true',
     auth: {
       user: process.env.EMAIL_USER,

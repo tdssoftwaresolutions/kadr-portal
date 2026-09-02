@@ -22,11 +22,9 @@ Font
 /*---------------------------------------------------------------------
 import Css
 -----------------------------------------------------------------------*/
-@import url("./dripicons.css");
+/* dripicons / line-awesome / ionicons removed from global load (unused outside demos) */
 @import url("./remixicon.css");
 @import url("./fontawesome.css");
-@import url("./line-awesome.min.css");
-@import url("./ionicons.min.css");
 
 /*---------------------------------------------------------------------
 General

@@ -1,72 +1,90 @@
 <template>
-  <b-container fluid>
+  <b-container fluid class="calendar-page">
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
+
+    <kadr-page-header :title="CALENDAR.TITLE" :subtitle="CALENDAR.SUBTITLE">
+      <template #actions>
+        <button type="button" class="btn btn-primary" @click="openModal">
+          <i class="ri-add-line"></i> Book Appointment
+        </button>
+      </template>
+    </kadr-page-header>
+
     <b-row>
       <b-col md="3">
-        <iq-card>
-          <template v-slot:headerTitle>
-            <h4 class="card-title ">Classification</h4>
-          </template>
-          <template v-slot:body>
-            <ul class="m-0 p-0 job-classification">
-              <li class=""><i class="ri-checkbox-blank-circle-fill" :style="{ color: personalEventColor }"/>KADR Client Meeting</li>
-              <li v-if="hasPersonalCalendar" class=""><i class="ri-checkbox-blank-circle-fill"  :style="{ color: kadrEventColor }"/>Personal Client Meeting</li>
-            </ul>
-          </template>
-        </iq-card>
-        <iq-card v-if="dashboardContent != null">
-          <template v-slot:headerTitle>
-            <h4 class="card-title">Today's Schedule</h4>
-          </template>
-          <template v-slot:body>
-            <ul class="m-0 p-0 today-schedule"  style="overflow-y: scroll;max-height: 700px;">
-              <li class="d-flex align-items-center justify-content-between" v-for="(event, index) in dashboardContent.todaysEvent" :key="index">
-                <div class="d-flex align-items-center">
-                  <div class="schedule-icon">
-                    <i class="ri-checkbox-blank-circle-fill" :style="{ color: kadrEventColor }" v-if="event.type == 'KADR'"></i>
-                    <i class="ri-checkbox-blank-circle-fill" :style="{ color: personalEventColor }" v-else></i>
-                  </div>
-                  <div class="schedule-text" v-if="event.type == 'KADR'">
-                    <span  style="font-weight: bold">Case #{{ event.caseNumber }}</span>
-                    <span>{{ event.firstPartyName }} vs {{ event.secondPartyName }}</span>
-                    <span>
-                      {{ formatTime(event.startDate) }} to {{ formatTime(event.endDate) }}
-                    </span>
-                  </div>
-                  <div class="schedule-text" v-else>
-                    <span  style="font-weight: bold">{{ event.title }}</span>
-                    <span>
-                      {{ formatTime(event.startDate) }} to {{ formatTime(event.endDate) }}
-                    </span>
-                  </div>
+        <kadr-section-card title="Classification" class="mb-3">
+          <ul class="m-0 p-0 job-classification">
+            <li>
+              <i class="ri-checkbox-blank-circle-fill" :style="{ color: kadrEventColor }" />
+              {{ CALENDAR.LEGEND_KADR }}
+            </li>
+            <li v-if="hasPersonalCalendar">
+              <i class="ri-checkbox-blank-circle-fill" :style="{ color: personalEventColor }" />
+              {{ CALENDAR.LEGEND_PERSONAL }}
+            </li>
+          </ul>
+        </kadr-section-card>
+
+        <kadr-section-card title="Today's Schedule">
+          <div v-if="todaysEvents.length" class="list-scroll">
+            <div
+              v-for="(event, index) in todaysEvents"
+              :key="index"
+              class="schedule-item"
+            >
+              <div class="schedule-main">
+                <i
+                  class="ri-checkbox-blank-circle-fill schedule-dot"
+                  :style="{ color: event.type == 'KADR' ? kadrEventColor : personalEventColor }"
+                ></i>
+                <div class="schedule-text" v-if="event.type == 'KADR'">
+                  <h6>Case #{{ event.caseNumber }}</h6>
+                  <p>{{ event.firstPartyName }} vs {{ event.secondPartyName }}</p>
+                  <span>{{ formatTime(event.startDate) }} to {{ formatTime(event.endDate) }}</span>
                 </div>
-                <a v-if="event.meetingLink != ''" :href="event.meetingLink"
-                  target="_blank"
-                  class="btn btn-primary btn-sm" >
-                  Join Meeting
+                <div class="schedule-text" v-else>
+                  <h6>{{ event.title }}</h6>
+                  <span>{{ formatTime(event.startDate) }} to {{ formatTime(event.endDate) }}</span>
+                </div>
+              </div>
+              <a
+                v-if="event.meetingLink"
+                :href="event.meetingLink"
+                target="_blank"
+                class="btn btn-primary btn-sm"
+              >
+                Join
               </a>
-              </li>
-            </ul>
-          </template>
-        </iq-card>
+            </div>
+          </div>
+          <kadr-empty-state
+            v-else
+            compact
+            icon=""
+            :description="CALENDAR.NO_EVENTS_TODAY"
+          />
+        </kadr-section-card>
       </b-col>
       <b-col md="9">
-        <iq-card>
-          <template v-slot:headerTitle>
-            <h4 class="card-title">Book Appointment</h4>
-          </template>
-          <template v-slot:headerAction>
-            <a href="#" class="btn btn-primary" @click="openModal">
-              <i class="ri-add-line ms-2"></i>Book Appointment
-            </a>
-          </template>
-          <template v-slot:body>
-            <FullCalendar :calendarEvents="events" :eventClick="openDetailsModal" :dateClick="onDateClick"/>
-          </template>
-        </iq-card>
+        <kadr-section-card title="Calendar">
+          <FullCalendar
+            :calendarEvents="events"
+            :eventClick="openDetailsModal"
+            :dateClick="onDateClick"
+            :disable-past="true"
+          />
+        </kadr-section-card>
       </b-col>
     </b-row>
-    <b-modal id="new-appointment-modal-id" ref="new-appointment-modal" size="lg" title="Book Appointment" @ok="onSave" scrollable>
+    <b-modal
+      id="new-appointment-modal-id"
+      ref="new-appointment-modal"
+      size="lg"
+      :title="bookingPrefillDate ? `Book for ${bookingPrefillDateLabel}` : 'Book Appointment'"
+      @ok="onSave"
+      ok-title="Book"
+      scrollable
+    >
       <div class="radio-row">
           <div class="data-title">Select Appointment Type</div>
           <div class="radio-group">
@@ -92,8 +110,7 @@
                 type="text"
                 v-model="newAppointment.title"
                 required
-                style="background: white;border: 1px solid black;"
-                class="form-input"
+                class="form-control"
               />
           </div>
       </div>
@@ -105,36 +122,73 @@
                 v-model="newAppointment.description"
                 placeholder="Enter description.."
                 rows="3"
-                style="background: white;border: 1px solid black;"
+                class="form-control"
                 max-rows="6"
               ></b-form-textarea>
           </div>
       </div>
       <div class="data-row" v-else>
         <div class="col-12" v-if="dashboardContent != null">
-            <div class="data-title">Select Client</div>
-            <div class="cases-horizontal-scroll" ref="casesHorizontalScroll">
-              <button @click="scrollLeft" class="scroll-btn left">‹</button>
+            <div class="data-title">Select Client <span class="text-danger">*</span></div>
+            <div
+              class="cases-horizontal-scroll"
+              ref="casesHorizontalScroll"
+              :class="{ 'cases-horizontal-scroll--error': showCaseRequiredError }"
+            >
+              <button type="button" @click="scrollLeft" class="scroll-btn left">‹</button>
               <div class="case-card" v-for="(myCase,index) in dashboardContent.myCases.casesWithEvents" :key="myCase.id"
               :class="{ selected: newAppointment.caseId === myCase.id }"
               @click="onClickCase(myCase.id, index)">
                 <span  style="font-weight: bold">Case #{{ myCase.caseId }}</span>
                 <p>{{ myCase.user_cases_first_partyTouser?.name }} vs {{ myCase.user_cases_second_partyTouser?.name }}</p>
               </div>
-              <button @click="scrollRight" class="scroll-btn right">›</button>
+              <button type="button" @click="scrollRight" class="scroll-btn right">›</button>
             </div>
+            <small v-if="showCaseRequiredError" class="text-danger d-block mt-2">
+              Please select a client case for this KADR meeting.
+            </small>
+            <small
+              v-else-if="!(dashboardContent.myCases && dashboardContent.myCases.casesWithEvents && dashboardContent.myCases.casesWithEvents.length)"
+              class="text-muted d-block mt-2"
+            >
+              No active cases available to book against.
+            </small>
         </div>
       </div>
       <div class="data-row">
         <div class="col-12">
-            <div class="data-title">Select Date and Time</div>
-            <VueMaterialDateTimePicker
-              id="appointment-datetime"
-              v-model="newAppointment.start"
-              :disabled-dates-and-times="disabledDatesAndTime"
-              :is-date-only="false"
-              class="form-input"
+          <template v-if="bookingPrefillDate">
+            <div class="data-title">Date</div>
+            <div class="appointment-locked-date">
+              <i class="ri-calendar-check-line" aria-hidden="true"></i>
+              <div>
+                <strong>{{ bookingPrefillDateLabel }}</strong>
+                <small>Selected from calendar — choose a time below</small>
+              </div>
+            </div>
+            <div class="data-title mt-3">Select Time</div>
+            <kadr-date-time-picker
+              :key="`time-${bookingPrefillDate}-${timePickerMinKey}`"
+              picker-key="time-only"
+              mode="time"
+              v-model="appointmentTime"
+              :min-date="timePickerMinDate"
+              :show-timezone-hint="true"
+              placeholder="Select time (AM/PM)"
+              @input="syncStartFromPrefillTime"
             />
+          </template>
+          <template v-else>
+            <div class="data-title">Select Date and Time</div>
+            <kadr-date-time-picker
+              key="datetime-full"
+              picker-key="datetime-full"
+              mode="datetime"
+              v-model="newAppointment.start"
+              :min-date="bookingMinDate"
+              placeholder="Select date and time (AM/PM)"
+            />
+          </template>
         </div>
       </div>
     </b-modal>
@@ -181,7 +235,7 @@
             {{ calendarFeedbackButtonLabel }}
           </b-button>
         </div>
-        <b-button class="btn btn-primary" style="float:right;margin-top: 1rem;background: #0084ff;" @click="$bvModal.hide('view-appointment-modal-id')">Close</b-button>
+        <b-button class="btn btn-primary modal-close-btn" @click="$bvModal.hide('view-appointment-modal-id')">Close</b-button>
       </div>
     </b-modal>
 
@@ -202,8 +256,18 @@
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import { sofbox } from '../../config/pluginInit'
-import VueMaterialDateTimePicker from 'vue-material-date-time-picker'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
+import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import KadrSectionCard from '../../components/kadr/KadrSectionCard.vue'
+import KadrDateTimePicker, {
+  calendarClickToDateParts,
+  formatDisplayDate,
+  isCalendarDateBeforeToday,
+  startOfLocalDay,
+  toYmd
+} from '../../components/kadr/KadrDateTimePicker.vue'
+import { CALENDAR } from '../../constants/messages'
 import {
   isPastKadrCaseMeeting,
   mediatorNeedsMeetingFeedback,
@@ -215,10 +279,16 @@ const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
 export default {
   name: 'calendar',
   components: {
-    VueMaterialDateTimePicker, Alert, MeetingFeedbackModal
+    KadrDateTimePicker,
+    Alert,
+    MeetingFeedbackModal,
+    KadrPageHeader,
+    KadrEmptyState,
+    KadrSectionCard
   },
   data () {
     return {
+      CALENDAR,
       alert: {
         visible: false,
         message: '',
@@ -230,6 +300,10 @@ export default {
       personalEventColor: PERSONAL_EVENT_COLOR,
       kadrEventColor: KADR_EVENT_COLOR,
       selectedAppointment: null,
+      /** When set (Y-m-d), booking was opened from a calendar day click — time only */
+      bookingPrefillDate: null,
+      appointmentTime: '',
+      showCaseRequiredError: false,
       newAppointment: {
         title: '',
         start: '',
@@ -238,10 +312,8 @@ export default {
         link: '',
         user: '',
         caseId: '',
-        type: 'kadr'
-      },
-      disabledDatesAndTime: {
-        to: this.getYesterdayDate()
+        type: 'kadr',
+        description: ''
       },
       users: [
         { value: null, text: 'Select a case' },
@@ -261,6 +333,33 @@ export default {
   computed: {
     hasPersonalCalendar () {
       return this.$store.getters.mediatorHasFeature('personal_calendar')
+    },
+    todaysEvents () {
+      return (this.dashboardContent && this.dashboardContent.todaysEvent) || []
+    },
+    bookingPrefillDateLabel () {
+      return formatDisplayDate(this.bookingPrefillDate)
+    },
+    /**
+     * Full date+time booking: allow today onward.
+     * Use start-of-day (not "now") so 12h AM/PM hours stay fully selectable.
+     */
+    bookingMinDate () {
+      return startOfLocalDay()
+    },
+    /**
+     * Time-only: on today use midnight as min so AM/PM can cycle freely;
+     * future days have no min. Save still rejects times already in the past.
+     */
+    timePickerMinDate () {
+      if (!this.bookingPrefillDate) return startOfLocalDay()
+      if (this.bookingPrefillDate === toYmd(new Date())) {
+        return startOfLocalDay()
+      }
+      return null
+    },
+    timePickerMinKey () {
+      return this.bookingPrefillDate || 'any'
     },
     currentUserId () {
       return this.$store.state.user && this.$store.state.user.id
@@ -345,6 +444,7 @@ export default {
       this.newAppointment.description = `Case Details:\nCase ID: #${lCase.caseId}\n1st Party: ${lCase.user_cases_first_partyTouser?.name}\n2nd Party ${lCase.user_cases_second_partyTouser?.name}\n\nThis meeting has been scheduled to discuss the case details. Please ensure to join on time and have all necessary documents or information prepared for the discussion.`
       this.newAppointment.caseId = id
       this.newAppointment.caseNumber = lCase.caseId
+      this.showCaseRequiredError = false
     },
     calendarEventPayload (sa) {
       if (!sa) return null
@@ -396,12 +496,7 @@ export default {
       }
     },
     formatTime (dateString) {
-      const date = new Date(dateString)
-      return date.toLocaleString('en-US', {
-        hour: 'numeric', // '6 PM'
-        minute: 'numeric', // '52'
-        hour12: true // 12-hour clock
-      })
+      return this.$formatTime(dateString)
     },
     scrollLeft () {
       const container = this.$refs.casesHorizontalScroll
@@ -412,22 +507,7 @@ export default {
       container.scrollBy({ left: 300, behavior: 'smooth' })
     },
     formatDateTime (dateString) {
-      const date = new Date(dateString)
-      const options = {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      }
-      return new Intl.DateTimeFormat('en-US', options).format(date)
-    },
-    getYesterdayDate () {
-      const yesterday = new Date()
-      yesterday.setDate(yesterday.getDate() - 1)
-      return yesterday
+      return this.$formatDateTime(dateString)
     },
     closeModal () {
       this.$refs['new-appointment-modal'].hide()
@@ -435,26 +515,59 @@ export default {
     closeViewModal () {
       this.$refs['view-appointment-modal'].hide()
     },
-    onSave () {
+    onSave (bvModalEvt) {
+      if (bvModalEvt && typeof bvModalEvt.preventDefault === 'function') {
+        bvModalEvt.preventDefault()
+      }
+      this.showCaseRequiredError = false
+
       if (this.newAppointment.type === 'personal' && !this.hasPersonalCalendar) {
         this.showAlert('Personal meetings require Kadr Pro. Upgrade from My Account.', 'warning')
         return
       }
-      const endDate = new Date(this.newAppointment.start)
-      endDate.setMinutes(endDate.getMinutes() + 30)
-      if (this.newAppointment.start) {
-        this.storeNewEvent({
-          id: this.incrementalId++,
-          title: this.newAppointment.title,
-          start: this.newAppointment.start,
-          end: endDate,
-          color: this.newAppointment.type === 'kadr' ? this.kadrEventColor : this.personalEventColor,
-          caseId: this.newAppointment.caseId,
-          description: this.newAppointment.description,
-          type: this.newAppointment.type,
-          caseNumber: this.newAppointment.caseNumber
-        })
+
+      if (this.newAppointment.type === 'kadr') {
+        if (!this.newAppointment.caseId) {
+          this.showCaseRequiredError = true
+          this.showAlert('Please select a client case for this KADR meeting.', 'warning')
+          return
+        }
+      } else if (this.newAppointment.type === 'personal') {
+        if (!String(this.newAppointment.title || '').trim()) {
+          this.showAlert('Please enter a meeting title.', 'warning')
+          return
+        }
+        if (!String(this.newAppointment.description || '').trim()) {
+          this.showAlert('Please enter a meeting description.', 'warning')
+          return
+        }
       }
+
+      if (!this.newAppointment.start) {
+        this.showAlert('Please select a date and time.', 'warning')
+        return
+      }
+      const startRaw = String(this.newAppointment.start).includes('T')
+        ? String(this.newAppointment.start)
+        : String(this.newAppointment.start).replace(' ', 'T')
+      const startDate = new Date(startRaw)
+      if (Number.isNaN(startDate.getTime()) || startDate.getTime() < Date.now()) {
+        this.showAlert('Please choose a time in the future.', 'warning')
+        return
+      }
+      const endDate = new Date(startDate.getTime())
+      endDate.setMinutes(endDate.getMinutes() + 30)
+      this.storeNewEvent({
+        id: this.incrementalId++,
+        title: this.newAppointment.title,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+        color: this.newAppointment.type === 'kadr' ? this.kadrEventColor : this.personalEventColor,
+        caseId: this.newAppointment.caseId,
+        description: this.newAppointment.description,
+        type: this.newAppointment.type,
+        caseNumber: this.newAppointment.caseNumber
+      })
     },
     async storeNewEvent (event) {
       this.loading = true
@@ -495,17 +608,7 @@ export default {
         })
         this.closeModal()
         this.resetForm()
-      }
-      if (new Date(event.start).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]) {
-        this.dashboardContent.todaysEvent.push({
-          caseNumber: event.caseNumber,
-          endDate: event.end,
-          firstPartyName: 'Tear',
-          meetingLink: event.meetingLink,
-          secondPartyName: 'dsd',
-          startDate: event.start,
-          type: event.type.toUpperCase()
-        })
+        await this.$store.dispatch('getDashboardContent', { force: true })
       }
       this.loading = false
     },
@@ -571,27 +674,62 @@ export default {
       }
     },
     openModal () {
-      this.resetForm()
+      this.resetForm({ clearPrefill: true })
       this.$refs['new-appointment-modal'].show()
     },
     onDateClick (selectedInfo) {
-      this.resetForm()
-      // this.newAppointment.start = selectedInfo.startStr
+      if (this._openingAppointmentModal) return
+      const parts = calendarClickToDateParts(selectedInfo, 10)
+      // Past days are view-only (events still open via eventClick); no booking modal
+      if (!parts.date || isCalendarDateBeforeToday(parts.date)) {
+        return
+      }
+      this._openingAppointmentModal = true
+      this.resetForm({ clearPrefill: true })
+      this.bookingPrefillDate = parts.date
+      this.appointmentTime = parts.time
+      this.syncStartFromPrefillTime()
       this.$refs['new-appointment-modal'].show()
+      this.$nextTick(() => {
+        this._openingAppointmentModal = false
+      })
+    },
+    syncStartFromPrefillTime () {
+      if (!this.bookingPrefillDate) return
+      const time = this.appointmentTime || '10:00'
+      // flatpickr time-only may return "H:i" or a longer string — keep HH:mm (24h)
+      const match = String(time).match(/(\d{1,2}):(\d{2})/)
+      const normalized = match
+        ? `${String(match[1]).padStart(2, '0')}:${match[2]}`
+        : '10:00'
+      this.appointmentTime = normalized
+      this.newAppointment.start = `${this.bookingPrefillDate} ${normalized}`
     },
     onClickAppointmentType () {
-      this.resetForm()
+      // Keep selected type (v-model) and any date prefill; clear case-specific fields only
+      this.newAppointment.title = ''
+      this.newAppointment.description = ''
+      this.newAppointment.caseId = null
+      this.newAppointment.caseNumber = ''
+      this.newAppointment.user = ''
+      this.showCaseRequiredError = false
     },
-    resetForm () {
+    resetForm ({ clearPrefill = true } = {}) {
+      if (clearPrefill) {
+        this.bookingPrefillDate = null
+        this.appointmentTime = ''
+      }
+      this.showCaseRequiredError = false
       this.newAppointment = {
         title: '',
-        start: '',
+        start: clearPrefill ? '' : this.newAppointment.start,
         end: '',
         link: '',
         caseNumber: '',
         user: '',
         caseId: null,
-        type: 'kadr'
+        type: 'kadr',
+        description: ''
       }
     }
   }
@@ -717,6 +855,12 @@ export default {
   padding: 10px;
   border-radius: 8px;
   scroll-behavior: smooth; /* Smooth scrolling for a better experience */
+  border: 1px solid transparent;
+}
+
+.cases-horizontal-scroll--error {
+  border-color: #dc3545;
+  background: rgba(220, 53, 69, 0.04);
 }
 
 .case-card {
@@ -926,8 +1070,56 @@ export default {
   .calendar-feedback-prompt {
     margin-top: 1rem;
     padding: 0.85rem;
-    border-radius: 8px;
-    background: #fff8e6;
+    border-radius: var(--kadr-radius);
+    background: var(--kadr-status-warning-bg);
     border: 1px solid #f5d78e;
+  }
+
+  .job-classification li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--kadr-text-primary);
+  }
+
+  .modal-close-btn {
+    float: right;
+    margin-top: 1rem;
+  }
+
+  .calendar-page {
+    background: var(--kadr-bg-page);
+  }
+
+  .appointment-locked-date {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--kadr-border-info, #ebeffa);
+    background: linear-gradient(135deg, #f5f8ff 0%, #eef4ff 100%);
+    color: var(--kadr-text-primary, #374948);
+  }
+
+  .appointment-locked-date > i {
+    font-size: 1.35rem;
+    color: var(--kadr-primary, #0084ff);
+    margin-top: 0.1rem;
+  }
+
+  .appointment-locked-date strong {
+    display: block;
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.3;
+  }
+
+  .appointment-locked-date small {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.8rem;
+    color: var(--kadr-text-muted, #6d7693);
   }
 </style>

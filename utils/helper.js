@@ -9,8 +9,6 @@ const fs = require('fs')
 const axios = require('axios')
 const EmailService = require('../services/email/emailService')
 
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3')
-
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
@@ -114,22 +112,6 @@ class Helper {
         end_datetime: true,
         type: true,
         meeting_link: true
-      }
-    })
-  }
-
-  static async getClientNotifications (prisma, clientId) {
-    return prisma.notifications.findMany({
-      where: {
-        user_id: clientId
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      select: {
-        title: true,
-        description: true,
-        created_at: true
       }
     })
   }
@@ -274,7 +256,16 @@ class Helper {
             first_party_signature_datetime: true,
             second_party_signature_datetime: true,
             created_at: true,
-            updated_at: true
+            updated_at: true,
+            signature_tracking: {
+              where: {
+                user_id: clientId,
+                signed: false
+              },
+              select: { id: true },
+              take: 1,
+              orderBy: { created_at: 'desc' }
+            }
           }
         }
       }
@@ -384,6 +375,8 @@ class Helper {
   }
 
   static async saveBlog (prisma, blogData, authorId, status) {
+    const { sanitizeRichHtml } = require('./htmlSanitizer')
+    const sanitizedContent = sanitizeRichHtml(blogData.content || '')
     let savedBlog
     let previousUrl = null
     if (blogData.id) {
@@ -400,13 +393,13 @@ class Helper {
         },
         update: {
           title: blogData.title, // Fields to update if the record exists
-          content: blogData.content,
+          content: sanitizedContent,
           author_id: authorId,
           status
         },
         create: {
           title: blogData.title,
-          content: blogData.content,
+          content: sanitizedContent,
           author_id: authorId,
           status
         }
@@ -1017,48 +1010,8 @@ class Helper {
   };
 
   static async deployToS3Bucket (base64Content, fileName) {
-    try {
-      const region = 'us-east-1'
-
-      const s3 = new S3Client({
-        region,
-        credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY_ID,
-          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
-        },
-        useGlobalEndpoint: false
-      })
-      let mimeType, fileBuffer, extension, fullFileName
-
-      const matches = base64Content.match(/^data:(.+);base64,(.+)$/)
-      if (matches && matches.length === 3) {
-        // Data URI format
-        mimeType = matches[1]
-        fileBuffer = Buffer.from(matches[2], 'base64')
-        extension = mimeType.split('/')[1]
-        fullFileName = `${fileName}.${extension}`
-      } else {
-        // Raw base64 (assume PDF)
-        mimeType = 'application/pdf'
-        fileBuffer = Buffer.from(base64Content, 'base64')
-        extension = 'pdf'
-        fullFileName = `${fileName}.${extension}`
-      }
-
-      const params = {
-        Bucket: 'kadrapp-files-402961398131-us-east-1-an',
-        Key: fullFileName,
-        Body: fileBuffer,
-        ContentType: mimeType
-      }
-
-      await s3.send(new PutObjectCommand(params))
-
-      return `https://${params.Bucket}.s3.${region}.amazonaws.com/${params.Key}`
-    } catch (error) {
-      console.error('Error uploading to S3:', error)
-      throw error
-    }
+    const { uploadToS3 } = require('./uploadService')
+    return uploadToS3(base64Content, fileName)
   }
 
   static async getUsers (isActive, prisma, page, type, relationField, includeInactive = false, includeDeleted = false) {
@@ -1621,29 +1574,14 @@ class Helper {
     }
   }
 
-  static formatMeetingRangeIST (startDatetime, endDatetime) {
-    const start = new Date(startDatetime)
-    const end = new Date(endDatetime)
+  static formatMeetingRangeIST (startDatetime, endDatetime, timeZone) {
+    const { formatMeetingRange } = require('./datetime')
+    return formatMeetingRange(startDatetime, endDatetime, timeZone)
+  }
 
-    const optionsDate = {
-      timeZone: 'Asia/Kolkata',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    }
-
-    const optionsTime = {
-      timeZone: 'Asia/Kolkata',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    }
-
-    const dateStr = new Intl.DateTimeFormat('en-IN', optionsDate).format(start)
-    const startTime = new Intl.DateTimeFormat('en-IN', optionsTime).format(start)
-    const endTime = new Intl.DateTimeFormat('en-IN', optionsTime).format(end)
-
-    return `${dateStr}, ${startTime} - ${endTime}`
+  static formatDateTimeToIST (datetime, timeZone) {
+    const { formatDateTime } = require('./datetime')
+    return formatDateTime(datetime, timeZone)
   }
 
   static generateICS ({
@@ -1676,18 +1614,6 @@ class Helper {
 
       'END:VCALENDAR'
     ].join('\r\n')
-  }
-
-  static formatDateTimeToIST (datetime) {
-    return new Intl.DateTimeFormat('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    }).format(new Date(datetime))
   }
 
   static generateMediationHTML (data) {

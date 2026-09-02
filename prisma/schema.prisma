@@ -10,7 +10,7 @@ datasource db {
 model user {
   id                             String          @id @default(uuid()) @db.Char(36)
   name                           String          @db.VarChar(255)
-  email                          String          @unique(map: "email") @db.VarChar(255)
+  email                          String          @db.VarChar(255)
   phone_number                   String?         @db.VarChar(20)
   password_hash                  String          @db.VarChar(255)
   created_at                     DateTime?       @default(now()) @db.Timestamp(0)
@@ -62,11 +62,16 @@ model user {
   mediator_invoice_settings      mediator_invoice_settings?     @relation("mediator_invoice_settings")
   mediator_private_invoices      mediator_private_invoices[]    @relation("mediator_private_invoices")
   mediator_offboarding_events    mediator_offboarding_events[]  @relation("mediator_offboarding_events")
+  payment_orders                 payment_orders[]
   subscription_tier              subscription_tier              @default(FREE)
   subscription_expires_at        DateTime?                      @db.DateTime(0)
+  timezone                       String?         @db.VarChar(64)
+  locale                         String?         @db.VarChar(32)
   referred_by                    user?           @relation("user_referrals", fields: [referred_by_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_user_referred_by")
   referrals                      user[]          @relation("user_referrals")
 
+  @@unique([email, user_type], name: "email_user_type", map: "uq_user_email_type")
+  @@index([email], map: "idx_user_email")
   @@index([user_type, active, created_at], map: "idx_user_type_active_created")
   @@index([subscription_tier, subscription_expires_at], map: "idx_user_subscription")
   @@index([is_deleted], map: "idx_user_is_deleted")
@@ -313,6 +318,7 @@ model cases {
 
   signature_tracking signature_tracking[]
   case_messages      case_messages[]
+  payment_orders     payment_orders[]
   @@index([mediator], map: "fk_mediator")
   @@index([first_party], map: "fk_first_party")
   @@index([second_party], map: "fk_second_party")
@@ -409,6 +415,7 @@ model events {
 
   @@index([case_id], map: "fk_case_id")
   @@index([created_by], map: "fk_created_by")
+  @@index([start_datetime], map: "idx_events_start_datetime")
 }
 
 model otp_resets {
@@ -981,4 +988,36 @@ model website_faq_items {
   category    website_faq_categories @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_website_faq_item_category")
 
   @@index([category_id, sort_order], map: "idx_website_faq_items_category_sort")
+}
+
+model payment_orders {
+  id                 String    @id @default(uuid()) @db.Char(36)
+  order_id           String    @unique @db.VarChar(64)
+  gateway            String    @db.VarChar(20)
+  purpose            String    @db.VarChar(50)
+  amount             Decimal   @db.Decimal(10, 2)
+  currency           String    @default("INR") @db.VarChar(3)
+  status             String    @default("PENDING") @db.VarChar(20)
+  user_id            String    @db.Char(36)
+  case_id            String?   @db.Char(36)
+  gateway_order_id   String?   @db.VarChar(120)
+  gateway_payment_id String?   @db.VarChar(120)
+  gateway_response   Json?
+  metadata           Json?
+  fulfilled_at       DateTime? @db.DateTime(0)
+  created_at         DateTime  @default(now()) @db.DateTime(0)
+  updated_at         DateTime  @default(now()) @updatedAt @db.DateTime(0)
+  user               user      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_payment_orders_user")
+  cases              cases?    @relation(fields: [case_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_payment_orders_case")
+
+  @@index([user_id], map: "idx_payment_orders_user")
+  @@index([case_id], map: "idx_payment_orders_case")
+  @@index([status], map: "idx_payment_orders_status")
+}
+
+model scheduler_locks {
+  job_name     String   @id @db.VarChar(64)
+  locked_until DateTime @db.DateTime(0)
+  locked_by    String   @db.VarChar(64)
+  updated_at   DateTime @default(now()) @updatedAt @db.DateTime(0)
 }

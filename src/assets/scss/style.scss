@@ -1,14 +1,11 @@
 // Bootstrap Css
-@use "~bootstrap/scss/bootstrap";
+@import "~bootstrap/scss/bootstrap";
 
-// Animate css
-@import "~animate.css/animate.min.css";
+@import "../../theme/tokens.css";
+@import "./workspace";
 
 // Font awesome icon Css
 @import "~@fortawesome/fontawesome-free/css/all.min.css";
-
-@import "~owl.carousel/dist/assets/owl.carousel.min.css";
-@import "~owl.carousel/dist/assets/owl.theme.default.min.css";
 
 // Global form input styles for mobile devices
 @media (max-width: 991px) {

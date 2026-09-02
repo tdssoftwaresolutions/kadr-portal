@@ -12,6 +12,7 @@ const verifyToken = async (req, res, next) => {
     }
     next()
   } catch (err) {
+    console.error('[authMiddleware] Unexpected auth failure:', err)
     return res.status(500).json({
       success: false,
       error: errorCodes.INTERNAL_SERVER_ERROR

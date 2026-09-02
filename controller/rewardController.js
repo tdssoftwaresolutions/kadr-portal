@@ -42,6 +42,7 @@ module.exports = {
   getMediatorRewardsAdmin: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'settings')
       const { mediatorId } = req.query
       if (!mediatorId) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
       const page = Math.max(1, parseInt(req.query.page, 10) || 1)

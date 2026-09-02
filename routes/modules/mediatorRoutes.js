@@ -1,0 +1,48 @@
+const express = require('express')
+const rewardController = require('../../controller/rewardController')
+const mediatorToolsController = require('../../controller/mediatorToolsController')
+const subscriptionController = require('../../controller/subscriptionController')
+const privateInvoiceController = require('../../controller/privateInvoiceController')
+const financeController = require('../../controller/financeController')
+const blogController = require('../../controller/blogController')
+const videoReelController = require('../../controller/videoReelController')
+const authMiddleware = require('../../middleware/authMiddleware')
+const { requireMediator } = require('../../middleware/requireRole')
+
+const router = express.Router()
+
+// Auth only at router level — role checks must be per-route.
+// A blanket requireMediator would 403 admins before adminRoutes can run.
+router.use(authMiddleware)
+
+router.get('/mediator/rewards', requireMediator, rewardController.getMyRewards)
+router.post('/mediator/redeem-reward', requireMediator, rewardController.redeemReward)
+router.get('/mediator/legal-feeds/catalog', requireMediator, mediatorToolsController.listLegalFeedCatalog)
+router.get('/mediator/legal-feeds', requireMediator, mediatorToolsController.getLegalFeeds)
+router.get('/mediator/court-cases', requireMediator, mediatorToolsController.listCourtCaseTrackers)
+router.get('/mediator/court-cases/:id/details', requireMediator, mediatorToolsController.getCourtCaseTrackerDetails)
+router.post('/mediator/court-cases', requireMediator, mediatorToolsController.addCourtCaseTracker)
+router.post('/mediator/court-cases/:id/refresh', requireMediator, mediatorToolsController.refreshCourtCaseTracker)
+router.delete('/mediator/court-cases/:id', requireMediator, mediatorToolsController.removeCourtCaseTracker)
+router.get('/mediator/subscription', requireMediator, subscriptionController.getMySubscription)
+router.post('/mediator/subscription/purchase', requireMediator, subscriptionController.purchaseProSubscription)
+router.get('/mediator/private-invoice-settings', requireMediator, privateInvoiceController.getInvoiceSettings)
+router.post('/mediator/private-invoice-settings', requireMediator, privateInvoiceController.saveInvoiceSettings)
+router.post('/mediator/private-invoice-settings/upload', requireMediator, privateInvoiceController.uploadInvoiceAsset)
+router.get('/mediator/income', requireMediator, financeController.getMediatorIncome)
+router.get('/mediator/private-invoices', requireMediator, privateInvoiceController.listPrivateInvoices)
+router.post('/mediator/private-invoices', requireMediator, privateInvoiceController.createPrivateInvoice)
+router.put('/mediator/private-invoices/:id', requireMediator, privateInvoiceController.updatePrivateInvoice)
+router.get('/mediator/private-invoices/:id/pdf', requireMediator, privateInvoiceController.downloadPrivateInvoicePdf)
+router.get('/mediator-bank-account', requireMediator, financeController.getMediatorBankAccount)
+router.post('/mediator-bank-account', requireMediator, financeController.saveMediatorBankAccount)
+
+router.get('/getMyBlogs', requireMediator, blogController.getMyBlogs)
+router.post('/postBlogComment', requireMediator, blogController.postBlogComment)
+router.post('/saveBlog', requireMediator, blogController.saveBlog)
+router.delete('/deleteBlog/:id', requireMediator, blogController.deleteBlog)
+router.get('/getMyVideoReels', requireMediator, videoReelController.getMyVideoReels)
+router.post('/saveVideoReel', requireMediator, videoReelController.saveVideoReel)
+router.delete('/deleteVideoReel/:id', requireMediator, videoReelController.deleteVideoReel)
+
+module.exports = router

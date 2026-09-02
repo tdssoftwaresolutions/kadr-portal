@@ -1,0 +1,54 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: kadr_portal
+      MYSQL_USER: kadr
+      MYSQL_PASSWORD: kadr
+    ports:
+      # Host 3307 avoids clashing with a local MySQL on 3306.
+      # Containers still reach MySQL at db:3306 (see DATABASE_URL).
+      - '3307:3306'
+    volumes:
+      - kadr_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-proot']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      args:
+        BASE_URL: ${BASE_URL:-http://localhost:3000}
+    ports:
+      - '${PORT:-3000}:3000'
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:-mysql://kadr:kadr@db:3306/kadr_portal}
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
+      PORTAL_APP_URL: ${PORTAL_APP_URL:-http://localhost:3000/admin}
+      SECRET_KEY: ${SECRET_KEY:-change-me-docker-dev-secret-key-min-32-chars}
+      REFRESH_SECRET_KEY: ${REFRESH_SECRET_KEY:-change-me-docker-refresh-secret-min-32-chars}
+      SIGN_SECRET_KEY: ${SIGN_SECRET_KEY:-change-me-docker-sign-secret-min-32-chars}
+      SERVE_ADMIN_STATIC: '1'
+      SERVE_WEBSITE_STATIC: '1'
+      KADR_STRICT_ADMIN_PERMISSIONS: '1'
+      ALLOW_FAKE_PAYMENTS: '0'
+      COOKIE_SECURE: ${COOKIE_SECURE:-0}
+      PAYMENT_GATEWAY: ${PAYMENT_GATEWAY:-payu}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  kadr_mysql_data:

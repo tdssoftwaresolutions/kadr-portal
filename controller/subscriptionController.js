@@ -2,11 +2,10 @@ const { success } = require('../utils/responses')
 const { createError } = require('../utils/errors')
 const errorCodes = require('../utils/errors/errorCodes')
 const {
-  getSubscriptionStatus,
-  recordFakeProPayment,
-  getProMonthlyPriceInr
+  getSubscriptionStatus
 } = require('../services/subscription/subscriptionService')
 const { listFeaturesForMediator } = require('../services/subscription/entitlementService')
+const { PAYMENT_PURPOSES } = require('../services/payment/paymentConstants')
 
 module.exports = {
   getMySubscription: async function (req, res, next) {
@@ -25,19 +24,15 @@ module.exports = {
   purchaseProSubscription: async function (req, res, next) {
     try {
       if (req.user.type !== 'MEDIATOR') throw createError(errorCodes.FORBIDDEN)
-      const { paymentId, status, amount, currency, paymentMethod } = req.body
-      if (status !== 'success') throw createError(errorCodes.INVALID_REQUEST)
-      const price = await getProMonthlyPriceInr()
-      const result = await recordFakeProPayment({
-        mediatorId: req.user.id,
-        paymentId: paymentId || `pro-${Date.now()}`,
-        amount: amount != null ? amount : price,
-        currency: currency || 'INR',
-        paymentMethod
+      throw createError(errorCodes.INVALID_REQUEST, {
+        message: 'Use POST /api/payment/initiate with purpose MEDIATOR_PRO to purchase Pro via the configured gateway.'
       })
-      success(res, result, 'Pro subscription activated successfully.')
     } catch (error) {
       next(error)
     }
+  },
+
+  getProPaymentPurpose: function () {
+    return PAYMENT_PURPOSES.MEDIATOR_PRO
   }
 }

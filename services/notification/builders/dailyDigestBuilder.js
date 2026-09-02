@@ -10,23 +10,30 @@ function listItems (items, renderItem) {
   return `<ul style="margin:8px 0 0 18px;padding:0;">${items.map((item) => `<li style="margin-bottom:6px;">${renderItem(item)}</li>`).join('')}</ul>`
 }
 
-function formatMeetingRangeIST (startDatetime, endDatetime) {
-  const start = new Date(startDatetime)
-  const end = new Date(endDatetime)
-  const optionsDate = { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'long', year: 'numeric' }
-  const optionsTime = { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true }
-  const dateStr = new Intl.DateTimeFormat('en-IN', optionsDate).format(start)
-  const startTime = new Intl.DateTimeFormat('en-IN', optionsTime).format(start)
-  const endTime = new Intl.DateTimeFormat('en-IN', optionsTime).format(end)
-  return `${dateStr}, ${startTime} - ${endTime}`
+function formatMeetingRangeIST (startDatetime, endDatetime, timeZone) {
+  const { formatMeetingRange } = require('../../../utils/datetime')
+  return formatMeetingRange(startDatetime, endDatetime, timeZone)
 }
 
-function formatMeetingRangeISTDateOnly (startDatetime, endDatetime) {
+function formatMeetingRangeISTDateOnly (startDatetime, endDatetime, timeZone) {
+  const { getAppTimezone } = require('../../../utils/datetime')
+  const zone = timeZone || getAppTimezone()
   const start = new Date(startDatetime)
   const end = new Date(endDatetime)
-  const optionsTime = { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true }
-  const startTime = new Intl.DateTimeFormat('en-IN', optionsTime).format(start)
-  const endTime = new Intl.DateTimeFormat('en-IN', optionsTime).format(end)
+  if (Number.isNaN(start.getTime())) return ''
+  const startTime = new Intl.DateTimeFormat('en-IN', {
+    timeZone: zone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(start)
+  if (Number.isNaN(end.getTime())) return startTime
+  const endTime = new Intl.DateTimeFormat('en-IN', {
+    timeZone: zone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }).format(end)
   return `${startTime} - ${endTime}`
 }
 
@@ -49,6 +56,14 @@ function buildDailyDigest ({ sections } = {}) {
       <p style="margin:0;">Clients pending: <strong>${sections.pendingApprovals.clients}</strong></p>
       <p style="margin:0;">Mediators pending: <strong>${sections.pendingApprovals.mediators}</strong></p>
       <p style="margin-top:8px;">Please review and approve these accounts.</p>
+    `)
+  }
+
+  if (sections.unassignedMediatorCases?.length > 0) {
+    blocks.push(`
+      <h3 style="margin:18px 0 8px 0;">Cases Without Mediator (1+ day)</h3>
+      <p style="margin:0;">There are <strong>${sections.unassignedMediatorCases.length}</strong> case(s) waiting for mediator assignment.</p>
+      ${listItems(sections.unassignedMediatorCases, (item) => `Case <strong>${item.caseId || 'N/A'}</strong> (${item.subStatus || 'unknown status'})`)}
     `)
   }
 

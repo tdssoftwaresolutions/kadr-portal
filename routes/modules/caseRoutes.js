@@ -1,0 +1,40 @@
+const express = require('express')
+const generalController = require('../../controller/generalController')
+const clientController = require('../../controller/clientController')
+const paymentController = require('../../controller/paymentController')
+const mediatorController = require('../../controller/mediatorController')
+const caseCorrespondenceController = require('../../controller/caseCorrespondenceController')
+const calendarController = require('../../controller/calendarController')
+const noteController = require('../../controller/noteController')
+const authMiddleware = require('../../middleware/authMiddleware')
+const { requireAdmin, requireClient } = require('../../middleware/requireRole')
+
+const router = express.Router()
+
+router.use(authMiddleware)
+
+router.get('/getMediationData', generalController.getMediationData)
+router.post('/markCaseResolved', generalController.markCaseResolved)
+router.post('/newCase', requireAdmin, generalController.newCase)
+router.post('/initiateNewCase', requireClient, clientController.initiateNewCase)
+router.post('/cases/approve-type', requireAdmin, generalController.approveCaseType)
+router.post('/acceptMediationRequest', generalController.acceptMediationRequest)
+router.post('/setClientPayment', paymentController.setClientPayment)
+router.post('/assignMediator', requireAdmin, mediatorController.assignMediator)
+router.post('/assignCaseMediator', requireAdmin, generalController.adminAssignCaseMediator)
+router.get('/getAvailableMediators', requireAdmin, mediatorController.getAvailableMediators)
+router.get('/listAllMediatorsWithCases', requireAdmin, mediatorController.listAllMediatorsWithCases)
+router.get('/activeCases', requireAdmin, generalController.getAdminActiveCases)
+router.get('/caseManagementMeta', requireAdmin, generalController.getAdminCaseManagementMeta)
+
+router.get('/case-correspondence', caseCorrespondenceController.listMessages)
+router.post('/case-correspondence', caseCorrespondenceController.createMessage)
+
+router.post('/newCalendarEvent', generalController.newCalendarEvent)
+router.get('/getCalendarInit', calendarController.getCalendarInit)
+router.get('/getPastMediations', generalController.getPastMediations)
+router.post('/submitEventFeedback', generalController.submitEventFeedback)
+router.post('/saveNote', noteController.saveNote)
+router.post('/deleteNote', noteController.deleteNote)
+
+module.exports = router

@@ -1,6 +1,6 @@
 <template>
     <div v-if="value" :class="['alert', alertClass, textColor]" role="alert">
-      <div class="iq-alert-text" v-html="message"></div>
+      <div class="iq-alert-text">{{ message }}</div>
     </div>
 </template>
 <script>
@@ -23,7 +23,8 @@ export default {
           'warning',
           'info',
           'light',
-          'dark'
+          'dark',
+          'error'
         ].includes(value)
       }
     },
@@ -38,7 +39,8 @@ export default {
   },
   computed: {
     alertClass () {
-      return `bg-${this.type}`
+      const type = this.type === 'error' ? 'danger' : this.type
+      return `bg-${type}`
     },
     textColor () {
       return this.type === 'light' ? 'text-dark' : 'text-white'

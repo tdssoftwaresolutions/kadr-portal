@@ -2,20 +2,33 @@ const cron = require('node-cron')
 const prisma = require('../../lib/prisma')
 const helper = require('../../utils/helper')
 const { CaseSubTypes } = require('../../utils/caseConstants')
+const { withSchedulerLock } = require('./schedulerLockService')
+const { alertSchedulerFailure } = require('../alerting/criticalAlertService')
 
-const DAILY_FEEDBACK_REMINDER_TITLE = 'DAILY_FEEDBACK_REMINDER'
+const DAILY_FEEDBACK_REMINDER_KEY = 'feedbackReminderDedup'
 
 const getISTDayBounds = (offsetDays = 0) => {
+  const tz = process.env.APP_TIMEZONE || 'Asia/Kolkata'
   const now = new Date()
-  const nowIst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
-  const target = new Date(nowIst)
+  // Wall-clock "now" in the operational timezone
+  const nowInTz = new Date(now.toLocaleString('en-US', { timeZone: tz }))
+  const target = new Date(nowInTz)
   target.setDate(target.getDate() + offsetDays)
-  const startIst = new Date(target.setHours(0, 0, 0, 0))
-  const endIst = new Date(target.setHours(23, 59, 59, 999))
+  const startLocal = new Date(target)
+  startLocal.setHours(0, 0, 0, 0)
+  const endLocal = new Date(target)
+  endLocal.setHours(23, 59, 59, 999)
 
-  const startUtc = new Date(startIst.getTime() - (5.5 * 60 * 60 * 1000))
-  const endUtc = new Date(endIst.getTime() - (5.5 * 60 * 60 * 1000))
-  return { startUtc, endUtc }
+  // Convert "as if local wall time" back to UTC using current TZ offset
+  const probe = new Date()
+  const offsetMs =
+    new Date(probe.toLocaleString('en-US', { timeZone: tz })).getTime() -
+    new Date(probe.toLocaleString('en-US', { timeZone: 'UTC' })).getTime()
+
+  return {
+    startUtc: new Date(startLocal.getTime() - offsetMs),
+    endUtc: new Date(endLocal.getTime() - offsetMs)
+  }
 }
 
 const getRecipient = (recipientMap, user) => {
@@ -30,6 +43,7 @@ const getRecipient = (recipientMap, user) => {
         pendingApprovals: null,
         pendingPayments: [],
         pendingCaseAcceptance: [],
+        unassignedMediatorCases: [],
         todayMeetings: [],
         pendingFeedback: [],
         pendingSignatures: []
@@ -40,23 +54,25 @@ const getRecipient = (recipientMap, user) => {
 }
 
 const markFeedbackReminderSent = async (userId, eventId, role) => {
-  await prisma.notifications.create({
+  await prisma.notification_send_logs.create({
     data: {
+      template_key: DAILY_FEEDBACK_REMINDER_KEY,
+      channel: 'EMAIL',
       user_id: userId,
-      title: DAILY_FEEDBACK_REMINDER_TITLE,
-      description: `Feedback reminder sent for event ${eventId} role ${role}`
+      recipient: `${eventId}:${role}`,
+      status: 'dedup',
+      metadata: { eventId, role, purpose: 'feedback_reminder_dedup' }
     }
   })
 }
 
 const wasFeedbackReminderSent = async (userId, eventId, role) => {
-  const existing = await prisma.notifications.findFirst({
+  const existing = await prisma.notification_send_logs.findFirst({
     where: {
+      template_key: DAILY_FEEDBACK_REMINDER_KEY,
       user_id: userId,
-      title: DAILY_FEEDBACK_REMINDER_TITLE,
-      description: {
-        contains: `event ${eventId} role ${role}`
-      }
+      recipient: `${eventId}:${role}`,
+      status: 'dedup'
     },
     select: { id: true }
   })
@@ -68,7 +84,7 @@ const buildDailyReminders = async () => {
   const { startUtc: todayStart, endUtc: todayEnd } = getISTDayBounds(0)
   const { startUtc: yesterdayStart, endUtc: yesterdayEnd } = getISTDayBounds(-1)
 
-  const [admins, pendingClientApprovals, pendingMediatorApprovals, pendingPaymentCases, pendingAcceptanceCases, todayMeetings, feedbackCandidateMeetings, pendingSignatures] = await Promise.all([
+  const [admins, pendingClientApprovals, pendingMediatorApprovals, pendingPaymentCases, pendingAcceptanceCases, unassignedMediatorCases, todayMeetings, feedbackCandidateMeetings, pendingSignatures] = await Promise.all([
     prisma.user.findMany({
       where: { user_type: 'ADMIN', active: true },
       select: { id: true, name: true, email: true, user_type: true, active: true }
@@ -100,6 +116,25 @@ const buildDailyReminders = async () => {
         user_cases_first_partyTouser: { select: { name: true } },
         user_cases_second_partyTouser: { select: { id: true, name: true, email: true, user_type: true, active: true } }
       }
+    }),
+    prisma.cases.findMany({
+      where: {
+        mediator: null,
+        status: { in: ['new', 'in_progress'] },
+        updated_at: { lte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        sub_status: {
+          notIn: [
+            CaseSubTypes.PENDING_NOTICE_PAYMENT,
+            CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY
+          ]
+        }
+      },
+      select: {
+        caseId: true,
+        updated_at: true,
+        sub_status: true
+      },
+      take: 50
     }),
     prisma.events.findMany({
       where: {
@@ -171,6 +206,10 @@ const buildDailyReminders = async () => {
       clients: pendingClientApprovals,
       mediators: pendingMediatorApprovals
     }
+    recipient.sections.unassignedMediatorCases = unassignedMediatorCases.map((c) => ({
+      caseId: c.caseId,
+      subStatus: c.sub_status
+    }))
     recipient.sections.todayMeetings = todayMeetings.map((meeting) => ({ ...meeting, caseId: meeting.cases?.caseId }))
   })
 
@@ -261,6 +300,7 @@ const buildDailyReminders = async () => {
     const sections = recipient.sections
     if (recipient.userType === 'ADMIN') {
       return (sections.pendingApprovals && (sections.pendingApprovals.clients > 0 || sections.pendingApprovals.mediators > 0)) ||
+        (sections.unassignedMediatorCases && sections.unassignedMediatorCases.length > 0) ||
         sections.todayMeetings.length
     }
     if (recipient.userType !== 'CLIENT' && recipient.userType !== 'MEDIATOR') return false
@@ -275,7 +315,7 @@ const buildDailyReminders = async () => {
 }
 
 const runDailyReminderJob = async () => {
-  try {
+  await withSchedulerLock('daily-reminder', async () => {
     const recipients = await buildDailyReminders()
     for (const recipient of recipients) {
       await helper.sendTemplatedEmail('dailyDigest', recipient.email, {
@@ -284,16 +324,20 @@ const runDailyReminderJob = async () => {
       })
     }
     console.log(`[scheduler] Daily reminder job completed. Emails sent: ${recipients.length}`)
-  } catch (error) {
-    console.error('[scheduler] Daily reminder job failed', error)
-  }
+    return recipients.length
+  }, 30 * 60 * 1000)
 }
 
 const scheduleDailyReminderJob = () => {
-  cron.schedule('0 10 * * *', runDailyReminderJob, {
-    timezone: 'Asia/Kolkata'
+  cron.schedule('0 10 * * *', () => {
+    runDailyReminderJob().catch((err) => {
+      console.error('[scheduler] Daily reminder job failed:', err)
+      alertSchedulerFailure({ jobName: 'daily-reminder', error: err })
+    })
+  }, {
+    timezone: process.env.APP_TIMEZONE || 'Asia/Kolkata'
   })
-  console.log('[scheduler] Daily reminder job scheduled at 10:00 AM IST')
+  console.log(`[scheduler] Daily reminder job scheduled at 10:00 AM (${process.env.APP_TIMEZONE || 'Asia/Kolkata'})`)
 }
 
 module.exports = {

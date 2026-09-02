@@ -323,8 +323,7 @@ export default {
       }
     },
     formatDate (value) {
-      if (!value) return '—'
-      return new Date(value).toLocaleDateString()
+      return this.$formatDate(value)
     },
     async saveTestimonial () {
       const res = await this.$store.dispatch('saveAdminWebsiteTestimonial', { ...this.testimonialForm })

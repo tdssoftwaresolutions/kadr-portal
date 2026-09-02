@@ -10,6 +10,7 @@ const { awardRewardPoints, onMediatorApproved } = require('../services/reward/re
 const { ensureMediatorReferralCode } = require('../utils/referralCode')
 const {
   assertAdminPage,
+  assertAdminPageAny,
   assertAdminComponent,
   assertAdminUsersOrApprovals,
   adminHasComponent,
@@ -18,6 +19,9 @@ const {
   defaultFullPermissions
 } = require('../utils/adminPermissionHelpers')
 const { runWithNotificationContext } = require('../services/notification/notificationContext')
+const { assertCaseAccessFromRequest, assertNoteOwnership } = require('../services/security/caseAccessService')
+const { parsePagination, parseDateRange, paginatedResponse } = require('../utils/pagination')
+const { sanitizeRichHtml } = require('../utils/htmlSanitizer')
 
 const calendarEventSelect = {
   id: true,
@@ -50,48 +54,66 @@ const calendarEventSelect = {
 module.exports = {
   getCalendarInit: async function (req, res, next) {
     try {
+      const { page, perPage, skip, take } = parsePagination(req.query, { defaultPerPage: 100, maxPerPage: 500 })
+      const { start, end } = parseDateRange(req.query)
+      const dateFilter = (start || end)
+        ? {
+            start_datetime: {
+              ...(start ? { gte: start } : {}),
+              ...(end ? { lte: end } : {})
+            }
+          }
+        : {}
+
       if (req.user.type === 'ADMIN') {
         await assertAdminPage(req, 'calendar')
-        const events = await prisma.events.findMany({
-          orderBy: { start_datetime: 'asc' },
-          select: calendarEventSelect
-        })
-        success(res, { events })
+        const where = { ...dateFilter }
+        const [events, total] = await prisma.$transaction([
+          prisma.events.findMany({
+            where,
+            orderBy: { start_datetime: 'asc' },
+            skip,
+            take,
+            select: calendarEventSelect
+          }),
+          prisma.events.count({ where })
+        ])
+        success(res, { events, ...paginatedResponse(events, total, { page, perPage }) })
         return
       }
 
       const user = await prisma.user.findUnique({
-        where: {
-          id: req.user.id
-        },
-        select: {
-          id: true
-        }
+        where: { id: req.user.id },
+        select: { id: true }
       })
-      if (user) {
-        const events = await prisma.events.findMany({
-          where: {
-            OR: [
-              { created_by: user.id },
-              {
-                cases: {
-                  OR: [
-                    { first_party: user.id },
-                    { second_party: user.id },
-                    { mediator: user.id }
-                  ]
-                }
-              }
-            ]
-          },
-          select: calendarEventSelect
-        })
-        success(res, {
-          events
-        })
-      } else {
-        throw createError(errorCodes.NOT_FOUND)
+      if (!user) throw createError(errorCodes.NOT_FOUND)
+
+      const where = {
+        ...dateFilter,
+        OR: [
+          { created_by: user.id },
+          {
+            cases: {
+              OR: [
+                { first_party: user.id },
+                { second_party: user.id },
+                { mediator: user.id }
+              ]
+            }
+          }
+        ]
       }
+      const [events, total] = await prisma.$transaction([
+        prisma.events.findMany({
+          where,
+          orderBy: { start_datetime: 'asc' },
+          skip,
+          take,
+          select: calendarEventSelect
+        }),
+        prisma.events.count({ where })
+      ])
+      success(res, { events, ...paginatedResponse(events, total, { page, perPage }) })
     } catch (error) {
       next(error)
     }
@@ -111,21 +133,64 @@ module.exports = {
   updateUserProfile: async function (req, res, next) {
     try {
       const userDetails = req.user
-      const { name, phone_number, profile_picture, password } = req.body
+      const {
+        name,
+        phone_number,
+        profile_picture,
+        password,
+        current_password: currentPassword,
+        timezone,
+        locale
+      } = req.body
       let uploadedProfilePictureResponse = null
       if (profile_picture) { uploadedProfilePictureResponse = await helper.deployToS3Bucket(profile_picture, `profile-picture-${uuidv4()}`) }
-      await prisma.user.update({
+
+      if (password) {
+        if (!currentPassword) {
+          throw createError(errorCodes.MISSING_FIELD, { message: 'Current password is required to change password.' })
+        }
+        const existing = await prisma.user.findUnique({
+          where: { id: userDetails.id },
+          select: { password_hash: true }
+        })
+        if (!existing?.password_hash) {
+          throw createError(errorCodes.INVALID_CREDENTIALS, { message: 'Current password is incorrect.' })
+        }
+        const valid = await helper.comparePassword(currentPassword, existing.password_hash)
+        if (!valid) {
+          throw createError(errorCodes.INVALID_CREDENTIALS, { message: 'Current password is incorrect.' })
+        }
+      }
+
+      const updated = await prisma.user.update({
         where: {
           id: userDetails.id
         },
         data: {
-          name,
-          phone_number,
+          ...(name !== undefined && { name }),
+          ...(phone_number !== undefined && { phone_number }),
           ...(uploadedProfilePictureResponse && { profile_picture_url: uploadedProfilePictureResponse }),
-          ...(password && { password_hash: await helper.hashPassword(password) })
+          ...(password && { password_hash: await helper.hashPassword(password) }),
+          ...(timezone !== undefined && { timezone: timezone || null }),
+          ...(locale !== undefined && { locale: locale || null })
+        },
+        select: {
+          name: true,
+          phone_number: true,
+          profile_picture_url: true,
+          timezone: true,
+          locale: true
         }
       })
-      success(res, {}, 'User profile updated successfully!')
+      success(res, {
+        user: {
+          name: updated.name,
+          phone: updated.phone_number,
+          photo: updated.profile_picture_url || '',
+          timezone: updated.timezone || null,
+          locale: updated.locale || null
+        }
+      }, 'User profile updated successfully!')
     } catch (error) {
       next(error)
     }
@@ -295,16 +360,14 @@ module.exports = {
         }
 
         case 'CLIENT': {
-          const [casesWithEvents, clientNotifications, caseEvents] = await Promise.all([
+          const [casesWithEvents, caseEvents] = await Promise.all([
             helper.getClientCases(prisma, id, 1),
-            helper.getClientNotifications(prisma, id),
             helper.getCaseEvents(prisma)
           ])
           dashboardContent.myCases = helper.mergeCaseHistory(casesWithEvents, caseEvents, {
             userId: id,
             type: 'CLIENT'
           })
-          dashboardContent.notifications = clientNotifications
           dashboardContent.todaysEvent = helper.getEventsForToday(casesWithEvents)
           dashboardContent.user = user
           break
@@ -372,75 +435,81 @@ module.exports = {
         console.error('Reward on mediator approval:', rewardErr)
       }
     }
-    if (caseId) {
-      let caseSubStatus = ''
-      switch (caseType) {
-        case 'Mediation':
-          caseSubStatus = CaseSubTypes.PENDING_NOTICE_PAYMENT
-          break
-        case 'Arbitrator':
-          caseSubStatus = CaseSubTypes.PENDING_NOTICE_PAYMENT
-          break
-        case 'Counsellor':
-          caseSubStatus = CaseSubTypes.PENDING_NOTICE_PAYMENT
-          break
-      }
-      const newCase = await prisma.cases.update({
-        where: {
-          id: caseId
-        },
-        data: {
-          case_type: caseType,
-          status: CaseTypes.IN_PROGRESS,
-          sub_status: caseSubStatus
-        }
-      })
-
-      const { recordCaseMilestone } = require('../services/case/caseMilestoneService')
-      await recordCaseMilestone(prisma, {
-        caseId: newCase.id,
-        statusId: newCase.status,
-        subStatusId: newCase.sub_status
-      })
+    if (caseId && caseType) {
+      const { approveCaseType } = require('../services/case/clientCaseService')
+      await approveCaseType({ caseId, caseType })
     }
     // Welcome email: services/notification/registerCodeTriggers.js (user active + password in context).
     success(res, {}, 'User updated successfully')
   },
+  /**
+   * Approve case type for a case already in status "new" (e.g. logged-in client initiated).
+   * Does not change user.active — only moves the case into the payment pipeline.
+   */
+  approveCaseType: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPageAny(req, ['cases', 'users'])
+      const { caseId, caseType } = req.body
+      const { approveCaseType } = require('../services/case/clientCaseService')
+      const updated = await approveCaseType({ caseId, caseType })
+      success(res, { case: updated }, 'Case type approved. Client can proceed with notice payment.')
+    } catch (error) {
+      next(error)
+    }
+  },
   newCase: async function (req, res, next) {
     try {
+      const caseData = req.body.caseData || {}
       const {
-        hearingDate,
-        suitNo,
         party1,
         party1Email,
         party2,
         party2Email,
-        institutionDate,
         natureOfSuit,
-        stage,
-        hearingCount,
-        mediationDateTime,
-        referralJudgeSignature,
+        category,
+        description,
         plaintiffPhone,
-        plaintiffAdvocate,
         respondentPhone,
-        respondentAdvocate,
         document,
-        judgeId
-      } = req.body.caseData
+        caseType
+      } = caseData
+
+      if (!party1 || !party1Email || !party2 || !party2Email) {
+        throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      }
 
       async function createUser (email, name, phone) {
+        const normalizedEmail = String(email).trim().toLowerCase()
+        const existing = await prisma.user.findUnique({
+          where: { email_user_type: { email: normalizedEmail, user_type: 'CLIENT' } },
+          select: { id: true, is_deleted: true }
+        })
+        if (existing && !existing.is_deleted) return existing.id
+        if (existing?.is_deleted) {
+          await prisma.user.update({
+            where: { id: existing.id },
+            data: {
+              name,
+              phone_number: phone || null,
+              active: false,
+              is_deleted: false,
+              is_self_signed_up: false
+            }
+          })
+          return existing.id
+        }
         const user = await prisma.user.create({
           data: {
             name,
-            email,
+            email: normalizedEmail,
             user_type: 'CLIENT',
             active: false,
-            phone_number: phone
+            phone_number: phone || null,
+            password_hash: '',
+            is_self_signed_up: false
           },
-          select: {
-            id: true
-          }
+          select: { id: true }
         })
         return user.id
       }
@@ -449,39 +518,28 @@ module.exports = {
       const secondPartyId = await createUser(party2Email, party2, respondentPhone)
 
       let uploadedDocumentResponse = null
-      if (document) { uploadedDocumentResponse = await helper.deployToS3Bucket(document, `case-reference-document-${uuidv4()}`) }
+      if (document) {
+        uploadedDocumentResponse = await helper.deployToS3Bucket(document, `case-reference-document-${uuidv4()}`)
+      }
 
       const tracker = await prisma.caseIdTracker.findFirst()
-      let newCaseId = 1
-      if (tracker) {
-        newCaseId = tracker.lastCaseId + 1
-      }
+      const newCaseId = tracker ? tracker.lastCaseId + 1 : 1
       const settingsRows = await getOrCreateSettings()
       const settingsMap = settingsToMap(settingsRows)
       const defaultCommission = Number(settingsMap.mediator_commission || 5)
+      const kadrCaseId = `KDR-${newCaseId}`
 
       const newCaseRecord = await prisma.cases.create({
         data: {
           first_party: firstPartyId,
           second_party: secondPartyId,
-          judge_document_url: uploadedDocumentResponse,
-          nature_of_suit: natureOfSuit,
-          stage,
+          evidence_document_url: uploadedDocumentResponse || '',
+          description: description || natureOfSuit || 'Case referred for dispute resolution on Kadr.live',
+          category: category || natureOfSuit || 'Other',
+          case_type: caseType || 'Mediation',
           status: CaseTypes.NEW,
-          sub_status: CaseSubTypes.PENDING_COMPLAINANT_SIGNATURE,
-          caseId: `ROUSE-MED-${newCaseId}`,
-          suit_no: suitNo,
-          hearing_count: hearingCount,
-          hearing_date: new Date(hearingDate),
-          institution_date: new Date(institutionDate),
-          mediation_date_time: new Date(mediationDateTime),
-          mediator_commission: defaultCommission,
-          referral_judge_signature: referralJudgeSignature,
-          plaintiff_phone: plaintiffPhone,
-          plaintiff_advocate: plaintiffAdvocate,
-          respondent_phone: respondentPhone,
-          judge: judgeId,
-          respondent_advocate: respondentAdvocate
+          caseId: kadrCaseId,
+          mediator_commission: defaultCommission
         }
       })
 
@@ -495,32 +553,40 @@ module.exports = {
 
       await helper.sendTemplatedEmail('signatureVerificationRequest', party1Email, {
         recipientName: party1,
-        caseId: `ROUSE-MED-${newCaseId}`,
+        caseId: kadrCaseId,
         caseTitle: `${party1} vs ${party2}`,
         signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
         partyRole: 'first party'
       })
 
-      success(res, {}, 'New case created successfully!')
+      success(res, { caseId: kadrCaseId }, 'New case created successfully!')
     } catch (error) {
       next(error)
     }
   },
-  getExistingUser: async function (req, res) {
-    const token = req.headers.authorization
-    const decryptedContent = await helper.verifyToken(token)
-    const user = await prisma.user.findUnique({
-      where: {
-        id: decryptedContent.id
-      },
-      select: {
-        id: true,
-        email: true,
-        phone_number: true,
-        name: true
-      }
-    })
-    success(res, { ...user })
+  getExistingUser: async function (req, res, next) {
+    try {
+      const token = req.headers.authorization
+      if (!token) throw createError(errorCodes.NO_TOKEN_PROVIDED)
+      const tokenWithoutBearer = token.startsWith('Bearer ') ? token.slice(7) : token
+      const decryptedContent = await helper.verifyToken(tokenWithoutBearer)
+      const user = await prisma.user.findUnique({
+        where: { id: decryptedContent.id },
+        select: {
+          id: true,
+          email: true,
+          phone_number: true,
+          name: true,
+          user_type: true,
+          active: true,
+          is_deleted: true
+        }
+      })
+      if (!user || user.is_deleted || !user.active) throw createError(errorCodes.UNAUTHORIZED)
+      success(res, { ...user })
+    } catch (error) {
+      next(error)
+    }
   },
   getPastMediations: async function (req, res, next) {
     try {
@@ -575,11 +641,10 @@ module.exports = {
   },
   deleteNote: async function (req, res, next) {
     try {
-      await prisma.notes.delete({
-        where: {
-          id: req.body.id
-        }
-      })
+      const { id } = req.body
+      if (!id) throw createError(errorCodes.MISSING_FIELD)
+      await assertNoteOwnership(req.user.id, id)
+      await prisma.notes.delete({ where: { id } })
       success(res, {}, 'Your note has been deleted successfully!')
     } catch (error) {
       next(error)
@@ -589,21 +654,15 @@ module.exports = {
     try {
       const { content, id } = req.body
       const user = req.user
+      if (id) {
+        await assertNoteOwnership(user.id, id)
+      }
       const response = await prisma.notes.upsert({
-        where: {
-          id
-        },
-        update: {
-          note_text: content
-        },
-        create: {
-          note_text: content,
-          user_id: user.id
-        }
+        where: { id: id || '-1' },
+        update: { note_text: content },
+        create: { note_text: content, user_id: user.id }
       })
-      success(res, {
-        noteId: response.id
-      }, 'Your note has been successfully saved!')
+      success(res, { noteId: response.id }, 'Your note has been successfully saved!')
     } catch (error) {
       next(error)
     }
@@ -611,123 +670,57 @@ module.exports = {
   newCalendarEvent: async function (req, res, next) {
     try {
       const { title, description, start, end, type, caseId } = req.body
+      const { parseLocalDateTime } = require('../utils/datetime')
+      const startDate = parseLocalDateTime(start)
+      const endDate = parseLocalDateTime(end)
+      if (!startDate || !endDate) {
+        throw createError(errorCodes.MISSING_REQUIRED_DETAIL, {
+          message: 'Please provide a valid start and end date/time.'
+        })
+      }
 
       let meetingLink = ''
 
       if (type === 'personal' && req.user.type === 'MEDIATOR') {
         const { assertFeature } = require('../services/subscription/entitlementService')
         await assertFeature(req.user.id, 'personal_calendar')
-        const zoomMeeting = await helper.scheduleMeeting(title, description, start, end, [{ email: req.user.email }])
+        const zoomMeeting = await helper.scheduleMeeting(title, description, startDate, [{ email: req.user.email }])
         meetingLink = zoomMeeting?.meetingLink || ''
-      } else if (type !== 'personal') {
-        const [lCase] = await Promise.all([
-          prisma.cases.findUnique({
-            where: {
-              id: caseId
-            },
-            select: {
-              caseId: true,
-              user_cases_first_partyTouser: {
-                select: {
-                  email: true,
-                  name: true
-                }
-              },
-              user_cases_second_partyTouser: {
-                select: {
-                  email: true,
-                  name: true
-                }
-              },
-              user_cases_mediatorTouser: {
-                select: {
-                  email: true,
-                  name: true
-                }
-              }
-            }
-          })
-        ])
-        let attendees = [{ email: req.user.email }]
-        if (lCase.user_cases_first_partyTouser) { attendees.push({ email: lCase?.user_cases_first_partyTouser?.email }) }
-        if (lCase.user_cases_second_partyTouser) { attendees.push({ email: lCase?.user_cases_second_partyTouser?.email }) }
-        if (lCase.user_cases_mediatorTouser) { attendees.push({ email: lCase?.user_cases_mediatorTouser?.email }) }
-
-        const zoomMeeting = await helper.scheduleMeeting(title, description, start, attendees)
-        meetingLink = zoomMeeting.meetingLink
-
-        const google_calendar_link = helper.generateGoogleCalendarLink({
-          title,
-          description,
-          start,
-          end,
-          link: meetingLink,
-          caseNumber: lCase.caseId
-        })
-
-        const attachments = [
-          {
-            filename: 'meeting-invite.ics',
-            content: helper.generateICS({
-              uid: `${Date.now()}@kadr.live`,
-              title,
-              description,
-              start,
-              end,
-              link: meetingLink,
-              caseNumber: lCase.caseId
-            }),
-            contentType: 'text/calendar; method=REQUEST'
+        await prisma.events.create({
+          data: {
+            title,
+            description,
+            start_datetime: startDate,
+            end_datetime: endDate,
+            type: 'PERSONAL',
+            meeting_link: meetingLink,
+            created_by: req.user.id,
+            case_id: null
           }
-        ]
-
-        helper.sendTemplatedEmail('meetingInvite', lCase.user_cases_first_partyTouser?.email, {
-          recipientName: lCase.user_cases_first_partyTouser?.name,
-          caseId: lCase.caseId,
-          title,
-          meetingType: type.toUpperCase(),
-          description,
-          scheduleRange: helper.formatMeetingRangeIST(start, end),
-          googleCalendarLink: google_calendar_link,
-          meetingLink
-        }, attachments)
-        helper.sendTemplatedEmail('meetingInvite', lCase.user_cases_second_partyTouser?.email, {
-          recipientName: lCase.user_cases_second_partyTouser?.name,
-          caseId: lCase.caseId,
-          title,
-          meetingType: type.toUpperCase(),
-          description,
-          scheduleRange: helper.formatMeetingRangeIST(start, end),
-          googleCalendarLink: google_calendar_link,
-          meetingLink
-        }, attachments)
-        helper.sendTemplatedEmail('meetingInvite', lCase.user_cases_mediatorTouser?.email, {
-          recipientName: lCase.user_cases_mediatorTouser?.name,
-          caseId: lCase.caseId,
-          title,
-          meetingType: type.toUpperCase(),
-          description,
-          scheduleRange: helper.formatMeetingRangeIST(start, end),
-          googleCalendarLink: google_calendar_link,
-          meetingLink
-        }, attachments)
-      }
-
-      await prisma.events.create({
-        data: {
-          title,
-          description,
-          start_datetime: start,
-          end_datetime: end,
-          type: type.toUpperCase() === 'PERSONAL' ? 'PERSONAL' : 'KADR',
-          meeting_link: meetingLink,
-          created_by: req.user.id,
-          case_id: type === 'personal' ? null : caseId
-        }
-      })
-
-      if (caseId && String(type).toLowerCase() !== 'personal') {
+        })
+      } else if (type !== 'personal') {
+        if (!caseId) throw createError(errorCodes.REQUIRED_CASE_ID)
+        await assertCaseAccessFromRequest(req, caseId)
+        const {
+          createAndInviteCaseMeeting
+        } = require('../services/meeting/meetingInvitationService')
         const { syncMeetingScheduled } = require('../services/case/caseMilestoneService')
+
+        const result = await createAndInviteCaseMeeting({
+          caseId,
+          title,
+          description,
+          start: startDate,
+          end: endDate,
+          createdBy: req.user.id,
+          persistEvent: true,
+          notifyParties: true,
+          notifyMediator: true,
+          notifyAdmins: true,
+          partyTemplateKey: 'meetingInvite',
+          mediatorTemplateKey: 'meetingInvite'
+        })
+        meetingLink = result.meetingLink
         await syncMeetingScheduled(prisma, caseId)
       }
 
@@ -788,21 +781,6 @@ module.exports = {
         sub_status: CaseSubTypes.PENDING_MEDIATION_PAYMENT
       })
 
-      await prisma.notifications.create({
-        data: {
-          user_id: caseRecord.first_party,
-          title: 'Opposite party has accepted the mediation request',
-          description: 'Opposite party has accepted the mediation request, please go ahead and make the payment to start the mediation'
-        }
-      })
-
-      await prisma.notifications.create({
-        data: {
-          user_id: caseRecord.second_party,
-          title: 'Opposite party has accepted the mediation request',
-          description: 'Opposite party has accepted the mediation request, please go ahead and make the payment to start the mediation'
-        }
-      })
       success(res, {}, 'Mediation request accepted successfully!')
     } catch (error) {
       next(error)
@@ -825,12 +803,16 @@ module.exports = {
           phone_number: true,
           name: true,
           master: true,
-          admin_permissions: true
+          admin_permissions: true,
+          timezone: true,
+          locale: true
         }
       })
       userData.photo = user.profile_picture_url || ''
       userData.phone = user.phone_number || ''
       userData.name = user.name || ''
+      userData.timezone = user.timezone || null
+      userData.locale = user.locale || null
       userData.master = Boolean(user.master)
       if (req.user.type === 'ADMIN') {
         userData.admin_permissions = user.master ? null : user.admin_permissions
@@ -894,6 +876,14 @@ module.exports = {
       if (!requester?.master) throw createError(errorCodes.FORBIDDEN)
       const { name, email, phone_number, master = false, admin_permissions: permBody } = req.body
       if (!name || !email) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      const normalizedEmail = String(email).trim().toLowerCase()
+      const existingAdmin = await prisma.user.findUnique({
+        where: { email_user_type: { email: normalizedEmail, user_type: 'ADMIN' } },
+        select: { id: true, is_deleted: true }
+      })
+      if (existingAdmin && existingAdmin.is_deleted !== true) {
+        throw createError(errorCodes.ADMIN_ACCOUNT_EXISTS)
+      }
       const generatedPassword = helper.generateRandomPassword()
       const hashPassword = await helper.hashPassword(generatedPassword)
       const isMaster = Boolean(master)
@@ -904,7 +894,7 @@ module.exports = {
       const admin = await prisma.user.create({
         data: {
           name,
-          email,
+          email: normalizedEmail,
           phone_number: phone_number || null,
           user_type: 'ADMIN',
           active: true,
@@ -924,6 +914,10 @@ module.exports = {
       })
       success(res, { admin }, 'Admin user created successfully')
     } catch (error) {
+      if (error?.code === 'P2002') {
+        next(createError(errorCodes.ADMIN_ACCOUNT_EXISTS))
+        return
+      }
       next(error)
     }
   },
@@ -1001,8 +995,8 @@ module.exports = {
     try {
       const { caseId } = req.query
       if (!caseId) throw createError(errorCodes.REQUIRED_CASE_ID)
+      await assertCaseAccessFromRequest(req, caseId)
 
-      // Fetch the case record with status, sub_status, and agreement tracking
       const caseRecord = await prisma.cases.findUnique({
         where: { id: caseId },
         select: {
@@ -1061,6 +1055,7 @@ module.exports = {
     try {
       const { caseId, resolveStatus, agreementText, signature } = req.body
       if (!caseId || !resolveStatus || !agreementText || !signature) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      await assertCaseAccessFromRequest(req, caseId, { requireMediator: true })
 
       const caseRecord = await prisma.cases.findUnique({
         where: { id: caseId },
@@ -1081,7 +1076,7 @@ module.exports = {
 
       const agreementRecord = await prisma.case_agreement_tracking.create({
         data: {
-          agreed_terms: agreementText,
+          agreed_terms: sanitizeRichHtml(agreementText),
           signature_mediator: signature
         }
       })
@@ -1320,34 +1315,29 @@ module.exports = {
         subStatusId: CaseSubTypes.MEDIATOR_ASSIGNED
       })
 
+      const {
+        emailMediatorCaseAssigned,
+        emailPartiesMediatorAssigned
+      } = require('../services/meeting/meetingInvitationService')
+
       const label = caseRecord.caseId || 'your case'
-      const title = 'Mediator assigned to your case'
-      const description = `A dispute resolution expert (${mediatorUser.name}) has been assigned to case ${label}.`
-      const notifications = []
-      if (caseRecord.first_party) {
-        notifications.push(
-          prisma.notifications.create({
-            data: { user_id: caseRecord.first_party, title, description }
-          })
-        )
-      }
-      if (caseRecord.second_party) {
-        notifications.push(
-          prisma.notifications.create({
-            data: { user_id: caseRecord.second_party, title, description }
-          })
-        )
-      }
-      notifications.push(
-        prisma.notifications.create({
-          data: {
-            user_id: mediatorId,
-            title: 'New case assignment',
-            description: `You have been assigned to case ${label}.`
-          }
+      await Promise.all([
+        emailMediatorCaseAssigned({
+          mediatorEmail: mediatorUser.email,
+          mediatorName: mediatorUser.name,
+          caseNumber: label,
+          firstPartyName: caseRecord.user_cases_first_partyTouser?.name,
+          secondPartyName: caseRecord.user_cases_second_partyTouser?.name
+        }).catch((err) => console.error('[assignMediator] mediator email failed', err.message)),
+        emailPartiesMediatorAssigned({
+          parties: [
+            caseRecord.user_cases_first_partyTouser,
+            caseRecord.user_cases_second_partyTouser
+          ],
+          mediatorName: mediatorUser.name,
+          caseNumber: label
         })
-      )
-      await Promise.all(notifications)
+      ])
 
       success(res, {}, 'Mediator assigned successfully.')
     } catch (error) {

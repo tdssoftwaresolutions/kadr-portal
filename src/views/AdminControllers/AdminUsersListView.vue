@@ -1,66 +1,94 @@
 <template>
   <b-container fluid>
+    <kadr-page-header :title="ADMIN.USERS_TITLE" :subtitle="ADMIN.USERS_SUBTITLE" />
     <b-row>
       <b-col sm="12">
         <iq-card>
-          <template v-slot:headerTitle>
-            <h4 class="card-title">Clients & Experts</h4>
-          </template>
           <template v-slot:body>
-            <div class="d-flex justify-content-end mb-3 flex-wrap">
-              <b-form-checkbox v-model="showInactive" switch class="mr-3 mb-2" @change="onToggleFilters">
-                Show inactive users
-              </b-form-checkbox>
-              <b-form-checkbox v-model="showDeleted" switch class="mb-2" @change="onToggleFilters">
-                Show deleted users
-              </b-form-checkbox>
+            <div class="d-flex justify-content-between mb-3 flex-wrap align-items-center">
+              <b-form-input
+                v-model="tableFilter"
+                type="search"
+                placeholder="Filter by name or email…"
+                class="mb-2 mr-2"
+                style="max-width: 280px;"
+              />
+              <div class="d-flex flex-wrap">
+                <b-form-checkbox v-model="showInactive" switch class="mr-3 mb-2" @change="onToggleFilters">
+                  Show inactive users
+                </b-form-checkbox>
+                <b-form-checkbox v-model="showDeleted" switch class="mb-2" @change="onToggleFilters">
+                  Show deleted users
+                </b-form-checkbox>
+              </div>
             </div>
             <b-tabs card>
-              <!-- Active Clients Tab -->
-              <b-tab :title="'Clients ('+activeClientsData.total+')'"  active>
-                <b-row v-if="activeClientsData.total > 0">
-                  <b-col md="6" v-for="user in activeClientsData.users" :key="`client-${user.userId || user.email}`" class="mb-3">
-                    <b-card class="h-100 user-card">
-                      <b-card-body class="d-flex flex-column">
-                        <div class="d-flex align-items-center mb-3">
-                          <img v-if="user.profile_image || user.profile_picture_url" :src="user.profile_image || user.profile_picture_url" class="rounded-circle mr-3" width="50" height="50" alt="Profile" />
-                          <div>
-                            <h5 class="mb-1">{{ user.name || 'N/A' }}</h5>
-                            <p class="mb-1 text-muted">{{ user.email || 'N/A' }}</p>
-                          </div>
-                        </div>
-                        <p class="mb-2"><strong>Created:</strong> {{ formatDate(user.created_at) }}</p>
-                        <p v-if="user.case_type" class="mb-2"><strong>Case Type:</strong> {{ capitalizeWord(user.case_type) }}</p>
-                        <p v-if="user.preferred_languages || user.preferred_language" class="mb-3"><strong>Language:</strong> {{ getFullLanguages(user.preferred_languages || user.preferred_language) }}</p>
-                        <div class="mt-auto text-right">
-                          <b-button variant="outline-primary" size="sm" @click="openModal(user)">View Details</b-button>
-                          <b-badge v-if="user.is_deleted" variant="secondary" class="mr-2">Deleted</b-badge>
-                          <b-button
-                            v-if="!user.is_deleted"
-                            size="sm"
-                            class="ml-2"
-                            variant="outline-danger"
-                            @click="deleteUser(user)"
-                          >
-                            Remove from platform
-                          </b-button>
-                          <b-button
-                            v-else
-                            size="sm"
-                            class="ml-2"
-                            variant="outline-success"
-                            @click="restoreUser(user)"
-                          >
-                            Restore user
-                          </b-button>
-                        </div>
-                      </b-card-body>
-                    </b-card>
-                  </b-col>
-                </b-row>
-                <div v-else class="text-center py-4">
-                  <h5>No clients found.</h5>
+              <b-tab :title="'Clients ('+activeClientsData.total+')'" active>
+                <div v-if="activeClientsData.total > 0" class="kadr-data-table-wrap">
+                  <b-table
+                    :items="activeClientsData.users"
+                    :fields="clientFields"
+                    :filter="tableFilter"
+                    :filter-included-fields="['name', 'email']"
+                    hover
+                    small
+                    responsive
+                    striped
+                    show-empty
+                  >
+                    <template #cell(name)="row">
+                      <div class="d-flex align-items-center">
+                        <img
+                          v-if="row.item.profile_image || row.item.profile_picture_url"
+                          :src="row.item.profile_image || row.item.profile_picture_url"
+                          class="rounded-circle mr-2"
+                          width="32"
+                          height="32"
+                          alt=""
+                        />
+                        <span>{{ row.item.name || 'N/A' }}</span>
+                      </div>
+                    </template>
+                    <template #cell(role)="row">
+                      <b-badge variant="secondary">{{ roleLabel(row.item) }}</b-badge>
+                    </template>
+                    <template #cell(status)="row">
+                      <b-badge :variant="statusVariant(row.item)">{{ statusLabel(row.item) }}</b-badge>
+                    </template>
+                    <template #cell(actions)="row">
+                      <b-button variant="outline-primary" size="sm" class="mr-1 mb-1" @click="openModal(row.item)">View</b-button>
+                      <b-button
+                        v-if="!row.item.is_deleted"
+                        size="sm"
+                        class="mb-1"
+                        variant="outline-danger"
+                        @click="deleteUser(row.item)"
+                      >
+                        Remove
+                      </b-button>
+                      <b-button
+                        v-else
+                        size="sm"
+                        class="mb-1"
+                        variant="outline-success"
+                        @click="restoreUser(row.item)"
+                      >
+                        Restore
+                      </b-button>
+                    </template>
+                    <template #empty>
+                      <kadr-empty-state
+                        :title="ADMIN.NO_USERS"
+                        :description="ADMIN.NO_USERS_DESCRIPTION"
+                      />
+                    </template>
+                  </b-table>
                 </div>
+                <kadr-empty-state
+                  v-else
+                  :title="ADMIN.NO_USERS"
+                  :description="ADMIN.NO_USERS_DESCRIPTION"
+                />
                 <b-pagination
                   v-if="activeClientsData.total > 0"
                   v-model="activeClientsPage"
@@ -72,53 +100,73 @@
                 />
               </b-tab>
 
-              <!-- Active Mediators Tab -->
-              <b-tab  :title="'Dispute Resolution Experts ('+activeMediatorsData.total+')'">
-                <b-row v-if="activeMediatorsData.total > 0">
-                  <b-col md="6" v-for="user in activeMediatorsData.users" :key="`mediator-${user.userId || user.email}`" class="mb-3">
-                    <b-card class="h-100 user-card">
-                      <b-card-body class="d-flex flex-column">
-                        <div class="d-flex align-items-center mb-3">
-                          <img v-if="user.profile_image || user.profile_picture_url" :src="user.profile_image || user.profile_picture_url" class="rounded-circle mr-3" width="50" height="50" alt="Profile" />
-                          <div>
-                            <h5 class="mb-1">{{ user.name || 'N/A' }}</h5>
-                            <p class="mb-1 text-muted">{{ user.email || 'N/A' }}</p>
-                          </div>
-                        </div>
-                        <p class="mb-2"><strong>Phone:</strong> {{ user.phone_number || 'N/A' }}</p>
-                        <p class="mb-2"><strong>State:</strong> {{ user.state || 'N/A' }}</p>
-                        <p class="mb-2"><strong>Preferred Area:</strong> {{ convertToCommaSeparated(user.preferred_area_of_practice) }}</p>
-                        <p v-if="user.preferred_languages || user.preferred_language" class="mb-3"><strong>Language:</strong> {{ getFullLanguages(user.preferred_languages || user.preferred_language) }}</p>
-                        <div class="mt-auto text-right">
-                          <b-button variant="outline-primary" size="sm" @click="openModal(user)">View Details</b-button>
-                          <b-button size="sm" class="ml-1" variant="outline-info" @click="openMediator360(user)">360° view</b-button>
-                          <b-badge v-if="user.is_deleted" variant="secondary" class="mr-2">Deleted</b-badge>
-                          <b-button
-                            v-if="!user.is_deleted"
-                            size="sm"
-                            class="ml-2"
-                            variant="outline-danger"
-                            @click="deleteMediator(user)"
-                          >
-                            Remove from platform
-                          </b-button>
-                          <b-button
-                            v-else
-                            size="sm"
-                            class="ml-2"
-                            variant="outline-success"
-                            @click="restoreUser(user)"
-                          >
-                            Restore user
-                          </b-button>
-                        </div>
-                      </b-card-body>
-                    </b-card>
-                  </b-col>
-                </b-row>
-                <div v-else class="text-center py-4">
-                  <h5>No experts found.</h5>
+              <b-tab :title="'Dispute Resolution Experts ('+activeMediatorsData.total+')'">
+                <div v-if="activeMediatorsData.total > 0" class="kadr-data-table-wrap">
+                  <b-table
+                    :items="activeMediatorsData.users"
+                    :fields="mediatorFields"
+                    :filter="tableFilter"
+                    :filter-included-fields="['name', 'email']"
+                    hover
+                    small
+                    responsive
+                    striped
+                    show-empty
+                  >
+                    <template #cell(name)="row">
+                      <div class="d-flex align-items-center">
+                        <img
+                          v-if="row.item.profile_image || row.item.profile_picture_url"
+                          :src="row.item.profile_image || row.item.profile_picture_url"
+                          class="rounded-circle mr-2"
+                          width="32"
+                          height="32"
+                          alt=""
+                        />
+                        <span>{{ row.item.name || 'N/A' }}</span>
+                      </div>
+                    </template>
+                    <template #cell(role)="row">
+                      <b-badge variant="info">{{ roleLabel(row.item) }}</b-badge>
+                    </template>
+                    <template #cell(status)="row">
+                      <b-badge :variant="statusVariant(row.item)">{{ statusLabel(row.item) }}</b-badge>
+                    </template>
+                    <template #cell(actions)="row">
+                      <b-button variant="outline-primary" size="sm" class="mr-1 mb-1" @click="openModal(row.item)">View</b-button>
+                      <b-button size="sm" class="mr-1 mb-1" variant="outline-info" @click="openMediator360(row.item)">360°</b-button>
+                      <b-button
+                        v-if="!row.item.is_deleted"
+                        size="sm"
+                        class="mb-1"
+                        variant="outline-danger"
+                        @click="deleteMediator(row.item)"
+                      >
+                        Remove
+                      </b-button>
+                      <b-button
+                        v-else
+                        size="sm"
+                        class="mb-1"
+                        variant="outline-success"
+                        @click="restoreUser(row.item)"
+                      >
+                        Restore
+                      </b-button>
+                    </template>
+                    <template #empty>
+                      <kadr-empty-state
+                        :title="ADMIN.NO_USERS"
+                        :description="ADMIN.NO_USERS_DESCRIPTION"
+                      />
+                    </template>
+                  </b-table>
                 </div>
+                <kadr-empty-state
+                  v-else
+                  :title="ADMIN.NO_USERS"
+                  :description="ADMIN.NO_USERS_DESCRIPTION"
+                />
                 <b-pagination
                   v-if="activeMediatorsData.total > 0"
                   v-model="activeMediatorsPage"
@@ -208,22 +256,29 @@
 
 <script>
 import { sofbox } from '../../config/pluginInit'
-import FilePreview from '../core/DocumentPreview.vue'
+import FilePreview from '../../components/DocumentPreview.vue'
 import AdminMediatorOffboardingModal from '../../components/admin/AdminMediatorOffboardingModal.vue'
+import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import { ADMIN } from '../../constants/messages'
 
 export default {
   name: 'UserList',
   components: {
     FilePreview,
-    AdminMediatorOffboardingModal
+    AdminMediatorOffboardingModal,
+    KadrPageHeader,
+    KadrEmptyState
   },
   mounted () {
     sofbox.index()
-    this.fetchActiveUsers(1) // Fetch both clients and mediators for page 1 on load
+    this.fetchActiveUsers(1)
     this.fetchLanguages()
   },
   data () {
     return {
+      ADMIN,
+      tableFilter: '',
       activeClientsPage: 1,
       activeMediatorsPage: 1,
       perPage: 10,
@@ -235,7 +290,21 @@ export default {
       selectedUser: null,
       languages: {},
       offboardingVisible: false,
-      offboardingMediatorId: ''
+      offboardingMediatorId: '',
+      clientFields: [
+        { key: 'name', label: 'Name', sortable: true },
+        { key: 'email', label: 'Email', sortable: true },
+        { key: 'role', label: 'Role / type', sortable: false },
+        { key: 'status', label: 'Status', sortable: false },
+        { key: 'actions', label: 'Actions', sortable: false }
+      ],
+      mediatorFields: [
+        { key: 'name', label: 'Name', sortable: true },
+        { key: 'email', label: 'Email', sortable: true },
+        { key: 'role', label: 'Role / type', sortable: false },
+        { key: 'status', label: 'Status', sortable: false },
+        { key: 'actions', label: 'Actions', sortable: false }
+      ]
     }
   },
   computed: {
@@ -247,6 +316,22 @@ export default {
     }
   },
   methods: {
+    roleLabel (user) {
+      const type = (user.user_type || '').toUpperCase()
+      if (type === 'MEDIATOR') return 'Expert'
+      if (type === 'CLIENT') return 'Client'
+      return type || '—'
+    },
+    statusLabel (user) {
+      if (user.is_deleted) return 'Deleted'
+      if (user.active === false) return 'Inactive'
+      return 'Active'
+    },
+    statusVariant (user) {
+      if (user.is_deleted) return 'secondary'
+      if (user.active === false) return 'warning'
+      return 'success'
+    },
     isArrayValue (value) {
       try {
         const parsed = JSON.parse(value)
@@ -258,7 +343,6 @@ export default {
     capitalizeWord (str) {
       if (!str) return ''
       if (typeof str !== 'string') return str
-      // alert(typeof str)
       return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
     },
     convertToCommaSeparated (value) {
@@ -278,7 +362,6 @@ export default {
     async fetchActiveUsers (page, type = null) {
       try {
         if (!type) {
-          // Fetch both clients and mediators for page 1 on load
           const [clientsResponse, mediatorsResponse] = await Promise.all([
             this.$store.dispatch('getActiveUsers', { page: 1, type: 'CLIENT', includeInactive: this.showInactive, includeDeleted: this.showDeleted }),
             this.$store.dispatch('getActiveUsers', { page: 1, type: 'MEDIATOR', includeInactive: this.showInactive, includeDeleted: this.showDeleted })
@@ -292,7 +375,6 @@ export default {
             this.activeMediatorsData = mediatorsResponse
           }
         } else {
-          // Fetch data for a specific user type on pagination
           const response = await this.$store.dispatch('getActiveUsers', { page, type, includeInactive: this.showInactive, includeDeleted: this.showDeleted })
           if (response.success) {
             if (type === 'CLIENT') {
@@ -338,17 +420,7 @@ export default {
       }
     },
     formatDate (dateString) {
-      const date = new Date(dateString)
-      return date.toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        hour12: true
-      })
+      return this.$formatDateTime(dateString)
     },
     formatKey (key) {
       return key.replace(/_/g, ' ').replace('url', '').replace(/\b\w/g, (char) => char.toUpperCase())
@@ -396,26 +468,6 @@ export default {
 }
 </script>
 <style scoped>
-
-.section-card {
-  border: 1px solid #ebeffa;
-  border-radius: 12px;
-  padding: 0.9rem;
-}
-
-.section-head h5 {
-  margin: 0;
-}
-
-.section-head small {
-  color: #6d7693;
-}
-
-.section-icon {
-  font-size: 1rem;
-  color: #d94430;
-}
-
 .docs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -423,42 +475,12 @@ export default {
   margin-top: 0.75rem;
 }
 
-.action-required-section .section-head h5,
-.documents-section .section-head h5 {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
 ::v-deep .card-header {
   background-color: unset !important;
   border-bottom: unset !important;
 }
-.user-card {
-  background-color: #fcfdff;
-  border: 1px solid #dee2e6;
-}
-
-.certificate-card {
-  transition: all 0.3s ease;
-  border: 2px solid #e9ecef;
-}
-
-.certificate-card:hover {
-  border-color: #007bff;
-  box-shadow: 0 4px 12px rgba(0,123,255,0.15);
-  transform: translateY(-2px);
-}
-
-.certificate-icon {
-  color: #007bff;
-}
 
 .rounded-circle {
   object-fit: cover;
-}
-
-.text-muted {
-  color: #6c757d !important;
 }
 </style>

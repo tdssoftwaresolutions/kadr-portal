@@ -1,12 +1,37 @@
 const puppeteer = require('puppeteer')
 
+let browserPromise = null
+
+async function getBrowser () {
+  if (!browserPromise) {
+    const launchOptions = {
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    }
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
+    }
+    browserPromise = puppeteer.launch(launchOptions)
+  }
+  return browserPromise
+}
+
+async function closeBrowserPool () {
+  if (browserPromise) {
+    const browser = await browserPromise
+    await browser.close()
+    browserPromise = null
+  }
+}
+
+process.on('beforeExit', () => {
+  closeBrowserPool().catch(() => {})
+})
+
 async function renderPdfFromHtml (html) {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  })
+  const browser = await getBrowser()
+  const page = await browser.newPage()
   try {
-    const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'load', timeout: 30000 })
     const pdfBuffer = await page.pdf({
       format: 'A4',
@@ -15,7 +40,7 @@ async function renderPdfFromHtml (html) {
     })
     return Buffer.from(pdfBuffer)
   } finally {
-    await browser.close()
+    await page.close()
   }
 }
 
@@ -28,4 +53,4 @@ function sendPdfResponse (res, buffer, filename) {
   res.end(buffer)
 }
 
-module.exports = { renderPdfFromHtml, sendPdfResponse }
+module.exports = { renderPdfFromHtml, sendPdfResponse, closeBrowserPool }

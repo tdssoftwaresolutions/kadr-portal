@@ -43,6 +43,10 @@ const ERROR_CODES = {
     errorCode: 'E101',
     message: 'Invalid username or password.'
   },
+  ACCOUNT_TYPE_REQUIRED: {
+    errorCode: 'E111',
+    message: 'Multiple accounts found for this email. Please select your account type.'
+  },
   NO_TOKEN_PROVIDED: {
     error: 'E105',
     message: 'No token provided, authorization denied'
@@ -85,7 +89,19 @@ const ERROR_CODES = {
   },
   YOU_USER_ALREADY_EXISTS: {
     errorCode: 'E307',
-    message: 'A user with your email already exists, login instead.'
+    message: 'An account with this email already exists for this role. Please log in instead.'
+  },
+  CLIENT_ACCOUNT_EXISTS: {
+    errorCode: 'E325',
+    message: 'You already have a client account with this email. Please log in and use “Start a new case” from My Cases.'
+  },
+  MEDIATOR_ACCOUNT_EXISTS: {
+    errorCode: 'E326',
+    message: 'You already have a mediator account with this email. Please log in instead of registering again.'
+  },
+  ADMIN_ACCOUNT_EXISTS: {
+    errorCode: 'E327',
+    message: 'An admin account with this email already exists.'
   },
   RESOURCE_CONFLICT: {
     errorCode: 'E302',
@@ -97,7 +113,7 @@ const ERROR_CODES = {
   },
   USER_NOT_ACTIVE: {
     errorCode: 'E304',
-    message: 'User not yet activated, please wait for Rouse Avenue team to review your account.'
+    message: 'User not yet activated, please wait for the Kadr team to review your account.'
   },
   USER_ACCOUNT_DELETED: {
     errorCode: 'E309',

@@ -21,8 +21,15 @@
   }
 
   function goToLogin () {
-    let adminUrl = localStorage.getItem('adminUrl') || '/admin'
-    window.location.href = adminUrl
+    let adminBase = localStorage.getItem('adminUrl') || '/admin'
+    if (adminBase.endsWith('/')) adminBase = adminBase.slice(0, -1)
+    window.location.href = adminBase + '/auth/sign-in'
+  }
+
+  function goToSignUp () {
+    let adminBase = localStorage.getItem('adminUrl') || '/admin'
+    if (adminBase.endsWith('/')) adminBase = adminBase.slice(0, -1)
+    window.location.href = adminBase + '/auth/sign-up'
   }
 
   function setLanguage (lang, ev) {
@@ -38,6 +45,7 @@
 
   window.navigateTo = navigateTo
   window.goToLogin = goToLogin
+  window.goToSignUp = goToSignUp
   window.setLanguage = setLanguage
 
   function getSiteConfig () {

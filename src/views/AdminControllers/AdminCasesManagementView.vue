@@ -1,19 +1,14 @@
 <template>
   <b-container fluid>
+    <kadr-page-header :title="ADMIN.CASES_TITLE" :subtitle="ADMIN.CASES_SUBTITLE">
+      <template v-if="totalCases >= 0" #actions>
+        <small class="text-muted">{{ totalCases }} active case(s)</small>
+      </template>
+    </kadr-page-header>
     <b-row>
       <b-col sm="12">
         <iq-card>
-          <template v-slot:headerTitle>
-            <div class="d-flex flex-wrap align-items-center justify-content-between w-100">
-              <h4 class="card-title mb-0">Case management</h4>
-              <small class="text-muted" v-if="totalCases >= 0">{{ totalCases }} active case(s)</small>
-            </div>
-          </template>
           <template v-slot:body>
-            <p class="text-muted mb-3">
-              Review ongoing cases, meetings, and parties. Filter below, open a case for full detail, or assign or change a mediator when auto-assignment did not run.
-            </p>
-
             <b-row class="mb-3">
               <b-col md="6" lg="3" class="mb-2">
                 <label class="small text-muted mb-1">Mediator</label>
@@ -64,8 +59,10 @@
                       <strong>Mediator:</strong>
                       {{ c.user_cases_mediatorTouser ? c.user_cases_mediatorTouser.name : 'Not assigned' }}
                     </p>
-                    <p class="mb-2" v-if="c.case_type">
-                      <strong>Type:</strong> {{ c.case_type }}
+                    <p class="mb-2">
+                      <strong>Type:</strong>
+                      <span v-if="c.case_type">{{ c.case_type }}</span>
+                      <b-badge v-else variant="warning">Awaiting type approval</b-badge>
                     </p>
                     <p class="mb-2">
                       <strong>Mediator revenue share:</strong> {{ Number(c.mediator_commission || 0).toFixed(2) }}% of mediation amount
@@ -74,7 +71,22 @@
                       <b-button variant="outline-primary" size="sm" class="mr-1 mb-1" @click="openDetailModal(c)">
                         View details
                       </b-button>
-                      <b-button variant="primary" size="sm" class="mb-1" @click="openAssignModal(c)">
+                      <b-button
+                        v-if="needsCaseTypeApproval(c)"
+                        variant="warning"
+                        size="sm"
+                        class="mb-1"
+                        @click="openApproveTypeModal(c)"
+                      >
+                        Approve case type
+                      </b-button>
+                      <b-button
+                        v-else
+                        variant="primary"
+                        size="sm"
+                        class="mb-1"
+                        @click="openAssignModal(c)"
+                      >
                         {{ c.user_cases_mediatorTouser ? 'Change mediator' : 'Assign mediator' }}
                       </b-button>
                     </div>
@@ -82,11 +94,12 @@
                 </b-card>
               </b-col>
             </b-row>
-            <section v-else class="empty-state">
-              <i class="fas fa-folder-open fa-3x"></i>
-              <h4>No record found</h4>
-              <p>There are currently no cases matching the current filters</p>
-            </section>
+            <kadr-empty-state
+              v-else
+              icon="fas fa-folder-open"
+              :title="ADMIN.NO_CASES"
+              :description="ADMIN.NO_CASES_DESCRIPTION"
+            />
             <b-pagination
               v-if="totalCases > 0"
               v-model="currentPage"
@@ -133,7 +146,10 @@
                 <dt class="col-sm-3">Category</dt>
                 <dd class="col-sm-9">{{ selectedCase.category || '—' }}</dd>
                 <dt class="col-sm-3">Case type</dt>
-                <dd class="col-sm-9">{{ selectedCase.case_type || '—' }}</dd>
+                <dd class="col-sm-9">
+                  <span v-if="selectedCase.case_type">{{ selectedCase.case_type }}</span>
+                  <b-badge v-else variant="warning">Awaiting type approval</b-badge>
+                </dd>
                 <dt class="col-sm-3">Description</dt>
                 <dd class="col-sm-9 text-break">{{ selectedCase.description || '—' }}</dd>
               </dl>
@@ -350,8 +366,47 @@
 
         <div class="d-flex justify-content-end detail-modal-footer">
           <b-button variant="secondary" @click="detailModalVisible = false">Close</b-button>
-          <b-button variant="primary" class="ml-2" @click="openAssignFromDetail">Assign / change mediator</b-button>
+          <b-button
+            v-if="needsCaseTypeApproval(selectedCase)"
+            variant="warning"
+            class="ml-2"
+            @click="openApproveTypeModal(selectedCase)"
+          >
+            Approve case type
+          </b-button>
+          <b-button
+            v-else
+            variant="primary"
+            class="ml-2"
+            @click="openAssignFromDetail"
+          >
+            Assign / change mediator
+          </b-button>
         </div>
+      </div>
+    </b-modal>
+
+    <b-modal v-model="approveTypeModalVisible" title="Approve case type" hide-footer>
+      <p class="text-muted small mb-3">
+        Assign Mediation, Arbitrator, or Counsellor. After approval the case moves to notice payment — the same flow as a newly approved signup case.
+      </p>
+      <p v-if="caseForTypeApproval" class="mb-3">
+        <strong>{{ caseForTypeApproval.caseId || 'Case' }}</strong>
+        · {{ partyName(caseForTypeApproval.user_cases_first_partyTouser) }}
+      </p>
+      <b-form-group label="Case type" label-for="approve-case-type">
+        <b-form-select
+          id="approve-case-type"
+          v-model="selectedCaseType"
+          :options="caseTypeOptions"
+        />
+      </b-form-group>
+      <div class="d-flex justify-content-end">
+        <b-button variant="secondary" class="mr-2" @click="approveTypeModalVisible = false">Cancel</b-button>
+        <b-button variant="success" :disabled="!selectedCaseType || approvingCaseType" @click="confirmApproveCaseType">
+          <span v-if="approvingCaseType" class="spinner-border spinner-border-sm mr-1" role="status" />
+          Approve
+        </b-button>
       </div>
     </b-modal>
 
@@ -407,14 +462,19 @@
 
 <script>
 import { sofbox } from '../../config/pluginInit'
-import FilePreview from '../core/DocumentPreview.vue'
+import FilePreview from '../../components/DocumentPreview.vue'
 import CaseProgressPanel from '../../components/cases/CaseProgressPanel.vue'
+import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import { ADMIN } from '../../constants/messages'
 
 export default {
   name: 'AdminCasesManagementView',
   components: {
     FilePreview,
-    CaseProgressPanel
+    CaseProgressPanel,
+    KadrPageHeader,
+    KadrEmptyState
   },
   mounted () {
     sofbox.index()
@@ -423,6 +483,7 @@ export default {
   },
   data () {
     return {
+      ADMIN,
       meta: null,
       cases: [],
       totalCases: 0,
@@ -436,8 +497,18 @@ export default {
       },
       detailModalVisible: false,
       assignModalVisible: false,
+      approveTypeModalVisible: false,
       selectedCase: null,
       caseForAssign: null,
+      caseForTypeApproval: null,
+      selectedCaseType: null,
+      approvingCaseType: false,
+      caseTypeOptions: [
+        { value: null, text: 'Select case type' },
+        { value: 'Mediation', text: 'Mediation' },
+        { value: 'Arbitrator', text: 'Arbitrator' },
+        { value: 'Counsellor', text: 'Counsellor' }
+      ],
       mediatorSearch: '',
       selectedMediatorId: null,
       meetingFields: [],
@@ -511,6 +582,30 @@ export default {
     }
   },
   methods: {
+    needsCaseTypeApproval (c) {
+      if (!c) return false
+      const statusId = (c.case_statuses?.id || c.status || '').toLowerCase()
+      return statusId === 'new' && !c.case_type
+    },
+    openApproveTypeModal (c) {
+      this.caseForTypeApproval = c
+      this.selectedCaseType = null
+      this.approveTypeModalVisible = true
+    },
+    async confirmApproveCaseType () {
+      if (!this.caseForTypeApproval || !this.selectedCaseType) return
+      this.approvingCaseType = true
+      const res = await this.$store.dispatch('approveCaseType', {
+        caseId: this.caseForTypeApproval.id,
+        caseType: this.selectedCaseType
+      })
+      this.approvingCaseType = false
+      if (res.success) {
+        this.approveTypeModalVisible = false
+        this.detailModalVisible = false
+        this.fetchCases()
+      }
+    },
     async loadMeta () {
       const res = await this.$store.dispatch('getAdminCaseManagementMeta')
       if (res.success && res.data && res.data.meta) {
@@ -564,17 +659,7 @@ export default {
       return c.sub_status || '—'
     },
     formatDate (dateString) {
-      if (!dateString) return ''
-      const date = new Date(dateString)
-      return date.toLocaleString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true
-      })
+      return this.$formatDateTime(dateString)
     },
     getMeetingStatus (start, end) {
       const now = new Date()

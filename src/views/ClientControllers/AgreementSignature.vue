@@ -1,128 +1,173 @@
 <template>
   <div class="form-container">
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
-    <h1>Kadr.live</h1>
-        <h2>MEDIATION COMPLETION DOCUMENT</h2>
-        <hr />
-    <form @submit.prevent="openPhoneModal" class="form-section" v-if="data != null">
-      <div class="document-container">
-        <section>
-          <h4>1. Case Information</h4>
-          <p><strong>Case ID:</strong> {{ data.caseId }}</p>
-          <p><strong>Case Type:</strong> {{ data.caseType }}</p>
-          <p><strong>Date of Case Registration:</strong> {{ formatDate(data.dateOfCaseRegistration,'display') }}</p>
-          <p><strong>Mediation Completion Date:</strong> {{ formatDate(data.mediationCompletionDate,'display') }}</p>
-        </section>
 
-        <section>
-          <h4>2. Party Details</h4>
-          <p><strong>First Party (Name):</strong> {{ data.firstPartyName }}</p>
-          <p><strong>Second Party (Name):</strong> {{ data.secondPartyName }}</p>
-        </section>
+    <header class="page-header">
+      <h1>Kadr.live</h1>
+      <h2>Mediation agreement</h2>
+      <p class="subtitle">
+        Review the agreed terms and sign to complete the mediation on Kadr.live.
+      </p>
+    </header>
 
-        <section>
-          <h4>3. Mediator Details</h4>
-          <p><strong>Mediator Name:</strong> {{ data.mediatorName }}</p>
-          <p><strong>Number of Mediation Sessions Held:</strong> {{ data.numberOfSessions }}</p>
-          <p><strong>Dates of Mediation Sessions:</strong>
-            {{ formatSessionDates(data.sessionDates) }}
-          </p>
-        </section>
-
-        <section>
-          <h4>4. Outcome of Mediation</h4>
-          <p>
-            This is to certify that the mediation process initiated at
-            <strong>Rouse Avenue Mediation Center</strong> has been completed
-            successfully. Both parties, with the assistance of the assigned mediator,
-            have mutually agreed upon the following resolution:
-          </p>
-          <div class="agreement-box" style="margin-bottom:1rem;" v-html="data.outcomeOfMediation">
-          </div>
-        </section>
-
-        <section>
-          <h4>5. Acknowledgement</h4>
-          <p>
-            By signing below, both parties confirm that they participated voluntarily
-            in the mediation sessions and are in full agreement with the outcome as
-            stated above.
-          </p>
-        </section>
-
-        <section class="signature-block">
+    <form v-if="details" @submit.prevent="openPhoneModal" class="form-section">
+      <section class="info-card">
+        <h3>Case information</h3>
+        <dl class="detail-list">
           <div>
-            <label>Your Signature:</label>
-            <div class="signature-type-selector">
-              <button
-                type="button"
-                :class="{ active: signature_type === 'digital' }"
-                @click="setSignatureType('digital')">
-                Digital Signature
-              </button>
-              <button
-                type="button"
-                :class="{ active: signature_type === 'manual' }"
-                @click="setSignatureType('manual')">
-                Sign Manually
-              </button>
-            </div>
-            <div v-if="signature_type === 'digital'" class="digital-signature-box">
-              <span class="cursive-signature">{{ userInitials }}</span>
-            </div>
-            <div v-else-if="signature_type === 'manual'" class="manual-signature">
-              <canvas ref="signaturePad" class="signature-canvas"></canvas>
-              <button type="button" @click="clearSignature('plaintiff')" class="btn btn-secondary" style="margin: 0px;width: 100%;">
-                Clear <i class="ri-refresh-line"></i>
-              </button>
-            </div>
+            <dt>Case ID</dt>
+            <dd>{{ details.caseId || '—' }}</dd>
           </div>
-        </section>
+          <div v-if="details.caseType">
+            <dt>Case type</dt>
+            <dd>{{ details.caseType }}</dd>
+          </div>
+          <div>
+            <dt>Filed on</dt>
+            <dd>{{ formatDate(details.filedAt) }}</dd>
+          </div>
+          <div>
+            <dt>Agreement date</dt>
+            <dd>{{ formatDate(details.mediationCompletionDate) }}</dd>
+          </div>
+        </dl>
+      </section>
 
-        <p class="note">
-          <strong>Note:</strong> This document serves as a formal record of the completion
-          of mediation. Any further disputes regarding this agreement must be addressed as per
-          the terms mentioned above or escalated as per the relevant legal procedures.
+      <section class="info-card">
+        <h3>Parties</h3>
+        <dl class="detail-list">
+          <div>
+            <dt>First party</dt>
+            <dd>
+              {{ details.firstPartyName || '—' }}
+              <span v-if="details.isFirstParty" class="you-badge">You</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Second party</dt>
+            <dd>
+              {{ details.secondPartyName || '—' }}
+              <span v-if="!details.isFirstParty" class="you-badge">You</span>
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="info-card">
+        <h3>Mediator &amp; sessions</h3>
+        <dl class="detail-list">
+          <div>
+            <dt>Mediator</dt>
+            <dd>{{ details.mediatorName || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Sessions held</dt>
+            <dd>{{ details.numberOfSessions != null ? details.numberOfSessions : '—' }}</dd>
+          </div>
+          <div v-if="sessionDatesLabel">
+            <dt>Session dates</dt>
+            <dd>{{ sessionDatesLabel }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="info-card">
+        <h3>Agreed terms</h3>
+        <p class="intro-text">
+          The parties have completed mediation on <strong>Kadr.live</strong> and, with the assistance of the
+          assigned mediator, have agreed to the following resolution:
         </p>
-      </div>
-      <button type="submit">Submit</button>
+        <div
+          v-if="details.outcomeOfMediation"
+          class="agreement-box"
+          v-html="details.outcomeOfMediation"
+        />
+        <p v-else class="muted">No agreed terms were recorded for this case.</p>
+      </section>
+
+      <section class="info-card acknowledgment">
+        <h3>Acknowledgment</h3>
+        <p>
+          By signing below, I confirm that I participated voluntarily in the mediation sessions on Kadr.live
+          and that I agree to the outcome stated above for case <strong>{{ details.caseId }}</strong>.
+        </p>
+      </section>
+
+      <section class="info-card">
+        <h3>Your signature</h3>
+        <p class="signing-as">Signing as: <strong>{{ details.userName }}</strong></p>
+        <div class="signature-type-selector">
+          <button
+            type="button"
+            :class="{ active: signatureType === 'digital' }"
+            @click="setSignatureType('digital')"
+          >
+            Digital signature
+          </button>
+          <button
+            type="button"
+            :class="{ active: signatureType === 'manual' }"
+            @click="setSignatureType('manual')"
+          >
+            Sign manually
+          </button>
+        </div>
+        <div v-if="signatureType === 'digital'" class="digital-signature-box">
+          <span class="cursive-signature">{{ userInitials }}</span>
+        </div>
+        <div v-else class="manual-signature">
+          <canvas ref="signaturePad" class="signature-canvas"></canvas>
+          <button type="button" class="btn-clear" @click="clearSignature">Clear</button>
+        </div>
+
+        <div class="phone-row">
+          <label>Registered phone</label>
+          <input :value="details.partyPhoneNumber || '—'" disabled />
+        </div>
+      </section>
+
+      <p class="note">
+        This signed record is the formal mediation completion document on Kadr.live. Further disputes about
+        these terms should be addressed as provided in the agreement or under applicable law.
+      </p>
+
+      <button type="submit" class="btn-submit">Continue to verify &amp; sign</button>
     </form>
 
-    <!-- Phone Verification Modal -->
-    <b-modal v-model="showPhoneModal" hide-footer title="Phone Verification" @hidden="resetPhoneModal">
-      <div>
-        <div v-if="phoneStep === 1" class="phone-step-card">
-          <h5 class="section-title">Verify Your Identity</h5>
-          <small class="text-muted">We'll send an OTP to this number to confirm your identity before signing the agreement.</small>
-          <div class="phone-display">{{ phoneNumber }}</div>
-          <b-button variant="primary" block @click="sendPhoneOtp">Send OTP</b-button>
-        </div>
-        <div v-else-if="phoneStep === 2" class="phone-step-card">
-          <h5 class="section-title" style="text-align: center;">Enter OTP</h5>
-          <small class="text-muted">
-            Please enter the 6-digit OTP sent to your registered mobile number.
-          </small>
-          <b-form-group>
-            <b-form-input
-              v-model="phoneOtp"
-              maxlength="6"
-              placeholder="Enter 6-digit OTP"
-              type="text"
-              pattern="[0-9]{6}"
-              autocomplete="off"
-            ></b-form-input>
-          </b-form-group>
-          <b-button variant="primary" block :disabled="!isPhoneOtpValid" @click="verifyPhoneOtp">Verify OTP</b-button>
-        </div>
-        <div v-else-if="phoneStep === 3" class="phone-step-card">
-          <div class="phone-verification-success">
-            <h5 class="section-title">Verification Complete</h5>
-            <small class="text-muted">
-            Your phone number has been successfully verified. You may now proceed to sign the agreement.
-            </small>
-            <b-button variant="success" block @click="finalSubmit">Proceed</b-button>
-          </div>
-        </div>
+    <div v-else-if="submitted" class="empty-state">
+      <h3>Thank you</h3>
+      <p>Your signature has been recorded. You can close this page.</p>
+    </div>
+    <div v-else class="empty-state">
+      <p>Loading agreement details…</p>
+    </div>
+
+    <b-modal v-model="showPhoneModal" hide-footer title="OTP verification" @hidden="resetPhoneModal">
+      <div v-if="phoneStep === 1" class="phone-step-card">
+        <h5 class="section-title">Verify your identity</h5>
+        <small class="text-muted">We will send an OTP to your registered mobile number before signing this agreement.</small>
+        <div class="phone-display">{{ phoneNumber || 'No phone on file' }}</div>
+        <b-button variant="primary" block :disabled="!phoneNumber" @click="sendPhoneOtp">Send OTP</b-button>
+      </div>
+      <div v-else-if="phoneStep === 2" class="phone-step-card">
+        <h5 class="section-title">Enter OTP</h5>
+        <small class="text-muted">Enter the 6-digit OTP sent to your registered mobile number.</small>
+        <b-form-group>
+          <b-form-input
+            v-model="phoneOtp"
+            maxlength="6"
+            placeholder="Enter 6-digit OTP"
+            type="text"
+            pattern="[0-9]{6}"
+            autocomplete="off"
+          />
+        </b-form-group>
+        <b-button variant="primary" block :disabled="!isPhoneOtpValid" @click="verifyPhoneOtp">Verify OTP</b-button>
+      </div>
+      <div v-else-if="phoneStep === 3" class="phone-step-card">
+        <h5 class="section-title">Verification complete</h5>
+        <small class="text-muted">Your phone number has been verified. You may now submit your signature.</small>
+        <b-button variant="success" block @click="finalSubmit">Submit signature</b-button>
       </div>
     </b-modal>
   </div>
@@ -130,19 +175,18 @@
 
 <script>
 import SignaturePad from 'signature_pad'
-import { sofbox } from '../../config/pluginInit'
 import Alert from '../../components/sofbox/alert/Alert.vue'
+import { getEffectiveLocale, getEffectiveTimezone } from '../../utils/timezone'
 
 export default {
-  name: 'Signature',
-  components: {
-    Alert
-  },
+  name: 'AgreementSignature',
+  components: { Alert },
   data () {
     return {
-      signature_type: 'digital',
+      signatureType: 'digital',
       signaturePad: null,
-      data: null,
+      details: null,
+      submitted: false,
       alert: {
         visible: false,
         message: '',
@@ -153,101 +197,54 @@ export default {
       phoneStep: 1,
       phoneNumber: '',
       phoneOtp: '',
-      matchedPhone: ''
+      otpRequestId: null
     }
   },
   computed: {
     userInitials () {
-      return this.data?.userName?.split(' ')
-        .map((name) => name[0])
+      const name = (this.details && this.details.userName) || ''
+      return name
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((part) => part[0])
         .join('')
         .toUpperCase()
     },
     isPhoneOtpValid () {
       return /^[0-9]{6}$/.test(this.phoneOtp)
+    },
+    sessionDatesLabel () {
+      const dates = this.details && this.details.sessionDates
+      if (!dates || !Array.isArray(dates) || !dates.length) return ''
+      return dates
+        .filter(Boolean)
+        .map((dt) => this.formatDate(dt, true))
+        .join(', ')
     }
   },
   methods: {
-    formatDate (dateString, type = 'display', options = {}) {
-      if (!dateString) return ''
-
-      const date = new Date(dateString)
-
-      const userLocale = navigator.language || 'en-IN'
-      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      switch (type) {
-        case 'date':{
-          const year = date.getFullYear()
-          const month = `${date.getMonth() + 1}`.padStart(2, '0')
-          const day = `${date.getDate()}`.padStart(2, '0')
-          return `${year}-${month}-${day}`
-        }
-        case 'datetime-local': {
-          const year = date.getFullYear()
-          const month = `${date.getMonth() + 1}`.padStart(2, '0')
-          const day = `${date.getDate()}`.padStart(2, '0')
-          const hour = `${date.getHours()}`.padStart(2, '0')
-          const minute = `${date.getMinutes()}`.padStart(2, '0')
-          return `${year}-${month}-${day}T${hour}:${minute}`
-        }
-
-        case 'display':
-        default: {
-          const { includeDate = true, includeTime = false } = options
-          const formatOptions = {}
-          if (includeDate) {
-            Object.assign(formatOptions, {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            })
-          }
-
-          if (includeTime) {
-            Object.assign(formatOptions, {
-              hour: 'numeric',
-              minute: 'numeric',
-              hour12: true
-            })
-          }
-
-          let method = 'toLocaleString'
-          if (includeDate && !includeTime) method = 'toLocaleDateString'
-          else if (!includeDate && includeTime) method = 'toLocaleTimeString'
-
-          return date[method](userLocale, {
-            ...formatOptions,
-            timeZone: userTimeZone
-          })
-        }
+    async fetchAgreementDetails () {
+      const requestId = this.$route.query && this.$route.query.requestId
+      if (!requestId) {
+        this.showAlert('Request ID is missing in the URL.', 'danger')
+        return
       }
-    },
-    async getAgreementDetailsForSignature () {
-      const requestId = this.$route.query?.requestId
-      if (!requestId) return this.showAlert('Request ID is missing in the URL.', 'danger')
       const response = await this.$store.dispatch('getAgreementDetailsForSignature', { requestId })
-      if (response.success) this.data = response.data
+      if (response.success) {
+        this.details = response.data
+      }
     },
     showAlert (message, type) {
-      this.alert = {
-        message,
-        type,
-        visible: true
-      }
+      this.alert = { message, type, visible: true, timeout: 5000 }
     },
     setSignatureType (type) {
-      this.signature_type = type
-      if (type === 'manual') {
-        this.initializeSignaturePad()
-      }
+      this.signatureType = type
+      if (type === 'manual') this.initializeSignaturePad()
     },
     initializeSignaturePad () {
       this.$nextTick(() => {
         const canvas = this.$refs.signaturePad
-        if (!canvas) {
-          console.error('SignaturePad canvas element is not found.')
-          return
-        }
+        if (!canvas) return
         this.adjustCanvasSize(canvas)
         this.signaturePad = new SignaturePad(canvas, {
           backgroundColor: 'rgb(255, 255, 255)',
@@ -262,31 +259,39 @@ export default {
       canvas.getContext('2d').scale(ratio, ratio)
     },
     clearSignature () {
-      if (this.signaturePad) {
-        this.signaturePad.clear()
-      }
+      if (this.signaturePad) this.signaturePad.clear()
     },
     openPhoneModal () {
+      if (this.signatureType === 'manual' && this.signaturePad && this.signaturePad.isEmpty()) {
+        this.showAlert('Please provide your signature before continuing.', 'danger')
+        return
+      }
+      if (this.signatureType === 'digital' && !this.userInitials) {
+        this.showAlert('Unable to build a digital signature from your name.', 'danger')
+        return
+      }
       this.showPhoneModal = true
       this.phoneStep = 1
-      this.phoneNumber = this.data.partyPhoneNumber
+      this.phoneNumber = (this.details && this.details.partyPhoneNumber) || ''
       this.phoneOtp = ''
-      this.matchedPhone = ''
     },
     async sendPhoneOtp () {
-      const response = await this.$store.dispatch('sendOtp', { recordId: this.$route.query?.requestId })
+      const response = await this.$store.dispatch('sendOtp', {
+        recordId: this.$route.query.requestId
+      })
       if (response.success) {
-        this.requestId = response.data.requestId
+        this.otpRequestId = response.data.requestId
         this.phoneStep = 2
         this.phoneOtp = ''
         this.showAlert(response.message, 'success')
       }
     },
     async verifyPhoneOtp () {
-      const response = await this.$store.dispatch('verifyOtp', { requestId: this.requestId, otp: this.phoneOtp })
-      if (response.success) {
-        this.phoneStep = 3
-      }
+      const response = await this.$store.dispatch('verifyOtp', {
+        requestId: this.otpRequestId,
+        otp: this.phoneOtp
+      })
+      if (response.success) this.phoneStep = 3
     },
     finalSubmit () {
       this.showPhoneModal = false
@@ -296,272 +301,308 @@ export default {
       this.phoneStep = 1
       this.phoneNumber = ''
       this.phoneOtp = ''
-      this.matchedPhone = ''
     },
     async submitFormReal () {
-      const requestBody = {
+      let signature = ''
+      if (this.signatureType === 'digital') {
+        signature = this.userInitials
+      } else if (this.signaturePad) {
+        signature = this.signaturePad.toDataURL()
+      }
+      const response = await this.$store.dispatch('submitAgreementSignature', {
         requestId: this.$route.query.requestId,
-        signature: ''
-      }
-      if (this.signature_type === 'digital') {
-        requestBody.signature = this.userInitials
-      } else if (this.signature_type === 'manual' && this.signaturePad) {
-        requestBody.signature = this.signaturePad.toDataURL()
-      }
-
-      const response = await this.$store.dispatch('submitAgreementSignature', requestBody)
+        signature
+      })
       if (response.success) {
-        this.showAlert(response.message, 'success')
-        this.data = null
+        this.showAlert(response.message || 'Signature submitted successfully.', 'success')
+        this.details = null
+        this.submitted = true
       }
     },
-    formatSessionDates (dates) {
-      if (!dates || !Array.isArray(dates) || dates.length === 0) return '-'
-      return dates
-        .map(dt => {
-          if (!dt) return ''
-          return this.formatDate(dt, 'display', { includeTime: true })
-        })
-        .join(', ')
+    formatDate (dateString, includeTime = false) {
+      if (!dateString) return '—'
+      const date = new Date(dateString)
+      if (Number.isNaN(date.getTime())) return '—'
+      const options = includeTime
+        ? {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: getEffectiveTimezone()
+          }
+        : {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            timeZone: getEffectiveTimezone()
+          }
+      return includeTime
+        ? date.toLocaleString(getEffectiveLocale(), options)
+        : date.toLocaleDateString(getEffectiveLocale(), options)
     }
   },
   mounted () {
-    sofbox.index()
-    this.getAgreementDetailsForSignature()
+    this.fetchAgreementDetails()
   }
 }
 </script>
 
 <style scoped>
 .form-container {
-  max-width: 1200px;
-  margin: auto;
-  font-family: Arial, sans-serif;
-  padding: 25px;
-  background-color: #f9f9f9;
-  border: 1px solid #aaa;
-  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+  color: #374948;
 }
 
-.header {
+.page-header {
   text-align: center;
-  font-size: 20px;
-  background-color: #e6e6e6;
-  padding: 12px;
-  font-weight: bold;
-  margin-bottom: 30px;
-  border: 1px solid #ccc;
+  margin-bottom: 1.75rem;
+}
+
+.page-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+  color: #0084ff;
+}
+
+.page-header h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: #6d7693;
+  font-size: 0.95rem;
+  line-height: 1.45;
 }
 
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 1rem;
 }
 
-.form-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
+.info-card {
+  background: #fff;
+  border: 1px solid #e8ebf5;
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 4px 14px rgba(35, 55, 110, 0.06);
 }
 
-label {
-  min-width: 200px;
-  font-weight: bold;
+.info-card h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.85rem;
+  color: #374948;
 }
 
-input {
-  padding: 6px;
-  min-width: 180px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.detail-list {
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
 }
 
-.inline-input {
-  display: inline;
-  width: auto;
-  margin-left: 10px;
+.detail-list dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6d7693;
+  margin-bottom: 0.15rem;
+}
+
+.detail-list dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.you-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(0, 132, 255, 0.1);
+  color: #0084ff;
+  font-size: 0.7rem;
+  font-weight: 700;
   vertical-align: middle;
 }
 
-.phone-step-card {
-  max-width: 400px;
-  margin: 0 auto;
-  padding: 24px;
-  border-radius: 12px;
-  background-color: #ffffff;
-  text-align: center;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+.intro-text {
+  margin: 0 0 0.85rem;
+  line-height: 1.55;
+  color: #4a5168;
 }
 
-.section-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: #333;
+.agreement-box {
+  border: 1px solid #e8ebf5;
+  border-radius: 10px;
+  background: #fafbff;
+  padding: 0.9rem 1rem;
+  line-height: 1.55;
+  color: #4a5168;
+  overflow-wrap: anywhere;
 }
 
-.phone-display {
-  font-size: 18px;
-  margin-bottom: 20px;
-  color: #555;
-  padding: 12px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #dee2e6;
+.muted {
+  margin: 0;
+  color: #6d7693;
 }
 
-.referral-section {
-  background-color: #fff;
-  padding: 15px;
-  border: 1px solid #ccc;
-  margin-top: 15px;
+.acknowledgment p {
+  margin: 0;
+  line-height: 1.55;
+  color: #4a5168;
 }
 
-.referral-section h2 {
-  text-align: center;
-  text-transform: uppercase;
-  margin-bottom: 15px;
-  font-size: 18px;
-}
-
-.referral-section p {
-  margin: 10px 0;
-  line-height: 1.5;
-}
-
-.signature-section {
-  justify-content: space-between;
-  margin-top: 20px;
-}
-
-.signature-section > div {
-  flex: 1;
-  min-width: 350px;
-}
-
-button {
-  width: 150px;
-  margin: 30px auto 0 auto;
-  padding: 10px;
-  background-color: #2c6faf;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  font-size: 16px;
-}
-
-.party-input-group  {
-  width: 30%; /* Adjust width to take full available space */
-}
-
-.party-input-group input {
-  width: 100%; /* Adjust width to take full available space */
+.signing-as {
+  margin: 0 0 0.75rem;
+  color: #6d7693;
+  font-size: 0.9rem;
 }
 
 .signature-type-selector {
   display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .signature-type-selector button {
-  padding: 8px 15px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: #f0f0f0;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #d8deef;
+  border-radius: 8px;
+  background: #f8faff;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s, color 0.3s;
-  color: black; /* Default text color for non-selected buttons */
+  font-size: 0.875rem;
+  color: #374948;
 }
 
 .signature-type-selector button.active {
-  background-color: #2c6faf;
-  color: white;
-  border-color: #2c6faf;
-}
-
-.signature-type-selector button:hover {
-  background-color: #d9e6f2;
+  background: #0084ff;
+  border-color: #0084ff;
+  color: #fff;
 }
 
 .digital-signature-box {
-  border: 1px solid #ccc; /* Changed to solid border */
-  width: 100%; /* Fixed width */
-  height: 150px; /* Fixed height */
-  display: flex; /* Center align content */
-  justify-content: center;
+  border: 1px solid #d8deef;
+  border-radius: 10px;
+  min-height: 120px;
+  display: flex;
   align-items: center;
-  margin-top: 10px;
-  text-align: center;
+  justify-content: center;
+  background: #fafbff;
 }
 
 .cursive-signature {
-  font-family: Cursive; /* Added cursive font family */
-  font-size: 24px; /* Added font size 24 */
-  color: #2c6faf;
+  font-family: 'Segoe Script', 'Brush Script MT', cursive;
+  font-size: 1.75rem;
+  color: #0084ff;
 }
 
 .manual-signature {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.5rem;
 }
 
 .signature-canvas {
-  border: 1px solid #ccc;
+  border: 1px solid #d8deef;
+  border-radius: 10px;
   width: 100%;
-  height: 150px; /* Reduced height */
-  margin-top: 10px;
+  height: 150px;
   cursor: crosshair;
+  background: #fff;
 }
 
-.btn-icon {
-  padding: 5px;
-  font-size: 16px;
-  border-radius: 50%;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
+.btn-clear {
+  align-self: flex-start;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid #d8deef;
+  border-radius: 8px;
+  background: #fff;
+  color: #374948;
+  cursor: pointer;
 }
 
-.aadhar-modal-content {
-  padding: 20px;
+.phone-row {
+  margin-top: 1rem;
 }
 
-.aadhar-verification-success {
+.phone-row label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6d7693;
+  margin-bottom: 0.35rem;
+}
+
+.phone-row input {
+  width: 100%;
+  max-width: 280px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #d8deef;
+  border-radius: 8px;
+  background: #f8faff;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #6d7693;
+}
+
+.btn-submit {
+  margin-top: 0.25rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 10px;
+  background: #0084ff;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-submit:hover {
+  filter: brightness(1.05);
+}
+
+.empty-state {
   text-align: center;
-  margin-top: 20px;
+  padding: 2.5rem 1rem;
+  color: #6d7693;
 }
 
-.aadhar-verification-success b-icon {
-  font-size: 48px;
-}
-
-.aadhar-verification-success h5 {
-  margin: 10px 0;
-}
-
-.aadhar-verification-success p {
-  margin: 5px 0;
-}
-
-.phone-verification-success {
+.phone-step-card {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 0.5rem 0.25rem 1rem;
   text-align: center;
-  margin-top: 20px;
 }
 
-.phone-verification-success b-icon {
-  font-size: 48px;
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #333;
 }
 
-.phone-verification-success h5 {
-  margin: 10px 0;
-}
-
-.phone-verification-success p {
-  margin: 5px 0;
+.phone-display {
+  font-size: 1.05rem;
+  margin: 1rem 0;
+  color: #555;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
 }
 </style>

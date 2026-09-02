@@ -1,14 +1,6 @@
 <template>
   <b-container fluid class="admin-notifications-page">
-    <b-row class="mb-3">
-      <b-col>
-        <h4 class="mb-1">Notification center</h4>
-        <p class="text-muted small mb-0">
-          Manage templates for email, SMS, WhatsApp, and push. Send test or bulk messages with dynamic variables like
-          <code>{name}</code>, <code>{email}</code>, <code>{phone_number}</code>.
-        </p>
-      </b-col>
-    </b-row>
+    <kadr-page-header :title="ADMIN.NOTIFICATIONS_TITLE" :subtitle="ADMIN.NOTIFICATIONS_SUBTITLE" />
 
     <b-tabs v-model="activeTab" content-class="mt-3">
       <b-tab title="Templates">
@@ -321,6 +313,9 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import HtmlCodeEditor from '../../components/admin/HtmlCodeEditor.vue'
+import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import { ADMIN } from '../../constants/messages'
+import { formatDateTime } from '../../utils/dateFormat'
 
 const CHANNELS = ['EMAIL', 'SMS', 'WHATSAPP', 'PUSH']
 const AUTO_USER_VARS = new Set(['name', 'email', 'phone_number', 'recipientName'])
@@ -371,10 +366,12 @@ function emptyTemplateEditor () {
 export default {
   name: 'AdminNotificationsView',
   components: {
-    HtmlCodeEditor
+    HtmlCodeEditor,
+    KadrPageHeader
   },
   data () {
     return {
+      ADMIN,
       activeTab: 0,
       filterChannel: '',
       templates: [],
@@ -420,7 +417,7 @@ export default {
         { key: 'actions', label: '' }
       ],
       logFields: [
-        { key: 'created_at', label: 'When', formatter: (v) => (v ? new Date(v).toLocaleString() : '') },
+        { key: 'created_at', label: 'When', formatter: (v) => (v ? formatDateTime(v) : '') },
         { key: 'template_key', label: 'Template' },
         { key: 'channel', label: 'Channel' },
         { key: 'recipient', label: 'To' },

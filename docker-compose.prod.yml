@@ -1,0 +1,19 @@
+# Production overlay for EC2 / VPS — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+#
+# Differences from default compose:
+# - MySQL is not exposed on the host (internal Docker network only)
+# - API restart policy and longer health start period
+
+services:
+  db:
+    ports: []
+
+  api:
+    restart: always
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/health/ready']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

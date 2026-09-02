@@ -30,10 +30,10 @@
       },
       {
         "title": "My Calendar",
-        "name": "app.calendar2",
+        "name": "app.client-calendar",
         "is_heading": false,
         "is_active": false,
-        "link": { "name": "app.calendar2" },
+        "link": { "name": "app.client-calendar" },
         "class_name": "",
         "is_icon_class": true,
         "icon": "ri-calendar-event-line"

@@ -3,49 +3,12 @@
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
     <Spinner :isVisible="loading" />
 
-    <div class="hero-card">
-      <div class="hero-profile">
-        <img
-          v-if="content.user && content.user.profile_picture_url"
-          :src="content.user.profile_picture_url"
-          class="hero-avatar"
-          alt="Profile picture"
-        >
-        <img
-          v-else
-          :src="require('../../assets/images/default_avatar.jpeg')"
-          class="hero-avatar"
-          alt="Profile picture"
-        >
-        <div class="hero-user-meta">
-          <h3>Welcome back, {{ user.name }}</h3>
-          <p>{{ user.email }}</p>
-        </div>
-      </div>
-
-      <div class="hero-stats">
-        <div class="stat-card">
-          <span class="stat-label">Assigned Cases</span>
-          <span class="stat-value">{{ totalCases }}</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-label">Meetings Today</span>
-          <span class="stat-value">{{ todaysEvents.length }}</span>
-        </div>
-        <div
-          class="stat-card stat-card-link"
-          role="button"
-          tabindex="0"
-          title="View reward store"
-          @click="goToRewards"
-          @keydown.enter="goToRewards"
-        >
-          <span class="stat-label">Reward Points</span>
-          <span class="stat-value">{{ rewardBalance.toLocaleString() }}</span>
-          <span class="stat-hint">View store →</span>
-        </div>
-      </div>
-    </div>
+    <kadr-dashboard-hero
+      :name="user.name"
+      :email="user.email"
+      :avatar-url="avatarUrl"
+      :stats="heroStats"
+    />
     <div class="workspace-grid">
       <iq-card class="workspace-card">
         <template v-slot:headerTitle>
@@ -83,7 +46,12 @@
               </div>
             </template>
           </div>
-          <div v-else class="empty-data">No meetings scheduled for today.</div>
+          <kadr-empty-state
+            v-else
+            compact
+            icon=""
+            :description="DASHBOARD.NO_MEETINGS_TODAY"
+          />
         </template>
       </iq-card>
 
@@ -121,7 +89,12 @@
                 </div>
               </div>
             </div>
-            <div v-else class="empty-data">No notes yet. Add one to keep quick references.</div>
+            <kadr-empty-state
+              v-else
+              compact
+              icon=""
+              :description="DASHBOARD.NO_NOTES"
+            />
           </div>
         </template>
       </iq-card>
@@ -144,6 +117,9 @@ import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import MyCases from './MyCases.vue'
 import MediatorCourtCaseTracker from '../../components/mediator/MediatorCourtCaseTracker.vue'
 import MediatorLegalFeedPanel from '../../components/mediator/MediatorLegalFeedPanel.vue'
+import KadrDashboardHero from '../../components/kadr/KadrDashboardHero.vue'
+import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import { DASHBOARD } from '../../constants/messages'
 const PERSONAL_EVENT_COLOR = 'rgb(244, 81, 30)'
 const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
 
@@ -158,7 +134,9 @@ export default {
     Spinner,
     MyCases,
     MediatorCourtCaseTracker,
-    MediatorLegalFeedPanel
+    MediatorLegalFeedPanel,
+    KadrDashboardHero,
+    KadrEmptyState
   },
   computed: {
     rewardBalance () {
@@ -172,6 +150,23 @@ export default {
     },
     hasCourtCaseTracker () {
       return this.$store.getters.mediatorHasFeature('court_case_tracker')
+    },
+    avatarUrl () {
+      return (this.content.user && this.content.user.profile_picture_url) || ''
+    },
+    heroStats () {
+      return [
+        { key: 'cases', label: 'Assigned Cases', value: this.totalCases },
+        { key: 'meetings', label: 'Meetings Today', value: this.todaysEvents.length },
+        {
+          key: 'rewards',
+          label: 'Reward Points',
+          value: this.rewardBalance,
+          hint: 'View store →',
+          title: 'View reward store',
+          onClick: () => this.goToRewards()
+        }
+      ]
     }
   },
   methods: {
@@ -179,12 +174,7 @@ export default {
       this.$router.push({ name: 'app.rewards' })
     },
     formatDate (dateString) {
-      const date = new Date(dateString)
-      return date.toLocaleString('en-US', {
-        hour: 'numeric', // '6 PM'
-        minute: 'numeric', // '52'
-        hour12: true // 12-hour clock
-      })
+      return this.$formatTime(dateString)
     },
     showAlert (message, type) {
       this.alert = {
@@ -234,7 +224,7 @@ export default {
       this.onClickNewAdd(note.note_text, note.id)
     }
     const ref = this
-    document.addEventListener('keydown', function (event) {
+    this._keydownHandler = function (event) {
       const activeElement = document.activeElement
       if (activeElement.tagName === 'TEXTAREA') {
         if ((event.metaKey || event.ctrlKey) && event.key === 's') {
@@ -242,17 +232,22 @@ export default {
           const noteIndex = activeElement.dataset.index
           if (noteIndex !== undefined) {
             ref.onClickSave(Number(noteIndex))
-          } else {
-            console.error('Could not find associated note for saving.')
           }
         }
       }
-    })
+    }
+    document.addEventListener('keydown', this._keydownHandler)
+  },
+  beforeDestroy () {
+    if (this._keydownHandler) {
+      document.removeEventListener('keydown', this._keydownHandler)
+    }
   },
   data () {
     return {
       personalEventColor: PERSONAL_EVENT_COLOR,
       kadrEventColor: KADR_EVENT_COLOR,
+      DASHBOARD,
       alert: {
         visible: false,
         message: '',
@@ -268,101 +263,6 @@ export default {
 }
 </script>
 <style scoped>
-.dashboard-client-page {
-  background: #f4f6fb;
-}
-
-.hero-card {
-  border-radius: 16px;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
-  background: linear-gradient(120deg, #2b4ecf 0%, #5e7df7 100%);
-  color: #fff;
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.hero-profile {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.hero-avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.35);
-  object-fit: cover;
-}
-
-.hero-user-meta h3 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: bold;
-  color:white;
-  font-size: 20px;
-}
-
-.hero-user-meta p {
-  margin: 0.25rem 0 0;
-  opacity: 0.9;
-}
-
-.hero-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(120px, 1fr));
-  gap: 0.75rem;
-  width: 100%;
-  max-width: 520px;
-}
-
-.stat-card {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 0.8rem;
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-label {
-  font-size: 0.78rem;
-  opacity: 0.88;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.stat-card-link {
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.stat-card-link:hover,
-.stat-card-link:focus {
-  background: rgba(255, 255, 255, 0.28);
-  outline: none;
-  transform: translateY(-1px);
-}
-
-.stat-hint {
-  font-size: 0.7rem;
-  opacity: 0.85;
-  margin-top: 0.2rem;
-}
-
-.workspace-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
 .workspace-grid--tools {
   margin-top: 0;
 }
@@ -371,27 +271,23 @@ export default {
   grid-template-columns: 1fr;
 }
 
-.workspace-card {
-  border-radius: 14px;
-}
-
 .notes-grid {
   display: grid;
   gap: 0.75rem;
 }
 
 .note-card {
-  border: 1px solid #ebedf5;
-  border-radius: 10px;
+  border: 1px solid var(--kadr-border);
+  border-radius: var(--kadr-radius-md);
   padding: 0.75rem;
-  background: #fafcff;
+  background: var(--kadr-surface-info);
 }
 
 .note-input {
   width: 100%;
   min-height: 120px;
-  border: 1px solid #d8dff1;
-  border-radius: 8px;
+  border: 1px solid var(--kadr-border-strong);
+  border-radius: var(--kadr-radius);
   padding: 0.65rem 0.75rem;
   resize: vertical;
 }
@@ -403,105 +299,10 @@ export default {
   gap: 0.45rem;
 }
 
-.list-scroll {
-  max-height: 320px;
-  overflow-y: auto;
-  padding-right: 0.25rem;
-}
-
-.schedule-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.8rem;
-  border: 1px solid #ebedf5;
-  border-radius: 10px;
-  margin-bottom: 0.7rem;
-}
-
-.schedule-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.7rem;
-}
-
-.schedule-dot {
-  margin-top: 0.2rem;
-}
-
-.schedule-text h6 {
-  margin: 0;
-  font-weight: 600;
-}
-
-.schedule-text p {
-  margin: 0.15rem 0;
-  color: #4a5472;
-}
-
-.schedule-text span {
-  color: #6f7894;
-  font-size: 0.86rem;
-}
-
-.notification-item {
-  padding: 0.85rem;
-  border: 1px solid #ebedf5;
-  border-radius: 10px;
-  margin-bottom: 0.7rem;
-}
-
-.notification-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.7rem;
-}
-
-.notification-head h6 {
-  margin: 0;
-  font-weight: 600;
-}
-
-.notification-head small {
-  color: #6f7894;
-  font-weight: 600;
-}
-
-.notification-item p {
-  margin: 0.4rem 0 0;
-  color: #4a5472;
-}
-
-.empty-data {
-  text-align: center;
-  color: #7c86a7;
-  padding: 1.4rem 0.6rem;
-  border: 1px dashed #d8dded;
-  border-radius: 10px;
-}
-
-@media (max-width: 991px) {
-  .workspace-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .hero-stats {
-    max-width: none;
-  }
-}
-
-@media (max-width: 575px) {
-  .dashboard-client-page {
-    padding: 0.5rem;
-  }
-
-  .hero-card {
-    padding: 1rem;
-  }
-
-  .hero-stats {
-    grid-template-columns: 1fr;
-  }
+.stat-card-link:hover,
+.stat-card-link:focus {
+  background: rgba(255, 255, 255, 0.28);
+  outline: none;
+  transform: translateY(-1px);
 }
 </style>

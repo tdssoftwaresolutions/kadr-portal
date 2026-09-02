@@ -10,14 +10,13 @@
 </template>
 <script>
 import { sofbox } from '../../config/pluginInit'
-import DashboardMediator from '../MediatorControllers/DashboardMediator.vue'
-import DashboardClient from '../ClientControllers/DashboardClient.vue'
-import DashboardAdmin from './../AdminControllers/DashboardAdmin.vue'
 
 export default {
   name: 'Dashboard',
   components: {
-    DashboardMediator, DashboardClient, DashboardAdmin
+    DashboardClient: () => import('../ClientControllers/DashboardClient.vue'),
+    DashboardMediator: () => import('../MediatorControllers/DashboardMediator.vue'),
+    DashboardAdmin: () => import('../AdminControllers/DashboardAdmin.vue')
   },
   props: {
     user: null

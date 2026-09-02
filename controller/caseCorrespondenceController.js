@@ -10,6 +10,7 @@ const {
 } = require('../utils/caseCorrespondenceSanitizer')
 const { assertAdminPage, assertAdminPageAny, adminHasPage } = require('../utils/adminPermissionHelpers')
 const inboxReadState = require('../utils/adminInboxReadState')
+const { sendToUser } = require('../services/sse/sseManager')
 
 const MAX_BODY_LENGTH = 12000
 const MAX_ATTACHMENTS = 5
@@ -405,15 +406,29 @@ module.exports = {
         : []
       const caseMap = new Map(cases.map((c) => [c.id, c]))
 
+      const recentMessages = caseIds.length
+        ? await prisma.case_messages.findMany({
+          where: { case_id: { in: caseIds } },
+          orderBy: { created_at: 'desc' },
+          take: Math.min(threads.length * 3, 500),
+          include: { user: authorSelect }
+        })
+        : []
+
+      const lastMsgKey = (caseId, logical) => `${caseId}:${logical}`
+      const lastMsgMap = new Map()
+      for (const msg of recentMessages) {
+        const logical = toLogicalChannel(msg.channel)
+        if (!LOGICAL_CHANNELS.has(logical)) continue
+        const key = lastMsgKey(msg.case_id, logical)
+        if (!lastMsgMap.has(key)) lastMsgMap.set(key, msg)
+      }
+
       const enriched = []
       for (const th of threads) {
         const c = caseMap.get(th.case_id)
         const channels = dbChannelsForLogical(th.logicalChannel)
-        const lastMsg = await prisma.case_messages.findFirst({
-          where: { case_id: th.case_id, channel: { in: channels } },
-          orderBy: { created_at: 'desc' },
-          include: { user: authorSelect }
-        })
+        const lastMsg = lastMsgMap.get(lastMsgKey(th.case_id, th.logicalChannel))
         const preview = lastMsg ? truncate(lastMsg.body.replace(/\s+/g, ' ').trim(), 140) : ''
         const participantLabel =
           th.logicalChannel === 'ADMIN_MEDIATOR'
@@ -665,6 +680,24 @@ module.exports = {
           attachmentRows: created.attachments || [],
           isAdminRecipient,
           openPortalUrl
+        })
+      }
+
+      // Emit SSE event to all case participants for real-time update
+      const sseRecipientIds = [
+        caseRow.mediator,
+        caseRow.first_party,
+        caseRow.second_party
+      ].filter((id) => id && id !== userId)
+
+      for (const recipientId of sseRecipientIds) {
+        sendToUser(recipientId, 'new_message', {
+          caseId,
+          channel: logicalChannel,
+          messageId: mapped.id,
+          preview: mapped.body?.slice(0, 100),
+          authorName: mapped.author?.name,
+          timestamp: mapped.created_at
         })
       }
 

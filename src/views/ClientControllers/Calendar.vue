@@ -1,17 +1,11 @@
 <template>
-  <b-container fluid>
-    <b-row>
-      <b-col md='12'>
-        <iq-card>
-          <template v-slot:headerTitle>
-            <h4 class='card-title'>Calendar</h4>
-          </template>
-          <template v-slot:body>
-            <FullCalendar :calendarEvents="events" :eventClick="openDetailsModal" />
-          </template>
-        </iq-card>
-      </b-col>
-    </b-row>
+  <b-container fluid class="calendar-page">
+    <kadr-page-header :title="CALENDAR.TITLE" :subtitle="CALENDAR.SUBTITLE" />
+
+    <kadr-section-card title="Your meetings">
+      <FullCalendar :calendarEvents="events" :eventClick="openDetailsModal" :read-only="true" />
+    </kadr-section-card>
+
     <b-modal id="view-appointment-modal-id" cancel-disabled ref="view-appointment-modal" size="lg" title="View Appointment" scrollable hide-footer>
       <div class="appointment-details" v-if="selectedAppointment != null">
         <div class="data-row">
@@ -55,7 +49,7 @@
             Rate meeting
           </b-button>
         </div>
-        <b-button class="btn btn-primary" style="float:right;margin-top: 1rem;background: #0084ff;" @click="$bvModal.hide('view-appointment-modal-id')">Close</b-button>
+        <b-button class="btn btn-primary modal-close-btn" @click="$bvModal.hide('view-appointment-modal-id')">Close</b-button>
       </div>
     </b-modal>
 
@@ -77,6 +71,9 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
+import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import KadrSectionCard from '../../components/kadr/KadrSectionCard.vue'
+import { CALENDAR } from '../../constants/messages'
 import {
   isPastKadrCaseMeeting,
   clientNeedsMeetingFeedback
@@ -86,9 +83,10 @@ const PERSONAL_EVENT_COLOR = 'rgb(244, 81, 30)'
 
 export default {
   name: 'calendar',
-  components: { MeetingFeedbackModal },
+  components: { MeetingFeedbackModal, KadrPageHeader, KadrSectionCard },
   data () {
     return {
+      CALENDAR,
       selectedAppointment: null,
       events: [],
       calendarFeedbackModalVisible: false,
@@ -201,17 +199,7 @@ export default {
       this.loading = false
     },
     formatDateTime (dateString) {
-      const date = new Date(dateString)
-      const options = {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      }
-      return new Intl.DateTimeFormat('en-US', options).format(date)
+      return this.$formatDateTime(dateString)
     },
     openDetailsModal (event) {
       const xp = event.extendedProps || {}
@@ -267,33 +255,45 @@ export default {
 }
 </script>
 <style lang="css" scoped>
+.calendar-page {
+  background: var(--kadr-bg-page);
+}
+
 .data-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid #f1f1f1;
-  }
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--kadr-border);
+}
 
-  .data-row:last-child {
-    border-bottom: none;
-  }
+.data-row:last-child {
+  border-bottom: none;
+}
 
-  .data-title {
-    font-weight: bold;
-  }
-  .long-description {
-    padding: 10px;
-  }
-  .long-description textarea {
-    width: 100%;
-    resize: none;
-    border: 0;
-  }
-  .calendar-feedback-prompt {
-    margin-top: 1rem;
-    padding: 0.85rem;
-    border-radius: 8px;
-    background: #fff8e6;
-    border: 1px solid #f5d78e;
-  }
+.data-title {
+  font-weight: bold;
+}
+
+.long-description {
+  padding: 10px;
+}
+
+.long-description textarea {
+  width: 100%;
+  resize: none;
+  border: 0;
+}
+
+.calendar-feedback-prompt {
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border-radius: var(--kadr-radius);
+  background: var(--kadr-status-warning-bg);
+  border: 1px solid #f5d78e;
+}
+
+.modal-close-btn {
+  float: right;
+  margin-top: 1rem;
+}
 </style>

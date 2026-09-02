@@ -413,12 +413,13 @@ export default {
           return
         }
         const response = await this.$store.dispatch('isEmailExist', {
-          emailAddress: this.formData.email
+          emailAddress: this.formData.email,
+          type: 'MEDIATOR'
         })
         if (response.success && response.data.exists) {
           const msg = response.data.pendingApproval
             ? 'Your registration is already pending approval. Please wait for the Kadr team to activate your account.'
-            : response.message
+            : (response.message || 'You already have a mediator account with this email. Please log in instead.')
           this.showAlert(msg, 'danger')
           return false
         }

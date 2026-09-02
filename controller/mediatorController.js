@@ -36,11 +36,39 @@ module.exports = {
         where: { id: caseId },
         select: {
           caseId: true,
+          category: true,
           mediation_date_time: true,
           user_cases_first_partyTouser: { select: { email: true, name: true } },
           user_cases_second_partyTouser: { select: { email: true, name: true } }
         }
       })
+
+      const {
+        emailMediatorCaseAssigned,
+        emailPartiesMediatorAssigned
+      } = require('../services/meeting/meetingInvitationService')
+      const mediatorProfile = await prisma.user.findUnique({
+        where: { id: mediatorId },
+        select: { name: true, email: true }
+      })
+      await Promise.all([
+        emailMediatorCaseAssigned({
+          mediatorEmail: mediatorProfile?.email,
+          mediatorName: mediatorProfile?.name,
+          caseNumber: caseDetails.caseId,
+          firstPartyName: caseDetails.user_cases_first_partyTouser?.name,
+          secondPartyName: caseDetails.user_cases_second_partyTouser?.name,
+          category: caseDetails.category
+        }).catch((err) => console.error('[assignMediator] mediator email failed', err.message)),
+        emailPartiesMediatorAssigned({
+          parties: [
+            caseDetails.user_cases_first_partyTouser,
+            caseDetails.user_cases_second_partyTouser
+          ],
+          mediatorName: mediatorProfile?.name,
+          caseNumber: caseDetails.caseId
+        })
+      ])
 
       if (!mediator.google_token) throw createError(errorCodes.GOOGLE_CALENDAR_NOT_CONNECTED)
 
@@ -51,14 +79,14 @@ module.exports = {
 
 This meeting has been scheduled to discuss the details of case ${caseDetails.caseId} between the involved parties.
 
-📌 Purpose:
+Purpose:
 To review the case, facilitate open communication, and work towards a mutual resolution.
 
-📅 Please Note:
+Please Note:
 1. Be prepared with all relevant documents and information.
 2. Join the meeting on time to ensure a smooth and productive session.
 
-Issued by: Rouse Avenue Mediation Court`
+Issued by: Kadr.live`
       const start = new Date(caseDetails.mediation_date_time)
       const end = new Date(start.getTime() + 30 * 60000)
       const attendees = [
@@ -75,7 +103,7 @@ Issued by: Rouse Avenue Mediation Court`
           description,
           start_datetime: start,
           end_datetime: end,
-          type: 'ROUSE',
+          type: 'KADR',
           meeting_link: googleEventResponse.data.conferenceData.entryPoints[0].uri,
           google_calendar_link: googleEventResponse.data.htmlLink,
           created_by: mediatorId,
@@ -131,8 +159,8 @@ Issued by: Rouse Avenue Mediation Court`
             select: {
               id: true,
               caseId: true,
-              nature_of_suit: true,
-              stage: true,
+              case_type: true,
+              category: true,
               status: true
             }
           }
@@ -191,7 +219,12 @@ Issued by: Rouse Avenue Mediation Court`
       }
 
       const existing = await prisma.user.findUnique({
-        where: { email },
+        where: {
+          email_user_type: {
+            email,
+            user_type: 'MEDIATOR'
+          }
+        },
         select: { id: true, active: true, is_deleted: true, is_self_signed_up: true, user_type: true }
       })
 
@@ -206,7 +239,7 @@ Issued by: Rouse Avenue Mediation Court`
         } else if (existing.active === false && existing.is_self_signed_up) {
           throw createError(errorCodes.REGISTRATION_PENDING_APPROVAL)
         } else {
-          throw createError(errorCodes.YOU_USER_ALREADY_EXISTS)
+          throw createError(errorCodes.MEDIATOR_ACCOUNT_EXISTS)
         }
       } else {
         const created = await prisma.user.create({ data: signupData })
@@ -230,8 +263,8 @@ Issued by: Rouse Avenue Mediation Court`
         return
       }
       try {
-        if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
-          throw createError(errorCodes.YOU_USER_ALREADY_EXISTS)
+        if (error.code === 'P2002' && (error.meta?.target?.includes('email') || error.meta?.target?.includes('uq_user_email_type'))) {
+          throw createError(errorCodes.MEDIATOR_ACCOUNT_EXISTS)
         }
         throw createError(errorCodes.INVALID_REQUEST)
       } catch (err) {

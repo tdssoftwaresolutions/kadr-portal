@@ -295,10 +295,14 @@ export default {
       }
       if (this.existingUser === false) {
         const response = await this.$store.dispatch('isEmailExist', {
-          emailAddress: this.formData.email
+          emailAddress: this.formData.email,
+          type: 'CLIENT'
         })
         if (response.success && response.data.exists) {
-          this.showAlert(response.message, 'danger')
+          const msg = response.data.pendingApproval
+            ? 'Your registration is already pending approval. Please wait for the Kadr team to activate your account.'
+            : (response.message || 'You already have a client account. Please log in and start a new case from My Cases.')
+          this.showAlert(msg, 'danger')
           return false
         }
       }

@@ -1,10 +1,11 @@
 <template>
   <b-container fluid class="admin-inbox-page">
+    <kadr-page-header :title="ADMIN.INBOX_TITLE" :subtitle="ADMIN.INBOX_SUBTITLE" />
     <b-row class="inbox-layout-row">
       <b-col cols="12" lg="4" xl="4" class="inbox-col inbox-col-list mb-3 mb-xl-0">
         <iq-card class="h-100 inbox-card-fixed">
           <template v-slot:headerTitle>
-            <h4 class="card-title mb-0">Message center</h4>
+            <h4 class="card-title mb-0">Threads</h4>
           </template>
           <template v-slot:headerAction>
             <b-button size="sm" variant="primary" class="mr-1" @click="openStartModal">New</b-button>
@@ -13,9 +14,6 @@
             </b-button>
           </template>
           <template v-slot:body>
-            <p class="text-muted small mb-2">
-              Case threads, website leads, and logged-in portal support in one list. The URL updates when you open a thread.
-            </p>
             <div class="inbox-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
               <div class="d-flex align-items-center flex-wrap gap-2 flex-grow-1">
                 <b-badge v-if="totalUnreadInbox > 0" variant="danger" pill>{{ totalUnreadInbox }} unread</b-badge>
@@ -522,15 +520,18 @@
 import { sofbox } from '../../config/pluginInit'
 import CaseCorrespondencePanel from '../../components/CaseCorrespondencePanel.vue'
 import WebsiteInquiryThreadPanel from '../../components/WebsiteInquiryThreadPanel.vue'
-import FilePreview from '../core/DocumentPreview.vue'
+import FilePreview from '../../components/DocumentPreview.vue'
+import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import { ADMIN } from '../../constants/messages'
 
 let pickerSearchTimer = null
 
 export default {
   name: 'AdminCorrespondenceInbox',
-  components: { CaseCorrespondencePanel, WebsiteInquiryThreadPanel, FilePreview },
+  components: { CaseCorrespondencePanel, WebsiteInquiryThreadPanel, FilePreview, KadrPageHeader },
   data () {
     return {
+      ADMIN,
       threads: [],
       loadingThreads: false,
       search: '',
@@ -766,26 +767,10 @@ export default {
       return c.user_cases_second_partyTouser ? `Second party : ${c.user_cases_second_partyTouser.name}` : 'Second party'
     },
     formatShort (d) {
-      if (!d) return ''
-      return new Date(d).toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return this.$formatDateTime(d)
     },
     formatDate (dateString) {
-      if (!dateString) return ''
-      const date = new Date(dateString)
-      return date.toLocaleString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true
-      })
+      return this.$formatDateTime(dateString)
     },
     statusLabel (c) {
       if (c.case_statuses && c.case_statuses.name) return c.case_statuses.name

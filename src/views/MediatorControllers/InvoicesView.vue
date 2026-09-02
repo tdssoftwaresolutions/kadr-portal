@@ -1,21 +1,21 @@
 <template>
   <b-container fluid>
+    <kadr-page-header
+      :title="isAdmin ? ADMIN.INVOICES_TITLE_ADMIN : ADMIN.INVOICES_TITLE"
+      :subtitle="ADMIN.INVOICES_SUBTITLE"
+    >
+      <template v-if="!isAdmin && hasPrivateInvoices" #actions>
+        <b-button size="sm" variant="outline-secondary" class="mr-1" @click="openBranding">
+          Invoice template
+        </b-button>
+        <b-button size="sm" variant="primary" @click="openPrivateCreate">
+          New private invoice
+        </b-button>
+      </template>
+    </kadr-page-header>
     <b-row>
       <b-col sm="12">
         <iq-card>
-          <template v-slot:headerTitle>
-            <div class="d-flex justify-content-between align-items-center w-100 flex-wrap">
-              <h4 class="card-title mb-0">{{ isAdmin ? 'Payments & Invoices' : 'Income & invoices' }}</h4>
-              <div v-if="!isAdmin && hasPrivateInvoices" class="mt-2 mt-md-0">
-                <b-button size="sm" variant="outline-secondary" class="mr-1" @click="openBranding">
-                  Invoice template
-                </b-button>
-                <b-button size="sm" variant="primary" @click="openPrivateCreate">
-                  New private invoice
-                </b-button>
-              </div>
-            </div>
-          </template>
           <template v-slot:body>
             <!-- Mediator: income 360 -->
             <template v-if="!isAdmin">
@@ -65,39 +65,91 @@
                 </b-col>
               </b-row>
 
-              <b-table :items="incomeItems" :fields="mediatorFields" striped responsive small>
-                <template #cell(source)="row">
-                  <b-badge :variant="row.item.source === 'KADR' ? 'primary' : 'info'">
-                    {{ row.item.source === 'KADR' ? 'Kadr' : 'Private' }}
-                  </b-badge>
-                </template>
-                <template #cell(amount)="row">₹{{ formatMoney(row.item.amount) }}</template>
-                <template #cell(issue_date)="row">{{ formatDate(row.item.issue_date) }}</template>
-                <template #cell(status)="row">
-                  <b-badge :variant="statusVariant(row.item)">{{ incomeStatusLabel(row.item) }}</b-badge>
-                </template>
-                <template #cell(actions)="row">
-                  <b-button size="sm" variant="outline-primary" class="mr-1" @click="downloadRowPdf(row.item)">PDF</b-button>
-                  <b-button
-                    v-if="row.item.source === 'PRIVATE' && hasPrivateInvoices"
-                    size="sm"
-                    variant="outline-secondary"
-                    class="mr-1"
-                    @click="editPrivateRow(row.item)"
-                  >
-                    Edit
-                  </b-button>
-                  <b-button
-                    v-if="row.item.source === 'PRIVATE' && row.item.status !== 'PAID'"
-                    size="sm"
-                    variant="success"
-                    @click="markPrivatePaid(row.item)"
-                  >
-                    Mark paid
-                  </b-button>
-                </template>
-              </b-table>
-              <p v-if="!incomeItems.length && !loading" class="text-muted small mb-0">No invoices in this period.</p>
+              <div class="d-none d-md-block">
+                <b-table :items="incomeItems" :fields="mediatorFields" striped responsive small>
+                  <template #cell(source)="row">
+                    <b-badge :variant="row.item.source === 'KADR' ? 'primary' : 'info'">
+                      {{ row.item.source === 'KADR' ? 'Kadr' : 'Private' }}
+                    </b-badge>
+                  </template>
+                  <template #cell(amount)="row">₹{{ formatMoney(row.item.amount) }}</template>
+                  <template #cell(issue_date)="row">{{ formatDate(row.item.issue_date) }}</template>
+                  <template #cell(status)="row">
+                    <b-badge :variant="statusVariant(row.item)">{{ incomeStatusLabel(row.item) }}</b-badge>
+                  </template>
+                  <template #cell(actions)="row">
+                    <b-button size="sm" variant="outline-primary" class="mr-1" @click="downloadRowPdf(row.item)">PDF</b-button>
+                    <b-button
+                      v-if="row.item.source === 'PRIVATE' && hasPrivateInvoices"
+                      size="sm"
+                      variant="outline-secondary"
+                      class="mr-1"
+                      @click="editPrivateRow(row.item)"
+                    >
+                      Edit
+                    </b-button>
+                    <b-button
+                      v-if="row.item.source === 'PRIVATE' && row.item.status !== 'PAID'"
+                      size="sm"
+                      variant="success"
+                      @click="markPrivatePaid(row.item)"
+                    >
+                      Mark paid
+                    </b-button>
+                  </template>
+                </b-table>
+              </div>
+
+              <div class="d-md-none invoice-card-list">
+                <div
+                  v-for="item in incomeItems"
+                  :key="item.id || item.invoice_number"
+                  class="invoice-mobile-card"
+                >
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <div class="font-weight-bold">{{ item.invoice_number || '—' }}</div>
+                      <div class="small text-muted">{{ item.label || '—' }}</div>
+                    </div>
+                    <b-badge :variant="item.source === 'KADR' ? 'primary' : 'info'">
+                      {{ item.source === 'KADR' ? 'Kadr' : 'Private' }}
+                    </b-badge>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="font-weight-bold">₹{{ formatMoney(item.amount) }}</span>
+                    <b-badge :variant="statusVariant(item)">{{ incomeStatusLabel(item) }}</b-badge>
+                  </div>
+                  <div class="small text-muted mb-2">{{ formatDate(item.issue_date) }}</div>
+                  <div class="d-flex flex-wrap">
+                    <b-button size="sm" variant="outline-primary" class="mr-1 mb-1" @click="downloadRowPdf(item)">PDF</b-button>
+                    <b-button
+                      v-if="item.source === 'PRIVATE' && hasPrivateInvoices"
+                      size="sm"
+                      variant="outline-secondary"
+                      class="mr-1 mb-1"
+                      @click="editPrivateRow(item)"
+                    >
+                      Edit
+                    </b-button>
+                    <b-button
+                      v-if="item.source === 'PRIVATE' && item.status !== 'PAID'"
+                      size="sm"
+                      variant="success"
+                      class="mb-1"
+                      @click="markPrivatePaid(item)"
+                    >
+                      Mark paid
+                    </b-button>
+                  </div>
+                </div>
+              </div>
+              <kadr-empty-state
+                v-if="!incomeItems.length && !loading"
+                compact
+                icon=""
+                :title="ADMIN.NO_INVOICES"
+                :description="ADMIN.NO_INVOICES_DESCRIPTION"
+              />
             </template>
 
             <!-- Admin: existing -->
@@ -141,6 +193,13 @@
                   <b-button v-if="row.item.status !== 'PAID'" size="sm" variant="success" @click="markPaid(row.item)">Mark paid</b-button>
                 </template>
               </b-table>
+              <kadr-empty-state
+                v-if="!invoices.length && !loading"
+                compact
+                icon=""
+                :title="ADMIN.NO_INVOICES"
+                :description="ADMIN.NO_INVOICES_DESCRIPTION"
+              />
             </template>
           </template>
         </iq-card>
@@ -180,6 +239,9 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import MediatorPrivateInvoiceSection from '../../components/mediator/MediatorPrivateInvoiceSection.vue'
+import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import { ADMIN } from '../../constants/messages'
 
 const EMPTY_SUMMARY = () => ({
   kadr: { total: 0, paid: 0, pending: 0 },
@@ -193,9 +255,10 @@ const EMPTY_SUMMARY = () => ({
 
 export default {
   name: 'InvoicesView',
-  components: { MediatorPrivateInvoiceSection },
+  components: { MediatorPrivateInvoiceSection, KadrEmptyState, KadrPageHeader },
   data () {
     return {
+      ADMIN,
       loading: false,
       invoices: [],
       incomeItems: [],
@@ -318,8 +381,7 @@ export default {
       return Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     },
     formatDate (v) {
-      if (!v) return '—'
-      return new Date(v).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+      return this.$formatDate(v)
     },
     incomeStatusLabel (item) {
       if (item.source === 'PRIVATE') {
@@ -502,5 +564,18 @@ export default {
   font-size: 0.75rem;
   color: #5a6a8e;
   margin-top: 0.2rem;
+}
+
+.invoice-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.invoice-mobile-card {
+  background: #fff;
+  border: 1px solid #e8ecf5;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
 }
 </style>

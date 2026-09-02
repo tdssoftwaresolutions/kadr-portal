@@ -1,6 +1,7 @@
 const path = require('path')
 const { AppError } = require('../utils/errors')
 const { error } = require('../utils/responses')
+const { record500Error } = require('../services/alerting/criticalAlertService')
 
 module.exports = (err, req, res, next) => {
   if (!req.path.startsWith('/api')) {
@@ -15,8 +16,16 @@ module.exports = (err, req, res, next) => {
     }, err.statusCode)
   }
 
-  // Unhandled error
+  // Unhandled error — track for alerting
   console.error('Unhandled Error:', err)
+  record500Error({
+    path: req.originalUrl || req.path,
+    method: req.method,
+    requestId: req.requestId,
+    userId: req.user?.id,
+    error: err
+  })
+
   return error(res, {
     code: 'E000',
     message: 'Unexpected error occurred'

@@ -7,7 +7,7 @@
             <a href="#">
               <img :src="require('../../assets/logo.jpeg')" class="img-fluid w-25" alt="logo">
             </a>
-            <h2 class="mt-4 mb-1">Stay tunned, we're launching very soon</h2>
+            <h2 class="mt-4 mb-1">Stay tuned — we're launching very soon</h2>
             <p>We are working very hard to give you the best experience possible!</p>
             <ul class="countdown" countdown data-date="Feb 02 2022 20:20:22">
               <li><span data-days>0</span>Days</li>

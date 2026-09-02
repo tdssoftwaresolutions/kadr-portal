@@ -108,8 +108,7 @@ export default {
   },
   methods: {
     formatDate (v) {
-      if (!v) return '—'
-      return new Date(v).toLocaleString()
+      return this.$formatDateTime(v)
     },
     async load (page) {
       this.page = page || this.page

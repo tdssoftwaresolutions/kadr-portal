@@ -190,7 +190,6 @@ export default {
       }
       return {
         courtName: this.details.courtName,
-        judge: this.fieldFromDetails('Judges'),
         caseType: this.fieldFromDetails('Case type'),
         registrationNumber: this.fieldFromDetails('Registration number'),
         filingNumber: this.fieldFromDetails('Filing number'),
@@ -287,13 +286,7 @@ export default {
     },
     formatDisplayDate (value) {
       if (!value || value === '—') return '—'
-      const d = new Date(value)
-      if (Number.isNaN(d.getTime())) return value
-      return d.toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      })
+      return this.$formatDate(value)
     },
     formatStatusLabel (value) {
       if (!value) return 'Disposed'

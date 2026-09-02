@@ -24,6 +24,7 @@ function isMasterAdmin (row) {
 }
 
 function isLegacyUnrestricted (row) {
+  if (process.env.KADR_STRICT_ADMIN_PERMISSIONS === '1') return false
   if (!row || row.admin_permissions == null) return true
   return false
 }

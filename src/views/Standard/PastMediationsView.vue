@@ -1,15 +1,6 @@
 <template>
   <b-container fluid class="past-mediations-page">
-    <iq-card>
-      <template v-slot:headerTitle>
-        <h4 class="card-title">Past Mediations</h4>
-      </template>
-      <template v-slot:body>
-        <p class="subtitle">
-          Review all completed or closed mediations, including case details, documents, timeline, and meetings.
-        </p>
-      </template>
-    </iq-card>
+    <kadr-page-header :title="CASES.PAST_TITLE" :subtitle="CASES.PAST_SUBTITLE" />
 
     <my-cases
       v-if="isMediator"
@@ -28,27 +19,35 @@
       @refresh-dashboard="loadPastMediations"
     />
 
-    <iq-card v-else>
-      <template v-slot:body>
-        <div class="empty-state">Past mediations are available for mediator and client accounts only.</div>
-      </template>
-    </iq-card>
+    <kadr-empty-state
+      v-else
+      icon="fas fa-folder-open"
+      :title="EMPTY.GENERIC_TITLE"
+      :description="CASES.PAST_UNAVAILABLE"
+    />
   </b-container>
 </template>
 
 <script>
 import MyCases from '../MediatorControllers/MyCases.vue'
 import ClientCases from '../ClientControllers/ClientCases.vue'
+import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import { CASES, EMPTY } from '../../constants/messages'
 import { sofbox } from '../../config/pluginInit'
 
 export default {
   name: 'PastMediationsView',
   components: {
     MyCases,
-    ClientCases
+    ClientCases,
+    KadrPageHeader,
+    KadrEmptyState
   },
   data () {
     return {
+      CASES,
+      EMPTY,
       pastCases: {
         casesWithEvents: [],
         total: 0,
@@ -86,18 +85,5 @@ export default {
 <style scoped>
 .past-mediations-page {
   background: #f4f6fb;
-}
-
-.subtitle {
-  margin: 0;
-  color: #6d7693;
-}
-
-.empty-state {
-  border: 1px dashed #d7deef;
-  border-radius: 10px;
-  padding: 1rem;
-  color: #5f6988;
-  text-align: center;
 }
 </style>

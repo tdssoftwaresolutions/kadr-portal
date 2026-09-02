@@ -177,15 +177,7 @@ export default {
   },
   methods: {
     formatDateTime (dateString) {
-      if (!dateString) return ''
-      const date = new Date(dateString)
-      return new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }).format(date)
+      return this.$formatDateTime(dateString)
     },
     videoIdFromUrl (input) {
       if (!input || typeof input !== 'string') return null

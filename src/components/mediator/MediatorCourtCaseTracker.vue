@@ -167,14 +167,7 @@ export default {
       this.cnrInput = this.cnrInput.toUpperCase().replace(/[\s-]/g, '')
     },
     formatDate (value) {
-      if (!value) return ''
-      return new Date(value).toLocaleString('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return this.$formatDateTime(value)
     },
     unwrap (res) {
       if (!res || res.success === false) return null

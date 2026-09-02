@@ -82,11 +82,13 @@
             </b-col>
           </b-row>
           <div v-else class="text-center py-5">
-            <div class="empty-state">
-              <i class="ri-file-list-3-line empty-icon"></i>
-              <h5 class="empty-title">No blogs found</h5>
-              <p class="empty-subtitle">Create your first blog post to get started</p>
-            </div>
+            <kadr-empty-state
+              icon="ri-file-list-3-line"
+              title="No blogs found"
+              description="Create your first blog post to get started"
+              action-label="New blog"
+              @action="newBlog"
+            />
           </div>
           <b-pagination
             v-if="paginatedData && paginatedData.total > 0"
@@ -224,12 +226,13 @@
 import { sofbox } from '../../config/pluginInit'
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import Spinner from '../../components/sofbox/spinner/spinner.vue'
+import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
 import { Vue2TinymceEditor } from 'vue2-tinymce-editor'
 
 export default {
   name: 'MyBlogs',
   components: {
-    Alert, Vue2TinymceEditor, Spinner
+    Alert, Vue2TinymceEditor, Spinner, KadrEmptyState
   },
   mounted () {
     sofbox.index()
@@ -237,17 +240,7 @@ export default {
   },
   methods: {
     formatDateTime (dateString) {
-      const date = new Date(dateString)
-      const options = {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      }
-      return new Intl.DateTimeFormat('en-US', options).format(date)
+      return this.$formatDateTime(dateString)
     },
     toggleSelection (option) {
       if (this.selectedBlog.categories.some(category => category.id === option.id)) {
@@ -993,34 +986,6 @@ ul.list-group {
   flex-wrap: nowrap;
   align-items: center;
   margin-left: auto;
-}
-
-.empty-state {
-  padding: 3rem 2rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  margin: 2rem 0;
-}
-
-.empty-icon {
-  font-size: 4rem;
-  color: #9ca3af;
-  margin-bottom: 1rem;
-  display: block;
-}
-
-.empty-title {
-  color: #374151;
-  font-weight: 600;
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.empty-subtitle {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin: 0;
 }
 
 /* Responsive Design */

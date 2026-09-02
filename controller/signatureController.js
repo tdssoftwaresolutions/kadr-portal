@@ -28,7 +28,11 @@ module.exports = {
         }
       })
 
-      if (!signatureTracking) throw createError(errorCodes.NO_RECORD_FOUND)
+      if (!signatureTracking || !signatureTracking.case_id) throw createError(errorCodes.NO_RECORD_FOUND)
+      if (signatureTracking.signed) {
+        success(res, {}, 'This acknowledgment was already submitted.')
+        return
+      }
 
       await prisma.signature_tracking.update({
         where: { id: requestId },
@@ -42,6 +46,7 @@ module.exports = {
           first_party: true,
           caseId: true,
           second_party: true,
+          case_type: true,
           user_cases_second_partyTouser: {
             select: {
               id: true,
@@ -51,6 +56,7 @@ module.exports = {
           },
           user_cases_first_partyTouser: {
             select: {
+              id: true,
               name: true
             }
           }
@@ -59,22 +65,19 @@ module.exports = {
 
       if (!caseRecord) throw createError(errorCodes.NO_RECORD_FOUND)
 
-      let sendRequestToSecondParty = false
+      const isFirstParty = signatureTracking.user_id === caseRecord.first_party
+      const isSecondParty = signatureTracking.user_id === caseRecord.second_party
+      if (!isFirstParty && !isSecondParty) throw createError(errorCodes.NO_RECORD_FOUND)
 
-      const updateData = {}
-      if (signatureTracking.user_id === caseRecord.first_party) {
-        updateData.plaintiff_signature = signature // Update plaintiff_signature
-        updateData.status = CaseTypes.NEW
-        updateData.sub_status = CaseSubTypes.PENDING_SECOND_PARTY_SIGNATURE // Set sub_status to pending second party signatur
-        sendRequestToSecondParty = true
-      } else if (signatureTracking.user_id === caseRecord.second_party) {
-        updateData.respondent_signature = signature // Update respondent_signature
-        updateData.status = CaseTypes.NEW
-        updateData.sub_status = CaseSubTypes.PENDING_MEDIATION_CENTER
-      } else { throw createError(errorCodes.NO_RECORD_FOUND) }
-
-      if (sendRequestToSecondParty === true) {
-        const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.second_party, caseRecord.id, null)
+      // Signature payload is verified via OTP; tracking row records acceptance.
+      // Case columns no longer store plaintiff/respondent signature blobs (Kadr schema).
+      if (isFirstParty && caseRecord.second_party) {
+        const newSignatureRecord = await helper.createSignatureTrackingRecord(
+          prisma,
+          caseRecord.second_party,
+          caseRecord.id,
+          null
+        )
         await helper.sendTemplatedEmail('signatureVerificationRequest', caseRecord.user_cases_second_partyTouser.email, {
           recipientName: caseRecord.user_cases_second_partyTouser.name,
           caseId: caseRecord.caseId,
@@ -82,14 +85,27 @@ module.exports = {
           signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
           partyRole: 'second party'
         })
+      } else if (isSecondParty) {
+        // Both parties have acknowledged — enter standard Kadr payment pipeline
+        await prisma.cases.update({
+          where: { id: caseRecord.id },
+          data: {
+            status: CaseTypes.IN_PROGRESS,
+            sub_status: CaseSubTypes.PENDING_NOTICE_PAYMENT,
+            case_type: caseRecord.case_type || 'Mediation'
+          }
+        })
+        try {
+          const { recordCaseMilestone } = require('../services/case/caseMilestoneService')
+          await recordCaseMilestone(prisma, {
+            caseId: caseRecord.id,
+            statusId: CaseTypes.IN_PROGRESS,
+            subStatusId: CaseSubTypes.PENDING_NOTICE_PAYMENT
+          })
+        } catch (_) { /* non-blocking */ }
       }
 
-      await prisma.cases.update({
-        where: { id: caseRecord.id },
-        data: updateData
-      })
-
-      success(res, {}, 'Signature submitted successfully')
+      success(res, {}, 'Acknowledgment submitted successfully')
     } catch (error) {
       next(error)
     }
@@ -105,56 +121,37 @@ module.exports = {
           id: requestId,
           signed: false
         },
-        include: {
-          user: true,
-          cases: true
+        select: {
+          id: true,
+          user_id: true,
+          case_id: true
         }
       })
 
-      if (!signatureTracking) throw createError(errorCodes.NO_RECORD_FOUND)
+      if (!signatureTracking || !signatureTracking.case_id) throw createError(errorCodes.NO_RECORD_FOUND)
 
       const caseData = await prisma.cases.findUnique({
         where: { id: signatureTracking.case_id },
         select: {
           id: true,
-          created_at: true,
-          updated_at: true,
-          mediator: true,
           caseId: true,
-          judge_document_url: true,
-          nature_of_suit: true,
-          stage: true,
+          case_type: true,
+          category: true,
+          description: true,
+          created_at: true,
           status: true,
-          sub_status: true,
-          hearing_date: true,
-          institution_date: true,
-          mediation_date_time: true,
-          referral_judge_signature: true,
-          plaintiff_signature: true,
-          plaintiff_phone: true,
-          plaintiff_advocate: true,
-          respondent_signature: true,
-          respondent_phone: true,
-          respondent_advocate: true,
-          judge: true,
-          suit_no: true,
-          hearing_count: true,
           user_cases_first_partyTouser: {
             select: {
               id: true,
-              name: true
+              name: true,
+              phone_number: true
             }
           },
           user_cases_second_partyTouser: {
             select: {
               id: true,
-              name: true
-            }
-          },
-          user_cases_judgeTouser: {
-            select: {
-              id: true,
-              name: true
+              name: true,
+              phone_number: true
             }
           }
         }
@@ -163,17 +160,31 @@ module.exports = {
       if (!caseData) throw createError(errorCodes.NO_RECORD_FOUND)
 
       let userName = ''
-      let isFirstPaty = false
-      if (caseData.user_cases_first_partyTouser.id === signatureTracking.user_id) {
+      let partyPhoneNumber = null
+      let isFirstParty = false
+      if (caseData.user_cases_first_partyTouser?.id === signatureTracking.user_id) {
         userName = caseData.user_cases_first_partyTouser.name
-        isFirstPaty = true
-      } else if (caseData.user_cases_second_partyTouser.id === signatureTracking.user_id) {
+        partyPhoneNumber = caseData.user_cases_first_partyTouser.phone_number
+        isFirstParty = true
+      } else if (caseData.user_cases_second_partyTouser?.id === signatureTracking.user_id) {
         userName = caseData.user_cases_second_partyTouser.name
-        isFirstPaty = false
+        partyPhoneNumber = caseData.user_cases_second_partyTouser.phone_number
+        isFirstParty = false
+      } else {
+        throw createError(errorCodes.NO_RECORD_FOUND)
       }
 
       success(res, {
-        caseData, userName, isFirstPaty
+        caseId: caseData.caseId,
+        caseType: caseData.case_type || null,
+        category: caseData.category || null,
+        description: caseData.description || null,
+        filedAt: caseData.created_at,
+        firstPartyName: caseData.user_cases_first_partyTouser?.name || null,
+        secondPartyName: caseData.user_cases_second_partyTouser?.name || null,
+        userName,
+        isFirstParty,
+        partyPhoneNumber
       })
     } catch (error) {
       next(error)
@@ -291,7 +302,7 @@ module.exports = {
           firstPartySignatureDateTime: agreement?.first_party_signature_datetime || '',
           secondPartySignatureDateTime: agreement?.second_party_signature_datetime || updateData.second_party_signature_datetime || '',
           mediatorSignatureImage: agreement?.signature_mediator || '',
-          judgeName: caseRecord.user_cases_judgeTouser?.name || ''
+          judgeName: ''
         }
 
         const html = helper.generateMediationHTML(mediationData)
@@ -376,6 +387,7 @@ module.exports = {
           select: {
             id: true,
             caseId: true,
+            case_type: true,
             created_at: true,
             case_agreement: true,
             user_cases_mediatorTouser: {
@@ -426,30 +438,34 @@ module.exports = {
 
       let userName = ''
       let phoneNumber = null
-      let isFirstPaty = false
+      let isFirstParty = false
       if (caseRecord.user_cases_first_partyTouser.id === signatureTracking.user_id) {
         userName = caseRecord.user_cases_first_partyTouser.name
         phoneNumber = caseRecord.user_cases_first_partyTouser.phone_number
-        isFirstPaty = true
+        isFirstParty = true
       } else if (caseRecord.user_cases_second_partyTouser.id === signatureTracking.user_id) {
         userName = caseRecord.user_cases_second_partyTouser.name
         phoneNumber = caseRecord.user_cases_second_partyTouser.phone_number
-        isFirstPaty = false
+        isFirstParty = false
+      } else {
+        throw createError(errorCodes.NO_RECORD_FOUND)
       }
+
+      const { sanitizeRichHtml } = require('../utils/htmlSanitizer')
 
       success(res, {
         caseId: caseRecord.caseId,
-        caseType: caseRecord.nature_of_suit,
-        dateOfCaseRegistration: caseRecord.created_at,
+        caseType: caseRecord.case_type || null,
+        filedAt: caseRecord.created_at,
         mediationCompletionDate,
         mediatorName: caseRecord.user_cases_mediatorTouser?.name || null,
         numberOfSessions,
         sessionDates,
-        outcomeOfMediation,
+        outcomeOfMediation: sanitizeRichHtml(outcomeOfMediation || ''),
         userName,
         firstPartyName: caseRecord.user_cases_first_partyTouser.name,
         secondPartyName: caseRecord.user_cases_second_partyTouser.name,
-        isFirstPaty,
+        isFirstParty,
         partyPhoneNumber: phoneNumber
       })
     } catch (error) {
