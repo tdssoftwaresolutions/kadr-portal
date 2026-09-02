@@ -16,12 +16,12 @@ Branch: `migration/vue3` (off `stable-release`)
 | 4 | Store (Vuex 3 → 4) | ✅ Done (pulled into Phase 2) |
 | 5 | Router (vue-router 3 → 4) | ✅ Done (pulled into Phase 2) |
 | 6 | Non-UI third-party plugins | ✅ Done |
-| 7 | BootstrapVue → BootstrapVueNext + BS5 (Option A) | 🔄 In progress |
+| 7 | BootstrapVue → BootstrapVueNext + BS5 (Option A) | ✅ Done |
 | 7a | Install BVN + BS5, register plugin/components, CSS | ✅ Done |
 | 7b | Bootstrap 4→5 CSS/utility class migration | ✅ Done |
 | 7c | Migrate b-* component APIs to BVN | ✅ Done |
 | 7d | Rewrite $bvModal/$bvToast call sites | ✅ Done |
-| 7e | Remove bootstrap-vue deps, verify | ⬜ Not started |
+| 7e | Remove bootstrap-vue deps, verify | ✅ Done |
 | 8 | Component breaking-change sweep | ⬜ Not started |
 | 9 | Remove @vue/compat & finalize | ⬜ Not started |
 | 10 | Cross-platform verification | ⬜ Not started |
@@ -340,3 +340,16 @@ which is cleaner than the orchestrator/ref mix:
 **Not migrated:** `views/_unused/ViewCaseDetail.vue` has a `$bvToast.toast(...)` call, but it's an unused view (not in the router) — left as-is; harmless to the build. Flag for cleanup if that view is ever revived.
 
 **Verification:** production build passes; interactive headless test of the exact converted calendar-modal pattern (temp route, since removed): modal **opens on trigger** with data + closes on the close button, **0 errors**. No `$bvModal`/`$bvToast` or ref-based modal calls remain in active files.
+
+### Phase 7e — remove bootstrap-vue deps + final verification ✅
+
+- Confirmed no `bootstrap-vue` (v2) imports/refs in `src` (only a comment in `plugins/bootstrap-vue.js`); no `portal-vue` usage anywhere.
+- Removed from `package.json`: `bootstrap-vue@2`, `portal-vue`, `vue-cli-plugin-bootstrap-vue`.
+- **`npm install` now succeeds WITHOUT `--legacy-peer-deps`** 🎉 — with bootstrap-vue@2 / @fullcalendar/vue@6 / vue2-tinymce-editor all gone, the peer tree is Vue-3-clean. Verified old packages removed from node_modules; `npm ls` resolves vue@3.5.42 deduped across FullCalendar/TinyMCE.
+- Production build passes.
+- **Final BVN screen smoke (temp route, since removed):** alert ✅, tabs (2 navs) ✅, form input ✅, form select ✅, b-table (2 rows + `#cell(actions)` slot button) ✅, b-modal opens with `#footer` slot ✅. **0 errors.**
+
+## Phase 7 COMPLETE ✅ — Vue is now on BootstrapVueNext + Bootstrap 5, BootstrapVue 2 fully removed.
+
+**Note for Phase 9:** `COMPONENT_V_MODEL: false` runtime compat flag (set in 7c) must remain
+until `@vue/compat` is removed; after Phase 9 it becomes the default Vue 3 behavior.
