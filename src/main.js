@@ -1,5 +1,5 @@
 import 'mutationobserver-shim'
-import Vue from 'vue'
+import { createApp } from 'vue'
 import './plugins/bootstrap-vue'
 import App from './App.vue'
 import router from './router'
@@ -10,38 +10,33 @@ import VueSignaturePad from 'vue-signature-pad'
 import datetimePlugin from './plugins/datetime'
 import i18nPlugin from './i18n'
 
-Vue.use(VueSignaturePad)
-Vue.use(datetimePlugin)
-Vue.use(i18nPlugin)
-
-const components = require.context('./components/sofbox')
-components.keys().forEach((fileName) => {
-  const componentConfig = components(fileName)
-  const componentName = fileName.split('/').pop().split('.')[0]
-  Vue.component(componentName, componentConfig.default || componentConfig)
-})
-
-Vue.filter('reverse', function (value) {
-  // slice to make a copy of array, then reverse the copy
-  return value.slice().reverse()
-})
-Vue.use(VueScrollProgressBar)
-Vue.use(VueCookies)
-
-Vue.config.productionTip = false
-
 async function startApp () {
   const { bootstrapMobileSession, initCapacitorPlugins } = await import('./plugins/capacitor')
   await bootstrapMobileSession()
 
   const store = createStore(router)
-  const vm = new Vue({
-    router,
-    store,
-    render: h => h(App)
-  }).$mount('#app')
 
+  const app = createApp(App)
+
+  app.use(router)
+  app.use(store)
+  app.use(VueSignaturePad)
+  app.use(datetimePlugin)
+  app.use(i18nPlugin)
+  app.use(VueScrollProgressBar)
+  app.use(VueCookies)
+
+  // Auto-register all sofbox base components globally (was Vue.component in Vue 2).
+  const components = require.context('./components/sofbox')
+  components.keys().forEach((fileName) => {
+    const componentConfig = components(fileName)
+    const componentName = fileName.split('/').pop().split('.')[0]
+    app.component(componentName, componentConfig.default || componentConfig)
+  })
+
+  const vm = app.mount('#app')
   window.vm = vm
+
   await initCapacitorPlugins(store)
 }
 

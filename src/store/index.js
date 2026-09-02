@@ -1,5 +1,4 @@
-import Vue from 'vue'
-import Vuex from 'vuex'
+import { createStore } from 'vuex'
 import VueCookies from 'vue-cookies'
 import { hasUnlockedFeature } from '../utils/mediatorEntitlements'
 import { debug, getDefaultState } from './helpers'
@@ -20,15 +19,13 @@ import reference from './modules/reference'
 import admin from './modules/admin'
 import correspondence from './modules/correspondence'
 
-Vue.use(Vuex)
-
 const plugin = (router) => (store) => {
   store.$cookies = VueCookies
   store.$router = router
 }
 
 export default (router) => {
-  const store = new Vuex.Store({
+  const store = createStore({
     modules: {
       alert,
       spinner,

@@ -1,5 +1,4 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 /* Layouts — kept eager (shell) */
 import StandardLayout from '../layouts/StandardLayout.vue'
@@ -45,8 +44,6 @@ const ErrorPage = () => import(/* webpackChunkName: "pages" */ '../views/Pages/E
 const ComingSoon = () => import(/* webpackChunkName: "pages" */ '../views/Pages/ComingSoon.vue')
 const Maintenance = () => import(/* webpackChunkName: "pages" */ '../views/Pages/Maintenance.vue')
 const BlankPage = () => import(/* webpackChunkName: "pages" */ '../views/Pages/BlankPage.vue')
-
-Vue.use(VueRouter)
 
 const childRoutes = (prop) => [
   {
@@ -313,9 +310,8 @@ const routes = [
 
 const routerBase = process.env.VUE_APP_CAPACITOR === '1' ? './' : '/admin/'
 
-const router = new VueRouter({
-  mode: 'history',
-  base: routerBase,
+const router = createRouter({
+  history: createWebHistory(routerBase),
   routes
 })
 

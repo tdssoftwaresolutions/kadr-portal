@@ -11,10 +11,10 @@ Branch: `migration/vue3` (off `stable-release`)
 |-------|-------------|--------|
 | 0 | Baseline & safety net | ✅ Done |
 | 1 | Build tooling & deps + @vue/compat | ✅ Done |
-| 2 | Entry point (main.js → createApp) | ⬜ Not started |
+| 2 | Entry point (main.js → createApp) | ✅ Done |
 | 3 | Custom plugins (datetime, i18n, capacitor) | ⬜ Not started |
-| 4 | Store (Vuex 3 → 4) | ⬜ Not started |
-| 5 | Router (vue-router 3 → 4) | ⬜ Not started |
+| 4 | Store (Vuex 3 → 4) | ✅ Done (pulled into Phase 2) |
+| 5 | Router (vue-router 3 → 4) | ✅ Done (pulled into Phase 2) |
 | 6 | Non-UI third-party plugins | ⬜ Not started |
 | 7 | BootstrapVue removal (93/118 files) | ⬜ Not started |
 | 8 | Component breaking-change sweep | ⬜ Not started |
@@ -135,3 +135,48 @@ primary interaction works.
 - `$scopedSlots`: `sofbox/cards/iq-card.vue` (line 42) → **Phase 8**
 - `>>>` / `/deep/` / `::v-deep` CSS combinators (many files) → **Phase 8**
 - `VueRouter default export not found` in `router/index.js` → **Phase 5** (expected; router not converted yet)
+
+---
+
+## Phase 2 — Entry point + (pulled forward) Phases 4 & 5 ✅
+
+**Why 4 & 5 were pulled forward:** `main.js`, `store/index.js`, and `router/index.js`
+are tightly coupled at the app entry point. Because Phase 1 already installed
+**vuex 4** and **vue-router 4** (which have NO default export), the old
+`import Vuex from 'vuex'` / `import VueRouter from 'vue-router'` + `new X()` calls
+were structurally broken (verified: `vuex` default = undefined, `vue-router`
+default = undefined). Converting `main.js` alone would leave a knowingly-broken
+runtime for two more phases. Doing all three together keeps a real working
+checkpoint, per the "keep it green at runtime" principle.
+
+**`src/main.js`**
+- `import Vue from 'vue'` → `import { createApp } from 'vue'`.
+- `new Vue({ router, store, render: h => h(App) }).$mount('#app')` → `createApp(App)` + `app.use(router)` + `app.use(store)` + `app.mount('#app')`.
+- All `Vue.use(...)` → `app.use(...)` (VueSignaturePad, datetime, i18n, VueScrollProgressBar, VueCookies).
+- sofbox `require.context` auto-registration loop: `Vue.component(...)` → `app.component(...)`.
+- Removed `Vue.filter('reverse', ...)` — verified it is used in **0 templates**, so safely dropped (no call-site changes).
+- Removed `Vue.config.productionTip` (no-op / removed in Vue 3).
+- `createApp`/`app.use`/`app.component` moved inside `startApp()` so the app instance exists before plugins register; Capacitor bootstrap + `window.vm` preserved.
+
+**`src/router/index.js` (Phase 5)**
+- `import VueRouter from 'vue-router'` → `import { createRouter, createWebHistory } from 'vue-router'`.
+- Removed `Vue.use(VueRouter)`.
+- `new VueRouter({ mode: 'history', base: routerBase, routes })` → `createRouter({ history: createWebHistory(routerBase), routes })`.
+- No navigation guards and no `path: '*'` catch-all existed, so nothing else to migrate.
+
+**`src/store/index.js` (Phase 4)**
+- `import Vue from 'vue'; import Vuex from 'vuex'` → `import { createStore } from 'vuex'`.
+- Removed `Vue.use(Vuex)`.
+- `new Vuex.Store({...})` → `createStore({...})`.
+- The `plugin(router)` that injects `store.$cookies` / `store.$router` is unchanged (Vuex 4 plugins work identically). All 16 modules unchanged; verified no store module uses `Vue.set`/`Vue.delete`/`import Vue`.
+
+**Verification**
+- `npm run build` (production): **SUCCESS** (hash 90cc586b8ffe990e). The Phase-1 `VueRouter default export not found` warning is now **gone**.
+- **Runtime check (headless, real dev server at /admin/):** navigated to `/admin/auth/sign-in`:
+  - `#app` rendered 6,659 chars of HTML (app mounted + sign-in view rendered)
+  - `window.vm` present (createApp/mount works)
+  - `window.vm.$router` present and route resolved (vue-router 4 works at runtime)
+  - **0 page errors, 0 non-network console errors**
+- Temp smoke script created under `scripts/` for the check, then deleted.
+
+**Remaining deferred compat items unchanged** (still owned by Phase 3/8): `beforeDestroy`, `.native`, `$scopedSlots`, `>>>`/`::v-deep` CSS.
