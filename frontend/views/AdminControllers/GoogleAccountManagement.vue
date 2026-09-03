@@ -2,7 +2,7 @@
   <b-container fluid>
     <b-row>
       <div class="d-block text-center">
-          <h1>Google Account Management</h1>
+          <h1>{{ $t('adminGoogle.title') }}</h1>
           <p v-html="googleAuthMessage"></p>
           <button class="gsi-material-button" @click="authenticate">
           <div class="gsi-material-button-state"></div>
@@ -16,8 +16,8 @@
                   <path fill="none" d="M0 0h48v48H0z"></path>
               </svg>
               </div>
-              <span class="gsi-material-button-contents">Sign in with Google</span>
-              <span style="display: none;">Sign in with Google</span>
+              <span class="gsi-material-button-contents">{{ $t('adminGoogle.signInWithGoogle') }}</span>
+              <span style="display: none;">{{ $t('adminGoogle.signInWithGoogle') }}</span>
           </div>
           </button>
       </div>
@@ -39,7 +39,7 @@ export default {
     sofbox.index()
     const response = await this.$store.dispatch('getGoogleAccessToken')
     if (response.success) {
-      this.googleAuthMessage = `<p>Account already active till ${new Date(response.data.expiry_date).toLocaleDateString()}</p>`
+      this.googleAuthMessage = `<p>${this.$t('adminGoogle.accountActiveTill', { date: new Date(response.data.expiry_date).toLocaleDateString() })}</p>`
     }
   },
   methods: {
@@ -57,7 +57,7 @@ export default {
       }
     },
     initCalendar () {
-      alert('done')
+      alert(this.$t('adminGoogle.done'))
     }
   }
 }

@@ -10,21 +10,21 @@
                 <div class="d-flex align-items-center mb-3">
                   <img v-if="user.profile_picture_url" :src="user.profile_picture_url" class="rounded-circle me-3" width="50" height="50" alt="Profile" />
                   <div>
-                    <h5 class="mb-1">{{ user.name || 'N/A' }}</h5>
-                    <p class="mb-1 text-muted">{{ user.email || 'N/A' }}</p>
+                    <h5 class="mb-1">{{ user.name || $t('adminInactiveUsers.na') }}</h5>
+                    <p class="mb-1 text-muted">{{ user.email || $t('adminInactiveUsers.na') }}</p>
                   </div>
                 </div>
-                <p v-if="type === 'MEDIATOR'" class="mb-2"><strong>Preferred Area:</strong> {{ convertToCommaSeparated(user.preferred_area_of_practice) }}</p>
-                <p class="mb-2"><strong>State:</strong> {{ user.state || 'N/A' }}</p>
-                <p class="mb-2"><strong>Created:</strong> {{ formatDate(user.created_at) }}</p>
-                <p v-if="user.preferred_languages" class="mb-3"><strong>Language:</strong> {{ getFullLanguages(user.preferred_languages) }}</p>
+                <p v-if="type === 'MEDIATOR'" class="mb-2"><strong>{{ $t('adminInactiveUsers.preferredArea') }}:</strong> {{ convertToCommaSeparated(user.preferred_area_of_practice) }}</p>
+                <p class="mb-2"><strong>{{ $t('adminInactiveUsers.state') }}:</strong> {{ user.state || $t('adminInactiveUsers.na') }}</p>
+                <p class="mb-2"><strong>{{ $t('adminInactiveUsers.created') }}:</strong> {{ formatDate(user.created_at) }}</p>
+                <p v-if="user.preferred_languages" class="mb-3"><strong>{{ $t('adminInactiveUsers.language') }}:</strong> {{ getFullLanguages(user.preferred_languages) }}</p>
                 <div v-if="type === 'CLIENT'" class="mb-3">
-                  <label class="small"><strong>Case Type:</strong></label>
+                  <label class="small"><strong>{{ $t('adminInactiveUsers.caseType') }}:</strong></label>
                   <b-form-select v-model="user.case_type" :options="categoryOptions" size="sm" :disabled="user.approved"></b-form-select>
                 </div>
                 <div class="mt-auto d-flex justify-content-between">
-                  <b-button variant="outline-primary" size="sm" @click="openModal(user)">View Details</b-button>
-                  <b-button variant="success" size="sm" @click="approve(user)" :disabled="user.approved || (type === 'CLIENT' && !user.case_type)">Approve</b-button>
+                  <b-button variant="outline-primary" size="sm" @click="openModal(user)">{{ $t('adminInactiveUsers.viewDetails') }}</b-button>
+                  <b-button variant="success" size="sm" @click="approve(user)" :disabled="user.approved || (type === 'CLIENT' && !user.case_type)">{{ $t('adminInactiveUsers.approve') }}</b-button>
                 </div>
               </b-card-body>
             </b-card>
@@ -33,8 +33,8 @@
         <kadr-empty-state
           v-else
           icon="fas fa-folder-open"
-          :title="ADMIN.NO_PENDING"
-          :description="ADMIN.NO_PENDING_DESCRIPTION"
+          :title="$t('adminInactiveUsers.noPending')"
+          :description="$t('adminInactiveUsers.noPendingDescription')"
         />
         <b-pagination
           v-if="paginatedData.total > 0"
@@ -48,12 +48,12 @@
       </b-col>
     </b-row>
 
-    <b-modal v-model="modalVisible" size="lg" title="User Details" no-footer>
+    <b-modal v-model="modalVisible" size="lg" :title="$t('adminInactiveUsers.userDetails')" no-footer>
       <div v-if="selectedUser">
         <b-row>
           <b-col :md="selectedUser.profile_picture_url ? 9 : 12">
-            <h4>{{ selectedUser.name || 'N/A' }}</h4>
-            <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
+            <h4>{{ selectedUser.name || $t('adminInactiveUsers.na') }}</h4>
+            <p><strong>{{ $t('adminInactiveUsers.email') }}:</strong> {{ selectedUser.email || $t('adminInactiveUsers.na') }}</p>
             <div v-for="(value, key) in filteredItem(selectedUser)" :key="key" class="mb-2">
               <strong v-if="!isURL(value)">{{ formatKey(key) }}:</strong>
               <span v-if="isURL(value)">
@@ -70,20 +70,20 @@
             </div>
             <template v-if="type === 'CLIENT' && selectedUser.cases.length">
               <div v-for="(caseItem, index) in selectedUser.cases" :key="index">
-                <p class="mb-2"><strong>Case ID:</strong> {{ caseItem.caseId || 'N/A' }}</p>
-                <p class="mb-2"><strong>Complaint Category:</strong> {{ caseItem.category || 'N/A' }}</p>
-                <p class="mb-2"><strong>Dispute Description:</strong> {{ caseItem.description || 'N/A' }}</p>
+                <p class="mb-2"><strong>{{ $t('adminInactiveUsers.caseId') }}:</strong> {{ caseItem.caseId || $t('adminInactiveUsers.na') }}</p>
+                <p class="mb-2"><strong>{{ $t('adminInactiveUsers.complaintCategory') }}:</strong> {{ caseItem.category || $t('adminInactiveUsers.na') }}</p>
+                <p class="mb-2"><strong>{{ $t('adminInactiveUsers.disputeDescription') }}:</strong> {{ caseItem.description || $t('adminInactiveUsers.na') }}</p>
                 <template v-if="caseItem.secondParty">
-                  <p class="mb-2"><strong>Opposite Party Name:</strong> {{ caseItem.secondParty.name || 'N/A' }}</p>
-                  <p class="mb-2"><strong>Opposite Party Email:</strong> {{ caseItem.secondParty.email || 'N/A' }}</p>
-                  <p class="mb-2"><strong>Opposite Party Phone:</strong> {{ caseItem.secondParty.phone_number || 'N/A' }}</p>
+                  <p class="mb-2"><strong>{{ $t('adminInactiveUsers.oppositePartyName') }}:</strong> {{ caseItem.secondParty.name || $t('adminInactiveUsers.na') }}</p>
+                  <p class="mb-2"><strong>{{ $t('adminInactiveUsers.oppositePartyEmail') }}:</strong> {{ caseItem.secondParty.email || $t('adminInactiveUsers.na') }}</p>
+                  <p class="mb-2"><strong>{{ $t('adminInactiveUsers.oppositePartyPhone') }}:</strong> {{ caseItem.secondParty.phone_number || $t('adminInactiveUsers.na') }}</p>
                 </template>
                 <div v-if="caseItem.evidence_document_url">
-                  <p class="mb-2"><strong>Attachments:</strong></p>
+                  <p class="mb-2"><strong>{{ $t('adminInactiveUsers.attachments') }}:</strong></p>
                   <div class="docs-grid mt-2">
                     <FilePreview
                       :url="caseItem.evidence_document_url"
-                      name="Evidence Document"
+                      :name="$t('adminInactiveUsers.evidenceDocument')"
                     />
                   </div>
                 </div>
@@ -95,7 +95,7 @@
           </b-col>
         </b-row>
         <div v-if="certificateFields.length > 0" class="mt-4">
-          <p class="mb-2"><strong>Attachments:</strong></p>
+          <p class="mb-2"><strong>{{ $t('adminInactiveUsers.attachments') }}:</strong></p>
           <div v-if="certificateFields.length" class="docs-grid">
                <FilePreview
                   v-for="(field, index) in certificateFields"
@@ -106,7 +106,7 @@
           </div>
         </div>
         <div class="d-flex justify-content-end mt-3">
-          <b-button variant="secondary" @click="modalVisible = false">Close</b-button>
+          <b-button variant="secondary" @click="modalVisible = false">{{ $t('adminInactiveUsers.close') }}</b-button>
         </div>
       </div>
     </b-modal>
@@ -117,7 +117,6 @@ import { sofbox } from '../../config/pluginInit'
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import FilePreview from '../../components/DocumentPreview.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
-import { ADMIN } from '../../constants/messages'
 
 export default {
   name: 'InactiveUsers',
@@ -151,6 +150,14 @@ export default {
     }
   },
   computed: {
+    categoryOptions () {
+      return [
+        { value: null, text: this.$t('adminInactiveUsers.selectType') },
+        { value: 'Mediation', text: 'Mediation' },
+        { value: 'Arbitrator', text: 'Arbitrator' },
+        { value: 'Counsellor', text: 'Counsellor' }
+      ]
+    },
     paginatedItems () {
       const start = (this.currentPage - 1) * this.perPage
       return this.paginatedData.users.slice(start, start + this.perPage)
@@ -232,7 +239,7 @@ export default {
     },
     async approve (item) {
       if (this.type === 'CLIENT' && !item.case_type) {
-        this.showAlert('Please select Case Type', 'danger')
+        this.showAlert(this.$t('adminInactiveUsers.selectCaseTypeAlert'), 'danger')
         return
       }
       const response = await this.$store.dispatch('updateInactiveUsers', {
@@ -294,13 +301,6 @@ export default {
   },
   data () {
     return {
-      ADMIN,
-      categoryOptions: [
-        { value: null, text: 'Please select type' },
-        { value: 'Mediation', text: 'Mediation' },
-        { value: 'Arbitrator', text: 'Arbitrator' },
-        { value: 'Counsellor', text: 'Counsellor' }
-      ],
       currentPage: 1,
       perPage: 10,
       paginatedData: {},

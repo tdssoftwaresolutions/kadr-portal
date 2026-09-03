@@ -4,11 +4,11 @@
       <b-col sm="12" lg="6" class="mb-4">
         <iq-card class="mb-3 admin-settings-compact">
           <template v-slot:headerTitle>
-            <h4 class="card-title mb-0">Invoice & commission settings</h4>
+            <h4 class="card-title mb-0">{{ $t('adminSettings.invoiceCommissionTitle') }}</h4>
           </template>
           <template v-slot:body>
             <p class="text-muted compact-hint">
-              Default mediator revenue share and tax percentages for invoices.
+              {{ $t('adminSettings.invoiceHint') }}
             </p>
             <b-form @submit.prevent="saveInvoiceSettings">
               <b-table :items="invoiceSettings" :fields="fields" small responsive class="compact-table">
@@ -20,7 +20,7 @@
                 </template>
               </b-table>
               <b-button type="submit" variant="primary" size="sm" :disabled="!invoiceSettings.length">
-                Save invoice settings
+                {{ $t('adminSettings.saveInvoiceSettings') }}
               </b-button>
             </b-form>
           </template>
@@ -28,11 +28,11 @@
 
         <iq-card class="admin-settings-compact">
           <template v-slot:headerTitle>
-            <h4 class="card-title mb-0">Reward points settings</h4>
+            <h4 class="card-title mb-0">{{ $t('adminSettings.rewardPointsTitle') }}</h4>
           </template>
           <template v-slot:body>
             <p class="text-muted compact-hint">
-              Points earned per activity. Applies to new awards only.
+              {{ $t('adminSettings.rewardHint') }}
             </p>
             <b-form @submit.prevent="saveRewardSettings">
               <b-table :items="rewardSettings" :fields="fields" small responsive class="compact-table">
@@ -44,7 +44,7 @@
                 </template>
               </b-table>
               <b-button type="submit" variant="primary" size="sm" :disabled="!rewardSettings.length">
-                Save reward settings
+                {{ $t('adminSettings.saveRewardSettings') }}
               </b-button>
             </b-form>
           </template>
@@ -60,7 +60,7 @@
         <admin-premium-settings-panel ref="premiumPanel" @fulfillment-rules-changed="onFulfillmentRulesChanged" />
         <div class="text-end mt-2">
           <router-link :to="{ name: 'app.reward-orders' }" class="btn btn-sm btn-outline-secondary">
-            View redemption orders →
+            {{ $t('adminSettings.viewRedemptionOrders') }}
           </router-link>
         </div>
       </b-col>
@@ -103,14 +103,16 @@ export default {
   components: { AdminRewardCatalogPanel, AdminPremiumSettingsPanel },
   data () {
     return {
-      settings: [],
-      fields: [
-        { key: 'label', label: 'Setting' },
-        { key: 'value', label: 'Value' }
-      ]
+      settings: []
     }
   },
   computed: {
+    fields () {
+      return [
+        { key: 'label', label: this.$t('adminSettings.colSetting') },
+        { key: 'value', label: this.$t('adminSettings.colValue') }
+      ]
+    },
     invoiceSettings () {
       return this.settings.filter(s => INVOICE_SETTING_KEYS.has(s.key) || isPremiumSetting(s.key))
     },

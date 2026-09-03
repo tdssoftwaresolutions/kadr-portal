@@ -2,90 +2,89 @@
   <b-container fluid class="admin-website-content-page">
     <b-row class="mb-3 align-items-center">
       <b-col>
-        <h4 class="mb-1">Website content</h4>
+        <h4 class="mb-1">{{ $t('adminWebsite.title') }}</h4>
         <p class="text-muted small mb-0">
-          Contact, banner, testimonials &amp; pricing are baked into static HTML when you save.
-          FAQ and homepage blog stories load live from the API (updates appear immediately).
+          {{ $t('adminWebsite.subtitle') }}
         </p>
       </b-col>
       <b-col cols="auto">
         <b-button size="sm" variant="outline-secondary" :disabled="loading" @click="regenerate">
-          Regenerate pages
+          {{ $t('adminWebsite.regeneratePages') }}
         </b-button>
       </b-col>
     </b-row>
 
     <b-overlay :show="loading" rounded>
       <b-tabs v-model="activeTab" content-class="mt-3">
-        <b-tab title="Contact">
+        <b-tab :title="$t('adminWebsite.tabContact')">
           <iq-card>
             <template v-slot:body>
               <b-form @submit.prevent="saveSettings">
                 <b-row>
-                  <b-col md="6"><b-form-group label="Email"><b-form-input v-model="settings.email" required /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Phone"><b-form-input v-model="settings.phone" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="WhatsApp"><b-form-input v-model="settings.whatsapp" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Address (EN)"><b-form-input v-model="settings.address_en" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Address (HI)"><b-form-input v-model="settings.address_hi" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Pricing footnote (EN)"><b-form-textarea v-model="settings.pricing_note_en" rows="2" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Pricing footnote (HI)"><b-form-textarea v-model="settings.pricing_note_hi" rows="2" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.email')"><b-form-input v-model="settings.email" required /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.phone')"><b-form-input v-model="settings.phone" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.whatsapp')"><b-form-input v-model="settings.whatsapp" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.addressEn')"><b-form-input v-model="settings.address_en" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.addressHi')"><b-form-input v-model="settings.address_hi" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.pricingNoteEn')"><b-form-textarea v-model="settings.pricing_note_en" rows="2" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.pricingNoteHi')"><b-form-textarea v-model="settings.pricing_note_hi" rows="2" /></b-form-group></b-col>
                 </b-row>
-                <b-button type="submit" variant="primary" size="sm">Save contact &amp; regenerate</b-button>
+                <b-button type="submit" variant="primary" size="sm">{{ $t('adminWebsite.saveContact') }}</b-button>
               </b-form>
             </template>
           </iq-card>
         </b-tab>
 
-        <b-tab title="Banner">
+        <b-tab :title="$t('adminWebsite.tabBanner')">
           <iq-card>
             <template v-slot:body>
               <b-form @submit.prevent="saveBanner">
-                <b-form-checkbox v-model="banner.active" switch class="mb-3">Show banner on homepage</b-form-checkbox>
+                <b-form-checkbox v-model="banner.active" switch class="mb-3">{{ $t('adminWebsite.showBanner') }}</b-form-checkbox>
                 <b-row>
-                  <b-col md="4"><b-form-group label="Tag (EN)"><b-form-input v-model="banner.tag_en" /></b-form-group></b-col>
-                  <b-col md="4"><b-form-group label="Tag (HI)"><b-form-input v-model="banner.tag_hi" /></b-form-group></b-col>
-                  <b-col md="4"><b-form-group label="Link URL"><b-form-input v-model="banner.link_url" placeholder="/#kadr-organisations" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Message (EN) — HTML allowed"><b-form-textarea v-model="banner.text_en" rows="3" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Message (HI) — HTML allowed"><b-form-textarea v-model="banner.text_hi" rows="3" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Link text (EN)"><b-form-input v-model="banner.link_text_en" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Link text (HI)"><b-form-input v-model="banner.link_text_hi" /></b-form-group></b-col>
+                  <b-col md="4"><b-form-group :label="$t('adminWebsite.tagEn')"><b-form-input v-model="banner.tag_en" /></b-form-group></b-col>
+                  <b-col md="4"><b-form-group :label="$t('adminWebsite.tagHi')"><b-form-input v-model="banner.tag_hi" /></b-form-group></b-col>
+                  <b-col md="4"><b-form-group :label="$t('adminWebsite.linkUrl')"><b-form-input v-model="banner.link_url" placeholder="/#kadr-organisations" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.messageEn')"><b-form-textarea v-model="banner.text_en" rows="3" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.messageHi')"><b-form-textarea v-model="banner.text_hi" rows="3" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.linkTextEn')"><b-form-input v-model="banner.link_text_en" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.linkTextHi')"><b-form-input v-model="banner.link_text_hi" /></b-form-group></b-col>
                 </b-row>
-                <b-button type="submit" variant="primary" size="sm">Save banner &amp; regenerate</b-button>
+                <b-button type="submit" variant="primary" size="sm">{{ $t('adminWebsite.saveBanner') }}</b-button>
               </b-form>
             </template>
           </iq-card>
         </b-tab>
 
-        <b-tab title="Testimonials">
+        <b-tab :title="$t('adminWebsite.tabTestimonials')">
           <iq-card class="mb-3">
-            <template v-slot:headerTitle><h5 class="mb-0">Add / edit testimonial</h5></template>
+            <template v-slot:headerTitle><h5 class="mb-0">{{ $t('adminWebsite.addEditTestimonial') }}</h5></template>
             <template v-slot:body>
               <b-form @submit.prevent="saveTestimonial">
                 <b-row>
-                  <b-col md="6"><b-form-group label="Quote (English)"><b-form-textarea v-model="testimonialForm.quote_en" rows="3" required /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Quote (Hindi)"><b-form-textarea v-model="testimonialForm.quote_hi" rows="3" placeholder="Optional — falls back to English" /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Customer name"><b-form-input v-model="testimonialForm.customer_name" required /></b-form-group></b-col>
-                  <b-col md="6"><b-form-group label="Designation"><b-form-input v-model="testimonialForm.designation" placeholder="e.g. Small Business Owner, Delhi" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.quoteEn')"><b-form-textarea v-model="testimonialForm.quote_en" rows="3" required /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.quoteHi')"><b-form-textarea v-model="testimonialForm.quote_hi" rows="3" :placeholder="$t('adminWebsite.quoteHiPlaceholder')" /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.customerName')"><b-form-input v-model="testimonialForm.customer_name" required /></b-form-group></b-col>
+                  <b-col md="6"><b-form-group :label="$t('adminWebsite.designation')"><b-form-input v-model="testimonialForm.designation" :placeholder="$t('adminWebsite.designationPlaceholder')" /></b-form-group></b-col>
                   <b-col md="6">
-                    <b-form-group label="Star rating">
-                      <div class="star-picker" role="group" aria-label="Star rating">
+                    <b-form-group :label="$t('adminWebsite.starRating')">
+                      <div class="star-picker" role="group" :aria-label="$t('adminWebsite.starRating')">
                         <button
                           v-for="n in 5"
                           :key="n"
                           type="button"
                           class="star-picker__star"
                           :class="{ 'star-picker__star--active': n <= testimonialForm.stars }"
-                          :aria-label="n + ' stars'"
+                          :aria-label="$t('adminWebsite.starsAria', { n })"
                           @click="testimonialForm.stars = n"
                         >★</button>
                       </div>
                     </b-form-group>
                   </b-col>
-                  <b-col md="6" class="d-flex align-items-end"><b-form-checkbox v-model="testimonialForm.active" switch>Show on website</b-form-checkbox></b-col>
+                  <b-col md="6" class="d-flex align-items-end"><b-form-checkbox v-model="testimonialForm.active" switch>{{ $t('adminWebsite.showOnWebsite') }}</b-form-checkbox></b-col>
                 </b-row>
-                <p class="small text-muted mb-2">Newest testimonials appear first on the homepage.</p>
-                <b-button type="submit" variant="primary" size="sm" class="me-2">{{ testimonialForm.id ? 'Update' : 'Add' }}</b-button>
-                <b-button v-if="testimonialForm.id" size="sm" variant="outline-secondary" @click="resetTestimonialForm">Cancel edit</b-button>
+                <p class="small text-muted mb-2">{{ $t('adminWebsite.newestFirst') }}</p>
+                <b-button type="submit" variant="primary" size="sm" class="me-2">{{ testimonialForm.id ? $t('adminWebsite.update') : $t('adminWebsite.add') }}</b-button>
+                <b-button v-if="testimonialForm.id" size="sm" variant="outline-secondary" @click="resetTestimonialForm">{{ $t('adminWebsite.cancelEdit') }}</b-button>
               </b-form>
             </template>
           </iq-card>
@@ -94,48 +93,48 @@
             <template #cell(customer_name)="row">{{ row.item.author_name }}</template>
             <template #cell(designation)="row">{{ row.item.role_en }}</template>
             <template #cell(created_at)="row">{{ formatDate(row.item.created_at) }}</template>
-            <template #cell(active)="row"><b-badge :variant="row.item.active ? 'success' : 'secondary'">{{ row.item.active ? 'Yes' : 'No' }}</b-badge></template>
+            <template #cell(active)="row"><b-badge :variant="row.item.active ? 'success' : 'secondary'">{{ row.item.active ? $t('adminWebsite.yes') : $t('adminWebsite.no') }}</b-badge></template>
             <template #cell(actions)="row">
-              <b-button size="sm" variant="link" @click="editTestimonial(row.item)">Edit</b-button>
-              <b-button size="sm" variant="link" class="text-danger" @click="removeTestimonial(row.item)">Delete</b-button>
+              <b-button size="sm" variant="link" @click="editTestimonial(row.item)">{{ $t('adminWebsite.edit') }}</b-button>
+              <b-button size="sm" variant="link" class="text-danger" @click="removeTestimonial(row.item)">{{ $t('adminWebsite.delete') }}</b-button>
             </template>
           </b-table>
         </b-tab>
 
-        <b-tab title="Pricing">
+        <b-tab :title="$t('adminWebsite.tabPricing')">
           <iq-card class="mb-3">
-            <template v-slot:headerTitle><h5 class="mb-0">Pricing plan</h5></template>
+            <template v-slot:headerTitle><h5 class="mb-0">{{ $t('adminWebsite.pricingPlan') }}</h5></template>
             <template v-slot:body>
               <b-form @submit.prevent="savePricingPlan">
                 <b-row>
-                  <b-col md="4"><b-form-group label="Name (EN)"><b-form-input v-model="planForm.name_en" required /></b-form-group></b-col>
-                  <b-col md="4"><b-form-group label="Name (HI)"><b-form-input v-model="planForm.name_hi" required /></b-form-group></b-col>
-                  <b-col md="4"><b-form-group label="Price display"><b-form-input v-model="planForm.price_display" placeholder="2,999 or Custom" required /></b-form-group></b-col>
-                  <b-col md="4"><b-form-group label="Period (EN)"><b-form-input v-model="planForm.period_en" /></b-form-group></b-col>
-                  <b-col md="4"><b-form-group label="Period (HI)"><b-form-input v-model="planForm.period_hi" /></b-form-group></b-col>
-                  <b-col md="4"><b-form-group label="Button style">
+                  <b-col md="4"><b-form-group :label="$t('adminWebsite.nameEn')"><b-form-input v-model="planForm.name_en" required /></b-form-group></b-col>
+                  <b-col md="4"><b-form-group :label="$t('adminWebsite.nameHi')"><b-form-input v-model="planForm.name_hi" required /></b-form-group></b-col>
+                  <b-col md="4"><b-form-group :label="$t('adminWebsite.priceDisplay')"><b-form-input v-model="planForm.price_display" :placeholder="$t('adminWebsite.priceDisplayPlaceholder')" required /></b-form-group></b-col>
+                  <b-col md="4"><b-form-group :label="$t('adminWebsite.periodEn')"><b-form-input v-model="planForm.period_en" /></b-form-group></b-col>
+                  <b-col md="4"><b-form-group :label="$t('adminWebsite.periodHi')"><b-form-input v-model="planForm.period_hi" /></b-form-group></b-col>
+                  <b-col md="4"><b-form-group :label="$t('adminWebsite.buttonStyle')">
                     <b-form-select v-model="planForm.button_style" :options="buttonStyleOptions" />
                   </b-form-group></b-col>
-                  <b-col md="3"><b-form-checkbox v-model="planForm.is_popular" switch class="mt-4">Most popular</b-form-checkbox></b-col>
-                  <b-col md="3"><b-form-checkbox v-model="planForm.active" switch class="mt-4">Active</b-form-checkbox></b-col>
-                  <b-col md="3"><b-form-group label="Badge (EN)"><b-form-input v-model="planForm.badge_en" /></b-form-group></b-col>
-                  <b-col md="3"><b-form-group label="Sort order"><b-form-input v-model.number="planForm.sort_order" type="number" /></b-form-group></b-col>
+                  <b-col md="3"><b-form-checkbox v-model="planForm.is_popular" switch class="mt-4">{{ $t('adminWebsite.mostPopular') }}</b-form-checkbox></b-col>
+                  <b-col md="3"><b-form-checkbox v-model="planForm.active" switch class="mt-4">{{ $t('adminWebsite.active') }}</b-form-checkbox></b-col>
+                  <b-col md="3"><b-form-group :label="$t('adminWebsite.badgeEn')"><b-form-input v-model="planForm.badge_en" /></b-form-group></b-col>
+                  <b-col md="3"><b-form-group :label="$t('adminWebsite.sortOrder')"><b-form-input v-model.number="planForm.sort_order" type="number" /></b-form-group></b-col>
                 </b-row>
-                <h6 class="mt-3">Features</h6>
+                <h6 class="mt-3">{{ $t('adminWebsite.features') }}</h6>
                 <div v-for="(feat, idx) in planForm.features" :key="idx" class="border rounded p-2 mb-2">
                   <b-row>
-                    <b-col md="5"><b-form-input v-model="feat.text_en" placeholder="Feature (EN)" /></b-col>
-                    <b-col md="5"><b-form-input v-model="feat.text_hi" placeholder="Feature (HI)" /></b-col>
+                    <b-col md="5"><b-form-input v-model="feat.text_en" :placeholder="$t('adminWebsite.featureEn')" /></b-col>
+                    <b-col md="5"><b-form-input v-model="feat.text_hi" :placeholder="$t('adminWebsite.featureHi')" /></b-col>
                     <b-col md="2" class="d-flex align-items-center">
-                      <b-form-checkbox v-model="feat.included" switch>Included</b-form-checkbox>
+                      <b-form-checkbox v-model="feat.included" switch>{{ $t('adminWebsite.included') }}</b-form-checkbox>
                       <b-button size="sm" variant="link" class="text-danger ms-auto" @click="planForm.features.splice(idx, 1)">×</b-button>
                     </b-col>
                   </b-row>
                 </div>
-                <b-button size="sm" variant="outline-secondary" class="mb-3" @click="planForm.features.push(emptyFeature())">Add feature</b-button>
+                <b-button size="sm" variant="outline-secondary" class="mb-3" @click="planForm.features.push(emptyFeature())">{{ $t('adminWebsite.addFeature') }}</b-button>
                 <div>
-                  <b-button type="submit" variant="primary" size="sm" class="me-2">{{ planForm.id ? 'Update plan' : 'Add plan' }}</b-button>
-                  <b-button v-if="planForm.id" size="sm" variant="outline-secondary" @click="resetPlanForm">Cancel edit</b-button>
+                  <b-button type="submit" variant="primary" size="sm" class="me-2">{{ planForm.id ? $t('adminWebsite.updatePlan') : $t('adminWebsite.addPlan') }}</b-button>
+                  <b-button v-if="planForm.id" size="sm" variant="outline-secondary" @click="resetPlanForm">{{ $t('adminWebsite.cancelEdit') }}</b-button>
                 </div>
               </b-form>
             </template>
@@ -143,53 +142,53 @@
           <b-table :items="pricingPlans" :fields="planFields" small responsive striped>
             <template #cell(is_popular)="row"><span v-if="row.item.is_popular">★</span></template>
             <template #cell(actions)="row">
-              <b-button size="sm" variant="link" @click="editPlan(row.item)">Edit</b-button>
-              <b-button size="sm" variant="link" class="text-danger" @click="removePlan(row.item)">Delete</b-button>
+              <b-button size="sm" variant="link" @click="editPlan(row.item)">{{ $t('adminWebsite.edit') }}</b-button>
+              <b-button size="sm" variant="link" class="text-danger" @click="removePlan(row.item)">{{ $t('adminWebsite.delete') }}</b-button>
             </template>
           </b-table>
         </b-tab>
 
-        <b-tab title="FAQ">
+        <b-tab :title="$t('adminWebsite.tabFaq')">
           <b-row>
             <b-col lg="4">
               <iq-card class="mb-3">
-                <template v-slot:headerTitle><h5 class="mb-0">Categories</h5></template>
+                <template v-slot:headerTitle><h5 class="mb-0">{{ $t('adminWebsite.categories') }}</h5></template>
                 <template v-slot:body>
                   <b-form @submit.prevent="saveFaqCategory">
-                    <b-form-group label="Name (EN)"><b-form-input v-model="categoryForm.name_en" required /></b-form-group>
-                    <b-form-group label="Name (HI)"><b-form-input v-model="categoryForm.name_hi" required /></b-form-group>
-                    <b-form-group label="Sort order"><b-form-input v-model.number="categoryForm.sort_order" type="number" /></b-form-group>
-                    <b-form-checkbox v-model="categoryForm.active" switch class="mb-3">Active</b-form-checkbox>
-                    <b-button type="submit" size="sm" variant="primary" class="me-2">{{ categoryForm.id ? 'Update' : 'Add' }}</b-button>
-                    <b-button v-if="categoryForm.id" size="sm" variant="outline-secondary" @click="resetCategoryForm">Cancel</b-button>
+                    <b-form-group :label="$t('adminWebsite.nameEn')"><b-form-input v-model="categoryForm.name_en" required /></b-form-group>
+                    <b-form-group :label="$t('adminWebsite.nameHi')"><b-form-input v-model="categoryForm.name_hi" required /></b-form-group>
+                    <b-form-group :label="$t('adminWebsite.sortOrder')"><b-form-input v-model.number="categoryForm.sort_order" type="number" /></b-form-group>
+                    <b-form-checkbox v-model="categoryForm.active" switch class="mb-3">{{ $t('adminWebsite.active') }}</b-form-checkbox>
+                    <b-button type="submit" size="sm" variant="primary" class="me-2">{{ categoryForm.id ? $t('adminWebsite.update') : $t('adminWebsite.add') }}</b-button>
+                    <b-button v-if="categoryForm.id" size="sm" variant="outline-secondary" @click="resetCategoryForm">{{ $t('adminWebsite.cancel') }}</b-button>
                   </b-form>
                   <hr />
                   <div v-for="cat in faqCategories" :key="cat.id" class="d-flex align-items-center mb-2">
                     <span class="flex-grow-1 small">{{ cat.name_en }}</span>
-                    <b-button size="sm" variant="link" @click="editCategory(cat)">Edit</b-button>
-                    <b-button size="sm" variant="link" class="text-danger" @click="removeCategory(cat)">Del</b-button>
+                    <b-button size="sm" variant="link" @click="editCategory(cat)">{{ $t('adminWebsite.edit') }}</b-button>
+                    <b-button size="sm" variant="link" class="text-danger" @click="removeCategory(cat)">{{ $t('adminWebsite.del') }}</b-button>
                   </div>
                 </template>
               </iq-card>
             </b-col>
             <b-col lg="8">
               <iq-card>
-                <template v-slot:headerTitle><h5 class="mb-0">FAQ items</h5></template>
+                <template v-slot:headerTitle><h5 class="mb-0">{{ $t('adminWebsite.faqItems') }}</h5></template>
                 <template v-slot:body>
                   <b-form @submit.prevent="saveFaqItem">
-                    <b-form-group label="Category">
+                    <b-form-group :label="$t('adminWebsite.category')">
                       <b-form-select v-model="faqForm.category_id" :options="categoryOptions" required />
                     </b-form-group>
-                    <b-form-group label="Question (EN)"><b-form-textarea v-model="faqForm.question_en" rows="2" required /></b-form-group>
-                    <b-form-group label="Question (HI)"><b-form-textarea v-model="faqForm.question_hi" rows="2" required /></b-form-group>
-                    <b-form-group label="Answer (EN)"><b-form-textarea v-model="faqForm.answer_en" rows="3" required /></b-form-group>
-                    <b-form-group label="Answer (HI)"><b-form-textarea v-model="faqForm.answer_hi" rows="3" required /></b-form-group>
+                    <b-form-group :label="$t('adminWebsite.questionEn')"><b-form-textarea v-model="faqForm.question_en" rows="2" required /></b-form-group>
+                    <b-form-group :label="$t('adminWebsite.questionHi')"><b-form-textarea v-model="faqForm.question_hi" rows="2" required /></b-form-group>
+                    <b-form-group :label="$t('adminWebsite.answerEn')"><b-form-textarea v-model="faqForm.answer_en" rows="3" required /></b-form-group>
+                    <b-form-group :label="$t('adminWebsite.answerHi')"><b-form-textarea v-model="faqForm.answer_hi" rows="3" required /></b-form-group>
                     <b-row>
-                      <b-col md="4"><b-form-group label="Sort order"><b-form-input v-model.number="faqForm.sort_order" type="number" /></b-form-group></b-col>
-                      <b-col md="4" class="d-flex align-items-end"><b-form-checkbox v-model="faqForm.active" switch>Active</b-form-checkbox></b-col>
+                      <b-col md="4"><b-form-group :label="$t('adminWebsite.sortOrder')"><b-form-input v-model.number="faqForm.sort_order" type="number" /></b-form-group></b-col>
+                      <b-col md="4" class="d-flex align-items-end"><b-form-checkbox v-model="faqForm.active" switch>{{ $t('adminWebsite.active') }}</b-form-checkbox></b-col>
                     </b-row>
-                    <b-button type="submit" size="sm" variant="primary" class="me-2">{{ faqForm.id ? 'Update' : 'Add' }}</b-button>
-                    <b-button v-if="faqForm.id" size="sm" variant="outline-secondary" @click="resetFaqForm">Cancel</b-button>
+                    <b-button type="submit" size="sm" variant="primary" class="me-2">{{ faqForm.id ? $t('adminWebsite.update') : $t('adminWebsite.add') }}</b-button>
+                    <b-button v-if="faqForm.id" size="sm" variant="outline-secondary" @click="resetFaqForm">{{ $t('adminWebsite.cancel') }}</b-button>
                   </b-form>
                   <hr />
                   <div v-for="cat in faqCategories" :key="'items-' + cat.id" class="mb-3">
@@ -197,8 +196,8 @@
                     <div v-for="item in cat.items" :key="item.id" class="border rounded p-2 mb-2 small">
                       <div class="d-flex">
                         <span class="flex-grow-1">{{ item.question_en }}</span>
-                        <b-button size="sm" variant="link" @click="editFaqItem(item)">Edit</b-button>
-                        <b-button size="sm" variant="link" class="text-danger" @click="removeFaqItem(item)">Del</b-button>
+                        <b-button size="sm" variant="link" @click="editFaqItem(item)">{{ $t('adminWebsite.edit') }}</b-button>
+                        <b-button size="sm" variant="link" class="text-danger" @click="removeFaqItem(item)">{{ $t('adminWebsite.del') }}</b-button>
                       </div>
                     </div>
                   </div>
@@ -229,30 +228,36 @@ export default {
       testimonialForm: this.emptyTestimonial(),
       planForm: this.emptyPlan(),
       categoryForm: this.emptyCategory(),
-      faqForm: this.emptyFaqItem(),
-      testimonialFields: [
-        { key: 'customer_name', label: 'Customer' },
-        { key: 'designation', label: 'Designation' },
-        { key: 'stars', label: 'Rating' },
-        { key: 'created_at', label: 'Added' },
-        { key: 'active', label: 'Active' },
-        { key: 'actions', label: '' }
-      ],
-      planFields: [
-        { key: 'name_en', label: 'Plan' },
-        { key: 'price_display', label: 'Price' },
-        { key: 'is_popular', label: 'Popular' },
-        { key: 'sort_order', label: 'Order' },
-        { key: 'actions', label: '' }
-      ],
-      buttonStyleOptions: [
-        { value: 'secondary', text: 'Secondary' },
-        { value: 'primary', text: 'Primary' },
-        { value: 'outline-brown', text: 'Outline brown' }
-      ]
+      faqForm: this.emptyFaqItem()
     }
   },
   computed: {
+    testimonialFields () {
+      return [
+        { key: 'customer_name', label: this.$t('adminWebsite.colCustomer') },
+        { key: 'designation', label: this.$t('adminWebsite.colDesignation') },
+        { key: 'stars', label: this.$t('adminWebsite.colRating') },
+        { key: 'created_at', label: this.$t('adminWebsite.colAdded') },
+        { key: 'active', label: this.$t('adminWebsite.colActive') },
+        { key: 'actions', label: '' }
+      ]
+    },
+    planFields () {
+      return [
+        { key: 'name_en', label: this.$t('adminWebsite.colPlan') },
+        { key: 'price_display', label: this.$t('adminWebsite.colPrice') },
+        { key: 'is_popular', label: this.$t('adminWebsite.colPopular') },
+        { key: 'sort_order', label: this.$t('adminWebsite.colOrder') },
+        { key: 'actions', label: '' }
+      ]
+    },
+    buttonStyleOptions () {
+      return [
+        { value: 'secondary', text: this.$t('adminWebsite.btnSecondary') },
+        { value: 'primary', text: this.$t('adminWebsite.btnPrimary') },
+        { value: 'outline-brown', text: this.$t('adminWebsite.btnOutlineBrown') }
+      ]
+    },
     categoryOptions () {
       return this.faqCategories.map((c) => ({ value: c.id, text: c.name_en }))
     }
@@ -330,7 +335,7 @@ export default {
       if (res.success) { this.resetTestimonialForm(); await this.loadContent() }
     },
     async removeTestimonial (item) {
-      if (!window.confirm('Delete this testimonial?')) return
+      if (!window.confirm(this.$t('adminWebsite.confirmDeleteTestimonial'))) return
       const res = await this.$store.dispatch('deleteAdminWebsiteTestimonial', item.id)
       if (res.success) await this.loadContent()
     },
@@ -347,7 +352,7 @@ export default {
       if (res.success) { this.resetPlanForm(); await this.loadContent() }
     },
     async removePlan (item) {
-      if (!window.confirm('Delete this pricing plan?')) return
+      if (!window.confirm(this.$t('adminWebsite.confirmDeletePlan'))) return
       const res = await this.$store.dispatch('deleteAdminWebsitePricingPlan', item.id)
       if (res.success) await this.loadContent()
     },
@@ -358,7 +363,7 @@ export default {
       if (res.success) { this.resetCategoryForm(); await this.loadContent() }
     },
     async removeCategory (cat) {
-      if (!window.confirm('Delete category and all its FAQ items?')) return
+      if (!window.confirm(this.$t('adminWebsite.confirmDeleteCategory'))) return
       const res = await this.$store.dispatch('deleteAdminWebsiteFaqCategory', cat.id)
       if (res.success) await this.loadContent()
     },
@@ -369,7 +374,7 @@ export default {
       if (res.success) { this.resetFaqForm(); await this.loadContent() }
     },
     async removeFaqItem (item) {
-      if (!window.confirm('Delete this FAQ item?')) return
+      if (!window.confirm(this.$t('adminWebsite.confirmDeleteFaq'))) return
       const res = await this.$store.dispatch('deleteAdminWebsiteFaqItem', item.id)
       if (res.success) await this.loadContent()
     }

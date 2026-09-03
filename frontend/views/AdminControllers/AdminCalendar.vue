@@ -4,55 +4,55 @@
       <b-col md="12">
         <iq-card>
           <template v-slot:headerTitle>
-            <h4 class="card-title">All meetings</h4>
+            <h4 class="card-title">{{ $t('adminCalendar.allMeetings') }}</h4>
           </template>
           <template v-slot:body>
-            <p class="text-muted mb-3">Every case and personal meeting across the platform. Today’s sessions are highlighted in the calendar.</p>
+            <p class="text-muted mb-3">{{ $t('adminCalendar.subtitle') }}</p>
             <FullCalendar :calendarEvents="events" :eventClick="openDetailsModal" :read-only="true" />
           </template>
         </iq-card>
       </b-col>
     </b-row>
-    <b-modal id="admin-view-appointment-modal" v-model="showDetailsModal" size="lg" title="Meeting details" scrollable no-footer>
+    <b-modal id="admin-view-appointment-modal" v-model="showDetailsModal" size="lg" :title="$t('adminCalendar.meetingDetails')" scrollable no-footer>
       <div class="appointment-details" v-if="selectedAppointment != null">
         <div class="data-row">
           <div class="col-6">
-            <div class="data-title">Title</div>
+            <div class="data-title">{{ $t('adminCalendar.titleLabel') }}</div>
             <div>{{ selectedAppointment.title }}</div>
           </div>
           <div class="col-6">
-            <div class="data-title">Meeting link</div>
-            <div v-if="selectedAppointment.meetingLink"><a :href="selectedAppointment.meetingLink" target="_blank" rel="noopener">Join</a></div>
+            <div class="data-title">{{ $t('adminCalendar.meetingLink') }}</div>
+            <div v-if="selectedAppointment.meetingLink"><a :href="selectedAppointment.meetingLink" target="_blank" rel="noopener">{{ $t('adminCalendar.join') }}</a></div>
             <div v-else class="text-muted">—</div>
           </div>
         </div>
         <div class="data-row">
           <div class="col-6">
-            <div class="data-title">Start</div>
+            <div class="data-title">{{ $t('adminCalendar.start') }}</div>
             <div>{{ formatDateTime(selectedAppointment.start) }}</div>
           </div>
           <div class="col-6">
-            <div class="data-title">End</div>
+            <div class="data-title">{{ $t('adminCalendar.end') }}</div>
             <div>{{ formatDateTime(selectedAppointment.end) }}</div>
           </div>
         </div>
         <div class="data-row" v-if="selectedAppointment.caseNumber">
           <div class="col-6">
-            <div class="data-title">Case</div>
+            <div class="data-title">{{ $t('adminCalendar.case') }}</div>
             <div>#{{ selectedAppointment.caseNumber }}</div>
           </div>
         </div>
         <div class="data-row" v-if="selectedAppointment.type">
           <div class="col-6">
-            <div class="data-title">Type</div>
+            <div class="data-title">{{ $t('adminCalendar.type') }}</div>
             <div>{{ selectedAppointment.type }}</div>
           </div>
         </div>
         <div class="long-description">
-          <div class="data-title">Description</div>
+          <div class="data-title">{{ $t('adminCalendar.description') }}</div>
           <textarea rows="5" readonly :value="selectedAppointment.description"></textarea>
         </div>
-        <b-button class="btn btn-primary mt-3" style="float:right;background: #0084ff;" @click="showDetailsModal = false">Close</b-button>
+        <b-button class="btn btn-primary mt-3" style="float:right;background: #0084ff;" @click="showDetailsModal = false">{{ $t('adminCalendar.close') }}</b-button>
       </div>
     </b-modal>
   </b-container>
@@ -92,7 +92,7 @@ export default {
           end: event.end_datetime,
           color,
           extendedProps: {
-            description: event.description || 'No description provided',
+            description: event.description || this.$t('adminCalendar.noDescription'),
             meetingLink: event.meeting_link,
             caseNumber: event.cases ? event.cases.caseId : null,
             type: event.type

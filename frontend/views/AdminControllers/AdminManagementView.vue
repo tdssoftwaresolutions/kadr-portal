@@ -4,34 +4,34 @@
       <b-col sm="12">
         <iq-card>
           <template v-slot:headerTitle>
-            <h4 class="card-title">Admin Profile Management</h4>
+            <h4 class="card-title">{{ $t('adminManagement.title') }}</h4>
           </template>
           <template v-slot:body>
             <div class="mb-3" v-if="!isMasterAdmin">
-              <b-alert model-value variant="info">You have view-only access. Only master admins can create/edit/inactivate admins or change permissions.</b-alert>
+              <b-alert model-value variant="info">{{ $t('adminManagement.viewOnlyNotice') }}</b-alert>
             </div>
 
             <b-row class="mb-4" v-if="isMasterAdmin">
               <b-col md="12" class="mb-2">
-                <h6 class="mb-2">New admin</h6>
+                <h6 class="mb-2">{{ $t('adminManagement.newAdmin') }}</h6>
               </b-col>
-              <b-col md="3"><b-form-input v-model="newAdmin.name" placeholder="Name" /></b-col>
-              <b-col md="3"><b-form-input v-model="newAdmin.email" placeholder="Email" /></b-col>
-              <b-col md="3"><b-form-input v-model="newAdmin.phone_number" placeholder="Phone" /></b-col>
+              <b-col md="3"><b-form-input v-model="newAdmin.name" :placeholder="$t('adminManagement.namePlaceholder')" /></b-col>
+              <b-col md="3"><b-form-input v-model="newAdmin.email" :placeholder="$t('adminManagement.emailPlaceholder')" /></b-col>
+              <b-col md="3"><b-form-input v-model="newAdmin.phone_number" :placeholder="$t('adminManagement.phonePlaceholder')" /></b-col>
               <b-col md="2">
-                <b-form-checkbox v-model="newAdmin.master" switch @change="onNewMasterToggle">Master admin</b-form-checkbox>
+                <b-form-checkbox v-model="newAdmin.master" switch @change="onNewMasterToggle">{{ $t('adminManagement.masterAdmin') }}</b-form-checkbox>
               </b-col>
-              <b-col md="1"><b-button variant="primary" @click="createAdmin">Create</b-button></b-col>
+              <b-col md="1"><b-button variant="primary" @click="createAdmin">{{ $t('adminManagement.create') }}</b-button></b-col>
             </b-row>
 
             <b-row class="mb-4" v-if="isMasterAdmin && !newAdmin.master">
               <b-col md="7">
-                <div class="perm-section-title mb-2">Pages they can open</div>
-                <p class="small text-muted mb-2">Matches the grouped admin sidebar (Operations, Finance, System, etc.).</p>
+                <div class="perm-section-title mb-2">{{ $t('adminManagement.pagesTheyCanOpen') }}</div>
+                <p class="small text-muted mb-2">{{ $t('adminManagement.pagesHint') }}</p>
                 <AdminPagePermissionGroups v-model="newAdminPermissions.pages" />
               </b-col>
               <b-col md="5">
-                <div class="perm-section-title">Dashboard widgets</div>
+                <div class="perm-section-title">{{ $t('adminManagement.dashboardWidgets') }}</div>
                 <b-form-checkbox-group
                   v-model="newAdminPermissions.components"
                   :options="componentCheckboxOptions"
@@ -50,15 +50,15 @@
                 />
               </template>
               <template #cell(active)="row">
-                <span :class="row.item.active ? 'text-success' : 'text-danger'">{{ row.item.active ? 'Active' : 'Inactive' }}</span>
+                <span :class="row.item.active ? 'text-success' : 'text-danger'">{{ row.item.active ? $t('adminManagement.active') : $t('adminManagement.inactive') }}</span>
               </template>
               <template #cell(permissions)="row">
-                <span v-if="row.item.master" class="text-muted">Full access</span>
+                <span v-if="row.item.master" class="text-muted">{{ $t('adminManagement.fullAccess') }}</span>
                 <span v-else class="text-muted small">{{ permissionSummary(row.item) }}</span>
               </template>
               <template #cell(actions)="row">
-                <b-button size="sm" variant="outline-secondary" :disabled="!isMasterAdmin" @click="openPermissionModal(row.item)">Access</b-button>
-                <b-button size="sm" variant="outline-primary" class="ms-1" :disabled="!isMasterAdmin" @click="saveAdmin(row.item)">Save</b-button>
+                <b-button size="sm" variant="outline-secondary" :disabled="!isMasterAdmin" @click="openPermissionModal(row.item)">{{ $t('adminManagement.access') }}</b-button>
+                <b-button size="sm" variant="outline-primary" class="ms-1" :disabled="!isMasterAdmin" @click="saveAdmin(row.item)">{{ $t('adminManagement.save') }}</b-button>
                 <b-button
                   size="sm"
                   class="ms-1"
@@ -66,7 +66,7 @@
                   :disabled="!isMasterAdmin"
                   @click="toggleAdminActive(row.item)"
                 >
-                  {{ row.item.active ? 'Inactivate' : 'Activate' }}
+                  {{ row.item.active ? $t('adminManagement.inactivate') : $t('adminManagement.activate') }}
                 </b-button>
               </template>
             </b-table>
@@ -75,16 +75,16 @@
       </b-col>
     </b-row>
 
-    <b-modal v-model="permModalOpen" title="Admin access" @ok="savePermissionsFromModal" ok-title="Save access">
+    <b-modal v-model="permModalOpen" :title="$t('adminManagement.adminAccess')" @ok="savePermissionsFromModal" :ok-title="$t('adminManagement.saveAccess')">
       <div v-if="permEditRow">
-        <p class="small text-muted mb-3">{{ permEditRow.name }} — pages and dashboard widgets this admin can use.</p>
+        <p class="small text-muted mb-3">{{ $t('adminManagement.permEditHint', { name: permEditRow.name }) }}</p>
         <div v-if="permEditRow.master">
-          Master admins always have full access.
+          {{ $t('adminManagement.masterFullAccess') }}
         </div>
         <div v-else>
-          <p class="small text-muted mb-2">Grouped to match the admin navigation menu.</p>
+          <p class="small text-muted mb-2">{{ $t('adminManagement.groupedNav') }}</p>
           <AdminPagePermissionGroups v-model="permModalPayload.pages" class="mb-3" />
-          <div class="perm-section-title">Dashboard widgets</div>
+          <div class="perm-section-title">{{ $t('adminManagement.dashboardWidgets') }}</div>
           <b-form-checkbox-group v-model="permModalPayload.components" :options="componentCheckboxOptions" stacked />
         </div>
       </div>
@@ -115,15 +115,6 @@ export default {
   data () {
     return {
       admins: [],
-      fields: [
-        { key: 'name', label: 'Name' },
-        { key: 'email', label: 'Email' },
-        { key: 'phone_number', label: 'Phone' },
-        { key: 'master', label: 'Master' },
-        { key: 'permissions', label: 'Access' },
-        { key: 'active', label: 'Status' },
-        { key: 'actions', label: 'Actions' }
-      ],
       newAdmin: {
         name: '',
         email: '',
@@ -137,6 +128,17 @@ export default {
     }
   },
   computed: {
+    fields () {
+      return [
+        { key: 'name', label: this.$t('adminManagement.name') },
+        { key: 'email', label: this.$t('adminManagement.email') },
+        { key: 'phone_number', label: this.$t('adminManagement.phone') },
+        { key: 'master', label: this.$t('adminManagement.master') },
+        { key: 'permissions', label: this.$t('adminManagement.access') },
+        { key: 'active', label: this.$t('adminManagement.status') },
+        { key: 'actions', label: this.$t('adminManagement.actions') }
+      ]
+    },
     isMasterAdmin () {
       return Boolean(this.user && this.user.master)
     },
@@ -154,7 +156,7 @@ export default {
       this.newAdminPermissions = defaultAdminPermissionPayload()
     },
     permissionSummary (item) {
-      if (!item.admin_permissions || typeof item.admin_permissions !== 'object') return '—'
+      if (!item.admin_permissions || typeof item.admin_permissions !== 'object') return this.$t('adminManagement.noAccess')
       const p = item.admin_permissions.pages
       const c = item.admin_permissions.components
       const pages = Array.isArray(p) ? p : []
@@ -165,8 +167,8 @@ export default {
         if (!count) return null
         return count === keys.length ? group.label : `${group.label} (${count})`
       }).filter(Boolean)
-      const pagePart = groupBits.length ? groupBits.join(', ') : `${pages.length} page(s)`
-      return `${pagePart}; ${cn} widget(s)`
+      const pagePart = groupBits.length ? groupBits.join(', ') : this.$t('adminManagement.pageCount', { count: pages.length })
+      return this.$t('adminManagement.summaryFmt', { pages: pagePart, widgets: this.$t('adminManagement.widgetCount', { count: cn }) })
     },
     openPermissionModal (item) {
       this.permEditRow = item

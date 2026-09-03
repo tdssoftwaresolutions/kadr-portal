@@ -4,18 +4,18 @@
       <b-col md="6">
         <iq-card>
           <template v-slot:headerTitle>
-            <h4 class="card-title">Blog Categories</h4>
+            <h4 class="card-title">{{ $t('adminBlogTaxonomy.categories') }}</h4>
           </template>
           <template v-slot:body>
             <div class="d-flex mb-3">
-              <b-form-input v-model="newCategory" placeholder="Add category" />
-              <b-button class="ms-2" variant="primary" @click="createCategory">Add</b-button>
+              <b-form-input v-model="newCategory" :placeholder="$t('adminBlogTaxonomy.addCategory')" />
+              <b-button class="ms-2" variant="primary" @click="createCategory">{{ $t('adminBlogTaxonomy.add') }}</b-button>
             </div>
             <div v-for="item in categories" :key="item.id" class="d-flex align-items-center mb-2">
               <b-form-input v-model="item.name" />
-              <small class="mx-2 text-muted">Used: {{ item._count.blog_categories }}</small>
-              <b-button size="sm" variant="outline-primary" class="me-2" @click="updateCategory(item)">Save</b-button>
-              <b-button size="sm" variant="outline-danger" @click="deleteCategory(item.id)">Delete</b-button>
+              <small class="mx-2 text-muted">{{ $t('adminBlogTaxonomy.used', { count: item._count.blog_categories }) }}</small>
+              <b-button size="sm" variant="outline-primary" class="me-2" @click="updateCategory(item)">{{ $t('adminBlogTaxonomy.save') }}</b-button>
+              <b-button size="sm" variant="outline-danger" @click="deleteCategory(item.id)">{{ $t('adminBlogTaxonomy.delete') }}</b-button>
             </div>
           </template>
         </iq-card>
@@ -23,18 +23,18 @@
       <b-col md="6">
         <iq-card>
           <template v-slot:headerTitle>
-            <h4 class="card-title">Blog Tags</h4>
+            <h4 class="card-title">{{ $t('adminBlogTaxonomy.tags') }}</h4>
           </template>
           <template v-slot:body>
             <div class="d-flex mb-3">
-              <b-form-input v-model="newTag" placeholder="Add tag" />
-              <b-button class="ms-2" variant="primary" @click="createTag">Add</b-button>
+              <b-form-input v-model="newTag" :placeholder="$t('adminBlogTaxonomy.addTag')" />
+              <b-button class="ms-2" variant="primary" @click="createTag">{{ $t('adminBlogTaxonomy.add') }}</b-button>
             </div>
             <div v-for="item in tags" :key="item.id" class="d-flex align-items-center mb-2">
               <b-form-input v-model="item.name" />
-              <small class="mx-2 text-muted">Used: {{ item._count.blog_tags }}</small>
-              <b-button size="sm" variant="outline-primary" class="me-2" @click="updateTag(item)">Save</b-button>
-              <b-button size="sm" variant="outline-danger" @click="deleteTag(item.id)">Delete</b-button>
+              <small class="mx-2 text-muted">{{ $t('adminBlogTaxonomy.used', { count: item._count.blog_tags }) }}</small>
+              <b-button size="sm" variant="outline-primary" class="me-2" @click="updateTag(item)">{{ $t('adminBlogTaxonomy.save') }}</b-button>
+              <b-button size="sm" variant="outline-danger" @click="deleteTag(item.id)">{{ $t('adminBlogTaxonomy.delete') }}</b-button>
             </div>
           </template>
         </iq-card>

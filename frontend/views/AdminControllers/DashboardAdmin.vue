@@ -9,7 +9,7 @@
     <div class="workspace-grid" v-if="showSchedule">
       <iq-card class="workspace-card">
         <template v-slot:headerTitle>
-          <h4 class="card-title">Today's Schedule</h4>
+          <h4 class="card-title">{{ $t('adminDashboard.todaysSchedule') }}</h4>
         </template>
         <template v-slot:body>
           <div v-if="todaysEvents.length" class="list-scroll">
@@ -21,8 +21,8 @@
               <div class="schedule-main">
                 <i class="ri-checkbox-blank-circle-fill schedule-dot" :style="{ color: kadrEventColor }"></i>
                 <div class="schedule-text">
-                  <h6>Case #{{ event.caseId || '-' }}</h6>
-                  <p>{{ event.caseFirstPartyName || '-' }} vs {{ event.caseSecondPartyName || '-' }}</p>
+                  <h6>{{ $t('adminDashboard.caseNumber', { id: event.caseId || '-' }) }}</h6>
+                  <p>{{ event.caseFirstPartyName || '-' }} {{ $t('adminDashboard.vs') }} {{ event.caseSecondPartyName || '-' }}</p>
                   <span>{{ formatDate(event.start_datetime) }} - {{ formatDate(event.end_datetime) }}</span>
                 </div>
               </div>
@@ -32,7 +32,7 @@
                 target="_blank"
                 class="btn btn-primary btn-sm"
               >
-                Join
+                {{ $t('adminDashboard.join') }}
               </a>
             </div>
           </div>
@@ -40,7 +40,7 @@
             v-else
             compact
             icon=""
-            :description="DASHBOARD.NO_MEETINGS_TODAY"
+            :description="$t('adminDashboard.noMeetingsToday')"
           />
         </template>
       </iq-card>
@@ -48,15 +48,15 @@
     <b-row class="cases-workspace" v-if="showApprovals">
       <b-col sm="12" class="cases-overview">
          <div class="overview-head">
-          <h4>Approvals</h4>
-          <p>Manage and approve new client and mediator requests</p>
+          <h4>{{ $t('adminDashboard.approvals') }}</h4>
+          <p>{{ $t('adminDashboard.approvalsSubtitle') }}</p>
         </div>
         <section no-body >
           <b-tabs card header-class="bg-transparent border-0" nav-class="bg-transparent">
-            <b-tab :title="'New Clients ('+content.inactive_users.total+')'" active><p>
+            <b-tab :title="$t('adminDashboard.newClients', { count: content.inactive_users.total })" active><p>
               <inactive-users :users="content.inactive_users" type="CLIENT"></inactive-users>
             </p></b-tab>
-            <b-tab :title="'New Dispute Resolution Experts ('+content.inactive_mediators.total+')'"><p>
+            <b-tab :title="$t('adminDashboard.newExperts', { count: content.inactive_mediators.total })"><p>
               <inactive-users :users="content.inactive_mediators" type="MEDIATOR"></inactive-users>
             </p></b-tab>
           </b-tabs>
@@ -71,7 +71,6 @@ import InactiveUsers from '../AdminControllers/InactiveUsers.vue'
 import ClientCases from '../ClientControllers/ClientCases.vue'
 import KadrDashboardHero from '../../components/kadr/KadrDashboardHero.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
-import { DASHBOARD } from '../../constants/messages'
 import { adminUserHasComponent } from '../../utils/adminAccess'
 const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
 
@@ -89,8 +88,7 @@ export default {
   },
   data () {
     return {
-      kadrEventColor: KADR_EVENT_COLOR,
-      DASHBOARD
+      kadrEventColor: KADR_EVENT_COLOR
     }
   },
   computed: {
@@ -113,13 +111,13 @@ export default {
       const stats = []
       if (this.showStats) {
         stats.push(
-          { key: 'mediators', label: 'Mediators', value: this.content.count.mediators },
-          { key: 'clients', label: 'Clients', value: this.content.count.clients },
-          { key: 'cases', label: 'Cases', value: this.content.count.cases }
+          { key: 'mediators', label: this.$t('adminDashboard.statMediators'), value: this.content.count.mediators },
+          { key: 'clients', label: this.$t('adminDashboard.statClients'), value: this.content.count.clients },
+          { key: 'cases', label: this.$t('adminDashboard.statCases'), value: this.content.count.cases }
         )
       }
       if (this.showSchedule) {
-        stats.push({ key: 'meetings', label: 'Meetings Today', value: this.todaysEvents.length })
+        stats.push({ key: 'meetings', label: this.$t('adminDashboard.statMeetingsToday'), value: this.todaysEvents.length })
       }
       return stats
     }

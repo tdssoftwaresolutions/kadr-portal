@@ -1,14 +1,14 @@
 <template>
   <b-container fluid class="admin-inbox-page">
-    <kadr-page-header :title="ADMIN.INBOX_TITLE" :subtitle="ADMIN.INBOX_SUBTITLE" />
+    <kadr-page-header :title="$t('adminInbox.title')" :subtitle="$t('adminInbox.subtitle')" />
     <b-row class="inbox-layout-row">
       <b-col cols="12" lg="4" xl="4" class="inbox-col inbox-col-list mb-3 mb-xl-0">
         <iq-card class="h-100 inbox-card-fixed">
           <template v-slot:headerTitle>
-            <h4 class="card-title mb-0">Threads</h4>
+            <h4 class="card-title mb-0">{{ $t('adminInbox.threads') }}</h4>
           </template>
           <template v-slot:headerAction>
-            <b-button size="sm" variant="primary" class="me-1" @click="openStartModal">New</b-button>
+            <b-button size="sm" variant="primary" class="me-1" @click="openStartModal">{{ $t('adminInbox.new') }}</b-button>
             <b-button size="sm" variant="outline-secondary" :disabled="loadingThreads" @click="loadThreads">
               <i class="fas fa-sync-alt" :class="{ 'fa-spin': loadingThreads }" aria-hidden="true" />
             </b-button>
@@ -16,10 +16,10 @@
           <template v-slot:body>
             <div class="inbox-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
               <div class="d-flex align-items-center flex-wrap gap-2 flex-grow-1">
-                <b-badge v-if="totalUnreadInbox > 0" variant="danger" pill>{{ totalUnreadInbox }} unread</b-badge>
-                <b-badge v-else variant="light" class="border text-muted">All caught up</b-badge>
+                <b-badge v-if="totalUnreadInbox > 0" variant="danger" pill>{{ $t('adminInbox.unreadCount', { count: totalUnreadInbox }) }}</b-badge>
+                <b-badge v-else variant="light" class="border text-muted">{{ $t('adminInbox.allCaughtUp') }}</b-badge>
                 <b-form-checkbox v-model="filterUnreadOnly" switch class="mb-0 small inbox-unread-switch">
-                  Unread only
+                  {{ $t('adminInbox.unreadOnly') }}
                 </b-form-checkbox>
                 <b-form-select
                   v-model="inboxSourceFilter"
@@ -34,10 +34,10 @@
               v-model="search"
               size="sm"
               class="mb-2"
-              placeholder="Filter by case #, name, or preview…"
+              :placeholder="$t('adminInbox.filterThreadsPlaceholder')"
             />
-            <div v-if="loadingThreads && !threads.length" class="text-muted py-4 text-center">Loading…</div>
-            <div v-else-if="!filteredThreads.length" class="text-muted py-4 text-center">No threads match. Start a conversation or adjust the filter.</div>
+            <div v-if="loadingThreads && !threads.length" class="text-muted py-4 text-center">{{ $t('adminInbox.loading') }}</div>
+            <div v-else-if="!filteredThreads.length" class="text-muted py-4 text-center">{{ $t('adminInbox.noThreadsMatch') }}</div>
             <div v-else class="inbox-list">
               <button
                 v-for="t in filteredThreads"
@@ -52,14 +52,14 @@
                     <b-badge :variant="inboxRowBadgeVariant(t)" class="me-1">{{ inboxRowKindLabel(t) }}</b-badge>
                     <template v-if="t.kind === 'case'">#{{ t.case_reference }}</template>
                     <template v-else-if="t.thread_origin === 'PORTAL'">{{ supportTopicShort(t.support_topic) }}</template>
-                    <template v-else>Lead</template>
+                    <template v-else>{{ $t('adminInbox.lead') }}</template>
                     <b-badge v-if="(t.unread_count || 0) > 0" variant="danger" pill class="ms-1">{{ t.unread_count }}</b-badge>
                   </span>
                   <time class="inbox-time">{{ t.last_message_at ? formatShort(t.last_message_at) : '—' }}</time>
                 </div>
                 <div class="inbox-participant text-break">{{ t.participant_label }}</div>
                 <div v-if="t.kind === 'website'" class="inbox-email small text-muted text-break">{{ t.lead_email }}</div>
-                <div class="inbox-preview">{{ t.last_preview || (t.empty ? 'No messages yet — you can write first' : '—') }}</div>
+                <div class="inbox-preview">{{ t.last_preview || (t.empty ? $t('adminInbox.noMessagesYet') : '—') }}</div>
               </button>
             </div>
           </template>
@@ -69,13 +69,13 @@
       <b-col cols="12" lg="5" xl="4" class="inbox-col inbox-col-chat mb-3 mb-xl-0">
         <iq-card v-if="isCaseChatSelected" class="h-100 inbox-card-fixed">
           <template v-slot:headerTitle>
-            <h4 class="card-title mb-0">Conversation</h4>
+            <h4 class="card-title mb-0">{{ $t('adminInbox.conversation') }}</h4>
           </template>
           <template v-slot:body>
             <p class="small text-muted mb-2 text-break">
-              <b-badge variant="primary" class="me-1">Case</b-badge>
+              <b-badge variant="primary" class="me-1">{{ $t('adminInbox.case') }}</b-badge>
               <strong>{{ selected.participant_label }}</strong>
-              <span class="text-muted"> · Case #{{ selected.case_reference }}</span>
+              <span class="text-muted"> · {{ $t('adminInbox.caseHash', { ref: selected.case_reference }) }}</span>
             </p>
             <div class="conversation-panel-inner">
               <CaseCorrespondencePanel
@@ -100,7 +100,7 @@
           <template v-slot:body>
             <p class="small text-muted mb-2 text-break">
               <b-badge :variant="selected.thread_origin === 'PORTAL' ? 'info' : 'warning'" class="me-1">
-                {{ selected.thread_origin === 'PORTAL' ? 'Portal' : 'Website' }}
+                {{ selected.thread_origin === 'PORTAL' ? $t('adminInbox.portal') : $t('adminInbox.website') }}
               </b-badge>
               <strong class="text-break">{{ selected.thread_title }}</strong>
             </p>
@@ -118,7 +118,7 @@
         </iq-card>
         <iq-card v-if="!isCaseChatSelected && !isWebsiteChatSelected" class="h-100">
           <template v-slot:body>
-            <p class="text-muted mb-0">Select a thread on the left or use <strong>Start conversation</strong> to message someone on a case.</p>
+            <p class="text-muted mb-0">{{ $t('adminInbox.selectThreadHint') }}</p>
           </template>
         </iq-card>
       </b-col>
@@ -126,20 +126,20 @@
       <b-col cols="12" lg="3" xl="4" class="inbox-col inbox-col-context">
         <iq-card v-if="isCaseChatSelected" class="h-100 context-card-wrap case-360-card">
           <template v-slot:headerTitle>
-            <h4 class="card-title mb-0">Case 360°</h4>
+            <h4 class="card-title mb-0">{{ $t('adminInbox.case360') }}</h4>
           </template>
           <template v-slot:headerAction>
-            <span class="c360-header-hint text-muted small d-none d-md-inline">At-a-glance case context</span>
+            <span class="c360-header-hint text-muted small d-none d-md-inline">{{ $t('adminInbox.atAGlance') }}</span>
           </template>
           <template v-slot:body>
             <div class="case-360">
               <div class="c360-identity">
                 <div class="c360-ref-row d-flex flex-wrap align-items-start justify-content-between gap-2">
                   <div class="min-w-0">
-                    <div class="c360-ref text-break">{{ context.case.caseId || 'Case' }}</div>
+                    <div class="c360-ref text-break">{{ context.case.caseId || $t('adminInbox.case') }}</div>
                     <div class="c360-meta text-muted">
-                      Opened {{ formatDate(context.case.created_at) }}
-                      <span v-if="context.case.updated_at"> · Updated {{ formatDate(context.case.updated_at) }}</span>
+                      {{ $t('adminInbox.opened', { date: formatDate(context.case.created_at) }) }}
+                      <span v-if="context.case.updated_at"> · {{ $t('adminInbox.updated', { date: formatDate(context.case.updated_at) }) }}</span>
                     </div>
                   </div>
                   <div class="c360-chips flex-shrink-0">
@@ -152,28 +152,28 @@
               <b-tabs v-model="c360TabIndex" pills small class="c360-tabs" nav-class="c360-tab-nav flex-nowrap flex-md-wrap" content-class="c360-tab-content">
                 <b-tab>
                   <template #title>
-                    <span class="c360-tab-label">Summary</span>
+                    <span class="c360-tab-label">{{ $t('adminInbox.summary') }}</span>
                   </template>
                   <div class="c360-tab-pane-scroll">
                     <section class="c360-section c360-section--flush">
-                      <h6 class="c360-section-title">Case details</h6>
+                      <h6 class="c360-section-title">{{ $t('adminInbox.caseDetails') }}</h6>
                       <div class="c360-kv">
                         <div class="c360-kv-item">
-                          <span class="c360-k">Category</span>
+                          <span class="c360-k">{{ $t('adminInbox.category') }}</span>
                           <span class="c360-v text-break">{{ context.case.category || '—' }}</span>
                         </div>
                         <div class="c360-kv-item">
-                          <span class="c360-k">Case type</span>
+                          <span class="c360-k">{{ $t('adminInbox.caseType') }}</span>
                           <span class="c360-v text-break">{{ context.case.case_type || '—' }}</span>
                         </div>
                         <div class="c360-kv-item c360-kv-item--full">
-                          <span class="c360-k">Mediator share</span>
-                          <span class="c360-v">{{ Number(context.case.mediator_commission || 0).toFixed(2) }}% of mediation amount</span>
+                          <span class="c360-k">{{ $t('adminInbox.mediatorShare') }}</span>
+                          <span class="c360-v">{{ $t('adminInbox.mediatorShareValue', { percent: Number(context.case.mediator_commission || 0).toFixed(2) }) }}</span>
                         </div>
                       </div>
                       <div class="c360-desc-block mt-2">
-                        <span class="c360-k">Description</span>
-                        <p v-if="!context.case.description" class="c360-empty small mb-0 mt-1">No description provided.</p>
+                        <span class="c360-k">{{ $t('adminInbox.description') }}</span>
+                        <p v-if="!context.case.description" class="c360-empty small mb-0 mt-1">{{ $t('adminInbox.noDescription') }}</p>
                         <template v-else>
                           <p class="c360-v text-break mb-1 mt-1">{{ c360DescriptionVisible }}</p>
                           <b-button
@@ -183,28 +183,28 @@
                             class="c360-toggle-desc p-0"
                             @click="c360DescriptionExpanded = !c360DescriptionExpanded"
                           >
-                            {{ c360DescriptionExpanded ? 'Show less' : 'Show full description' }}
+                            {{ c360DescriptionExpanded ? $t('adminInbox.showLess') : $t('adminInbox.showFullDescription') }}
                           </b-button>
                         </template>
                       </div>
                     </section>
 
                     <section class="c360-section">
-                      <h6 class="c360-section-title">People on this case</h6>
+                      <h6 class="c360-section-title">{{ $t('adminInbox.peopleOnCase') }}</h6>
                       <div class="c360-people">
                         <div class="c360-person">
-                          <span class="c360-person-role">First party</span>
+                          <span class="c360-person-role">{{ $t('adminInbox.firstParty') }}</span>
                           <span class="c360-person-name text-break">{{ partyName(context.case.user_cases_first_partyTouser) }}</span>
                           <span class="c360-person-meta text-break">{{ partyExtraLines(context.case.user_cases_first_partyTouser) }}</span>
                         </div>
                         <div class="c360-person">
-                          <span class="c360-person-role">Second party</span>
+                          <span class="c360-person-role">{{ $t('adminInbox.secondParty') }}</span>
                           <span class="c360-person-name text-break">{{ partyName(context.case.user_cases_second_partyTouser) }}</span>
                           <span class="c360-person-meta text-break">{{ partyExtraLines(context.case.user_cases_second_partyTouser) }}</span>
                         </div>
                         <div class="c360-person">
-                          <span class="c360-person-role">Mediator</span>
-                          <span class="c360-person-name text-break">{{ context.case.user_cases_mediatorTouser ? partyName(context.case.user_cases_mediatorTouser) : 'Not assigned' }}</span>
+                          <span class="c360-person-role">{{ $t('adminInbox.mediator') }}</span>
+                          <span class="c360-person-name text-break">{{ context.case.user_cases_mediatorTouser ? partyName(context.case.user_cases_mediatorTouser) : $t('adminInbox.notAssigned') }}</span>
                           <span v-if="context.case.user_cases_mediatorTouser" class="c360-person-meta text-break">{{ partyExtraLines(context.case.user_cases_mediatorTouser) }}</span>
                         </div>
                       </div>
@@ -214,25 +214,25 @@
 
                 <b-tab>
                   <template #title>
-                    <span class="c360-tab-label">Meetings</span>
+                    <span class="c360-tab-label">{{ $t('adminInbox.meetings') }}</span>
                     <b-badge v-if="c360MeetingCount > 0" pill variant="secondary" class="c360-tab-count">{{ c360MeetingCount }}</b-badge>
                   </template>
                   <div class="c360-tab-pane-scroll">
-                    <p v-if="c360MeetingCount" class="text-muted small mb-2">Open a meeting for notes, ratings, and next steps.</p>
-                    <p v-else class="c360-empty small mb-0">No meetings on file.</p>
+                    <p v-if="c360MeetingCount" class="text-muted small mb-2">{{ $t('adminInbox.openMeetingHint') }}</p>
+                    <p v-else class="c360-empty small mb-0">{{ $t('adminInbox.noMeetings') }}</p>
                     <div v-if="c360MeetingCount" class="c360-meetings c360-meetings--compact">
                       <article v-for="meeting in c360MeetingsSorted" :key="meeting.id" class="c360-meeting c360-meeting--row">
                         <div class="c360-meeting-row-main">
                           <div class="min-w-0">
-                            <div class="c360-meeting-title text-break">{{ meeting.title || 'Meeting' }}</div>
+                            <div class="c360-meeting-title text-break">{{ meeting.title || $t('adminInbox.meeting') }}</div>
                             <div class="c360-meeting-when text-muted small text-break">{{ meeting.start }} – {{ meeting.end }}</div>
                           </div>
                           <span class="c360-meeting-badge">{{ meeting.statusLabel }}</span>
                         </div>
                         <div class="c360-meeting-row-actions">
-                          <b-button v-if="meeting.meeting_link" size="sm" variant="outline-primary" :href="meeting.meeting_link" target="_blank" rel="noopener">Join</b-button>
-                          <b-button v-if="meeting.google_calendar_link" size="sm" variant="outline-secondary" :href="meeting.google_calendar_link" target="_blank" rel="noopener">Calendar</b-button>
-                          <b-button size="sm" variant="primary" class="ms-auto" @click="openC360MeetingDetail(meeting)">View details</b-button>
+                          <b-button v-if="meeting.meeting_link" size="sm" variant="outline-primary" :href="meeting.meeting_link" target="_blank" rel="noopener">{{ $t('adminInbox.join') }}</b-button>
+                          <b-button v-if="meeting.google_calendar_link" size="sm" variant="outline-secondary" :href="meeting.google_calendar_link" target="_blank" rel="noopener">{{ $t('adminInbox.calendar') }}</b-button>
+                          <b-button size="sm" variant="primary" class="ms-auto" @click="openC360MeetingDetail(meeting)">{{ $t('adminInbox.viewDetails') }}</b-button>
                         </div>
                       </article>
                     </div>
@@ -241,54 +241,54 @@
 
                 <b-tab>
                   <template #title>
-                    <span class="c360-tab-label">Activity</span>
+                    <span class="c360-tab-label">{{ $t('adminInbox.activity') }}</span>
                     <b-badge v-if="c360TimelineCount > 0" pill variant="secondary" class="c360-tab-count">{{ c360TimelineCount }}</b-badge>
                   </template>
                   <div class="c360-tab-pane-scroll">
-                    <p v-if="c360TimelineCount" class="text-muted small mb-2">Chronological events from the case record.</p>
+                    <p v-if="c360TimelineCount" class="text-muted small mb-2">{{ $t('adminInbox.activityHint') }}</p>
                     <ul v-if="c360TimelineCount" class="c360-timeline list-unstyled small mb-0">
                       <li v-for="(h, idx) in context.case.case_history" :key="idx" class="c360-timeline-item">
                         <span class="c360-timeline-dot" aria-hidden="true" />
                         <div class="c360-timeline-body text-break">
-                          <strong>{{ (h.case_events && h.case_events.title) || 'Event' }}</strong>
+                          <strong>{{ (h.case_events && h.case_events.title) || $t('adminInbox.event') }}</strong>
                           <span v-if="h.created_at" class="text-muted"> · {{ formatDate(h.created_at) }}</span>
                           <p v-if="h.case_events && h.case_events.description" class="mb-0 text-muted">{{ h.case_events.description }}</p>
                         </div>
                       </li>
                     </ul>
-                    <p v-else class="c360-empty small mb-0">No timeline entries.</p>
+                    <p v-else class="c360-empty small mb-0">{{ $t('adminInbox.noTimeline') }}</p>
                   </div>
                 </b-tab>
 
                 <b-tab>
                   <template #title>
-                    <span class="c360-tab-label">Payments</span>
+                    <span class="c360-tab-label">{{ $t('adminInbox.payments') }}</span>
                     <b-badge v-if="c360PaymentCount > 0" pill variant="secondary" class="c360-tab-count">{{ c360PaymentCount }}</b-badge>
                   </template>
                   <div class="c360-tab-pane-scroll">
                     <div v-if="c360PaymentCount" class="c360-pay-summary mb-3">
                       <div class="c360-pay-stat">
-                        <span class="c360-pay-stat-k">Successful</span>
+                        <span class="c360-pay-stat-k">{{ $t('adminInbox.successful') }}</span>
                         <span class="c360-pay-stat-v text-success">{{ c360PaymentsPaidCount }}</span>
                       </div>
                       <div class="c360-pay-stat">
-                        <span class="c360-pay-stat-k">Failed</span>
+                        <span class="c360-pay-stat-k">{{ $t('adminInbox.failed') }}</span>
                         <span class="c360-pay-stat-v" :class="c360PaymentsFailedCount ? 'text-danger' : 'text-muted'">{{ c360PaymentsFailedCount }}</span>
                       </div>
                       <div class="c360-pay-stat c360-pay-stat--wide">
-                        <span class="c360-pay-stat-k">Recorded total (successful)</span>
+                        <span class="c360-pay-stat-k">{{ $t('adminInbox.recordedTotal') }}</span>
                         <span class="c360-pay-stat-v text-break">{{ c360PaymentsPaidTotalLabel }}</span>
                       </div>
                     </div>
-                    <p v-else class="c360-empty small mb-0">No payments.</p>
+                    <p v-else class="c360-empty small mb-0">{{ $t('adminInbox.noPayments') }}</p>
                     <div v-if="c360PaymentCount" class="table-responsive c360-table-wrap">
                       <table class="table table-sm c360-table mb-0">
-                        <thead><tr><th>Date</th><th>Amount</th><th>Status</th><th>Reason</th></tr></thead>
+                        <thead><tr><th>{{ $t('adminInbox.date') }}</th><th>{{ $t('adminInbox.amount') }}</th><th>{{ $t('adminInbox.status') }}</th><th>{{ $t('adminInbox.reason') }}</th></tr></thead>
                         <tbody>
                           <tr v-for="tx in context.case.transactions" :key="tx.transaction_id">
                             <td class="text-nowrap">{{ formatDate(tx.transaction_date) }}</td>
                             <td>{{ tx.amount }} {{ tx.currency || '' }}</td>
-                            <td><b-badge :variant="tx.success ? 'success' : 'danger'" class="text-uppercase">{{ tx.success ? 'Paid' : 'Failed' }}</b-badge></td>
+                            <td><b-badge :variant="tx.success ? 'success' : 'danger'" class="text-uppercase">{{ tx.success ? $t('adminInbox.paid') : $t('adminInbox.failed') }}</b-badge></td>
                             <td class="text-break">{{ tx.reason || '—' }}</td>
                           </tr>
                         </tbody>
@@ -299,34 +299,34 @@
 
                 <b-tab>
                   <template #title>
-                    <span class="c360-tab-label">Documents</span>
+                    <span class="c360-tab-label">{{ $t('adminInbox.documents') }}</span>
                   </template>
                   <div class="c360-tab-pane-scroll">
                     <section class="c360-section c360-section--flush">
-                      <h6 class="c360-section-title">Evidence</h6>
-                      <p v-if="!context.case.evidence_document_url" class="c360-empty small mb-0">No evidence document uploaded.</p>
-                      <FilePreview v-else :url="context.case.evidence_document_url" name="Evidence document" />
+                      <h6 class="c360-section-title">{{ $t('adminInbox.evidence') }}</h6>
+                      <p v-if="!context.case.evidence_document_url" class="c360-empty small mb-0">{{ $t('adminInbox.noEvidence') }}</p>
+                      <FilePreview v-else :url="context.case.evidence_document_url" :name="$t('adminInbox.evidenceDocument')" />
                     </section>
                     <section class="c360-section">
-                      <h6 class="c360-section-title">Mediation agreement</h6>
-                      <p v-if="!agreementRecord" class="c360-empty small mb-0">No finalized agreement record.</p>
+                      <h6 class="c360-section-title">{{ $t('adminInbox.mediationAgreement') }}</h6>
+                      <p v-if="!agreementRecord" class="c360-empty small mb-0">{{ $t('adminInbox.noAgreementRecord') }}</p>
                       <template v-else>
                         <div class="c360-kv c360-kv--compact mb-2">
                           <div class="c360-kv-item">
-                            <span class="c360-k">Drafted</span>
+                            <span class="c360-k">{{ $t('adminInbox.drafted') }}</span>
                             <span class="c360-v">{{ formatDate(agreementRecord.created_at) }}</span>
                           </div>
                           <div class="c360-kv-item">
-                            <span class="c360-k">First party signed</span>
+                            <span class="c360-k">{{ $t('adminInbox.firstPartySigned') }}</span>
                             <span class="c360-v">{{ agreementRecord.first_party_signature_datetime ? formatDate(agreementRecord.first_party_signature_datetime) : '—' }}</span>
                           </div>
                           <div class="c360-kv-item">
-                            <span class="c360-k">Second party signed</span>
+                            <span class="c360-k">{{ $t('adminInbox.secondPartySigned') }}</span>
                             <span class="c360-v">{{ agreementRecord.second_party_signature_datetime ? formatDate(agreementRecord.second_party_signature_datetime) : '—' }}</span>
                           </div>
                         </div>
-                        <b-button v-if="agreementRecord.mediation_agreement_link" size="sm" variant="primary" :href="agreementRecord.mediation_agreement_link" target="_blank" rel="noopener" class="mb-2">Open agreement PDF</b-button>
-                        <FilePreview v-if="agreementRecord.mediation_agreement_link" :url="agreementRecord.mediation_agreement_link" name="Agreement preview" />
+                        <b-button v-if="agreementRecord.mediation_agreement_link" size="sm" variant="primary" :href="agreementRecord.mediation_agreement_link" target="_blank" rel="noopener" class="mb-2">{{ $t('adminInbox.openAgreementPdf') }}</b-button>
+                        <FilePreview v-if="agreementRecord.mediation_agreement_link" :url="agreementRecord.mediation_agreement_link" :name="$t('adminInbox.agreementPreview')" />
                       </template>
                     </section>
                   </div>
@@ -337,51 +337,51 @@
         </iq-card>
         <iq-card v-if="isWebsiteChatSelected" class="h-100 context-card-wrap case-360-card">
           <template v-slot:headerTitle>
-            <h4 class="card-title mb-0">Inquiry details</h4>
+            <h4 class="card-title mb-0">{{ $t('adminInbox.inquiryDetails') }}</h4>
           </template>
           <template v-slot:body>
             <div class="context-scroll case-360">
               <div class="c360-identity">
-                <div class="c360-ref text-break">{{ selected.thread_title || 'Inquiry' }}</div>
+                <div class="c360-ref text-break">{{ selected.thread_title || $t('adminInbox.inquiry') }}</div>
                 <div class="c360-meta text-muted">
-                  <template v-if="selected.thread_origin === 'PORTAL'">Logged-in user · general support</template>
-                  <template v-else>Public website form</template>
+                  <template v-if="selected.thread_origin === 'PORTAL'">{{ $t('adminInbox.loggedInUserGeneralSupport') }}</template>
+                  <template v-else>{{ $t('adminInbox.publicWebsiteForm') }}</template>
                 </div>
                 <div class="c360-chips">
-                  <span class="c360-chip c360-chip--status">{{ selected.thread_origin === 'PORTAL' ? 'Portal support' : 'Website lead' }}</span>
+                  <span class="c360-chip c360-chip--status">{{ selected.thread_origin === 'PORTAL' ? $t('adminInbox.portalSupport') : $t('adminInbox.websiteLead') }}</span>
                   <span v-if="selected.thread_origin === 'PORTAL' && selected.support_topic" class="c360-chip c360-chip--muted">{{ supportTopicShort(selected.support_topic) }}</span>
                 </div>
               </div>
               <section class="c360-section">
-                <h6 class="c360-section-title">Contact</h6>
+                <h6 class="c360-section-title">{{ $t('adminInbox.contact') }}</h6>
                 <div class="c360-kv">
                   <div v-if="selected.visitor_name" class="c360-kv-item c360-kv-item--full">
-                    <span class="c360-k">Name</span>
+                    <span class="c360-k">{{ $t('adminInbox.name') }}</span>
                     <span class="c360-v text-break">{{ selected.visitor_name }}</span>
                   </div>
                   <div class="c360-kv-item c360-kv-item--full">
-                    <span class="c360-k">Email</span>
+                    <span class="c360-k">{{ $t('adminInbox.email') }}</span>
                     <span class="c360-v text-break">{{ selected.lead_email }}</span>
                   </div>
                   <div class="c360-kv-item">
-                    <span class="c360-k">Phone</span>
+                    <span class="c360-k">{{ $t('adminInbox.phone') }}</span>
                     <span class="c360-v">{{ selected.lead_phone || '—' }}</span>
                   </div>
                 </div>
               </section>
               <section v-if="selected.thread_origin === 'PORTAL' && selected.portal_user" class="c360-section">
-                <h6 class="c360-section-title">Portal account</h6>
+                <h6 class="c360-section-title">{{ $t('adminInbox.portalAccount') }}</h6>
                 <div class="c360-kv">
                   <div class="c360-kv-item c360-kv-item--full">
-                    <span class="c360-k">Display name</span>
+                    <span class="c360-k">{{ $t('adminInbox.displayName') }}</span>
                     <span class="c360-v text-break">{{ selected.portal_user.name || '—' }}</span>
                   </div>
                   <div class="c360-kv-item c360-kv-item--full">
-                    <span class="c360-k">Account email</span>
+                    <span class="c360-k">{{ $t('adminInbox.accountEmail') }}</span>
                     <span class="c360-v text-break">{{ selected.portal_user.email || '—' }}</span>
                   </div>
                   <div class="c360-kv-item">
-                    <span class="c360-k">Role</span>
+                    <span class="c360-k">{{ $t('adminInbox.role') }}</span>
                     <span class="c360-v">{{ selected.portal_user.user_type || '—' }}</span>
                   </div>
                 </div>
@@ -389,10 +389,10 @@
             </div>
           </template>
         </iq-card>
-        <div v-if="isCaseChatSelected && loadingContext" class="text-muted small p-3 border rounded bg-white">Loading case 360°…</div>
+        <div v-if="isCaseChatSelected && loadingContext" class="text-muted small p-3 border rounded bg-white">{{ $t('adminInbox.loadingCase360') }}</div>
         <iq-card v-if="!isCaseChatSelected && !isWebsiteChatSelected" class="h-100 muted-placeholder">
           <template v-slot:body>
-            <p class="text-muted small mb-0">Case 360° appears here after you select a thread.</p>
+            <p class="text-muted small mb-0">{{ $t('adminInbox.case360Placeholder') }}</p>
           </template>
         </iq-card>
       </b-col>
@@ -407,9 +407,9 @@
     >
       <div v-if="startWizardStep === 1" class="start-wizard-step">
         <p class="text-muted small mb-2">
-          <strong>Step 1 of 2</strong> — Choose the case you want to open a conversation on.
+          <strong>{{ $t('adminInbox.step1of2') }}</strong> — {{ $t('adminInbox.step1Hint') }}
         </p>
-        <b-form-input v-model="pickerSearch" size="sm" class="mb-2" placeholder="Search by case # or category…" @input="onPickerSearchInput" />
+        <b-form-input v-model="pickerSearch" size="sm" class="mb-2" :placeholder="$t('adminInbox.searchCasePlaceholder')" @input="onPickerSearchInput" />
         <div class="picker-list border rounded">
           <button
             v-for="c in pickerCases"
@@ -423,22 +423,22 @@
             <span class="text-muted small"> · {{ c.category || '—' }}</span>
             <div class="small text-muted">{{ partyName(c.user_cases_first_partyTouser) }} vs {{ partyName(c.user_cases_second_partyTouser) }}</div>
           </button>
-          <div v-if="!pickerCases.length && !pickerLoading" class="p-3 text-muted small">No cases found.</div>
-          <div v-if="pickerLoading" class="p-3 text-muted small">Loading…</div>
+          <div v-if="!pickerCases.length && !pickerLoading" class="p-3 text-muted small">{{ $t('adminInbox.noCasesFound') }}</div>
+          <div v-if="pickerLoading" class="p-3 text-muted small">{{ $t('adminInbox.loading') }}</div>
         </div>
         <div class="d-flex justify-content-between align-items-center mt-2">
-          <b-button size="sm" variant="outline-secondary" :disabled="pickerPage <= 1 || pickerLoading" @click="pickerPage--; loadPickerCases()">Previous</b-button>
-          <span class="small text-muted">Page {{ pickerPage }}</span>
-          <b-button size="sm" variant="outline-secondary" :disabled="pickerLoading || !pickerHasMore" @click="pickerPage++; loadPickerCases()">Next</b-button>
+          <b-button size="sm" variant="outline-secondary" :disabled="pickerPage <= 1 || pickerLoading" @click="pickerPage--; loadPickerCases()">{{ $t('adminInbox.previous') }}</b-button>
+          <span class="small text-muted">{{ $t('adminInbox.pageN', { page: pickerPage }) }}</span>
+          <b-button size="sm" variant="outline-secondary" :disabled="pickerLoading || !pickerHasMore" @click="pickerPage++; loadPickerCases()">{{ $t('adminInbox.nextBtn') }}</b-button>
         </div>
       </div>
 
       <div v-else class="start-wizard-step">
         <p class="text-muted small mb-2">
-          <strong>Step 2 of 2</strong> — Choose who this thread is with. Then start the chat.
+          <strong>{{ $t('adminInbox.step2of2') }}</strong> — {{ $t('adminInbox.step2Hint') }}
         </p>
         <p v-if="pickerCase" class="small mb-3">
-          Case <strong>#{{ pickerCase.caseId || pickerCase.id.slice(0, 8) }}</strong>
+          {{ $t('adminInbox.caseLabel') }} <strong>#{{ pickerCase.caseId || pickerCase.id.slice(0, 8) }}</strong>
           <span class="text-muted"> · {{ pickerCase.category || '—' }}</span>
         </p>
         <div class="recipient-grid">
@@ -452,16 +452,16 @@
             @click="!r.disabled && (pickerRecipient = r)"
           >
             <span class="recipient-line text-break">{{ r.roleLabel }} – {{ r.displayName }}</span>
-            <span v-if="r.disabled" class="recipient-hint">Assign this role on the case before messaging here.</span>
+            <span v-if="r.disabled" class="recipient-hint">{{ $t('adminInbox.assignRoleFirst') }}</span>
           </button>
         </div>
       </div>
 
       <div class="d-flex justify-content-end flex-wrap gap-2 mt-3 pt-2 border-top">
-        <b-button variant="outline-secondary" @click="startModalVisible = false">Cancel</b-button>
-        <b-button v-if="startWizardStep === 2" variant="outline-primary" @click="goWizardBack">Back</b-button>
-        <b-button v-if="startWizardStep === 1" variant="primary" :disabled="!pickerCase" @click="goWizardStep2">Continue</b-button>
-        <b-button v-if="startWizardStep === 2" variant="primary" :disabled="!canStartChat" @click="confirmStartThread">Start chat</b-button>
+        <b-button variant="outline-secondary" @click="startModalVisible = false">{{ $t('adminInbox.cancel') }}</b-button>
+        <b-button v-if="startWizardStep === 2" variant="outline-primary" @click="goWizardBack">{{ $t('adminInbox.back') }}</b-button>
+        <b-button v-if="startWizardStep === 1" variant="primary" :disabled="!pickerCase" @click="goWizardStep2">{{ $t('adminInbox.continue') }}</b-button>
+        <b-button v-if="startWizardStep === 2" variant="primary" :disabled="!canStartChat" @click="confirmStartThread">{{ $t('adminInbox.startChat') }}</b-button>
       </div>
     </b-modal>
 
@@ -470,7 +470,7 @@
       :title="c360MeetingModalTitle"
       size="lg"
       ok-only
-      ok-title="Close"
+      :ok-title="$t('adminInbox.close')"
       scrollable
       @hidden="c360MeetingModalMeeting = null"
     >
@@ -480,35 +480,35 @@
           <b-badge variant="light" class="border ms-2">{{ c360MeetingModalMeeting.statusLabel }}</b-badge>
         </p>
         <div class="c360-meeting-modal-actions mb-3">
-          <b-button v-if="c360MeetingModalMeeting.meeting_link" size="sm" variant="outline-primary" :href="c360MeetingModalMeeting.meeting_link" target="_blank" rel="noopener">Join link</b-button>
-          <b-button v-if="c360MeetingModalMeeting.google_calendar_link" size="sm" variant="outline-secondary" :href="c360MeetingModalMeeting.google_calendar_link" target="_blank" rel="noopener">Google Calendar</b-button>
+          <b-button v-if="c360MeetingModalMeeting.meeting_link" size="sm" variant="outline-primary" :href="c360MeetingModalMeeting.meeting_link" target="_blank" rel="noopener">{{ $t('adminInbox.joinLink') }}</b-button>
+          <b-button v-if="c360MeetingModalMeeting.google_calendar_link" size="sm" variant="outline-secondary" :href="c360MeetingModalMeeting.google_calendar_link" target="_blank" rel="noopener">{{ $t('adminInbox.googleCalendar') }}</b-button>
         </div>
         <div class="c360-feedback-grid">
           <div class="c360-fb-block">
-            <span class="c360-fb-label">Mediator</span>
-            <p class="c360-fb-line"><span class="c360-fb-k">Summary</span> {{ c360MeetingModalMeeting.meeting_summary || '—' }}</p>
-            <p class="c360-fb-line"><span class="c360-fb-k">Next steps</span> {{ c360MeetingModalMeeting.mediator_next_steps || '—' }}</p>
-            <p class="c360-fb-meta mb-0">Submitted {{ c360MeetingModalMeeting.mediator_feedback_at || '—' }}</p>
+            <span class="c360-fb-label">{{ $t('adminInbox.mediator') }}</span>
+            <p class="c360-fb-line"><span class="c360-fb-k">{{ $t('adminInbox.summary') }}</span> {{ c360MeetingModalMeeting.meeting_summary || '—' }}</p>
+            <p class="c360-fb-line"><span class="c360-fb-k">{{ $t('adminInbox.nextSteps') }}</span> {{ c360MeetingModalMeeting.mediator_next_steps || '—' }}</p>
+            <p class="c360-fb-meta mb-0">{{ $t('adminInbox.submittedAt', { value: c360MeetingModalMeeting.mediator_feedback_at || '—' }) }}</p>
           </div>
           <div class="c360-fb-block">
-            <span class="c360-fb-label">First party</span>
+            <span class="c360-fb-label">{{ $t('adminInbox.firstParty') }}</span>
             <p class="c360-fb-line">
-              <span class="c360-fb-k">Rating</span>
+              <span class="c360-fb-k">{{ $t('adminInbox.rating') }}</span>
               <template v-if="c360MeetingModalMeeting.first_party_rating != null">{{ c360MeetingModalMeeting.first_party_rating }}/5 {{ c360MeetingModalMeeting.first_party_stars }}</template>
               <template v-else>—</template>
             </p>
-            <p class="c360-fb-line"><span class="c360-fb-k">Next steps</span> {{ c360MeetingModalMeeting.first_party_next_steps || '—' }}</p>
-            <p class="c360-fb-meta mb-0">Submitted {{ c360MeetingModalMeeting.first_party_feedback_at || '—' }}</p>
+            <p class="c360-fb-line"><span class="c360-fb-k">{{ $t('adminInbox.nextSteps') }}</span> {{ c360MeetingModalMeeting.first_party_next_steps || '—' }}</p>
+            <p class="c360-fb-meta mb-0">{{ $t('adminInbox.submittedAt', { value: c360MeetingModalMeeting.first_party_feedback_at || '—' }) }}</p>
           </div>
           <div class="c360-fb-block">
-            <span class="c360-fb-label">Second party</span>
+            <span class="c360-fb-label">{{ $t('adminInbox.secondParty') }}</span>
             <p class="c360-fb-line">
-              <span class="c360-fb-k">Rating</span>
+              <span class="c360-fb-k">{{ $t('adminInbox.rating') }}</span>
               <template v-if="c360MeetingModalMeeting.second_party_rating != null">{{ c360MeetingModalMeeting.second_party_rating }}/5 {{ c360MeetingModalMeeting.second_party_stars }}</template>
               <template v-else>—</template>
             </p>
-            <p class="c360-fb-line"><span class="c360-fb-k">Next steps</span> {{ c360MeetingModalMeeting.second_party_next_steps || '—' }}</p>
-            <p class="c360-fb-meta mb-0">Submitted {{ c360MeetingModalMeeting.second_party_feedback_at || '—' }}</p>
+            <p class="c360-fb-line"><span class="c360-fb-k">{{ $t('adminInbox.nextSteps') }}</span> {{ c360MeetingModalMeeting.second_party_next_steps || '—' }}</p>
+            <p class="c360-fb-meta mb-0">{{ $t('adminInbox.submittedAt', { value: c360MeetingModalMeeting.second_party_feedback_at || '—' }) }}</p>
           </div>
         </div>
       </div>
@@ -522,7 +522,6 @@ import CaseCorrespondencePanel from '../../components/CaseCorrespondencePanel.vu
 import WebsiteInquiryThreadPanel from '../../components/WebsiteInquiryThreadPanel.vue'
 import FilePreview from '../../components/DocumentPreview.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
-import { ADMIN } from '../../constants/messages'
 
 let pickerSearchTimer = null
 
@@ -531,7 +530,6 @@ export default {
   components: { CaseCorrespondencePanel, WebsiteInquiryThreadPanel, FilePreview, KadrPageHeader },
   data () {
     return {
-      ADMIN,
       threads: [],
       loadingThreads: false,
       search: '',
@@ -551,18 +549,20 @@ export default {
       suppressRouteSelectionSync: false,
       filterUnreadOnly: false,
       inboxSourceFilter: 'all',
-      inboxSourceOptions: [
-        { value: 'all', text: 'All sources' },
-        { value: 'case', text: 'Case chat' },
-        { value: 'website', text: 'Website leads' },
-        { value: 'portal', text: 'Portal support' }
-      ],
       c360TabIndex: 0,
       c360DescriptionExpanded: false,
       c360MeetingModalMeeting: null
     }
   },
   computed: {
+    inboxSourceOptions () {
+      return [
+        { value: 'all', text: this.$t('adminInbox.srcAll') },
+        { value: 'case', text: this.$t('adminInbox.srcCase') },
+        { value: 'website', text: this.$t('adminInbox.srcWebsite') },
+        { value: 'portal', text: this.$t('adminInbox.srcPortal') }
+      ]
+    },
     adminUserId () {
       return this.$store.getters.user && this.$store.getters.user.id
     },
@@ -574,7 +574,7 @@ export default {
     },
     websitePanelTitle () {
       if (!this.selected || this.selected.kind !== 'website') return ''
-      return this.selected.thread_origin === 'PORTAL' ? 'Portal support' : 'Website inquiry'
+      return this.selected.thread_origin === 'PORTAL' ? this.$t('adminInbox.portalSupport') : this.$t('adminInbox.websiteInquiry')
     },
     websiteParticipantDisplayName () {
       if (!this.selected || this.selected.kind !== 'website') return ''
@@ -589,7 +589,7 @@ export default {
       return this.context && this.context.case ? this.context.case.case_agreement_tracking : null
     },
     startModalTitle () {
-      return this.startWizardStep === 1 ? 'Start a conversation — choose case' : 'Start a conversation — choose person'
+      return this.startWizardStep === 1 ? this.$t('adminInbox.startChooseCase') : this.$t('adminInbox.startChoosePerson')
     },
     totalUnreadInbox () {
       return this.threads.reduce((sum, t) => sum + (Number(t.unread_count) || 0), 0)
@@ -600,19 +600,19 @@ export default {
       return [
         {
           logicalChannel: 'ADMIN_MEDIATOR',
-          roleLabel: 'Mediator',
-          displayName: c.user_cases_mediatorTouser ? this.partyName(c.user_cases_mediatorTouser) : 'Not assigned',
+          roleLabel: this.$t('adminInbox.mediator'),
+          displayName: c.user_cases_mediatorTouser ? this.partyName(c.user_cases_mediatorTouser) : this.$t('adminInbox.notAssigned'),
           disabled: !c.user_cases_mediatorTouser
         },
         {
           logicalChannel: 'ADMIN_FIRST_PARTY',
-          roleLabel: 'First party',
+          roleLabel: this.$t('adminInbox.firstParty'),
           displayName: this.partyName(c.user_cases_first_partyTouser),
           disabled: !c.user_cases_first_partyTouser
         },
         {
           logicalChannel: 'ADMIN_SECOND_PARTY',
-          roleLabel: 'Second party',
+          roleLabel: this.$t('adminInbox.secondParty'),
           displayName: this.partyName(c.user_cases_second_partyTouser),
           disabled: !c.user_cases_second_partyTouser
         }
@@ -664,8 +664,8 @@ export default {
     },
     c360MeetingModalTitle () {
       const m = this.c360MeetingModalMeeting
-      if (!m) return 'Meeting details'
-      return m.title ? `Meeting · ${m.title}` : 'Meeting details'
+      if (!m) return this.$t('adminInbox.meetingDetails')
+      return m.title ? this.$t('adminInbox.meetingWithTitle', { title: m.title }) : this.$t('adminInbox.meetingDetails')
     },
     c360DescriptionFull () {
       if (!this.context || !this.context.case) return ''
@@ -739,12 +739,17 @@ export default {
   methods: {
     supportTopicShort (code) {
       const c = String(code || '').toUpperCase()
-      const map = { GENERAL: 'General', PORTAL: 'Portal', TECHNICAL: 'Technical', CASE_RELATED: 'Case' }
+      const map = {
+        GENERAL: this.$t('adminInbox.topicGeneral'),
+        PORTAL: this.$t('adminInbox.topicPortal'),
+        TECHNICAL: this.$t('adminInbox.topicTechnical'),
+        CASE_RELATED: this.$t('adminInbox.topicCase')
+      }
       return map[c] || c || ''
     },
     inboxRowKindLabel (t) {
-      if (t.kind === 'case') return 'Case'
-      return t.thread_origin === 'PORTAL' ? 'Portal' : 'Website'
+      if (t.kind === 'case') return this.$t('adminInbox.case')
+      return t.thread_origin === 'PORTAL' ? this.$t('adminInbox.portal') : this.$t('adminInbox.website')
     },
     inboxRowBadgeVariant (t) {
       if (t.kind === 'case') return 'primary'
@@ -755,16 +760,16 @@ export default {
       return `case:${t.case_id}:${t.logical_channel}`
     },
     channelLabel (logical) {
-      return 'Case chat'
+      return this.$t('adminInbox.caseChat')
     },
     participantLabelFor (c, logical) {
       if (logical === 'ADMIN_MEDIATOR') {
-        return c.user_cases_mediatorTouser ? `Mediator : ${c.user_cases_mediatorTouser.name}` : 'Mediator (unassigned)'
+        return c.user_cases_mediatorTouser ? this.$t('adminInbox.mediatorWithName', { name: c.user_cases_mediatorTouser.name }) : this.$t('adminInbox.mediatorUnassigned')
       }
       if (logical === 'ADMIN_FIRST_PARTY') {
-        return c.user_cases_first_partyTouser ? `First party : ${c.user_cases_first_partyTouser.name}` : 'First party'
+        return c.user_cases_first_partyTouser ? this.$t('adminInbox.firstPartyWithName', { name: c.user_cases_first_partyTouser.name }) : this.$t('adminInbox.firstParty')
       }
-      return c.user_cases_second_partyTouser ? `Second party : ${c.user_cases_second_partyTouser.name}` : 'Second party'
+      return c.user_cases_second_partyTouser ? this.$t('adminInbox.secondPartyWithName', { name: c.user_cases_second_partyTouser.name }) : this.$t('adminInbox.secondParty')
     },
     formatShort (d) {
       return this.$formatDateTime(d)
@@ -797,10 +802,10 @@ export default {
       const now = new Date()
       const s = start ? new Date(start) : null
       const e = end ? new Date(end) : null
-      if (!s || !e) return { statusLabel: 'Unknown', statusClass: 'status-unknown' }
-      if (now < s) return { statusLabel: 'Upcoming', statusClass: 'status-upcoming' }
-      if (now > e) return { statusLabel: 'Past', statusClass: 'status-past' }
-      return { statusLabel: 'Ongoing', statusClass: 'status-ongoing' }
+      if (!s || !e) return { statusLabel: this.$t('adminInbox.statusUnknown'), statusClass: 'status-unknown' }
+      if (now < s) return { statusLabel: this.$t('adminInbox.statusUpcoming'), statusClass: 'status-upcoming' }
+      if (now > e) return { statusLabel: this.$t('adminInbox.statusPast'), statusClass: 'status-past' }
+      return { statusLabel: this.$t('adminInbox.statusOngoing'), statusClass: 'status-ongoing' }
     },
     ratingToStars (rating) {
       if (rating == null) return ''
@@ -852,7 +857,7 @@ export default {
         ? caseRes.data.threads.map((t) => ({
           ...t,
           kind: 'case',
-          channel_label: t.channel_label || 'Case chat',
+          channel_label: t.channel_label || this.$t('adminInbox.caseChat'),
           empty: !t.last_message_at,
           unread_count: Number(t.unread_count) || 0
         }))
@@ -860,11 +865,7 @@ export default {
       const webRows = (webRes.success && webRes.data && Array.isArray(webRes.data.threads))
         ? webRes.data.threads.map((w) => {
           const origin = w.thread_origin || 'WEBSITE'
-          const topicShort = (code) => {
-            const c = String(code || '').toUpperCase()
-            const map = { GENERAL: 'General', PORTAL: 'Portal', TECHNICAL: 'Technical', CASE_RELATED: 'Case' }
-            return map[c] || c || ''
-          }
+          const topicShort = (code) => this.supportTopicShort(code)
           const portalName = w.portal_user && w.portal_user.name ? w.portal_user.name : null
           const visitor = w.visitor_name && String(w.visitor_name).trim() ? String(w.visitor_name).trim() : null
           let participant_label

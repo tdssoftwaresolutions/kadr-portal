@@ -1,9 +1,9 @@
 <template>
   <b-container fluid class="admin-notifications-page">
-    <kadr-page-header :title="ADMIN.NOTIFICATIONS_TITLE" :subtitle="ADMIN.NOTIFICATIONS_SUBTITLE" />
+    <kadr-page-header :title="$t('adminNotifications.title')" :subtitle="$t('adminNotifications.subtitle')" />
 
     <b-tabs v-model="activeTab" content-class="mt-3">
-      <b-tab title="My browser notifications">
+      <b-tab :title="$t('adminNotifications.tabBrowser')">
         <b-row>
           <b-col lg="6">
             <browser-notifications />
@@ -11,15 +11,15 @@
         </b-row>
       </b-tab>
 
-      <b-tab title="Templates">
+      <b-tab :title="$t('adminNotifications.tabTemplates')">
         <b-row class="mb-3 align-items-end">
           <b-col md="4">
-            <b-form-group label="Channel" label-size="sm" class="mb-0">
+            <b-form-group :label="$t('adminNotifications.channel')" label-size="sm" class="mb-0">
               <b-form-select v-model="filterChannel" :options="channelFilterOptions" size="sm" @change="loadTemplates" />
             </b-form-group>
           </b-col>
           <b-col class="text-end">
-            <b-button size="sm" variant="primary" @click="openTemplateEditor()">New template</b-button>
+            <b-button size="sm" variant="primary" @click="openTemplateEditor()">{{ $t('adminNotifications.newTemplate') }}</b-button>
           </b-col>
         </b-row>
 
@@ -28,27 +28,27 @@
             <b-badge variant="info">{{ row.item.channel }}</b-badge>
           </template>
           <template #cell(active)="row">
-            <b-badge :variant="row.item.active ? 'success' : 'secondary'">{{ row.item.active ? 'On' : 'Off' }}</b-badge>
+            <b-badge :variant="row.item.active ? 'success' : 'secondary'">{{ row.item.active ? $t('adminNotifications.on') : $t('adminNotifications.off') }}</b-badge>
           </template>
           <template #cell(actions)="row">
-            <b-button size="sm" variant="outline-primary" class="me-1" @click="openTemplateEditor(row.item)">Edit</b-button>
-            <b-button size="sm" variant="outline-danger" @click="removeTemplate(row.item)">Delete</b-button>
+            <b-button size="sm" variant="outline-primary" class="me-1" @click="openTemplateEditor(row.item)">{{ $t('adminNotifications.edit') }}</b-button>
+            <b-button size="sm" variant="outline-danger" @click="removeTemplate(row.item)">{{ $t('adminNotifications.delete') }}</b-button>
           </template>
         </b-table>
       </b-tab>
 
-      <b-tab title="Send message">
+      <b-tab :title="$t('adminNotifications.tabSend')">
         <iq-card>
           <template v-slot:body>
             <b-form @submit.prevent="sendBulk">
               <b-row>
                 <b-col md="4">
-                  <b-form-group label="Channel" label-size="sm">
+                  <b-form-group :label="$t('adminNotifications.channel')" label-size="sm">
                     <b-form-select v-model="sendForm.channel" :options="channelOptions" required @change="onSendChannelChange" />
                   </b-form-group>
                 </b-col>
                 <b-col md="4">
-                  <b-form-group label="Template" label-size="sm">
+                  <b-form-group :label="$t('adminNotifications.template')" label-size="sm">
                     <b-form-select
                       v-model="sendForm.templateKey"
                       :options="templateSelectOptions"
@@ -57,31 +57,31 @@
                       @change="onSendTemplateChange"
                     >
                       <template #first>
-                        <b-form-select-option :value="''" disabled>Select a template…</b-form-select-option>
+                        <b-form-select-option :value="''" disabled>{{ $t('adminNotifications.selectTemplate') }}</b-form-select-option>
                       </template>
                     </b-form-select>
                     <p v-if="selectedSendTemplate" class="small text-muted mb-0 mt-1">
-                      Key: <code>{{ selectedSendTemplate.template_key }}</code>
+                      {{ $t('adminNotifications.key') }}: <code>{{ selectedSendTemplate.template_key }}</code>
                     </p>
                   </b-form-group>
                 </b-col>
               </b-row>
 
-              <b-form-group label="Search recipients" label-size="sm">
-                <b-form-input v-model="userSearch" placeholder="Name, email, or phone" @input="debouncedUserSearch" />
+              <b-form-group :label="$t('adminNotifications.searchRecipients')" label-size="sm">
+                <b-form-input v-model="userSearch" :placeholder="$t('adminNotifications.searchRecipientsPlaceholder')" @input="debouncedUserSearch" />
               </b-form-group>
 
-              <b-form-group label="Selected recipients" label-size="sm">
+              <b-form-group :label="$t('adminNotifications.selectedRecipients')" label-size="sm">
                 <b-form-select v-model="sendForm.userIds" :options="userSelectOptions" multiple :select-size="6" required />
-                <p class="small text-muted mt-1 mb-0">Hold Cmd/Ctrl to select multiple users.</p>
+                <p class="small text-muted mt-1 mb-0">{{ $t('adminNotifications.holdToSelect') }}</p>
               </b-form-group>
 
-              <h6 class="mt-3">Template variables</h6>
+              <h6 class="mt-3">{{ $t('adminNotifications.templateVariables') }}</h6>
               <p class="small text-muted mb-2">
-                <code>{name}</code>, <code>{email}</code>, and <code>{phone_number}</code> are filled per recipient automatically.
+                <code>{name}</code>, <code>{email}</code>, <code>{phone_number}</code>
               </p>
-              <p v-if="!sendForm.templateKey" class="small text-warning">Select a template to load its variables.</p>
-              <p v-else-if="!sendForm.variableRows.length" class="small text-muted">No extra variables for this template.</p>
+              <p v-if="!sendForm.templateKey" class="small text-warning">{{ $t('adminNotifications.selectTemplateToLoadVars') }}</p>
+              <p v-else-if="!sendForm.variableRows.length" class="small text-muted">{{ $t('adminNotifications.noExtraVars') }}</p>
               <b-row v-for="(v, idx) in sendForm.variableRows" :key="'var-' + idx" class="mb-2 align-items-center">
                 <b-col md="4">
                   <code class="small">{{ '{' + v.key + '}' }}</code>
@@ -89,7 +89,7 @@
                 <b-col md="8">
                   <b-form-input
                     v-model="v.value"
-                    :placeholder="'Value for {' + v.key + '}'"
+                    :placeholder="$t('adminNotifications.valueFor', { key: v.key })"
                     size="sm"
                     @input="schedulePreview"
                   />
@@ -98,18 +98,18 @@
 
               <div class="d-flex flex-wrap mt-2">
                 <b-button type="submit" variant="primary" size="sm" :disabled="sending || !sendForm.templateKey">
-                  {{ sending ? 'Sending…' : 'Send to selected users' }}
+                  {{ sending ? $t('adminNotifications.sending') : $t('adminNotifications.sendToSelected') }}
                 </b-button>
               </div>
             </b-form>
 
             <div v-if="sendForm.templateKey" class="mt-3 border rounded p-3 bg-white preview-panel">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="small text-muted mb-0">Live preview</h6>
-                <span v-if="previewLoading" class="small text-muted">Updating…</span>
+                <h6 class="small text-muted mb-0">{{ $t('adminNotifications.livePreview') }}</h6>
+                <span v-if="previewLoading" class="small text-muted">{{ $t('adminNotifications.updating') }}</span>
               </div>
-              <div v-if="previewSubject"><strong>Subject:</strong> {{ previewSubject }}</div>
-              <div v-if="sendForm.channel === 'PUSH' && previewTitle"><strong>Title:</strong> {{ previewTitle }}</div>
+              <div v-if="previewSubject"><strong>{{ $t('adminNotifications.subject') }}:</strong> {{ previewSubject }}</div>
+              <div v-if="sendForm.channel === 'PUSH' && previewTitle"><strong>{{ $t('adminNotifications.titleField') }}:</strong> {{ previewTitle }}</div>
               <div v-if="previewFullHtml" v-html="previewFullHtml" class="preview-html small" />
               <div v-else-if="previewHtml" v-html="previewHtml" class="preview-html small" />
               <pre v-if="previewText" class="small mt-2 mb-0">{{ previewText }}</pre>
@@ -118,24 +118,24 @@
         </iq-card>
       </b-tab>
 
-      <b-tab title="Channels & logs">
+      <b-tab :title="$t('adminNotifications.tabChannels')">
         <b-row>
           <b-col lg="6" class="mb-4">
             <iq-card>
               <template v-slot:headerTitle>
-                <h5 class="card-title mb-0">Channel configuration</h5>
+                <h5 class="card-title mb-0">{{ $t('adminNotifications.channelConfiguration') }}</h5>
               </template>
               <template v-slot:body>
                 <div v-for="ch in channelSettings" :key="ch.channel" class="mb-3 pb-3 border-bottom">
                   <div class="d-flex justify-content-between align-items-center">
                     <strong>{{ ch.channel }}</strong>
-                    <b-form-checkbox v-model="ch.enabled" switch @change="saveChannel(ch)">Enabled</b-form-checkbox>
+                    <b-form-checkbox v-model="ch.enabled" switch @change="saveChannel(ch)">{{ $t('adminNotifications.enabled') }}</b-form-checkbox>
                   </div>
-                  <p class="small text-muted mb-2">Provider: {{ ch.provider }}</p>
+                  <p class="small text-muted mb-2">{{ $t('adminNotifications.provider') }}: {{ ch.provider }}</p>
                   <template v-if="ch.channel === 'EMAIL'">
                     <b-tabs v-model="emailLayoutTab" small class="mb-2">
-                      <b-tab title="Edit HTML">
-                        <b-form-group label="Header HTML" label-size="sm" class="mt-2">
+                      <b-tab :title="$t('adminNotifications.editHtml')">
+                        <b-form-group :label="$t('adminNotifications.headerHtml')" label-size="sm" class="mt-2">
                           <html-code-editor
                             ref="emailHeaderHtmlEditor"
                             :value="ch.headerHtml"
@@ -144,7 +144,7 @@
                             @input="(val) => onEmailLayoutFieldInput(ch, 'headerHtml', val)"
                           />
                         </b-form-group>
-                        <b-form-group label="Footer HTML" label-size="sm">
+                        <b-form-group :label="$t('adminNotifications.footerHtml')" label-size="sm">
                           <html-code-editor
                             ref="emailFooterHtmlEditor"
                             :value="ch.footerHtml"
@@ -154,20 +154,20 @@
                           />
                         </b-form-group>
                       </b-tab>
-                      <b-tab title="Preview">
+                      <b-tab :title="$t('adminNotifications.preview')">
                         <div class="mt-2 border rounded p-2 bg-white">
                           <div v-if="layoutPreviewHtml" v-html="layoutPreviewHtml" class="preview-html small" />
-                          <p v-else class="small text-muted mb-0">Adjust header/footer to see preview.</p>
+                          <p v-else class="small text-muted mb-0">{{ $t('adminNotifications.adjustToPreview') }}</p>
                         </div>
                       </b-tab>
                     </b-tabs>
-                    <b-button size="sm" variant="primary" @click="saveChannel(ch)">Save email layout</b-button>
+                    <b-button size="sm" variant="primary" @click="saveChannel(ch)">{{ $t('adminNotifications.saveEmailLayout') }}</b-button>
                   </template>
                   <template v-else>
-                    <b-form-group label="Channel config (JSON)" label-size="sm">
+                    <b-form-group :label="$t('adminNotifications.channelConfigJson')" label-size="sm">
                       <b-form-textarea v-model="ch.configJson" rows="2" size="sm" class="font-monospace small" />
                     </b-form-group>
-                    <b-button size="sm" variant="outline-primary" @click="saveChannel(ch)">Save</b-button>
+                    <b-button size="sm" variant="outline-primary" @click="saveChannel(ch)">{{ $t('adminNotifications.save') }}</b-button>
                   </template>
                 </div>
               </template>
@@ -176,7 +176,7 @@
           <b-col lg="6">
             <iq-card>
               <template v-slot:headerTitle>
-                <h5 class="card-title mb-0">Recent send log</h5>
+                <h5 class="card-title mb-0">{{ $t('adminNotifications.recentSendLog') }}</h5>
               </template>
               <template v-slot:body>
                 <b-table :items="sendLogs" :fields="logFields" small responsive class="mb-0">
@@ -193,16 +193,16 @@
       </b-tab>
     </b-tabs>
 
-    <b-modal v-model="templateModal" size="lg" :title="templateEditor.id ? 'Edit template' : 'New template'" scrollable @shown="onTemplateModalShown" @hidden="resetTemplateEditor">
+    <b-modal v-model="templateModal" size="lg" :title="templateEditor.id ? $t('adminNotifications.editTemplate') : $t('adminNotifications.newTemplate')" scrollable @shown="onTemplateModalShown" @hidden="resetTemplateEditor">
       <b-form @submit.prevent="saveTemplate">
         <b-row>
           <b-col md="6">
-            <b-form-group label="Display name" label-size="sm">
+            <b-form-group :label="$t('adminNotifications.displayName')" label-size="sm">
               <b-form-input v-model="templateEditor.name" required @input="onTemplateNameInput" />
             </b-form-group>
           </b-col>
           <b-col md="6">
-            <b-form-group label="Channel" label-size="sm">
+            <b-form-group :label="$t('adminNotifications.channel')" label-size="sm">
               <b-form-select
                 v-model="templateEditor.channel"
                 :options="channelOptions"
@@ -213,39 +213,38 @@
             </b-form-group>
           </b-col>
         </b-row>
-        <b-form-group label="Template key (auto-generated, used in code)" label-size="sm">
+        <b-form-group :label="$t('adminNotifications.templateKeyAuto')" label-size="sm">
           <b-form-input v-model="templateEditor.template_key" readonly class="font-monospace small bg-white" />
         </b-form-group>
-        <b-form-group label="Description" label-size="sm">
+        <b-form-group :label="$t('adminNotifications.description')" label-size="sm">
           <b-form-input v-model="templateEditor.description" />
         </b-form-group>
-        <b-form-checkbox v-model="templateEditor.active" switch class="mb-3">Active</b-form-checkbox>
+        <b-form-checkbox v-model="templateEditor.active" switch class="mb-3">{{ $t('adminNotifications.active') }}</b-form-checkbox>
 
-        <b-form-group v-if="templateEditor.channel === 'EMAIL'" label="Subject" label-size="sm">
+        <b-form-group v-if="templateEditor.channel === 'EMAIL'" :label="$t('adminNotifications.subject')" label-size="sm">
           <b-form-input v-model="templateEditor.subject" @input="scheduleEditorPreview" />
         </b-form-group>
-        <b-form-group v-if="templateEditor.channel === 'EMAIL'" label="Greeting (optional)" label-size="sm">
+        <b-form-group v-if="templateEditor.channel === 'EMAIL'" :label="$t('adminNotifications.greetingOptional')" label-size="sm">
           <b-form-input
             v-model="templateEditor.greeting"
-            placeholder="Hi {name},"
+            :placeholder="$t('adminNotifications.greetingPlaceholder')"
             @input="scheduleEditorPreview"
           />
         </b-form-group>
-        <b-form-group v-if="templateEditor.channel === 'PUSH'" label="Push title" label-size="sm">
+        <b-form-group v-if="templateEditor.channel === 'PUSH'" :label="$t('adminNotifications.pushTitle')" label-size="sm">
           <b-form-input v-model="templateEditor.title" @input="scheduleEditorPreview" />
         </b-form-group>
 
         <b-form-group
           v-if="templateEditor.channel === 'EMAIL'"
-          label="Body"
+          :label="$t('adminNotifications.body')"
           label-size="sm"
         >
           <p v-if="isBuilderTemplate" class="small text-info mb-2">
-            This template’s body is built automatically at send time (sample data shown in preview).
-            Subject and greeting below are still editable.
+            {{ $t('adminNotifications.builderNote') }}
           </p>
           <b-tabs v-model="templateBodyTab" small class="mb-0">
-            <b-tab title="Edit HTML">
+            <b-tab :title="$t('adminNotifications.editHtml')">
               <html-code-editor
                 ref="templateBodyHtmlEditor"
                 v-model="templateEditor.body_html"
@@ -253,17 +252,17 @@
                 :rows="10"
                 :visible="templateModal && templateBodyTab === 0"
                 :disabled="isBuilderTemplate"
-                :placeholder="isBuilderTemplate ? 'Body is generated by the system — see Preview tab.' : 'Use {variable} placeholders in HTML'"
+                :placeholder="isBuilderTemplate ? $t('adminNotifications.bodyGeneratedPlaceholder') : $t('adminNotifications.usePlaceholders')"
                 @input="scheduleEditorPreview"
               />
             </b-tab>
-            <b-tab title="Preview">
+            <b-tab :title="$t('adminNotifications.preview')">
               <div class="mt-2 border rounded p-2 bg-white template-body-preview">
-                <div v-if="editorPreviewLoading" class="small text-muted mb-2">Updating preview…</div>
-                <div v-if="editorPreviewSubject" class="small mb-2"><strong>Subject:</strong> {{ editorPreviewSubject }}</div>
+                <div v-if="editorPreviewLoading" class="small text-muted mb-2">{{ $t('adminNotifications.updatingPreview') }}</div>
+                <div v-if="editorPreviewSubject" class="small mb-2"><strong>{{ $t('adminNotifications.subject') }}:</strong> {{ editorPreviewSubject }}</div>
                 <div v-if="editorPreviewFullHtml" v-html="editorPreviewFullHtml" class="preview-html small" />
                 <p v-else-if="!editorPreviewLoading" class="small text-muted mb-0">
-                  Switch to this tab or edit fields to load preview.
+                  {{ $t('adminNotifications.switchToPreview') }}
                 </p>
               </div>
             </b-tab>
@@ -271,11 +270,11 @@
         </b-form-group>
         <b-form-group
           v-else
-          label="Message body"
+          :label="$t('adminNotifications.messageBody')"
           label-size="sm"
         >
           <b-tabs v-model="templateBodyTab" small class="mb-0">
-            <b-tab title="Edit">
+            <b-tab :title="$t('adminNotifications.editTab')">
               <b-form-textarea
                 v-model="templateEditor.body_text"
                 rows="6"
@@ -283,18 +282,18 @@
                 @input="scheduleEditorPreview"
               />
             </b-tab>
-            <b-tab title="Preview">
+            <b-tab :title="$t('adminNotifications.preview')">
               <div class="mt-2 border rounded p-2 bg-white template-body-preview">
-                <div v-if="editorPreviewLoading" class="small text-muted mb-2">Updating preview…</div>
+                <div v-if="editorPreviewLoading" class="small text-muted mb-2">{{ $t('adminNotifications.updatingPreview') }}</div>
                 <pre v-if="editorPreviewText" class="small mb-0 bg-white">{{ editorPreviewText }}</pre>
-                <p v-else-if="!editorPreviewLoading" class="small text-muted mb-0">Edit the message body to see preview.</p>
+                <p v-else-if="!editorPreviewLoading" class="small text-muted mb-0">{{ $t('adminNotifications.editBodyToPreview') }}</p>
               </div>
             </b-tab>
           </b-tabs>
         </b-form-group>
 
         <div v-if="editorPreviewVariableRows.length" class="mt-3">
-          <h6 class="small text-muted mb-2">Preview sample values</h6>
+          <h6 class="small text-muted mb-2">{{ $t('adminNotifications.previewSampleValues') }}</h6>
           <b-row v-for="(v, idx) in editorPreviewVariableRows" :key="'epv-' + idx" class="mb-2 align-items-center">
             <b-col md="4">
               <code class="small">{{ '{' + v.key + '}' }}</code>
@@ -306,12 +305,12 @@
         </div>
 
         <p class="small text-muted mb-0 mt-2">
-          Detected variables: {{ detectedVars.length ? detectedVars.join(', ') : 'none yet' }}
+          {{ $t('adminNotifications.detectedVariables', { vars: detectedVars.length ? detectedVars.join(', ') : $t('adminNotifications.noneYet') }) }}
         </p>
       </b-form>
       <template #footer>
-        <b-button variant="secondary" @click="templateModal = false">Cancel</b-button>
-        <b-button variant="primary" :disabled="savingTemplate" @click="saveTemplate">{{ savingTemplate ? 'Saving…' : 'Save' }}</b-button>
+        <b-button variant="secondary" @click="templateModal = false">{{ $t('adminNotifications.cancel') }}</b-button>
+        <b-button variant="primary" :disabled="savingTemplate" @click="saveTemplate">{{ savingTemplate ? $t('adminNotifications.saving') : $t('adminNotifications.save') }}</b-button>
       </template>
     </b-modal>
 
@@ -323,7 +322,6 @@ import { sofbox } from '../../config/pluginInit'
 import HtmlCodeEditor from '../../components/admin/HtmlCodeEditor.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import BrowserNotifications from '../../components/notifications/BrowserNotifications.vue'
-import { ADMIN } from '../../constants/messages'
 import { formatDateTime } from '../../utils/dateFormat'
 
 const CHANNELS = ['EMAIL', 'SMS', 'WHATSAPP', 'PUSH']
@@ -381,7 +379,6 @@ export default {
   },
   data () {
     return {
-      ADMIN,
       activeTab: 0,
       filterChannel: '',
       templates: [],
@@ -418,29 +415,35 @@ export default {
       previewSubject: '',
       previewTitle: '',
       previewLoading: false,
-      previewTimer: null,
-      templateFields: [
-        { key: 'name', label: 'Name' },
-        { key: 'template_key', label: 'Key' },
-        { key: 'channel', label: 'Channel' },
-        { key: 'active', label: 'Status' },
-        { key: 'actions', label: '' }
-      ],
-      logFields: [
-        { key: 'created_at', label: 'When', formatter: (v) => (v ? formatDateTime(v) : '') },
-        { key: 'template_key', label: 'Template' },
-        { key: 'channel', label: 'Channel' },
-        { key: 'recipient', label: 'To' },
-        { key: 'status', label: 'Status' }
-      ],
-      userTypeOptions: [
-        { text: 'Clients', value: 'CLIENT' },
-        { text: 'Mediators', value: 'MEDIATOR' },
-        { text: 'Admins', value: 'ADMIN' }
-      ]
+      previewTimer: null
     }
   },
   computed: {
+    templateFields () {
+      return [
+        { key: 'name', label: this.$t('adminNotifications.colName') },
+        { key: 'template_key', label: this.$t('adminNotifications.key') },
+        { key: 'channel', label: this.$t('adminNotifications.channel') },
+        { key: 'active', label: this.$t('adminNotifications.colStatus') },
+        { key: 'actions', label: '' }
+      ]
+    },
+    logFields () {
+      return [
+        { key: 'created_at', label: this.$t('adminNotifications.logWhen'), formatter: (v) => (v ? formatDateTime(v) : '') },
+        { key: 'template_key', label: this.$t('adminNotifications.template') },
+        { key: 'channel', label: this.$t('adminNotifications.channel') },
+        { key: 'recipient', label: this.$t('adminNotifications.logTo') },
+        { key: 'status', label: this.$t('adminNotifications.colStatus') }
+      ]
+    },
+    userTypeOptions () {
+      return [
+        { text: this.$t('adminNotifications.clients'), value: 'CLIENT' },
+        { text: this.$t('adminNotifications.mediators'), value: 'MEDIATOR' },
+        { text: this.$t('adminNotifications.admins'), value: 'ADMIN' }
+      ]
+    },
     // "Channels & logs" is the 4th tab (index 3) after the browser-notifications tab.
     channelsTabActive () {
       return this.activeTab === 3
@@ -449,7 +452,7 @@ export default {
       return CHANNELS.map((c) => ({ value: c, text: c }))
     },
     channelFilterOptions () {
-      return [{ value: '', text: 'All channels' }, ...this.channelOptions]
+      return [{ value: '', text: this.$t('adminNotifications.allChannels') }, ...this.channelOptions]
     },
     detectedVars () {
       const t = this.templateEditor
@@ -705,7 +708,7 @@ export default {
       }
     },
     async removeTemplate (row) {
-      if (!window.confirm(`Delete template ${row.template_key} (${row.channel})?`)) return
+      if (!window.confirm(this.$t('adminNotifications.confirmDeleteTemplate', { key: row.template_key, channel: row.channel }))) return
       const res = await this.$store.dispatch('deleteNotificationTemplate', { id: row.id })
       if (res.success) this.loadTemplates()
     },
@@ -813,7 +816,7 @@ export default {
         try {
           config = ch.configJson ? JSON.parse(ch.configJson) : {}
         } catch (_) {
-          this.$store.dispatch('alert/showAlert', { message: 'Invalid JSON in channel config', type: 'danger' }, { root: true })
+          this.$store.dispatch('alert/showAlert', { message: this.$t('adminNotifications.invalidJsonConfig'), type: 'danger' }, { root: true })
           return
         }
       }

@@ -1,6 +1,6 @@
 <template>
   <b-container fluid>
-    <kadr-page-header :title="ADMIN.USERS_TITLE" :subtitle="ADMIN.USERS_SUBTITLE" />
+    <kadr-page-header :title="$t('adminUsers.title')" :subtitle="$t('adminUsers.subtitle')" />
     <b-row>
       <b-col sm="12">
         <iq-card>
@@ -9,21 +9,21 @@
               <b-form-input
                 v-model="tableFilter"
                 type="search"
-                placeholder="Filter by name or email…"
+                :placeholder="$t('adminUsers.filterPlaceholder')"
                 class="mb-2 me-2"
                 style="max-width: 280px;"
               />
               <div class="d-flex flex-wrap">
                 <b-form-checkbox v-model="showInactive" switch class="me-3 mb-2" @change="onToggleFilters">
-                  Show inactive users
+                  {{ $t('adminUsers.showInactive') }}
                 </b-form-checkbox>
                 <b-form-checkbox v-model="showDeleted" switch class="mb-2" @change="onToggleFilters">
-                  Show deleted users
+                  {{ $t('adminUsers.showDeleted') }}
                 </b-form-checkbox>
               </div>
             </div>
             <b-tabs card>
-              <b-tab :title="'Clients ('+activeClientsData.total+')'" active>
+              <b-tab :title="$t('adminUsers.clientsTab', { count: activeClientsData.total })" active>
                 <div v-if="activeClientsData.total > 0" class="kadr-data-table-wrap">
                   <b-table
                     :items="activeClientsData.users"
@@ -46,7 +46,7 @@
                           height="32"
                           alt=""
                         />
-                        <span>{{ row.item.name || 'N/A' }}</span>
+                        <span>{{ row.item.name || $t('adminUsers.na') }}</span>
                       </div>
                     </template>
                     <template #cell(role)="row">
@@ -56,7 +56,7 @@
                       <b-badge :variant="statusVariant(row.item)">{{ statusLabel(row.item) }}</b-badge>
                     </template>
                     <template #cell(actions)="row">
-                      <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(row.item)">View</b-button>
+                      <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(row.item)">{{ $t('adminUsers.view') }}</b-button>
                       <b-button
                         v-if="!row.item.is_deleted"
                         size="sm"
@@ -64,7 +64,7 @@
                         variant="outline-danger"
                         @click="deleteUser(row.item)"
                       >
-                        Remove
+                        {{ $t('adminUsers.remove') }}
                       </b-button>
                       <b-button
                         v-else
@@ -73,21 +73,21 @@
                         variant="outline-success"
                         @click="restoreUser(row.item)"
                       >
-                        Restore
+                        {{ $t('adminUsers.restore') }}
                       </b-button>
                     </template>
                     <template #empty>
                       <kadr-empty-state
-                        :title="ADMIN.NO_USERS"
-                        :description="ADMIN.NO_USERS_DESCRIPTION"
+                        :title="$t('adminUsers.noUsers')"
+                        :description="$t('adminUsers.noUsersDescription')"
                       />
                     </template>
                   </b-table>
                 </div>
                 <kadr-empty-state
                   v-else
-                  :title="ADMIN.NO_USERS"
-                  :description="ADMIN.NO_USERS_DESCRIPTION"
+                  :title="$t('adminUsers.noUsers')"
+                  :description="$t('adminUsers.noUsersDescription')"
                 />
                 <b-pagination
                   v-if="activeClientsData.total > 0"
@@ -100,7 +100,7 @@
                 />
               </b-tab>
 
-              <b-tab :title="'Dispute Resolution Experts ('+activeMediatorsData.total+')'">
+              <b-tab :title="$t('adminUsers.expertsTab', { count: activeMediatorsData.total })">
                 <div v-if="activeMediatorsData.total > 0" class="kadr-data-table-wrap">
                   <b-table
                     :items="activeMediatorsData.users"
@@ -123,7 +123,7 @@
                           height="32"
                           alt=""
                         />
-                        <span>{{ row.item.name || 'N/A' }}</span>
+                        <span>{{ row.item.name || $t('adminUsers.na') }}</span>
                       </div>
                     </template>
                     <template #cell(role)="row">
@@ -133,7 +133,7 @@
                       <b-badge :variant="statusVariant(row.item)">{{ statusLabel(row.item) }}</b-badge>
                     </template>
                     <template #cell(actions)="row">
-                      <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(row.item)">View</b-button>
+                      <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(row.item)">{{ $t('adminUsers.view') }}</b-button>
                       <b-button size="sm" class="me-1 mb-1" variant="outline-info" @click="openMediator360(row.item)">360°</b-button>
                       <b-button
                         v-if="!row.item.is_deleted"
@@ -142,7 +142,7 @@
                         variant="outline-danger"
                         @click="deleteMediator(row.item)"
                       >
-                        Remove
+                        {{ $t('adminUsers.remove') }}
                       </b-button>
                       <b-button
                         v-else
@@ -151,21 +151,21 @@
                         variant="outline-success"
                         @click="restoreUser(row.item)"
                       >
-                        Restore
+                        {{ $t('adminUsers.restore') }}
                       </b-button>
                     </template>
                     <template #empty>
                       <kadr-empty-state
-                        :title="ADMIN.NO_USERS"
-                        :description="ADMIN.NO_USERS_DESCRIPTION"
+                        :title="$t('adminUsers.noUsers')"
+                        :description="$t('adminUsers.noUsersDescription')"
                       />
                     </template>
                   </b-table>
                 </div>
                 <kadr-empty-state
                   v-else
-                  :title="ADMIN.NO_USERS"
-                  :description="ADMIN.NO_USERS_DESCRIPTION"
+                  :title="$t('adminUsers.noUsers')"
+                  :description="$t('adminUsers.noUsersDescription')"
                 />
                 <b-pagination
                   v-if="activeMediatorsData.total > 0"
@@ -182,12 +182,12 @@
         </iq-card>
       </b-col>
     </b-row>
-    <b-modal v-model="modalVisible" size="lg" title="User Details" no-footer>
+    <b-modal v-model="modalVisible" size="lg" :title="$t('adminUsers.userDetails')" no-footer>
       <div v-if="selectedUser">
         <b-row>
           <b-col :md="selectedUser.profile_image || selectedUser.profile_picture_url ? 9 : 12">
-            <h4>{{ selectedUser.name || 'N/A' }}</h4>
-            <p><strong>Email:</strong> {{ selectedUser.email || 'N/A' }}</p>
+            <h4>{{ selectedUser.name || $t('adminUsers.na') }}</h4>
+            <p><strong>{{ $t('adminUsers.email') }}:</strong> {{ selectedUser.email || $t('adminUsers.na') }}</p>
             <div v-for="(value, key) in filteredItem(selectedUser)" :key="key" class="mb-2">
               <strong v-if="!isURL(value)">{{ formatKey(key) }}:</strong>
               <span v-if="isURL(value)">
@@ -203,7 +203,7 @@
               </span>
             </div>
             <section v-if="certificateFields.length" >
-              <strong>Documents</strong>
+              <strong>{{ $t('adminUsers.documents') }}</strong>
               <div class="docs-grid">
                   <FilePreview
                   v-for="(doc, index) in certificateFields"
@@ -214,22 +214,22 @@
               </div>
             </section>
             <template v-if="selectedUser.cases && selectedUser.cases.length > 0">
-              <strong >Cases:</strong>
+              <strong >{{ $t('adminUsers.cases') }}:</strong>
               <div v-for="(caseItem, index) in selectedUser.cases" :key="index" style="border:1px solid #e6d6d6;padding:5px;margin:10px 3px;border-radius: 15px;">
-                <p class="mb-2"><strong>Case ID:</strong> {{ caseItem.caseId || 'N/A' }}</p>
-                <p class="mb-2"><strong>Complaint Category:</strong> {{ caseItem.category || 'N/A' }}</p>
-                <p class="mb-2"><strong>Dispute Description:</strong> {{ caseItem.description || 'N/A' }}</p>
+                <p class="mb-2"><strong>{{ $t('adminUsers.caseId') }}:</strong> {{ caseItem.caseId || $t('adminUsers.na') }}</p>
+                <p class="mb-2"><strong>{{ $t('adminUsers.complaintCategory') }}:</strong> {{ caseItem.category || $t('adminUsers.na') }}</p>
+                <p class="mb-2"><strong>{{ $t('adminUsers.disputeDescription') }}:</strong> {{ caseItem.description || $t('adminUsers.na') }}</p>
                 <template v-if="caseItem.secondParty">
-                  <p class="mb-2"><strong>Opposite Party Name:</strong> {{ caseItem.secondParty.name || 'N/A' }}</p>
-                  <p class="mb-2"><strong>Opposite Party Email:</strong> {{ caseItem.secondParty.email || 'N/A' }}</p>
-                  <p class="mb-2"><strong>Opposite Party Phone:</strong> {{ caseItem.secondParty.phone_number || 'N/A' }}</p>
+                  <p class="mb-2"><strong>{{ $t('adminUsers.oppositePartyName') }}:</strong> {{ caseItem.secondParty.name || $t('adminUsers.na') }}</p>
+                  <p class="mb-2"><strong>{{ $t('adminUsers.oppositePartyEmail') }}:</strong> {{ caseItem.secondParty.email || $t('adminUsers.na') }}</p>
+                  <p class="mb-2"><strong>{{ $t('adminUsers.oppositePartyPhone') }}:</strong> {{ caseItem.secondParty.phone_number || $t('adminUsers.na') }}</p>
                 </template>
                 <div v-if="caseItem.evidence_document_url">
-                  <p class="mb-2"><strong>Attachments:</strong></p>
+                  <p class="mb-2"><strong>{{ $t('adminUsers.attachments') }}:</strong></p>
                   <div class="docs-grid mt-2">
                     <FilePreview
                       :url="caseItem.evidence_document_url"
-                      name="Evidence Document"
+                      :name="$t('adminUsers.evidenceDocument')"
                     />
                   </div>
                 </div>
@@ -241,7 +241,7 @@
           </b-col>
         </b-row>
         <div class="d-flex justify-content-end mt-3">
-          <b-button variant="secondary" @click="modalVisible = false">Close</b-button>
+          <b-button variant="secondary" @click="modalVisible = false">{{ $t('common.close') }}</b-button>
         </div>
       </div>
     </b-modal>
@@ -260,7 +260,6 @@ import FilePreview from '../../components/DocumentPreview.vue'
 import AdminMediatorOffboardingModal from '../../components/admin/AdminMediatorOffboardingModal.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
-import { ADMIN } from '../../constants/messages'
 
 export default {
   name: 'UserList',
@@ -277,7 +276,6 @@ export default {
   },
   data () {
     return {
-      ADMIN,
       tableFilter: '',
       activeClientsPage: 1,
       activeMediatorsPage: 1,
@@ -290,24 +288,25 @@ export default {
       selectedUser: null,
       languages: {},
       offboardingVisible: false,
-      offboardingMediatorId: '',
-      clientFields: [
-        { key: 'name', label: 'Name', sortable: true },
-        { key: 'email', label: 'Email', sortable: true },
-        { key: 'role', label: 'Role / type', sortable: false },
-        { key: 'status', label: 'Status', sortable: false },
-        { key: 'actions', label: 'Actions', sortable: false }
-      ],
-      mediatorFields: [
-        { key: 'name', label: 'Name', sortable: true },
-        { key: 'email', label: 'Email', sortable: true },
-        { key: 'role', label: 'Role / type', sortable: false },
-        { key: 'status', label: 'Status', sortable: false },
-        { key: 'actions', label: 'Actions', sortable: false }
-      ]
+      offboardingMediatorId: ''
     }
   },
   computed: {
+    tableFields () {
+      return [
+        { key: 'name', label: this.$t('adminUsers.colName'), sortable: true },
+        { key: 'email', label: this.$t('adminUsers.colEmail'), sortable: true },
+        { key: 'role', label: this.$t('adminUsers.colRole'), sortable: false },
+        { key: 'status', label: this.$t('adminUsers.colStatus'), sortable: false },
+        { key: 'actions', label: this.$t('adminUsers.colActions'), sortable: false }
+      ]
+    },
+    clientFields () {
+      return this.tableFields
+    },
+    mediatorFields () {
+      return this.tableFields
+    },
     certificateFields () {
       if (!this.selectedUser) return []
       return Object.entries(this.selectedUser)
@@ -318,14 +317,14 @@ export default {
   methods: {
     roleLabel (user) {
       const type = (user.user_type || '').toUpperCase()
-      if (type === 'MEDIATOR') return 'Expert'
-      if (type === 'CLIENT') return 'Client'
+      if (type === 'MEDIATOR') return this.$t('adminUsers.roleExpert')
+      if (type === 'CLIENT') return this.$t('adminUsers.roleClient')
       return type || '—'
     },
     statusLabel (user) {
-      if (user.is_deleted) return 'Deleted'
-      if (user.active === false) return 'Inactive'
-      return 'Active'
+      if (user.is_deleted) return this.$t('adminUsers.statusDeleted')
+      if (user.active === false) return this.$t('adminUsers.statusInactive')
+      return this.$t('adminUsers.statusActive')
     },
     statusVariant (user) {
       if (user.is_deleted) return 'secondary'
@@ -396,7 +395,7 @@ export default {
       this.fetchActiveUsers(1)
     },
     async deleteUser (user) {
-      if (!window.confirm(`Remove ${user.name || user.email} from the platform? They will not be able to log in or receive case emails.`)) return
+      if (!window.confirm(this.$t('adminUsers.confirmRemove', { name: user.name || user.email }))) return
       const response = await this.$store.dispatch('adminSetUserDeleted', { userId: user.userId, isDeleted: true })
       if (response.success) {
         this.fetchActiveUsers(user.user_type === 'CLIENT' ? this.activeClientsPage : this.activeMediatorsPage, user.user_type)

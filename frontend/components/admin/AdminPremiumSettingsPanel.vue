@@ -1,10 +1,10 @@
 <template>
   <iq-card class="admin-settings-compact mt-3">
     <template v-slot:headerTitle>
-      <h4 class="card-title mb-0">Pro features & reward automation</h4>
+      <h4 class="card-title mb-0">{{ $t('adminPremium.title') }}</h4>
     </template>
     <template v-slot:body>
-      <h6 class="mb-2">Premium feature catalog</h6>
+      <h6 class="mb-2">{{ $t('adminPremium.featureCatalog') }}</h6>
       <b-table :items="features" :fields="featureFields" small responsive class="mb-4">
         <template #cell(included_in_pro)="row">
           <b-form-checkbox v-model="row.item.included_in_pro" @change="saveFeature(row.item)" />
@@ -27,14 +27,17 @@ export default {
   components: { AdminRewardFulfillmentRulesPanel },
   data () {
     return {
-      features: [],
-      featureFields: [
-        { key: 'label', label: 'Feature' },
-        { key: 'feature_key', label: 'Key' },
-        { key: 'included_in_pro', label: 'In Pro' },
-        { key: 'active', label: 'Active' }
+      features: []
+    }
+  },
+  computed: {
+    featureFields () {
+      return [
+        { key: 'label', label: this.$t('adminPremium.colFeature') },
+        { key: 'feature_key', label: this.$t('adminPremium.colKey') },
+        { key: 'included_in_pro', label: this.$t('adminPremium.colInPro') },
+        { key: 'active', label: this.$t('adminPremium.colActive') }
       ]
-
     }
   },
   mounted () {

@@ -2,12 +2,12 @@
   <b-container fluid>
     <iq-card>
       <template v-slot:headerTitle>
-        <h4 class="card-title mb-0">Reward redemption orders</h4>
+        <h4 class="card-title mb-0">{{ $t('adminRewardOrders.title') }}</h4>
       </template>
       <template v-slot:body>
         <b-row class="mb-3">
           <b-col md="4">
-            <label class="small text-muted">Status</label>
+            <label class="small text-muted">{{ $t('adminRewardOrders.status') }}</label>
             <b-form-select v-model="statusFilter" :options="statusOptions" @change="load(1)" />
           </b-col>
         </b-row>
@@ -36,9 +36,9 @@
               variant="primary"
               @click="openFulfill(row.item)"
             >
-              Mark fulfilled
+              {{ $t('adminRewardOrders.markFulfilled') }}
             </b-button>
-            <span v-else class="small text-muted">Done {{ formatDate(row.item.fulfilled_at) }}</span>
+            <span v-else class="small text-muted">{{ $t('adminRewardOrders.doneAt', { date: formatDate(row.item.fulfilled_at) }) }}</span>
           </template>
         </b-table>
         <b-pagination
@@ -51,20 +51,20 @@
           @change="load"
         />
 
-        <b-modal v-model="fulfillVisible" title="Fulfill reward order" @hidden="fulfillNotes = ''">
+        <b-modal v-model="fulfillVisible" :title="$t('adminRewardOrders.fulfillOrderTitle')" @hidden="fulfillNotes = ''">
           <div v-if="selectedOrder" class="mb-3">
-            <p class="mb-1"><strong>Mediator:</strong> {{ selectedOrder.user?.name }} ({{ selectedOrder.user?.email }})</p>
-            <p class="mb-1"><strong>Phone:</strong> {{ selectedOrder.user?.phone_number || '—' }}</p>
-            <p class="mb-1"><strong>Reward:</strong> {{ selectedOrder.catalog_item?.title }}</p>
-            <p class="mb-0"><strong>Points:</strong> {{ selectedOrder.points_spent }}</p>
+            <p class="mb-1"><strong>{{ $t('adminRewardOrders.mediator') }}:</strong> {{ selectedOrder.user?.name }} ({{ selectedOrder.user?.email }})</p>
+            <p class="mb-1"><strong>{{ $t('adminRewardOrders.phone') }}:</strong> {{ selectedOrder.user?.phone_number || '—' }}</p>
+            <p class="mb-1"><strong>{{ $t('adminRewardOrders.reward') }}:</strong> {{ selectedOrder.catalog_item?.title }}</p>
+            <p class="mb-0"><strong>{{ $t('adminRewardOrders.points') }}:</strong> {{ selectedOrder.points_spent }}</p>
           </div>
-          <b-form-group label="Fulfillment notes (optional)" label-size="sm">
-            <b-form-textarea v-model="fulfillNotes" rows="3" placeholder="e.g. Gift card code sent via email on …" />
+          <b-form-group :label="$t('adminRewardOrders.fulfillmentNotes')" label-size="sm">
+            <b-form-textarea v-model="fulfillNotes" rows="3" :placeholder="$t('adminRewardOrders.fulfillmentNotesPlaceholder')" />
           </b-form-group>
-          <p class="small text-muted mb-0">Confirm after you have delivered the reward by email or phone.</p>
+          <p class="small text-muted mb-0">{{ $t('adminRewardOrders.confirmAfterDelivery') }}</p>
           <template #footer>
-            <b-button variant="secondary" @click="fulfillVisible = false">Cancel</b-button>
-            <b-button variant="success" @click="submitFulfill">Mark as fulfilled</b-button>
+            <b-button variant="secondary" @click="fulfillVisible = false">{{ $t('adminRewardOrders.cancel') }}</b-button>
+            <b-button variant="success" @click="submitFulfill">{{ $t('adminRewardOrders.markAsFulfilled') }}</b-button>
           </template>
         </b-modal>
       </template>
@@ -84,20 +84,26 @@ export default {
       page: 1,
       perPage: 20,
       statusFilter: '',
-      statusOptions: [
-        { value: '', text: 'All orders' },
-        { value: 'PENDING', text: 'Pending' },
-        { value: 'FULFILLED', text: 'Fulfilled' }
-      ],
       fulfillVisible: false,
       fulfillNotes: '',
-      selectedOrder: null,
-      orderFields: [
-        { key: 'created_at', label: 'Ordered' },
-        { key: 'mediator', label: 'Mediator' },
-        { key: 'reward', label: 'Reward' },
-        { key: 'points_spent', label: 'Points', class: 'text-end' },
-        { key: 'status', label: 'Status' },
+      selectedOrder: null
+    }
+  },
+  computed: {
+    statusOptions () {
+      return [
+        { value: '', text: this.$t('adminRewardOrders.allOrders') },
+        { value: 'PENDING', text: this.$t('adminRewardOrders.pending') },
+        { value: 'FULFILLED', text: this.$t('adminRewardOrders.fulfilled') }
+      ]
+    },
+    orderFields () {
+      return [
+        { key: 'created_at', label: this.$t('adminRewardOrders.colOrdered') },
+        { key: 'mediator', label: this.$t('adminRewardOrders.colMediator') },
+        { key: 'reward', label: this.$t('adminRewardOrders.colReward') },
+        { key: 'points_spent', label: this.$t('adminRewardOrders.colPoints'), class: 'text-end' },
+        { key: 'status', label: this.$t('adminRewardOrders.colStatus') },
         { key: 'actions', label: '' }
       ]
     }

@@ -2,34 +2,34 @@
   <div class="fulfillment-rules-panel">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
       <div>
-        <h6 class="mb-1">Reward fulfillment rules</h6>
+        <h6 class="mb-1">{{ $t('adminPremium.rulesTitle') }}</h6>
         <p class="small text-muted mb-0">
-          When a mediator redeems an AUTO reward, the rule runs automatically (Pro days, mark done, email).
+          {{ $t('adminPremium.rulesHint') }}
         </p>
       </div>
-      <b-button size="sm" variant="primary" @click="openEditor()">Create rule</b-button>
+      <b-button size="sm" variant="primary" @click="openEditor()">{{ $t('adminPremium.createRule') }}</b-button>
     </div>
 
     <b-table :items="rules" :fields="ruleFields" small responsive class="mb-0">
       <template #cell(active)="row">
-        <b-badge :variant="row.item.active ? 'success' : 'secondary'">{{ row.item.active ? 'Active' : 'Off' }}</b-badge>
+        <b-badge :variant="row.item.active ? 'success' : 'secondary'">{{ row.item.active ? $t('adminPremium.ruleActive') : $t('adminPremium.ruleOff') }}</b-badge>
       </template>
       <template #cell(summary)="row">
-        <span class="small">{{ row.item.summary || '—' }}</span>
+        <span class="small">{{ localizedSummary(row.item) || '—' }}</span>
       </template>
       <template #cell(actions)="row">
-        <b-button size="sm" variant="outline-primary" class="me-1" @click="openEditor(row.item)">Edit</b-button>
-        <b-button size="sm" variant="outline-danger" @click="removeRule(row.item)">Delete</b-button>
+        <b-button size="sm" variant="outline-primary" class="me-1" @click="openEditor(row.item)">{{ $t('adminPremium.edit') }}</b-button>
+        <b-button size="sm" variant="outline-danger" @click="removeRule(row.item)">{{ $t('adminPremium.delete') }}</b-button>
       </template>
     </b-table>
     <p v-if="!rules.length && !loading" class="text-muted small mt-2 mb-0">
-      No rules yet. Create one, then attach it to a reward catalog item (AUTO fulfillment).
+      {{ $t('adminPremium.noRules') }}
     </p>
 
     <b-modal
       v-model="editorVisible"
       size="lg"
-      :title="editor.id ? 'Edit fulfillment rule' : 'Create fulfillment rule'"
+      :title="editor.id ? $t('adminPremium.editRule') : $t('adminPremium.createRuleTitle')"
       scrollable
       @shown="onEditorModalShown"
       @hidden="resetEditor"
@@ -37,20 +37,20 @@
       <b-form @submit.prevent="saveEditor">
         <b-row>
           <b-col md="8">
-            <b-form-group label="Rule name" label-size="sm">
-              <b-form-input v-model="editor.name" required placeholder="e.g. Pro — 30 days + email" />
+            <b-form-group :label="$t('adminPremium.ruleName')" label-size="sm">
+              <b-form-input v-model="editor.name" required :placeholder="$t('adminPremium.ruleNamePlaceholder')" />
             </b-form-group>
           </b-col>
           <b-col md="4" class="d-flex align-items-end">
-            <b-form-checkbox v-model="editor.active" switch class="mb-3">Active</b-form-checkbox>
+            <b-form-checkbox v-model="editor.active" switch class="mb-3">{{ $t('adminPremium.activeSwitch') }}</b-form-checkbox>
           </b-col>
         </b-row>
-        <b-form-group label="Note for admins (optional)" label-size="sm">
-          <b-form-input v-model="editor.description" placeholder="Internal note only" />
+        <b-form-group :label="$t('adminPremium.noteForAdmins')" label-size="sm">
+          <b-form-input v-model="editor.description" :placeholder="$t('adminPremium.internalNote')" />
         </b-form-group>
 
         <hr class="my-3" />
-        <h6 class="mb-0">What happens on redeem</h6>
+        <h6 class="mb-0">{{ $t('adminPremium.whatHappens') }}</h6>
         <simple-fulfillment-rule-editor
           :key="editorSessionKey"
           ref="ruleEditor"
@@ -59,8 +59,8 @@
       </b-form>
 
       <template #footer>
-        <b-button variant="secondary" @click="editorVisible = false">Cancel</b-button>
-        <b-button variant="primary" :disabled="saving" @click="saveEditor">{{ saving ? 'Saving…' : 'Save rule' }}</b-button>
+        <b-button variant="secondary" @click="editorVisible = false">{{ $t('adminPremium.cancel') }}</b-button>
+        <b-button variant="primary" :disabled="saving" @click="saveEditor">{{ saving ? $t('adminPremium.saving') : $t('adminPremium.saveRule') }}</b-button>
       </template>
     </b-modal>
   </div>
@@ -72,7 +72,6 @@ import {
   defaultSimpleRule,
   flowToSimple,
   simpleToFlow,
-  simpleRuleSummary,
   validateSimpleRule
 } from '../../utils/fulfillmentRuleSimple'
 
@@ -92,11 +91,15 @@ export default {
         name: '',
         description: '',
         active: true
-      },
-      ruleFields: [
-        { key: 'name', label: 'Rule' },
-        { key: 'summary', label: 'What it does' },
-        { key: 'active', label: 'Status' },
+      }
+    }
+  },
+  computed: {
+    ruleFields () {
+      return [
+        { key: 'name', label: this.$t('adminPremium.colRule') },
+        { key: 'summary', label: this.$t('adminPremium.colWhatItDoes') },
+        { key: 'active', label: this.$t('adminPremium.colStatus') },
         { key: 'actions', label: '' }
       ]
     }
@@ -105,25 +108,30 @@ export default {
     this.load()
   },
   methods: {
+    localizedSummary (rule) {
+      let simple
+      try {
+        simple = flowToSimple(rule.flow)
+      } catch {
+        return '—'
+      }
+      const parts = []
+      if (simple.grantPro) parts.push(this.$t('adminPremium.summaryProDays', { days: simple.proDays || 30 }))
+      if (simple.markFulfilled) parts.push(this.$t('adminPremium.summaryMarkFulfilled'))
+      if (simple.sendEmail && simple.emailMessage && String(simple.emailMessage).replace(/<[^>]+>/g, '').trim()) {
+        parts.push(this.$t('adminPremium.summarySendEmail'))
+      }
+      return parts.length ? parts.join(' · ') : this.$t('adminPremium.summaryNoActions')
+    },
     async load () {
       this.loading = true
       try {
         const res = await this.$store.dispatch('getRewardFulfillmentRules')
         if (res.success) {
-          this.rules = (res.data?.rules || res.rules || []).map((r) => ({
-            ...r,
-            summary: r.summary || this.summaryFromFlow(r.flow)
-          }))
+          this.rules = res.data?.rules || res.rules || []
         }
       } finally {
         this.loading = false
-      }
-    },
-    summaryFromFlow (flow) {
-      try {
-        return simpleRuleSummary(flowToSimple(flow))
-      } catch {
-        return '—'
       }
     },
     resetEditor () {
@@ -153,7 +161,7 @@ export default {
     },
     async saveEditor () {
       if (!this.editor.name || !String(this.editor.name).trim()) {
-        this.$store.dispatch('alert/showAlert', { message: 'Enter a rule name.', type: 'warning' }, { root: true })
+        this.$store.dispatch('alert/showAlert', { message: this.$t('adminPremium.enterRuleName'), type: 'warning' }, { root: true })
         return
       }
       const editorCmp = this.$refs.ruleEditor
@@ -163,9 +171,9 @@ export default {
         ? editorCmp.getRule()
         : this.editorInitialRule
 
-      const err = validateSimpleRule(ruleToSave)
-      if (err) {
-        this.$store.dispatch('alert/showAlert', { message: err, type: 'warning' }, { root: true })
+      const errKey = validateSimpleRule(ruleToSave)
+      if (errKey) {
+        this.$store.dispatch('alert/showAlert', { message: this.$t(errKey), type: 'warning' }, { root: true })
         return
       }
 
@@ -189,7 +197,7 @@ export default {
       }
     },
     async removeRule (rule) {
-      if (!window.confirm(`Delete rule "${rule.name}"?`)) return
+      if (!window.confirm(this.$t('adminPremium.confirmDeleteRule', { name: rule.name }))) return
       const res = await this.$store.dispatch('deleteRewardFulfillmentRule', { id: rule.id })
       if (res.success) {
         await this.load()

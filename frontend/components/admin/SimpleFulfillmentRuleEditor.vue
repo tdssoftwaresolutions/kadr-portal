@@ -1,38 +1,38 @@
 <template>
   <div class="simple-fulfillment-editor">
     <p class="small text-muted mb-3">
-      Choose what happens when someone redeems this reward. You can turn on more than one — they run in order.
+      {{ $t('adminPremium.chooseWhatHappens') }}
     </p>
 
     <div class="action-card mb-3">
       <b-form-checkbox v-model="local.grantPro" switch class="mb-0 font-weight-bold" @change="emitUpdate">
-        Give Pro subscription
+        {{ $t('adminPremium.givePro') }}
       </b-form-checkbox>
-      <b-form-group v-if="local.grantPro" label="For how many days?" label-size="sm" class="mt-2 mb-0 ms-4">
+      <b-form-group v-if="local.grantPro" :label="$t('adminPremium.forHowManyDays')" label-size="sm" class="mt-2 mb-0 ms-4">
         <b-form-input v-model.number="local.proDays" type="number" min="1" max="3650" style="max-width: 120px" @input="emitUpdate" />
       </b-form-group>
     </div>
 
     <div class="action-card mb-3">
       <b-form-checkbox v-model="local.markFulfilled" switch class="mb-0 font-weight-bold" @change="emitUpdate">
-        Mark reward as completed
+        {{ $t('adminPremium.markCompleted') }}
       </b-form-checkbox>
-      <p v-if="local.markFulfilled" class="small text-muted mb-0 mt-2 ms-4">Closes the redemption so it shows as fulfilled.</p>
+      <p v-if="local.markFulfilled" class="small text-muted mb-0 mt-2 ms-4">{{ $t('adminPremium.closesRedemption') }}</p>
     </div>
 
     <div class="action-card mb-0">
       <b-form-checkbox v-model="local.sendEmail" switch class="mb-0 font-weight-bold" @change="onSendEmailToggle">
-        Send email to mediator
+        {{ $t('adminPremium.sendEmailToMediator') }}
       </b-form-checkbox>
       <template v-if="local.sendEmail">
         <p class="small text-muted mt-2 mb-2 ms-4">
-          Write only the main message. We add greeting, header, and footer automatically.
+          {{ $t('adminPremium.writeMainMessage') }}
         </p>
-        <b-form-group label="Email subject" label-size="sm" class="ms-4 mb-2">
-          <b-form-input v-model="local.emailSubject" placeholder="Your reward from Kadr" @input="emitUpdate" />
+        <b-form-group :label="$t('adminPremium.emailSubject')" label-size="sm" class="ms-4 mb-2">
+          <b-form-input v-model="local.emailSubject" :placeholder="$t('adminPremium.emailSubjectPlaceholder')" @input="emitUpdate" />
         </b-form-group>
         <div class="ms-4 email-editor-wrap">
-          <label class="small font-weight-bold d-block mb-1">Message</label>
+          <label class="small font-weight-bold d-block mb-1">{{ $t('adminPremium.message') }}</label>
           <editor
             v-if="emailEditorReady"
             :key="emailEditorKey"
@@ -45,7 +45,7 @@
             v-else
             v-model="emailMessageHtml"
             rows="5"
-            placeholder="Loading editor…"
+            :placeholder="$t('adminPremium.loadingEditor')"
             disabled
           />
         </div>
@@ -141,9 +141,9 @@ export default {
       }
     },
     validate () {
-      const err = validateSimpleRule(this.getRule())
-      this.validationError = err || ''
-      return !err
+      const errKey = validateSimpleRule(this.getRule())
+      this.validationError = errKey ? this.$t(errKey) : ''
+      return !errKey
     }
   }
 }

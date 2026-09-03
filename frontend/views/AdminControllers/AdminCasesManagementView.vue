@@ -1,8 +1,8 @@
 <template>
   <b-container fluid>
-    <kadr-page-header :title="ADMIN.CASES_TITLE" :subtitle="ADMIN.CASES_SUBTITLE">
+    <kadr-page-header :title="$t('adminCases.title')" :subtitle="$t('adminCases.subtitle')">
       <template v-if="totalCases >= 0" #actions>
-        <small class="text-muted">{{ totalCases }} active case(s)</small>
+        <small class="text-muted">{{ $t('adminCases.activeCaseCount', { count: totalCases }) }}</small>
       </template>
     </kadr-page-header>
     <b-row>
@@ -11,7 +11,7 @@
           <template v-slot:body>
             <b-row class="mb-3">
               <b-col md="6" lg="3" class="mb-2">
-                <label class="small text-muted mb-1">Mediator</label>
+                <label class="small text-muted mb-1">{{ $t('adminCases.mediator') }}</label>
                 <b-form-select
                   v-model="filters.mediatorId"
                   :options="mediatorFilterOptions"
@@ -19,7 +19,7 @@
                 />
               </b-col>
               <b-col md="6" lg="3" class="mb-2">
-                <label class="small text-muted mb-1">First party</label>
+                <label class="small text-muted mb-1">{{ $t('adminCases.firstParty') }}</label>
                 <b-form-select
                   v-model="filters.firstPartyId"
                   :options="firstPartyFilterOptions"
@@ -27,7 +27,7 @@
                 />
               </b-col>
               <b-col md="6" lg="3" class="mb-2">
-                <label class="small text-muted mb-1">Second party</label>
+                <label class="small text-muted mb-1">{{ $t('adminCases.secondParty') }}</label>
                 <b-form-select
                   v-model="filters.secondPartyId"
                   :options="secondPartyFilterOptions"
@@ -35,7 +35,7 @@
                 />
               </b-col>
               <b-col md="6" lg="3" class="mb-2">
-                <label class="small text-muted mb-1">Status</label>
+                <label class="small text-muted mb-1">{{ $t('adminCases.status') }}</label>
                 <b-form-select
                   v-model="filters.status"
                   :options="statusFilterOptions"
@@ -49,27 +49,27 @@
                 <b-card class="h-100 user-card">
                   <b-card-body class="d-flex flex-column">
                     <div class="mb-2">
-                      <h5 class="mb-1">{{ c.caseId || 'Case' }}</h5>
+                      <h5 class="mb-1">{{ c.caseId || $t('adminCases.case') }}</h5>
                       <b-badge variant="info" class="me-1">{{ statusLabel(c) }}</b-badge>
                       <b-badge variant="secondary">{{ subStatusLabel(c) }}</b-badge>
                     </div>
-                    <p class="mb-2"><strong>First party:</strong> {{ partyName(c.user_cases_first_partyTouser) }}</p>
-                    <p class="mb-2"><strong>Second party:</strong> {{ partyName(c.user_cases_second_partyTouser) }}</p>
+                    <p class="mb-2"><strong>{{ $t('adminCases.firstParty') }}:</strong> {{ partyName(c.user_cases_first_partyTouser) }}</p>
+                    <p class="mb-2"><strong>{{ $t('adminCases.secondParty') }}:</strong> {{ partyName(c.user_cases_second_partyTouser) }}</p>
                     <p class="mb-2">
-                      <strong>Mediator:</strong>
-                      {{ c.user_cases_mediatorTouser ? c.user_cases_mediatorTouser.name : 'Not assigned' }}
+                      <strong>{{ $t('adminCases.mediator') }}:</strong>
+                      {{ c.user_cases_mediatorTouser ? c.user_cases_mediatorTouser.name : $t('adminCases.notAssigned') }}
                     </p>
                     <p class="mb-2">
-                      <strong>Type:</strong>
+                      <strong>{{ $t('adminCases.type') }}:</strong>
                       <span v-if="c.case_type">{{ c.case_type }}</span>
-                      <b-badge v-else variant="warning">Awaiting type approval</b-badge>
+                      <b-badge v-else variant="warning">{{ $t('adminCases.awaitingTypeApproval') }}</b-badge>
                     </p>
                     <p class="mb-2">
-                      <strong>Mediator revenue share:</strong> {{ Number(c.mediator_commission || 0).toFixed(2) }}% of mediation amount
+                      <strong>{{ $t('adminCases.revenueShare') }}:</strong> {{ $t('adminCases.revenueShareValue', { percent: Number(c.mediator_commission || 0).toFixed(2) }) }}
                     </p>
                     <div class="mt-auto d-flex flex-wrap justify-content-end">
                       <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openDetailModal(c)">
-                        View details
+                        {{ $t('adminCases.viewDetails') }}
                       </b-button>
                       <b-button
                         v-if="needsCaseTypeApproval(c)"
@@ -78,7 +78,7 @@
                         class="mb-1"
                         @click="openApproveTypeModal(c)"
                       >
-                        Approve case type
+                        {{ $t('adminCases.approveCaseType') }}
                       </b-button>
                       <b-button
                         v-else
@@ -87,7 +87,7 @@
                         class="mb-1"
                         @click="openAssignModal(c)"
                       >
-                        {{ c.user_cases_mediatorTouser ? 'Change mediator' : 'Assign mediator' }}
+                        {{ c.user_cases_mediatorTouser ? $t('adminCases.changeMediator') : $t('adminCases.assignMediator') }}
                       </b-button>
                     </div>
                   </b-card-body>
@@ -97,8 +97,8 @@
             <kadr-empty-state
               v-else
               icon="fas fa-folder-open"
-              :title="ADMIN.NO_CASES"
-              :description="ADMIN.NO_CASES_DESCRIPTION"
+              :title="$t('adminCases.noCases')"
+              :description="$t('adminCases.noCasesDescription')"
             />
             <b-pagination
               v-if="totalCases > 0"
@@ -118,7 +118,7 @@
       v-model="detailModalVisible"
       size="xl"
       modal-class="case-detail-modal"
-      title="Case details"
+      :title="$t('adminCases.caseDetails')"
       no-footer
       scrollable
       @hidden="onDetailModalHidden"
@@ -126,10 +126,10 @@
       <div v-if="selectedCase" class="admin-case-detail">
         <header class="detail-hero mb-3">
           <div>
-            <h5 class="mb-1">{{ selectedCase.caseId || 'Case' }}</h5>
+            <h5 class="mb-1">{{ selectedCase.caseId || $t('adminCases.case') }}</h5>
             <p class="mb-0 text-muted small">
-              Opened {{ formatDate(selectedCase.created_at) }}
-              <span v-if="selectedCase.updated_at"> · Updated {{ formatDate(selectedCase.updated_at) }}</span>
+              {{ $t('adminCases.opened', { date: formatDate(selectedCase.created_at) }) }}
+              <span v-if="selectedCase.updated_at"> · {{ $t('adminCases.updated', { date: formatDate(selectedCase.updated_at) }) }}</span>
             </p>
           </div>
           <div class="detail-hero-badges">
@@ -139,44 +139,44 @@
         </header>
 
         <b-tabs v-model="detailTab" content-class="detail-tab-body" nav-class="detail-tab-nav" pills card>
-          <b-tab title="Overview">
+          <b-tab :title="$t('adminCases.overview')">
             <div class="detail-section">
-              <h6 class="detail-section-title">Case summary</h6>
+              <h6 class="detail-section-title">{{ $t('adminCases.caseSummary') }}</h6>
               <dl class="detail-dl row">
-                <dt class="col-sm-3">Category</dt>
+                <dt class="col-sm-3">{{ $t('adminCases.category') }}</dt>
                 <dd class="col-sm-9">{{ selectedCase.category || '—' }}</dd>
-                <dt class="col-sm-3">Case type</dt>
+                <dt class="col-sm-3">{{ $t('adminCases.caseType') }}</dt>
                 <dd class="col-sm-9">
                   <span v-if="selectedCase.case_type">{{ selectedCase.case_type }}</span>
-                  <b-badge v-else variant="warning">Awaiting type approval</b-badge>
+                  <b-badge v-else variant="warning">{{ $t('adminCases.awaitingTypeApproval') }}</b-badge>
                 </dd>
-                <dt class="col-sm-3">Description</dt>
+                <dt class="col-sm-3">{{ $t('adminCases.description') }}</dt>
                 <dd class="col-sm-9 text-break">{{ selectedCase.description || '—' }}</dd>
               </dl>
             </div>
 
             <div class="detail-section">
-              <h6 class="detail-section-title">People on this case</h6>
+              <h6 class="detail-section-title">{{ $t('adminCases.peopleOnCase') }}</h6>
               <b-row>
                 <b-col md="4" class="mb-2">
                   <div class="party-tile">
-                    <span class="party-tile-label">First party</span>
+                    <span class="party-tile-label">{{ $t('adminCases.firstParty') }}</span>
                     <p class="party-tile-main">{{ partyName(selectedCase.user_cases_first_partyTouser) }}</p>
                     <p class="party-tile-meta">{{ partyExtraLines(selectedCase.user_cases_first_partyTouser) }}</p>
                   </div>
                 </b-col>
                 <b-col md="4" class="mb-2">
                   <div class="party-tile">
-                    <span class="party-tile-label">Second party</span>
+                    <span class="party-tile-label">{{ $t('adminCases.secondParty') }}</span>
                     <p class="party-tile-main">{{ partyName(selectedCase.user_cases_second_partyTouser) }}</p>
                     <p class="party-tile-meta">{{ partyExtraLines(selectedCase.user_cases_second_partyTouser) }}</p>
                   </div>
                 </b-col>
                 <b-col md="4" class="mb-2">
                   <div class="party-tile">
-                    <span class="party-tile-label">Mediator</span>
+                    <span class="party-tile-label">{{ $t('adminCases.mediator') }}</span>
                     <p class="party-tile-main">
-                      {{ selectedCase.user_cases_mediatorTouser ? partyName(selectedCase.user_cases_mediatorTouser) : 'Not assigned' }}
+                      {{ selectedCase.user_cases_mediatorTouser ? partyName(selectedCase.user_cases_mediatorTouser) : $t('adminCases.notAssigned') }}
                     </p>
                     <p v-if="selectedCase.user_cases_mediatorTouser" class="party-tile-meta">{{ partyExtraLines(selectedCase.user_cases_mediatorTouser) }}</p>
                   </div>
@@ -185,18 +185,18 @@
             </div>
 
             <div class="detail-section commission-box">
-              <h6 class="detail-section-title">Mediator revenue share (% of mediation amount)</h6>
+              <h6 class="detail-section-title">{{ $t('adminCases.revenueSharePercent') }}</h6>
               <div class="d-flex flex-wrap align-items-center">
                 <b-form-input v-model.number="selectedCaseCommission" type="number" min="0" step="0.01" class="commission-input" />
-                <b-button size="sm" variant="primary" class="ms-2" @click="saveCaseCommission">Save</b-button>
+                <b-button size="sm" variant="primary" class="ms-2" @click="saveCaseCommission">{{ $t('adminCases.save') }}</b-button>
               </div>
             </div>
           </b-tab>
 
-          <b-tab title="Activity">
+          <b-tab :title="$t('adminCases.activity')">
             <div class="detail-section">
-              <h6 class="detail-section-title">Meetings</h6>
-              <div v-if="!selectedCase.events || selectedCase.events.length === 0" class="text-muted small">No meetings scheduled yet.</div>
+              <h6 class="detail-section-title">{{ $t('adminCases.meetings') }}</h6>
+              <div v-if="!selectedCase.events || selectedCase.events.length === 0" class="text-muted small">{{ $t('adminCases.noMeetings') }}</div>
               <div v-else class="meeting-stack">
                 <article
                   v-for="meeting in meetingRows(selectedCase.events)"
@@ -205,9 +205,9 @@
                 >
                   <div class="meeting-head">
                     <div>
-                      <h6 class="mb-1">{{ meeting.title || 'Meeting' }}</h6>
-                      <p class="mb-0 small text-muted">Starts: {{ meeting.start }}</p>
-                      <p class="mb-0 small text-muted">Ends: {{ meeting.end }}</p>
+                      <h6 class="mb-1">{{ meeting.title || $t('adminCases.meeting') }}</h6>
+                      <p class="mb-0 small text-muted">{{ $t('adminCases.starts') }}: {{ meeting.start }}</p>
+                      <p class="mb-0 small text-muted">{{ $t('adminCases.ends') }}: {{ meeting.end }}</p>
                     </div>
                     <div class="meeting-head-actions">
                       <span class="meeting-status-tag" :class="meeting.statusClass">{{ meeting.statusLabel }}</span>
@@ -219,7 +219,7 @@
                         target="_blank"
                         rel="noopener"
                       >
-                        Join
+                        {{ $t('adminCases.join') }}
                       </b-button>
                       <b-button
                         v-if="meeting.google_calendar_link"
@@ -229,39 +229,39 @@
                         target="_blank"
                         rel="noopener"
                       >
-                        Calendar
+                        {{ $t('adminCases.calendar') }}
                       </b-button>
                     </div>
                   </div>
 
                   <b-tabs class="feedback-tabs mt-2" content-class="pt-2" pills small>
-                    <b-tab title="Mediator">
+                    <b-tab :title="$t('adminCases.mediator')">
                       <section class="feedback-box">
-                        <p><strong>Summary: </strong> {{ meeting.meeting_summary || '—' }}</p>
-                        <p><strong>Next steps: </strong> {{ meeting.mediator_next_steps || '—' }}</p>
-                        <p><strong>Submitted: </strong> {{ meeting.mediator_feedback_at || '—' }}</p>
+                        <p><strong>{{ $t('adminCases.summary') }}: </strong> {{ meeting.meeting_summary || '—' }}</p>
+                        <p><strong>{{ $t('adminCases.nextSteps') }}: </strong> {{ meeting.mediator_next_steps || '—' }}</p>
+                        <p><strong>{{ $t('adminCases.submitted') }}: </strong> {{ meeting.mediator_feedback_at || '—' }}</p>
                       </section>
                     </b-tab>
-                    <b-tab title="First party">
+                    <b-tab :title="$t('adminCases.firstParty')">
                       <section class="feedback-box">
                         <p>
-                          <strong>Rating: </strong>
+                          <strong>{{ $t('adminCases.rating') }}: </strong>
                           <span v-if="meeting.first_party_rating != null">{{ meeting.first_party_rating }}/5 {{ meeting.first_party_stars }}</span>
                           <span v-else>—</span>
                         </p>
-                        <p><strong>Next steps: </strong> {{ meeting.first_party_next_steps || '—' }}</p>
-                        <p><strong>Submitted: </strong> {{ meeting.first_party_feedback_at || '—' }}</p>
+                        <p><strong>{{ $t('adminCases.nextSteps') }}: </strong> {{ meeting.first_party_next_steps || '—' }}</p>
+                        <p><strong>{{ $t('adminCases.submitted') }}: </strong> {{ meeting.first_party_feedback_at || '—' }}</p>
                       </section>
                     </b-tab>
-                    <b-tab title="Second party">
+                    <b-tab :title="$t('adminCases.secondParty')">
                       <section class="feedback-box">
                         <p>
-                          <strong>Rating: </strong>
+                          <strong>{{ $t('adminCases.rating') }}: </strong>
                           <span v-if="meeting.second_party_rating != null">{{ meeting.second_party_rating }}/5 {{ meeting.second_party_stars }}</span>
                           <span v-else>—</span>
                         </p>
-                        <p><strong>Next steps: </strong> {{ meeting.second_party_next_steps || '—' }}</p>
-                        <p><strong>Submitted: </strong> {{ meeting.second_party_feedback_at || '—' }}</p>
+                        <p><strong>{{ $t('adminCases.nextSteps') }}: </strong> {{ meeting.second_party_next_steps || '—' }}</p>
+                        <p><strong>{{ $t('adminCases.submitted') }}: </strong> {{ meeting.second_party_feedback_at || '—' }}</p>
                       </section>
                     </b-tab>
                   </b-tabs>
@@ -270,27 +270,27 @@
             </div>
 
             <div class="detail-section">
-              <h6 class="detail-section-title">Case progress</h6>
+              <h6 class="detail-section-title">{{ $t('adminCases.caseProgress') }}</h6>
               <CaseProgressPanel
                 v-if="selectedCase.case_progress"
                 :progress="selectedCase.case_progress"
                 :is-past-view="isSelectedCaseClosed"
               />
-              <div v-else class="text-muted small">Progress details are not available for this case.</div>
+              <div v-else class="text-muted small">{{ $t('adminCases.noProgress') }}</div>
             </div>
 
             <div class="detail-section">
-              <h6 class="detail-section-title">Payments on file</h6>
-              <div v-if="!selectedCase.transactions || selectedCase.transactions.length === 0" class="text-muted small">No payment records for this case.</div>
+              <h6 class="detail-section-title">{{ $t('adminCases.paymentsOnFile') }}</h6>
+              <div v-if="!selectedCase.transactions || selectedCase.transactions.length === 0" class="text-muted small">{{ $t('adminCases.noPayments') }}</div>
               <div v-else class="table-responsive">
                 <table class="table table-sm table-borderless payments-table mb-0">
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Amount</th>
-                      <th>Status</th>
-                      <th>Reason</th>
-                      <th>Reference</th>
+                      <th>{{ $t('adminCases.date') }}</th>
+                      <th>{{ $t('adminCases.amount') }}</th>
+                      <th>{{ $t('adminCases.status') }}</th>
+                      <th>{{ $t('adminCases.reason') }}</th>
+                      <th>{{ $t('adminCases.reference') }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -298,7 +298,7 @@
                       <td>{{ formatDate(tx.transaction_date) }}</td>
                       <td>{{ tx.amount }} {{ tx.currency || '' }}</td>
                       <td>
-                        <b-badge :variant="tx.success ? 'success' : 'danger'" class="text-uppercase">{{ tx.success ? 'Paid' : 'Failed' }}</b-badge>
+                        <b-badge :variant="tx.success ? 'success' : 'danger'" class="text-uppercase">{{ tx.success ? $t('adminCases.paid') : $t('adminCases.failed') }}</b-badge>
                       </td>
                       <td>{{ tx.reason || '—' }}</td>
                       <td class="small text-break">{{ tx.reference_id || '—' }}</td>
@@ -309,32 +309,32 @@
             </div>
           </b-tab>
 
-          <b-tab title="Agreement & files">
+          <b-tab :title="$t('adminCases.agreementAndFiles')">
             <div class="detail-section">
-              <h6 class="detail-section-title">Evidence / uploads</h6>
-              <div v-if="!selectedCase.evidence_document_url" class="text-muted small">No evidence document on file.</div>
+              <h6 class="detail-section-title">{{ $t('adminCases.evidenceUploads') }}</h6>
+              <div v-if="!selectedCase.evidence_document_url" class="text-muted small">{{ $t('adminCases.noEvidence') }}</div>
               <div v-else class="docs-grid">
                 <FilePreview
                   key="evidence"
                   :url="selectedCase.evidence_document_url"
-                  name="Evidence document"
+                  :name="$t('adminCases.evidenceDocument')"
                 />
               </div>
             </div>
 
             <div class="detail-section">
-              <h6 class="detail-section-title">Final mediation agreement</h6>
+              <h6 class="detail-section-title">{{ $t('adminCases.finalAgreement') }}</h6>
               <p class="text-muted small">
-                Generated after signatures; this is the PDF emailed to both parties when the process completes.
+                {{ $t('adminCases.agreementHint') }}
               </p>
-              <div v-if="!agreementRecord" class="text-muted small">No agreement record yet (case may still be open or agreement not finalized).</div>
+              <div v-if="!agreementRecord" class="text-muted small">{{ $t('adminCases.noAgreement') }}</div>
               <template v-else>
                 <dl class="detail-dl compact row mb-2">
-                  <dt class="col-sm-4">Agreement drafted</dt>
+                  <dt class="col-sm-4">{{ $t('adminCases.agreementDrafted') }}</dt>
                   <dd class="col-sm-8">{{ formatDate(agreementRecord.created_at) }}</dd>
-                  <dt class="col-sm-4">First party signed</dt>
+                  <dt class="col-sm-4">{{ $t('adminCases.firstPartySigned') }}</dt>
                   <dd class="col-sm-8">{{ agreementRecord.first_party_signature_datetime ? formatDate(agreementRecord.first_party_signature_datetime) : '—' }}</dd>
-                  <dt class="col-sm-4">Second party signed</dt>
+                  <dt class="col-sm-4">{{ $t('adminCases.secondPartySigned') }}</dt>
                   <dd class="col-sm-8">{{ agreementRecord.second_party_signature_datetime ? formatDate(agreementRecord.second_party_signature_datetime) : '—' }}</dd>
                 </dl>
                 <div v-if="agreementRecord.mediation_agreement_link" class="mb-3">
@@ -345,18 +345,18 @@
                     target="_blank"
                     rel="noopener"
                   >
-                    Open signed agreement (PDF)
+                    {{ $t('adminCases.openSignedAgreement') }}
                   </b-button>
                   <div class="docs-grid mt-2">
                     <FilePreview
                       key="agreement-pdf"
                       :url="agreementRecord.mediation_agreement_link"
-                      name="Signed agreement preview"
+                      :name="$t('adminCases.signedAgreementPreview')"
                     />
                   </div>
                 </div>
                 <div v-if="agreementRecord.agreed_terms" class="agreed-terms-box">
-                  <h6 class="small font-weight-bold text-muted mb-2">Agreed terms (as captured)</h6>
+                  <h6 class="small font-weight-bold text-muted mb-2">{{ $t('adminCases.agreedTerms') }}</h6>
                   <div class="agreed-terms-html" v-html="agreementRecord.agreed_terms"></div>
                 </div>
               </template>
@@ -365,14 +365,14 @@
         </b-tabs>
 
         <div class="d-flex justify-content-end detail-modal-footer">
-          <b-button variant="secondary" @click="detailModalVisible = false">Close</b-button>
+          <b-button variant="secondary" @click="detailModalVisible = false">{{ $t('adminCases.close') }}</b-button>
           <b-button
             v-if="needsCaseTypeApproval(selectedCase)"
             variant="warning"
             class="ms-2"
             @click="openApproveTypeModal(selectedCase)"
           >
-            Approve case type
+            {{ $t('adminCases.approveCaseType') }}
           </b-button>
           <b-button
             v-else
@@ -380,21 +380,21 @@
             class="ms-2"
             @click="openAssignFromDetail"
           >
-            Assign / change mediator
+            {{ $t('adminCases.assignOrChangeMediator') }}
           </b-button>
         </div>
       </div>
     </b-modal>
 
-    <b-modal v-model="approveTypeModalVisible" title="Approve case type" no-footer>
+    <b-modal v-model="approveTypeModalVisible" :title="$t('adminCases.approveCaseType')" no-footer>
       <p class="text-muted small mb-3">
-        Assign Mediation, Arbitrator, or Counsellor. After approval the case moves to notice payment — the same flow as a newly approved signup case.
+        {{ $t('adminCases.approveCaseTypeModalHint') }}
       </p>
       <p v-if="caseForTypeApproval" class="mb-3">
-        <strong>{{ caseForTypeApproval.caseId || 'Case' }}</strong>
+        <strong>{{ caseForTypeApproval.caseId || $t('adminCases.case') }}</strong>
         · {{ partyName(caseForTypeApproval.user_cases_first_partyTouser) }}
       </p>
-      <b-form-group label="Case type" label-for="approve-case-type">
+      <b-form-group :label="$t('adminCases.caseTypeLabel')" label-for="approve-case-type">
         <b-form-select
           id="approve-case-type"
           v-model="selectedCaseType"
@@ -402,19 +402,19 @@
         />
       </b-form-group>
       <div class="d-flex justify-content-end">
-        <b-button variant="secondary" class="me-2" @click="approveTypeModalVisible = false">Cancel</b-button>
+        <b-button variant="secondary" class="me-2" @click="approveTypeModalVisible = false">{{ $t('adminCases.cancel') }}</b-button>
         <b-button variant="success" :disabled="!selectedCaseType || approvingCaseType" @click="confirmApproveCaseType">
           <span v-if="approvingCaseType" class="spinner-border spinner-border-sm me-1" role="status" />
-          Approve
+          {{ $t('adminCases.approve') }}
         </b-button>
       </div>
     </b-modal>
 
     <b-modal v-model="assignModalVisible" size="lg" :title="assignModalTitle" no-footer scrollable>
       <p class="text-muted small mb-3">
-        Choose an active dispute resolution expert. They will receive a notification. Calendar scheduling can still be done from the mediator workflow if needed.
+        {{ $t('adminCases.assignModalHint') }}
       </p>
-      <b-form-input v-model="mediatorSearch" placeholder="Search by name or email" class="mb-3" />
+      <b-form-input v-model="mediatorSearch" :placeholder="$t('adminCases.searchByNameOrEmail')" class="mb-3" />
       <b-row>
         <b-col md="6" v-for="m in filteredMediators" :key="m.id" class="mb-3">
           <b-card class="h-100 user-card" :class="{ 'border-primary': selectedMediatorId === m.id }">
@@ -433,27 +433,27 @@
                   <small class="text-muted">{{ m.email }}</small>
                 </div>
               </div>
-              <p class="mb-1 small" v-if="m.phone_number"><strong>Phone:</strong> {{ m.phone_number }}</p>
-              <p class="mb-1 small" v-if="m.state"><strong>State:</strong> {{ m.state }}</p>
-              <p class="mb-2 small" v-if="practiceAreas(m)"><strong>Practice areas:</strong> {{ practiceAreas(m) }}</p>
+              <p class="mb-1 small" v-if="m.phone_number"><strong>{{ $t('adminCases.phone') }}:</strong> {{ m.phone_number }}</p>
+              <p class="mb-1 small" v-if="m.state"><strong>{{ $t('adminCases.state') }}:</strong> {{ m.state }}</p>
+              <p class="mb-2 small" v-if="practiceAreas(m)"><strong>{{ $t('adminCases.practiceAreas') }}:</strong> {{ practiceAreas(m) }}</p>
               <div class="mt-auto">
                 <b-button
                   size="sm"
                   :variant="selectedMediatorId === m.id ? 'primary' : 'outline-primary'"
                   @click="selectedMediatorId = m.id"
                 >
-                  {{ selectedMediatorId === m.id ? 'Selected' : 'Select' }}
+                  {{ selectedMediatorId === m.id ? $t('adminCases.selected') : $t('adminCases.select') }}
                 </b-button>
               </div>
             </b-card-body>
           </b-card>
         </b-col>
       </b-row>
-      <div v-if="filteredMediators.length === 0" class="text-center text-muted py-3">No mediators match your search.</div>
+      <div v-if="filteredMediators.length === 0" class="text-center text-muted py-3">{{ $t('adminCases.noMediatorsMatch') }}</div>
       <div class="d-flex justify-content-end mt-3">
-        <b-button variant="secondary" @click="assignModalVisible = false">Cancel</b-button>
+        <b-button variant="secondary" @click="assignModalVisible = false">{{ $t('adminCases.cancel') }}</b-button>
         <b-button variant="primary" class="ms-2" :disabled="!selectedMediatorId" @click="confirmAssignMediator">
-          Confirm assignment
+          {{ $t('adminCases.confirmAssignment') }}
         </b-button>
       </div>
     </b-modal>
@@ -466,7 +466,6 @@ import FilePreview from '../../components/DocumentPreview.vue'
 import CaseProgressPanel from '../../components/cases/CaseProgressPanel.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
-import { ADMIN } from '../../constants/messages'
 
 export default {
   name: 'AdminCasesManagementView',
@@ -483,7 +482,6 @@ export default {
   },
   data () {
     return {
-      ADMIN,
       meta: null,
       cases: [],
       totalCases: 0,
@@ -503,12 +501,6 @@ export default {
       caseForTypeApproval: null,
       selectedCaseType: null,
       approvingCaseType: false,
-      caseTypeOptions: [
-        { value: null, text: 'Select case type' },
-        { value: 'Mediation', text: 'Mediation' },
-        { value: 'Arbitrator', text: 'Arbitrator' },
-        { value: 'Counsellor', text: 'Counsellor' }
-      ],
       mediatorSearch: '',
       selectedMediatorId: null,
       meetingFields: [],
@@ -530,10 +522,18 @@ export default {
       const statusId = (this.selectedCase.case_statuses?.id || this.selectedCase.status || '').toLowerCase()
       return ['closed_success', 'closed_no_success', 'cancelled', 'failed', 'escalated', 'on_hold'].includes(statusId)
     },
+    caseTypeOptions () {
+      return [
+        { value: null, text: this.$t('adminCases.selectCaseType') },
+        { value: 'Mediation', text: 'Mediation' },
+        { value: 'Arbitrator', text: 'Arbitrator' },
+        { value: 'Counsellor', text: 'Counsellor' }
+      ]
+    },
     mediatorFilterOptions () {
       const base = [
-        { value: null, text: 'All mediators' },
-        { value: '__unassigned__', text: 'Unassigned only' }
+        { value: null, text: this.$t('adminCases.allMediators') },
+        { value: '__unassigned__', text: this.$t('adminCases.unassignedOnly') }
       ]
       const rest = (this.meta && this.meta.mediators ? this.meta.mediators : []).map(m => ({
         value: m.id,
@@ -542,7 +542,7 @@ export default {
       return base.concat(rest)
     },
     firstPartyFilterOptions () {
-      const base = [{ value: null, text: 'All first parties' }]
+      const base = [{ value: null, text: this.$t('adminCases.allFirstParties') }]
       const rest = (this.meta && this.meta.firstParties ? this.meta.firstParties : []).map(u => ({
         value: u.id,
         text: `${u.name} (${u.email})`
@@ -550,7 +550,7 @@ export default {
       return base.concat(rest)
     },
     secondPartyFilterOptions () {
-      const base = [{ value: null, text: 'All second parties' }]
+      const base = [{ value: null, text: this.$t('adminCases.allSecondParties') }]
       const rest = (this.meta && this.meta.secondParties ? this.meta.secondParties : []).map(u => ({
         value: u.id,
         text: `${u.name} (${u.email})`
@@ -558,7 +558,7 @@ export default {
       return base.concat(rest)
     },
     statusFilterOptions () {
-      const base = [{ value: null, text: 'All statuses' }]
+      const base = [{ value: null, text: this.$t('adminCases.allStatuses') }]
       const rest = (this.meta && this.meta.statuses ? this.meta.statuses : []).map(s => ({
         value: s.id,
         text: s.name
@@ -575,10 +575,10 @@ export default {
       )
     },
     assignModalTitle () {
-      if (!this.caseForAssign) return 'Assign mediator'
+      if (!this.caseForAssign) return this.$t('adminCases.assignMediator')
       return this.caseForAssign.user_cases_mediatorTouser
-        ? 'Change mediator'
-        : 'Assign mediator'
+        ? this.$t('adminCases.changeMediator')
+        : this.$t('adminCases.assignMediator')
     }
   },
   methods: {
@@ -666,11 +666,11 @@ export default {
       const s = start ? new Date(start) : null
       const e = end ? new Date(end) : null
       if (!s || !e) {
-        return { statusLabel: 'Unknown', statusClass: 'status-unknown' }
+        return { statusLabel: this.$t('adminCases.statusUnknown'), statusClass: 'status-unknown' }
       }
-      if (now < s) return { statusLabel: 'Upcoming', statusClass: 'status-upcoming' }
-      if (now > e) return { statusLabel: 'Past', statusClass: 'status-past' }
-      return { statusLabel: 'Ongoing', statusClass: 'status-ongoing' }
+      if (now < s) return { statusLabel: this.$t('adminCases.statusUpcoming'), statusClass: 'status-upcoming' }
+      if (now > e) return { statusLabel: this.$t('adminCases.statusPast'), statusClass: 'status-past' }
+      return { statusLabel: this.$t('adminCases.statusOngoing'), statusClass: 'status-ongoing' }
     },
     ratingToStars (rating) {
       if (rating == null) return ''

@@ -36,8 +36,7 @@ export default {
   },
   methods: {
     switchLocale (locale) {
-      this.$i18n.locale = locale
-      this.$forceUpdate()
+      this.$i18n.setLocale(locale)
     }
   }
 }

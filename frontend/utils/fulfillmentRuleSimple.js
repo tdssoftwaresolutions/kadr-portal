@@ -129,15 +129,20 @@ export function simpleRuleSummary (simple) {
   return parts.length ? parts.join(' · ') : 'No actions'
 }
 
+/**
+ * Returns an i18n key (string) for the first validation error, or null when
+ * valid. Callers translate the key via `$t(...)`. Keys live under the
+ * `adminPremium.*` namespace in the locale files.
+ */
 export function validateSimpleRule (simple) {
   if (!simple.grantPro && !simple.markFulfilled && !(simple.sendEmail && hasEmailContent(simple.emailMessage))) {
-    return 'Turn on at least one action: Pro subscription, mark fulfilled, or email message.'
+    return 'adminPremium.valTurnOnOne'
   }
   if (simple.grantPro && (!simple.proDays || parseInt(simple.proDays, 10) < 1)) {
-    return 'Enter how many days of Pro to grant (at least 1).'
+    return 'adminPremium.valProDays'
   }
   if (simple.sendEmail && !hasEmailContent(simple.emailMessage)) {
-    return 'Write the email message, or turn off “Send email”.'
+    return 'adminPremium.valEmailMessage'
   }
   return null
 }
