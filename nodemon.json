@@ -13,7 +13,7 @@
   "ignore": [
     "public/**",
     "dist/**",
-    "src/**",
+    "frontend/**",
     "android/**",
     "ios/**",
     "node_modules/**",

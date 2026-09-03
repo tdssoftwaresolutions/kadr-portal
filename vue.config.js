@@ -4,6 +4,15 @@ const isCapacitorBuild = process.env.VUE_APP_CAPACITOR === '1'
 
 module.exports = {
   lintOnSave: process.env.NODE_ENV !== 'production',
+  // The Vue source lives in frontend/ instead of the Vue CLI default src/.
+  // `pages` sets the app entry so vue-cli-service knows where main.js is.
+  pages: {
+    index: {
+      entry: 'frontend/main.js',
+      template: 'public/index.html',
+      filename: 'index.html'
+    }
+  },
   publicPath: isCapacitorBuild
     ? './'
     : (process.env.NODE_ENV === 'production'
@@ -22,6 +31,9 @@ module.exports = {
   chainWebpack: config => {
     config.module
       .rule('eslint')
+      // Source moved from src/ to frontend/; ensure the linter scans it.
+      .include.add(path.resolve(__dirname, 'frontend'))
+      .end()
       .exclude.add(path.resolve(__dirname, 'public/home'))
       .end()
 
@@ -70,6 +82,9 @@ module.exports = {
     config.resolve = config.resolve || {}
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
+      // Source dir is frontend/ (not the Vue CLI default src/), so point the
+      // conventional `@` alias at it explicitly.
+      '@': path.resolve(__dirname, 'frontend'),
       // Pure Vue 3 (migration complete; @vue/compat removed).
       'vue$': 'vue/dist/vue.runtime.esm-bundler.js',
       'jquery': 'jquery/src/jquery.js'

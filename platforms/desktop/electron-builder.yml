@@ -22,7 +22,7 @@ files:
   - package.json
   - node_modules/.prisma/**/*
   - node_modules/@prisma/**/*
-  - "!src/**"
+  - "!frontend/**"
   - "!public/**"
   - "!**/*.md"
   - "!**/.env*"
