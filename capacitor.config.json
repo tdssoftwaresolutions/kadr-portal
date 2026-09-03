@@ -3,6 +3,9 @@
   "appName": "Kadr Portal",
   "webDir": "dist",
   "bundledWebRuntime": false,
+  "android": {
+    "path": "platforms/android"
+  },
   "server": {
     "androidScheme": "https",
     "iosScheme": "https"

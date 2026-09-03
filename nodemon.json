@@ -8,7 +8,7 @@
     "backend/utils",
     "backend/lib",
     "backend/config",
-    "backend/desktop"
+    "platforms/desktop"
   ],
   "ignore": [
     "public/**",

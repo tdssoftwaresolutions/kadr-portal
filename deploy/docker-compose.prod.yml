@@ -1,5 +1,5 @@
 # Production overlay for EC2 / VPS — use with:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.prod.yml up --build -d
 #
 # Differences from default compose:
 # - MySQL is not exposed on the host (internal Docker network only)

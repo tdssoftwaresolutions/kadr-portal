@@ -337,7 +337,7 @@ class Helper {
   }
 
   static async writeStaticBlogPage (blog, previousUrl) {
-    const templatePath = path.join(__dirname, '..', '..', 'blog.sample')
+    const templatePath = path.join(__dirname, '..', 'blog.sample')
     const outputFileName = blog.url ? `${blog.url}.html` : `blog/${Helper.generateBlogSlug(blog.title)}.html`
     const outputFilePath = path.join(__dirname, '..', '..', 'public', 'website', outputFileName)
     const outputFolder = path.dirname(outputFilePath)

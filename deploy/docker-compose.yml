@@ -22,13 +22,16 @@ services:
 
   api:
     build:
-      context: .
+      # Build context is the repo root (one level up) so the Dockerfile can
+      # COPY backend/, db/, public/, etc. The Dockerfile itself lives in deploy/.
+      context: ..
+      dockerfile: deploy/Dockerfile
       args:
         BASE_URL: ${BASE_URL:-http://localhost:3000}
     ports:
       - '${PORT:-3000}:3000'
     env_file:
-      - .env
+      - ../.env
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0

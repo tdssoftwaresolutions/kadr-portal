@@ -8,7 +8,7 @@ directories:
 
 files:
   - dist/**
-  - backend/desktop/**
+  - platforms/desktop/**
   - backend/lib/**
   - backend/routes/**
   - backend/controller/**
@@ -17,6 +17,7 @@ files:
   - backend/config/**
   - backend/utils/**
   - backend/server.js
+  - backend/blog.sample
   - db/prisma/**
   - package.json
   - node_modules/.prisma/**/*
@@ -43,5 +44,5 @@ dmg:
   title: Kadr Portal
 
 extraResources:
-  - from: .env.desktop.example
+  - from: config/env/.env.desktop.example
     to: .env.example

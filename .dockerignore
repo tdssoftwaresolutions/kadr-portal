@@ -4,7 +4,7 @@ dist
 .gitignore
 .env
 .env.*
-!.env.docker.example
+!config/env/.env.docker.example
 release
 coverage
 *.log
@@ -14,8 +14,9 @@ agent-transcripts
 docs
 backend/tests
 .github
-backend/desktop
-android
-ios
+platforms/desktop
+platforms/android
+platforms/ios
+platforms/mobile-app
 capacitor.config.json
-electron-builder.yml
+platforms/desktop/electron-builder.yml

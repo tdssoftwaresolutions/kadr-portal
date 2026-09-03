@@ -4,8 +4,8 @@ node_modules
 /release
 
 # Capacitor native projects (generated via `npx cap add`)
-/ios
-/android
+/platforms/ios
+/platforms/android
 
 # local env files
 .env

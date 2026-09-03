@@ -122,13 +122,13 @@ async function startApiServer () {
       'DATABASE_URL is not configured.\n\n' +
       'Create a .env file next to Kadr Portal.app (e.g. /Applications/.env) ' +
       'or at ~/Library/Application Support/kadr.admin/.env\n\n' +
-      'Use .env.desktop.example as a template.'
+      'Use config/env/.env.desktop.example as a template.'
     )
   }
 
   configurePrismaEngine()
 
-  const { startServer } = require('../lib/serverApp')
+  const { startServer } = require('../../backend/lib/serverApp')
   const result = await startServer({
     port: preferredPort,
     host: '127.0.0.1',

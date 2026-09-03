@@ -2,7 +2,7 @@
   "name": "kadr.admin",
   "version": "1.0.0",
   "private": true,
-  "main": "backend/desktop/main.js",
+  "main": "platforms/desktop/main.js",
   "scripts": {
     "serve": "npm-run-all --parallel serve-client serve-server",
     "serve-client": "vue-cli-service serve --port 8081",
@@ -20,18 +20,18 @@
     "vapid:generate:force": "node backend/scripts/generateVapidKeys.js -- --force",
     "lint": "vue-cli-service lint",
     "test": "node --test backend/tests/**/*.test.js",
-    "docker:up": "docker compose up --build",
-    "docker:up:detached": "docker compose up --build -d",
-    "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f api",
-    "docker:shell": "docker compose exec api sh",
-    "docker:create-admin": "docker compose exec api node backend/scripts/createMasterAdmin.js",
+    "docker:up": "docker compose -f deploy/docker-compose.yml up --build",
+    "docker:up:detached": "docker compose -f deploy/docker-compose.yml up --build -d",
+    "docker:down": "docker compose -f deploy/docker-compose.yml down",
+    "docker:logs": "docker compose -f deploy/docker-compose.yml logs -f api",
+    "docker:shell": "docker compose -f deploy/docker-compose.yml exec api sh",
+    "docker:create-admin": "docker compose -f deploy/docker-compose.yml exec api node backend/scripts/createMasterAdmin.js",
     "create-admin": "node backend/scripts/createMasterAdmin.js",
     "postinstall": "prisma generate",
     "electron:dev": "npm-run-all --parallel serve-client serve-server electron:launch",
     "electron:launch": "wait-on http://127.0.0.1:3000/health tcp:localhost:8081 && env -u ELECTRON_RUN_AS_NODE ELECTRON_DEV_URL=http://localhost:8081/admin/ ./node_modules/.bin/electron .",
-    "electron:pack": "prisma generate && npm run build && KADR_DESKTOP=1 electron-builder --mac",
-    "electron:pack:dir": "prisma generate && npm run build && KADR_DESKTOP=1 electron-builder --mac dir",
+    "electron:pack": "prisma generate && npm run build && KADR_DESKTOP=1 electron-builder --mac --config platforms/desktop/electron-builder.yml",
+    "electron:pack:dir": "prisma generate && npm run build && KADR_DESKTOP=1 electron-builder --mac dir --config platforms/desktop/electron-builder.yml",
     "build:mobile": "vue-cli-service build --mode mobile",
     "cap:sync": "npx cap sync",
     "cap:ios": "npx cap open ios",
@@ -150,7 +150,7 @@
     "wait-on": "^8.0.5"
   },
   "build": {
-    "extends": "electron-builder.yml"
+    "extends": "platforms/desktop/electron-builder.yml"
   },
   "gitHooks": {
     "pre-commit": "lint-staged"

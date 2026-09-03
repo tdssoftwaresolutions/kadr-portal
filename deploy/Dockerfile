@@ -50,6 +50,7 @@ COPY --from=build /app/db ./db
 COPY --from=build /app/public ./public
 COPY package.json package-lock.json ./
 COPY backend/server.js ./backend/server.js
+COPY backend/blog.sample ./backend/blog.sample
 COPY backend/controller ./backend/controller
 COPY backend/config ./backend/config
 COPY backend/lib ./backend/lib
@@ -58,7 +59,7 @@ COPY backend/routes ./backend/routes
 COPY backend/services ./backend/services
 COPY backend/utils ./backend/utils
 COPY backend/scripts ./backend/scripts
-COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY deploy/docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3000
