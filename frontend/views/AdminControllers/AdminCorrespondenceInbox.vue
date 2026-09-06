@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid class="admin-inbox-page">
+  <b-container fluid class="admin-inbox-page kadr-animate-in">
     <kadr-page-header :title="$t('adminInbox.title')" :subtitle="$t('adminInbox.subtitle')" />
     <b-row class="inbox-layout-row">
       <b-col cols="12" lg="4" xl="4" class="inbox-col inbox-col-list mb-3 mb-xl-0">
@@ -987,17 +987,20 @@ export default {
     },
     async loadPickerCases () {
       this.pickerLoading = true
-      const res = await this.$store.dispatch('getAdminCorrespondenceCasesForPicker', {
-        page: this.pickerPage,
-        search: this.pickerSearch
-      })
-      this.pickerLoading = false
-      if (res.success && res.data) {
-        this.pickerCases = res.data.casesWithEvents || []
-        this.pickerTotal = res.data.total || 0
-      } else {
-        this.pickerCases = []
-        this.pickerTotal = 0
+      try {
+        const res = await this.$store.dispatch('getAdminCorrespondenceCasesForPicker', {
+          page: this.pickerPage,
+          search: this.pickerSearch
+        })
+        if (res.success && res.data) {
+          this.pickerCases = res.data.casesWithEvents || []
+          this.pickerTotal = res.data.total || 0
+        } else {
+          this.pickerCases = []
+          this.pickerTotal = 0
+        }
+      } finally {
+        this.pickerLoading = false
       }
     },
     confirmStartThread () {
@@ -1090,7 +1093,7 @@ export default {
 .admin-inbox-page .inbox-list {
   max-height: min(560px, 70vh);
   overflow-y: auto;
-  border: 1px solid #e8ecf4;
+  border: 1px solid var(--kadr-border);
   border-radius: 8px;
 }
 .context-card-wrap {
@@ -1118,18 +1121,18 @@ export default {
   text-align: left;
   padding: 10px 12px;
   border: none;
-  border-bottom: 1px solid #eef1f8;
-  background: #fff;
+  border-bottom: 1px solid var(--kadr-border-info);
+  background: var(--kadr-bg-surface);
   cursor: pointer;
 }
 .inbox-row:last-child {
   border-bottom: none;
 }
 .inbox-row:hover {
-  background: #f7f9ff;
+  background: var(--kadr-surface-muted);
 }
 .inbox-row.active {
-  background: #e8eeff;
+  background: var(--kadr-primary-soft);
 }
 .inbox-row-top {
   display: flex;
@@ -1139,11 +1142,11 @@ export default {
 }
 .inbox-case {
   font-weight: 600;
-  color: #1a237e;
+  color: var(--kadr-primary);
 }
 .inbox-time {
   font-size: 0.75rem;
-  color: #666;
+  color: var(--kadr-text-muted);
   flex-shrink: 0;
 }
 .inbox-participant {
@@ -1152,7 +1155,7 @@ export default {
 }
 .inbox-preview {
   font-size: 0.78rem;
-  color: #555;
+  color: var(--kadr-text-muted);
   margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -1160,7 +1163,7 @@ export default {
 }
 .context-dl dt {
   font-weight: 600;
-  color: #6c757d;
+  color: var(--kadr-text-muted);
 }
 .context-dl dd {
   margin-bottom: 0.35rem;
@@ -1169,16 +1172,16 @@ export default {
   display: block;
   font-size: 0.7rem;
   text-transform: uppercase;
-  color: #888;
+  color: var(--kadr-text-muted);
 }
 .tiny {
   font-size: 0.72rem;
 }
 .meeting-card-mini {
-  border: 1px solid #e8ecf4;
+  border: 1px solid var(--kadr-border);
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
-  background: #fafbff;
+  background: var(--kadr-surface-info);
   min-width: 0;
 }
 .timeline-list li {
@@ -1191,15 +1194,15 @@ export default {
 .picker-row {
   padding: 0.5rem 0.75rem;
   border: none;
-  border-bottom: 1px solid #eee;
-  background: #fff;
+  border-bottom: 1px solid var(--kadr-border);
+  background: var(--kadr-bg-surface);
   cursor: pointer;
 }
 .picker-row.active {
-  background: #e8eeff;
+  background: var(--kadr-primary-soft);
 }
 .picker-row:hover {
-  background: #f5f7ff;
+  background: var(--kadr-surface-muted);
 }
 .recipient-grid {
   display: flex;
@@ -1211,19 +1214,19 @@ export default {
   width: 100%;
   text-align: left;
   padding: 0.85rem 1rem;
-  border: 2px solid #e0e6f0;
+  border: 2px solid var(--kadr-border-strong);
   border-radius: 10px;
-  background: #fbfcff;
+  background: var(--kadr-surface-info);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .recipient-tile:hover:not(:disabled) {
-  border-color: #3758d5;
-  background: #f0f4ff;
+  border-color: var(--kadr-primary);
+  background: var(--kadr-primary-soft);
 }
 .recipient-tile.active {
-  border-color: #3758d5;
-  background: #e8eeff;
+  border-color: var(--kadr-primary);
+  background: var(--kadr-primary-soft);
 }
 .recipient-tile.disabled,
 .recipient-tile:disabled {
@@ -1234,23 +1237,23 @@ export default {
   display: block;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #1a237e;
+  color: var(--kadr-primary);
 }
 .recipient-hint {
   display: block;
   font-size: 0.75rem;
-  color: #888;
+  color: var(--kadr-text-muted);
   margin-top: 0.35rem;
 }
 .inbox-unread-switch {
   white-space: nowrap;
 }
 .inbox-row--unread {
-  border-left: 3px solid #dc3545;
+  border-left: 3px solid var(--kadr-danger);
   padding-left: 9px;
 }
 .inbox-row--unread:not(.active) {
-  background: #fff8f8;
+  background: var(--kadr-status-danger-bg);
 }
 .case-360-card :deep(.card-body) {
   padding-top: 0.75rem;
@@ -1271,18 +1274,18 @@ export default {
   font-size: 0.72rem;
   font-weight: 600;
   padding: 0.32rem 0.5rem;
-  color: #495057;
+  color: var(--kadr-text-secondary);
   border-radius: 6px;
   white-space: nowrap;
 }
 .c360-tabs :deep(.nav-pills .nav-link.active) {
-  background: #3758d5;
-  color: #fff;
+  background: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
 }
 .c360-tab-nav {
   flex-wrap: wrap;
   row-gap: 0.25rem;
-  border-bottom: 1px solid #e8ecf4;
+  border-bottom: 1px solid var(--kadr-border);
   padding-bottom: 0.4rem;
   margin-bottom: 0;
 }
@@ -1326,7 +1329,7 @@ export default {
   gap: 0.35rem;
   margin-top: 0.5rem;
   padding-top: 0.45rem;
-  border-top: 1px solid #f0f2f8;
+  border-top: 1px solid var(--kadr-border-info);
 }
 .c360-meetings--compact .c360-meeting--row {
   padding: 0.55rem 0.65rem;
@@ -1337,8 +1340,8 @@ export default {
   gap: 0.5rem;
 }
 .c360-pay-stat {
-  background: #f8f9fc;
-  border: 1px solid #e8ecf4;
+  background: var(--kadr-surface-muted);
+  border: 1px solid var(--kadr-border);
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
   min-width: 0;
@@ -1352,12 +1355,12 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #868e96;
+  color: var(--kadr-text-muted);
 }
 .c360-pay-stat-v {
   font-weight: 700;
   font-size: 0.9rem;
-  color: #212529;
+  color: var(--kadr-text-primary);
 }
 .c360-meeting-modal-actions {
   display: flex;
@@ -1367,14 +1370,14 @@ export default {
 .c360-identity {
   padding: 0.75rem 0.85rem;
   margin: 0 0 0.75rem;
-  background: linear-gradient(135deg, #f4f6fc 0%, #fafbff 100%);
-  border: 1px solid #e4e9f2;
+  background: linear-gradient(135deg, var(--kadr-surface-muted) 0%, var(--kadr-surface-info) 100%);
+  border: 1px solid var(--kadr-border);
   border-radius: 10px;
 }
 .c360-ref {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1a237e;
+  color: var(--kadr-primary);
   letter-spacing: -0.02em;
 }
 .c360-meta {
@@ -1393,21 +1396,21 @@ export default {
   font-weight: 600;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
-  background: #e9ecef;
-  color: #495057;
+  background: var(--kadr-status-secondary-bg);
+  color: var(--kadr-text-secondary);
 }
 .c360-chip--status {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: var(--kadr-status-info-bg);
+  color: var(--kadr-status-info-text);
 }
 .c360-chip--muted {
-  background: #f1f3f5;
-  color: #6c757d;
+  background: var(--kadr-status-secondary-bg);
+  color: var(--kadr-text-muted);
 }
 .c360-section {
   margin-bottom: 1rem;
   padding-bottom: 0.85rem;
-  border-bottom: 1px solid #eef1f8;
+  border-bottom: 1px solid var(--kadr-border-info);
 }
 .c360-section:last-child {
   border-bottom: none;
@@ -1419,7 +1422,7 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #6c757d;
+  color: var(--kadr-text-muted);
   margin-bottom: 0.5rem;
 }
 .c360-kv {
@@ -1441,16 +1444,16 @@ export default {
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #868e96;
+  color: var(--kadr-text-muted);
   margin-bottom: 0.15rem;
 }
 .c360-v {
   display: block;
   font-weight: 500;
-  color: #212529;
+  color: var(--kadr-text-primary);
 }
 .c360-empty {
-  color: #868e96;
+  color: var(--kadr-text-muted);
 }
 .c360-people {
   display: grid;
@@ -1464,8 +1467,8 @@ export default {
 }
 .c360-person {
   padding: 0.5rem 0.6rem;
-  background: #fbfcff;
-  border: 1px solid #e8ecf4;
+  background: var(--kadr-surface-info);
+  border: 1px solid var(--kadr-border);
   border-radius: 8px;
   min-width: 0;
 }
@@ -1474,18 +1477,18 @@ export default {
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #868e96;
+  color: var(--kadr-text-muted);
   margin-bottom: 0.2rem;
 }
 .c360-person-name {
   font-weight: 600;
-  color: #1a237e;
+  color: var(--kadr-primary);
   font-size: 0.82rem;
 }
 .c360-person-meta {
   display: block;
   font-size: 0.72rem;
-  color: #868e96;
+  color: var(--kadr-text-muted);
   margin-top: 0.2rem;
 }
 .c360-meetings {
@@ -1494,10 +1497,10 @@ export default {
   gap: 0.65rem;
 }
 .c360-meeting {
-  border: 1px solid #e4e9f2;
+  border: 1px solid var(--kadr-border);
   border-radius: 10px;
   padding: 0.6rem 0.7rem;
-  background: #fff;
+  background: var(--kadr-bg-surface);
 }
 .c360-meeting-head {
   display: flex;
@@ -1507,7 +1510,7 @@ export default {
 }
 .c360-meeting-title {
   font-weight: 700;
-  color: #212529;
+  color: var(--kadr-text-primary);
   font-size: 0.85rem;
 }
 .c360-meeting-when {
@@ -1519,9 +1522,9 @@ export default {
   font-weight: 600;
   padding: 0.15rem 0.45rem;
   border-radius: 6px;
-  background: #f1f3f5;
-  border: 1px solid #dee2e6;
-  color: #495057;
+  background: var(--kadr-status-secondary-bg);
+  border: 1px solid var(--kadr-border-strong);
+  color: var(--kadr-text-secondary);
 }
 .c360-meeting-actions {
   margin-top: 0.45rem;
@@ -1532,7 +1535,7 @@ export default {
   gap: 0.5rem;
   margin-top: 0.55rem;
   padding-top: 0.55rem;
-  border-top: 1px dashed #e8ecf4;
+  border-top: 1px dashed var(--kadr-border);
 }
 @media (min-width: 520px) {
   .c360-feedback-grid {
@@ -1548,7 +1551,7 @@ export default {
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #495057;
+  color: var(--kadr-text-secondary);
   margin-bottom: 0.35rem;
 }
 .c360-fb-line {
@@ -1558,12 +1561,12 @@ export default {
 }
 .c360-fb-k {
   font-weight: 600;
-  color: #6c757d;
+  color: var(--kadr-text-muted);
   margin-right: 0.25rem;
 }
 .c360-fb-meta {
   font-size: 0.72rem;
-  color: #868e96;
+  color: var(--kadr-text-muted);
   margin-bottom: 0;
 }
 .c360-timeline {
@@ -1584,23 +1587,23 @@ export default {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #3758d5;
+  background: var(--kadr-primary);
 }
 .c360-timeline-body {
-  border-left: 2px solid #e8ecf4;
+  border-left: 2px solid var(--kadr-border);
   padding-left: 0.5rem;
   margin-left: 2px;
 }
 .c360-table-wrap {
-  border: 1px solid #e8ecf4;
+  border: 1px solid var(--kadr-border);
   border-radius: 8px;
 }
 .c360-table {
   font-size: 0.78rem;
 }
 .c360-table thead th {
-  border-bottom: 1px solid #e8ecf4;
-  color: #6c757d;
+  border-bottom: 1px solid var(--kadr-border);
+  color: var(--kadr-text-muted);
   font-weight: 600;
   font-size: 0.68rem;
   text-transform: uppercase;
@@ -1608,6 +1611,6 @@ export default {
 .c360-files-block + .c360-files-block {
   margin-top: 0.85rem;
   padding-top: 0.85rem;
-  border-top: 1px dashed #e8ecf4;
+  border-top: 1px dashed var(--kadr-border);
 }
 </style>

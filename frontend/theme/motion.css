@@ -1,0 +1,87 @@
+/* ==========================================================================
+   Lightweight, professional motion utilities. GPU-friendly (opacity/transform
+   only), short durations, and fully disabled under prefers-reduced-motion.
+   ========================================================================== */
+
+@keyframes kadr-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes kadr-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes kadr-scale-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Apply to a page/section wrapper for a subtle entrance. */
+.kadr-animate-in {
+  animation: kadr-fade-up var(--kadr-duration-slow, 0.35s) var(--kadr-ease-out, ease) both;
+}
+
+.kadr-fade-in {
+  animation: kadr-fade-in var(--kadr-duration, 0.22s) var(--kadr-ease, ease) both;
+}
+
+.kadr-scale-in {
+  animation: kadr-scale-in var(--kadr-duration, 0.22s) var(--kadr-ease-out, ease) both;
+}
+
+/* Stagger helper: add kadr-stagger to a parent, children fade-up in sequence. */
+.kadr-stagger > * {
+  animation: kadr-fade-up var(--kadr-duration-slow, 0.35s) var(--kadr-ease-out, ease) both;
+}
+.kadr-stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.kadr-stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.kadr-stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.kadr-stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.kadr-stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.kadr-stagger > *:nth-child(6) { animation-delay: 0.22s; }
+
+/* Gentle lift on interactive cards/tiles. */
+.kadr-hover-lift {
+  transition: transform var(--kadr-duration-fast, 0.15s) var(--kadr-ease, ease),
+    box-shadow var(--kadr-duration-fast, 0.15s) var(--kadr-ease, ease);
+}
+.kadr-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--kadr-shadow-md, 0 6px 18px rgba(31, 36, 50, 0.1));
+}
+
+/* Router-view transition (used by <transition name="kadr-page">). */
+.kadr-page-enter-active {
+  transition: opacity var(--kadr-duration, 0.22s) var(--kadr-ease-out, ease),
+    transform var(--kadr-duration, 0.22s) var(--kadr-ease-out, ease);
+}
+.kadr-page-leave-active {
+  transition: opacity var(--kadr-duration-fast, 0.15s) var(--kadr-ease, ease);
+}
+.kadr-page-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.kadr-page-leave-to {
+  opacity: 0;
+}
+
+/* Respect the user's OS-level motion preference. */
+@media (prefers-reduced-motion: reduce) {
+  .kadr-animate-in,
+  .kadr-fade-in,
+  .kadr-scale-in,
+  .kadr-stagger > * {
+    animation: none !important;
+  }
+  .kadr-hover-lift,
+  .kadr-page-enter-active,
+  .kadr-page-leave-active {
+    transition: none !important;
+  }
+  .kadr-hover-lift:hover {
+    transform: none;
+  }
+}

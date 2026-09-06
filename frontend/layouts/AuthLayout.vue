@@ -4,8 +4,8 @@
     <section class="sign-in-page bg-white">
       <div class="container-fluid p-0">
         <div class="row g-0">
-          <div class="col-12 col-md-6 align-self-center">
-            <div class="sign-in-from">
+          <div class="col-12 col-md-6 auth-form-col">
+            <div class="sign-in-from auth-form-inner">
               <div class="auth-language-switcher">
                 <button
                   type="button"
@@ -25,18 +25,18 @@
               <div class="owl-carousel" data-autoplay="true" data-loop="true" data-nav="false" data-dots="true" data-items="1" data-items-laptop="1" data-items-tab="1" data-items-mobile="1" data-items-mobile-sm="1" data-margin="0">
                 <div class="item">
                   <img :src="require('../assets/images/login/1.png')" class="img-fluid mb-4" alt="logo">
-                  <h4 class="mb-1 text-white">Resolve disputes peacefully</h4>
-                  <p>Connect with certified mediators to settle cases outside court — faster, confidential, and impartial.</p>
+                  <h4 class="mb-1 text-white">{{ $t('auth.carousel.slide1Title') }}</h4>
+                  <p>{{ $t('auth.carousel.slide1Body') }}</p>
                 </div>
                 <div class="item">
                   <img :src="require('../assets/images/login/1.png')" class="img-fluid mb-4" alt="Mediation platform">
-                  <h4 class="mb-1 text-white">Track your case progress</h4>
-                  <p>Schedule meetings, sign agreements, and communicate securely — all in one place.</p>
+                  <h4 class="mb-1 text-white">{{ $t('auth.carousel.slide2Title') }}</h4>
+                  <p>{{ $t('auth.carousel.slide2Body') }}</p>
                 </div>
                 <div class="item">
                   <img :src="require('../assets/images/login/1.png')" class="img-fluid mb-4" alt="Trusted mediation">
-                  <h4 class="mb-1 text-white">Trusted by clients and mediators</h4>
-                  <p>Kadr.live is India's platform for online mediation and dispute resolution.</p>
+                  <h4 class="mb-1 text-white">{{ $t('auth.carousel.slide3Title') }}</h4>
+                  <p>{{ $t('auth.carousel.slide3Body') }}</p>
                 </div>
               </div>
             </div>
@@ -89,5 +89,45 @@ export default {
   font-size: 0.8rem;
   padding: 0.3rem 0.7rem;
   border-radius: 20px;
+}
+
+/* Fit the form column to the viewport so the page itself never scrolls;
+   the inner form area handles any overflow on its own. */
+.auth-form-col {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.auth-form-inner {
+  width: 100%;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 3rem;
+  padding-bottom: 1.5rem;
+}
+
+/* Tame the very large default side padding so wider two-column forms fit
+   comfortably without horizontal cramping. */
+@media (min-width: 992px) {
+  .auth-form-inner.sign-in-from {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .auth-form-col {
+    height: auto;
+    overflow: visible;
+  }
+  .auth-form-inner {
+    max-height: none;
+    overflow: visible;
+  }
 }
 </style>

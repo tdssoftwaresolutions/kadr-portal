@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid>
+  <b-container fluid class="kadr-animate-in">
     <b-row>
       <b-col md="12">
         <iq-card>
@@ -52,7 +52,7 @@
           <div class="data-title">{{ $t('adminCalendar.description') }}</div>
           <textarea rows="5" readonly :value="selectedAppointment.description"></textarea>
         </div>
-        <b-button class="btn btn-primary mt-3" style="float:right;background: #0084ff;" @click="showDetailsModal = false">{{ $t('adminCalendar.close') }}</b-button>
+        <b-button class="btn btn-primary mt-3" style="float:right;" @click="showDetailsModal = false">{{ $t('adminCalendar.close') }}</b-button>
       </div>
     </b-modal>
   </b-container>
@@ -61,8 +61,8 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 
-const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
-const PERSONAL_EVENT_COLOR = 'rgb(244, 81, 30)'
+const KADR_EVENT_COLOR = '#5a4bd4'
+const PERSONAL_EVENT_COLOR = '#4a8fb0'
 
 export default {
   name: 'AdminCalendar',
@@ -125,7 +125,7 @@ export default {
   display: flex;
   justify-content: space-between;
   padding: 10px 0;
-  border-bottom: 1px solid #f1f1f1;
+  border-bottom: 1px solid var(--kadr-border);
 }
 .data-row:last-child {
   border-bottom: none;

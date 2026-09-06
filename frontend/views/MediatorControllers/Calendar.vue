@@ -1,31 +1,32 @@
 <template>
-  <b-container fluid class="calendar-page">
+  <b-container fluid class="calendar-page kadr-animate-in">
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
+    <Spinner :isVisible="loading" />
 
-    <kadr-page-header :title="CALENDAR.TITLE" :subtitle="CALENDAR.SUBTITLE">
+    <kadr-page-header :title="$t('mediatorCalendar.title')" :subtitle="$t('mediatorCalendar.subtitle')">
       <template #actions>
         <button type="button" class="btn btn-primary" @click="openModal">
-          <i class="ri-add-line"></i> Book Appointment
+          <i class="ri-add-line"></i> {{ $t('mediatorCalendar.bookAppointment') }}
         </button>
       </template>
     </kadr-page-header>
 
     <b-row>
       <b-col md="3">
-        <kadr-section-card title="Classification" class="mb-3">
+        <kadr-section-card :title="$t('mediatorCalendar.classification')" class="mb-3">
           <ul class="m-0 p-0 job-classification">
             <li>
               <i class="ri-checkbox-blank-circle-fill" :style="{ color: kadrEventColor }" />
-              {{ CALENDAR.LEGEND_KADR }}
+              {{ $t('mediatorCalendar.legendKadr') }}
             </li>
             <li v-if="hasPersonalCalendar">
               <i class="ri-checkbox-blank-circle-fill" :style="{ color: personalEventColor }" />
-              {{ CALENDAR.LEGEND_PERSONAL }}
+              {{ $t('mediatorCalendar.legendPersonal') }}
             </li>
           </ul>
         </kadr-section-card>
 
-        <kadr-section-card title="Today's Schedule">
+        <kadr-section-card :title="$t('mediatorCalendar.todaysSchedule')">
           <div v-if="todaysEvents.length" class="list-scroll">
             <div
               v-for="(event, index) in todaysEvents"
@@ -38,13 +39,13 @@
                   :style="{ color: event.type == 'KADR' ? kadrEventColor : personalEventColor }"
                 ></i>
                 <div class="schedule-text" v-if="event.type == 'KADR'">
-                  <h6>Case #{{ event.caseNumber }}</h6>
-                  <p>{{ event.firstPartyName }} vs {{ event.secondPartyName }}</p>
-                  <span>{{ formatTime(event.startDate) }} to {{ formatTime(event.endDate) }}</span>
+                  <h6>{{ $t('mediatorCalendar.caseNumber', { caseNumber: event.caseNumber }) }}</h6>
+                  <p>{{ $t('mediatorCalendar.partiesVs', { firstParty: event.firstPartyName, secondParty: event.secondPartyName }) }}</p>
+                  <span>{{ $t('mediatorCalendar.timeRange', { startTime: formatTime(event.startDate), endTime: formatTime(event.endDate) }) }}</span>
                 </div>
                 <div class="schedule-text" v-else>
                   <h6>{{ event.title }}</h6>
-                  <span>{{ formatTime(event.startDate) }} to {{ formatTime(event.endDate) }}</span>
+                  <span>{{ $t('mediatorCalendar.timeRange', { startTime: formatTime(event.startDate), endTime: formatTime(event.endDate) }) }}</span>
                 </div>
               </div>
               <a
@@ -53,7 +54,7 @@
                 target="_blank"
                 class="btn btn-primary btn-sm"
               >
-                Join
+                {{ $t('mediatorCalendar.join') }}
               </a>
             </div>
           </div>
@@ -61,12 +62,12 @@
             v-else
             compact
             icon=""
-            :description="CALENDAR.NO_EVENTS_TODAY"
+            :description="$t('mediatorCalendar.noEventsToday')"
           />
         </kadr-section-card>
       </b-col>
       <b-col md="9">
-        <kadr-section-card title="Calendar">
+        <kadr-section-card :title="$t('mediatorCalendar.calendar')">
           <FullCalendar
             :calendarEvents="events"
             :eventClick="openDetailsModal"
@@ -80,31 +81,31 @@
       id="new-appointment-modal-id"
       v-model="showNewAppointmentModal"
       size="lg"
-      :title="bookingPrefillDate ? `Book for ${bookingPrefillDateLabel}` : 'Book Appointment'"
+      :title="bookingPrefillDate ? $t('mediatorCalendar.bookForDate', { date: bookingPrefillDateLabel }) : $t('mediatorCalendar.bookAppointment')"
       @ok="onSave"
-      ok-title="Book"
+      :ok-title="$t('mediatorCalendar.book')"
       scrollable
     >
       <div class="radio-row">
-          <div class="data-title">Select Appointment Type</div>
+          <div class="data-title">{{ $t('mediatorCalendar.selectAppointmentType') }}</div>
           <div class="radio-group">
             <div class="radio-btn-wrapper" @click="onClickAppointmentType">
               <input type="radio" id="option1" name="group1" value="kadr" v-model="newAppointment.type">
               <label for="option1">
-                <i class="ri-checkbox-blank-circle-fill" :style="{ color: kadrEventColor, marginRight: '0.5rem' }"></i> KADR Client Meeting
+                <i class="ri-checkbox-blank-circle-fill" :style="{ color: kadrEventColor, marginRight: '0.5rem' }"></i> {{ $t('mediatorCalendar.kadrClientMeeting') }}
               </label>
             </div>
             <div v-if="hasPersonalCalendar" class="radio-btn-wrapper" @click="onClickAppointmentType">
               <input type="radio" id="option2" name="group1" value="personal" v-model="newAppointment.type">
               <label for="option2">
-                <i class="ri-checkbox-blank-circle-fill" :style="{ color: personalEventColor,marginRight: '0.5rem' }"></i> Personal Client Meeting
+                <i class="ri-checkbox-blank-circle-fill" :style="{ color: personalEventColor,marginRight: '0.5rem' }"></i> {{ $t('mediatorCalendar.personalClientMeeting') }}
               </label>
             </div>
           </div>
       </div>
       <div class="data-row" v-if="newAppointment.type == 'personal'">
           <div class="col-12">
-              <div class="data-title">Title</div>
+              <div class="data-title">{{ $t('mediatorCalendar.titleLabel') }}</div>
               <b-form-input
                 id="title"
                 type="text"
@@ -116,11 +117,11 @@
       </div>
       <div class="data-row" v-if="newAppointment.type == 'personal'">
           <div class="col-12">
-              <div class="data-title">Description</div>
+              <div class="data-title">{{ $t('mediatorCalendar.descriptionLabel') }}</div>
               <b-form-textarea
                 id="textarea"
                 v-model="newAppointment.description"
-                placeholder="Enter description.."
+                :placeholder="$t('mediatorCalendar.descriptionPlaceholder')"
                 rows="3"
                 class="form-control"
                 max-rows="6"
@@ -129,7 +130,7 @@
       </div>
       <div class="data-row" v-else>
         <div class="col-12" v-if="dashboardContent != null">
-            <div class="data-title">Select Client <span class="text-danger">*</span></div>
+            <div class="data-title">{{ $t('mediatorCalendar.selectClient') }} <span class="text-danger">*</span></div>
             <div
               class="cases-horizontal-scroll"
               ref="casesHorizontalScroll"
@@ -139,34 +140,34 @@
               <div class="case-card" v-for="(myCase,index) in dashboardContent.myCases.casesWithEvents" :key="myCase.id"
               :class="{ selected: newAppointment.caseId === myCase.id }"
               @click="onClickCase(myCase.id, index)">
-                <span  style="font-weight: bold">Case #{{ myCase.caseId }}</span>
-                <p>{{ myCase.user_cases_first_partyTouser?.name }} vs {{ myCase.user_cases_second_partyTouser?.name }}</p>
+                <span  style="font-weight: bold">{{ $t('mediatorCalendar.caseId', { caseId: myCase.caseId }) }}</span>
+                <p>{{ $t('mediatorCalendar.partiesVs', { firstParty: myCase.user_cases_first_partyTouser?.name, secondParty: myCase.user_cases_second_partyTouser?.name }) }}</p>
               </div>
               <button type="button" @click="scrollRight" class="scroll-btn right">›</button>
             </div>
             <small v-if="showCaseRequiredError" class="text-danger d-block mt-2">
-              Please select a client case for this KADR meeting.
+              {{ $t('mediatorCalendar.caseRequiredError') }}
             </small>
             <small
               v-else-if="!(dashboardContent.myCases && dashboardContent.myCases.casesWithEvents && dashboardContent.myCases.casesWithEvents.length)"
               class="text-muted d-block mt-2"
             >
-              No active cases available to book against.
+              {{ $t('mediatorCalendar.noActiveCases') }}
             </small>
         </div>
       </div>
       <div class="data-row">
         <div class="col-12">
           <template v-if="bookingPrefillDate">
-            <div class="data-title">Date</div>
+            <div class="data-title">{{ $t('mediatorCalendar.dateLabel') }}</div>
             <div class="appointment-locked-date">
               <i class="ri-calendar-check-line" aria-hidden="true"></i>
               <div>
                 <strong>{{ bookingPrefillDateLabel }}</strong>
-                <small>Selected from calendar — choose a time below</small>
+                <small>{{ $t('mediatorCalendar.selectedFromCalendarHint') }}</small>
               </div>
             </div>
-            <div class="data-title mt-3">Select Time</div>
+            <div class="data-title mt-3">{{ $t('mediatorCalendar.selectTime') }}</div>
             <kadr-date-time-picker
               :key="`time-${bookingPrefillDate}-${timePickerMinKey}`"
               picker-key="time-only"
@@ -174,50 +175,50 @@
               v-model="appointmentTime"
               :min-date="timePickerMinDate"
               :show-timezone-hint="true"
-              placeholder="Select time (AM/PM)"
+              :placeholder="$t('mediatorCalendar.selectTimePlaceholder')"
               @input="syncStartFromPrefillTime"
             />
           </template>
           <template v-else>
-            <div class="data-title">Select Date and Time</div>
+            <div class="data-title">{{ $t('mediatorCalendar.selectDateAndTime') }}</div>
             <kadr-date-time-picker
               key="datetime-full"
               picker-key="datetime-full"
               mode="datetime"
               v-model="newAppointment.start"
               :min-date="bookingMinDate"
-              placeholder="Select date and time (AM/PM)"
+              :placeholder="$t('mediatorCalendar.selectDateAndTimePlaceholder')"
             />
           </template>
         </div>
       </div>
     </b-modal>
-    <b-modal id="view-appointment-modal-id" cancel-disabled v-model="showDetailsModal" size="lg" title="View Appointment" scrollable no-footer>
+    <b-modal id="view-appointment-modal-id" cancel-disabled v-model="showDetailsModal" size="lg" :title="$t('mediatorCalendar.viewAppointment')" scrollable no-footer>
       <div class="appointment-details" v-if="selectedAppointment != null">
         <div class="data-row">
             <div class="col-6">
-                <div class="data-title">Title</div>
+                <div class="data-title">{{ $t('mediatorCalendar.titleLabel') }}</div>
                 <div>{{ selectedAppointment.title }}</div>
             </div>
             <div class="col-6">
-                <div class="data-title">Meeting link</div>
-                <div> <a :href="selectedAppointment.meetingLink" target="_blank">Join</a></div>
+                <div class="data-title">{{ $t('mediatorCalendar.meetingLink') }}</div>
+                <div> <a :href="selectedAppointment.meetingLink" target="_blank">{{ $t('mediatorCalendar.join') }}</a></div>
             </div>
         </div>
         <div class="data-row">
             <div class="col-6">
-                <div class="data-title">Start Time</div>
+                <div class="data-title">{{ $t('mediatorCalendar.startTime') }}</div>
                 <div>{{ formatDateTime(selectedAppointment.start) }}</div>
             </div>
             <div class="col-6">
-                <div class="data-title">End Time</div>
+                <div class="data-title">{{ $t('mediatorCalendar.endTime') }}</div>
                 <div> {{ formatDateTime(selectedAppointment.end) }} </div>
             </div>
         </div>
 
         <div class="data-row" v-if="selectedAppointment.caseNumber">
             <div class="col-6">
-                <div class="data-title">Case Id</div>
+                <div class="data-title">{{ $t('mediatorCalendar.caseIdLabel') }}</div>
                 <div>#{{ selectedAppointment.caseNumber }}</div>
             </div>
             <div class="col-6">
@@ -225,7 +226,7 @@
             </div>
         </div>
         <div class="long-description">
-            <div class="data-title">Description</div>
+            <div class="data-title">{{ $t('mediatorCalendar.descriptionLabel') }}</div>
             <textarea rows="5" readonly :value="selectedAppointment.description">
             </textarea>
         </div>
@@ -235,7 +236,7 @@
             {{ calendarFeedbackButtonLabel }}
           </b-button>
         </div>
-        <b-button class="btn btn-primary modal-close-btn" @click="showDetailsModal = false">Close</b-button>
+        <b-button class="btn btn-primary modal-close-btn" @click="showDetailsModal = false">{{ $t('mediatorCalendar.close') }}</b-button>
       </div>
     </b-modal>
 
@@ -255,6 +256,7 @@
 </template>
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
+import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import { sofbox } from '../../config/pluginInit'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
@@ -267,20 +269,20 @@ import KadrDateTimePicker, {
   startOfLocalDay,
   toYmd
 } from '../../components/kadr/KadrDateTimePicker.vue'
-import { CALENDAR } from '../../constants/messages'
 import {
   isPastKadrCaseMeeting,
   mediatorNeedsMeetingFeedback,
   clientNeedsMeetingFeedback
 } from '../../utils/meetingFeedback'
-const PERSONAL_EVENT_COLOR = 'rgb(244, 81, 30)'
-const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
+const PERSONAL_EVENT_COLOR = '#4a8fb0'
+const KADR_EVENT_COLOR = '#5a4bd4'
 
 export default {
   name: 'calendar',
   components: {
     KadrDateTimePicker,
     Alert,
+    Spinner,
     MeetingFeedbackModal,
     KadrPageHeader,
     KadrEmptyState,
@@ -288,7 +290,7 @@ export default {
   },
   data () {
     return {
-      CALENDAR,
+      loading: false,
       alert: {
         visible: false,
         message: '',
@@ -383,16 +385,16 @@ export default {
       if (!ev || !isPastKadrCaseMeeting(ev)) return ''
       const ut = this.$store.state.currentUser && this.$store.state.currentUser.type
       if (ut === 'MEDIATOR' && sa.mediator === this.currentUserId && mediatorNeedsMeetingFeedback(ev)) {
-        return 'This case meeting has ended. Please add your summary and next steps.'
+        return this.$t('mediatorCalendar.feedbackHintMediator')
       }
       if (ut === 'CLIENT' && this.calendarSyntheticCase && clientNeedsMeetingFeedback(ev, this.currentUserId, this.calendarSyntheticCase)) {
-        return 'This case meeting has ended. Please rate how the session went.'
+        return this.$t('mediatorCalendar.feedbackHintClient')
       }
       return ''
     },
     calendarFeedbackButtonLabel () {
       const ut = this.$store.state.currentUser && this.$store.state.currentUser.type
-      return ut === 'MEDIATOR' ? 'Add meeting notes' : 'Rate meeting'
+      return ut === 'MEDIATOR' ? this.$t('mediatorCalendar.addMeetingNotes') : this.$t('mediatorCalendar.rateMeeting')
     },
     calendarFeedbackEventTitle () {
       return (this.selectedAppointment && this.selectedAppointment.title) || ''
@@ -400,7 +402,7 @@ export default {
     calendarFeedbackCaseLabel () {
       const sa = this.selectedAppointment
       if (!sa || !sa.caseNumber) return ''
-      return `Case #${sa.caseNumber}`
+      return this.$t('mediatorCalendar.caseNumber', { caseNumber: sa.caseNumber })
     },
     calendarFeedbackInitialSummary () {
       return this.selectedAppointment && this.selectedAppointment.meeting_summary
@@ -442,8 +444,12 @@ export default {
     },
     onClickCase (id, index) {
       const lCase = this.dashboardContent.myCases.casesWithEvents[index]
-      this.newAppointment.title = `Meeting for Case ${lCase.caseId}`
-      this.newAppointment.description = `Case Details:\nCase ID: #${lCase.caseId}\n1st Party: ${lCase.user_cases_first_partyTouser?.name}\n2nd Party ${lCase.user_cases_second_partyTouser?.name}\n\nThis meeting has been scheduled to discuss the case details. Please ensure to join on time and have all necessary documents or information prepared for the discussion.`
+      this.newAppointment.title = this.$t('mediatorCalendar.defaultMeetingTitle', { caseId: lCase.caseId })
+      this.newAppointment.description = this.$t('mediatorCalendar.defaultMeetingDescription', {
+        caseId: lCase.caseId,
+        firstParty: lCase.user_cases_first_partyTouser?.name,
+        secondParty: lCase.user_cases_second_partyTouser?.name
+      })
       this.newAppointment.caseId = id
       this.newAppointment.caseNumber = lCase.caseId
       this.showCaseRequiredError = false
@@ -472,7 +478,7 @@ export default {
             end: event.end_datetime,
             color: event.type === 'KADR' ? this.kadrEventColor : this.personalEventColor,
             extendedProps: {
-              description: event.description || 'No description provided',
+              description: event.description || this.$t('mediatorCalendar.noDescription'),
               meetingLink: event.meeting_link,
               caseId: event.cases ? event.cases.id : null,
               caseNumber: event.cases ? event.cases.caseId : null,
@@ -524,29 +530,29 @@ export default {
       this.showCaseRequiredError = false
 
       if (this.newAppointment.type === 'personal' && !this.hasPersonalCalendar) {
-        this.showAlert('Personal meetings require Kadr Pro. Upgrade from My Account.', 'warning')
+        this.showAlert(this.$t('mediatorCalendar.personalRequiresPro'), 'warning')
         return
       }
 
       if (this.newAppointment.type === 'kadr') {
         if (!this.newAppointment.caseId) {
           this.showCaseRequiredError = true
-          this.showAlert('Please select a client case for this KADR meeting.', 'warning')
+          this.showAlert(this.$t('mediatorCalendar.caseRequiredError'), 'warning')
           return
         }
       } else if (this.newAppointment.type === 'personal') {
         if (!String(this.newAppointment.title || '').trim()) {
-          this.showAlert('Please enter a meeting title.', 'warning')
+          this.showAlert(this.$t('mediatorCalendar.enterMeetingTitle'), 'warning')
           return
         }
         if (!String(this.newAppointment.description || '').trim()) {
-          this.showAlert('Please enter a meeting description.', 'warning')
+          this.showAlert(this.$t('mediatorCalendar.enterMeetingDescription'), 'warning')
           return
         }
       }
 
       if (!this.newAppointment.start) {
-        this.showAlert('Please select a date and time.', 'warning')
+        this.showAlert(this.$t('mediatorCalendar.selectDateTimeAlert'), 'warning')
         return
       }
       const startRaw = String(this.newAppointment.start).includes('T')
@@ -554,7 +560,7 @@ export default {
         : String(this.newAppointment.start).replace(' ', 'T')
       const startDate = new Date(startRaw)
       if (Number.isNaN(startDate.getTime()) || startDate.getTime() < Date.now()) {
-        this.showAlert('Please choose a time in the future.', 'warning')
+        this.showAlert(this.$t('mediatorCalendar.chooseFutureTime'), 'warning')
         return
       }
       const endDate = new Date(startDate.getTime())
@@ -573,8 +579,14 @@ export default {
     },
     async storeNewEvent (event) {
       this.loading = true
-      const response = await this.$store.dispatch('newCalendarEvent', { event })
-      if (response.success) {
+      let response
+      try {
+        response = await this.$store.dispatch('newCalendarEvent', { event })
+      } finally {
+        this.loading = false
+      }
+      if (response && response.success) {
+        this.showAlert(this.$t('mediatorCalendar.bookedSuccess'), 'success')
         event.meetingLink = response.data.meetLink
         const xp = {
           description: event.description || '',
@@ -611,8 +623,9 @@ export default {
         this.closeModal()
         this.resetForm()
         await this.$store.dispatch('getDashboardContent', { force: true })
+      } else if (response && !response.success) {
+        this.showAlert(response.message || this.$t('mediatorCalendar.bookFailed'), 'danger')
       }
-      this.loading = false
     },
     openDetailsModal (event) {
       const xp = event.extendedProps || {}
@@ -739,20 +752,6 @@ export default {
 </script>
 <style scoped>
   /* Modal Overlay */
-  .custom-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    transition: opacity 0.3s ease;
-  }
-
   .data-row {
     display: flex;
     justify-content: space-between;
@@ -768,27 +767,6 @@ export default {
     font-weight: bold;
   }
 
-  /* Modal Box */
-  .custom-modal {
-    background: white;
-    border-radius: 8px;
-    width: 500px;
-    max-width: 90%;
-    padding: 20px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    position: relative;
-    animation: fadeIn 0.3s ease;
-  }
-
-  /* Header */
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-  }
   .long-description textarea {
   width: 100%;
   resize: none;
@@ -882,11 +860,11 @@ export default {
 }
 
 .case-card.selected {
-  border-color: #007bff; /* Highlight color */
-  background-color: #e6f2ff; /* Light blue background */
-  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+  border-color: var(--kadr-primary); /* Highlight color */
+  background-color: var(--kadr-primary-soft);
+  box-shadow: 0 0 10px rgba(90, 75, 212, 0.35);
   transform: scale(1.02); /* Slightly enlarged */
-  color: #007bff;
+  color: var(--kadr-primary);
 }
 
 .case-card h3 {
@@ -940,7 +918,7 @@ export default {
   }
 
   .form-input:focus {
-    border-color: #007bff;
+    border-color: var(--kadr-primary);
     background-color: #fff;
   }
 
@@ -977,17 +955,6 @@ export default {
     background-color: #388e3c;
   }
 
-  /* Fade-in Animation */
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
   .radio-group {
     display: flex;
     justify-content: center;
@@ -1023,8 +990,8 @@ export default {
 
   .radio-btn-wrapper input:checked + label {
     color: black;
-    border-color: #007bff; /* Highlight color */
-    background-color: #e6f2ff; /* Light blue background */
+    border-color: var(--kadr-primary); /* Highlight color */
+    background-color: var(--kadr-primary-soft); /* Soft brand background */
     transform: scale(1.02); /* Slightly enlarged */
   }
 
@@ -1045,13 +1012,13 @@ export default {
 
   .radio-btn-wrapper input:focus + label {
     outline: none;
-    border-color: #007bff;
+    border-color: var(--kadr-primary);
   }
 
   .radio-btn-wrapper:hover label {
     color: black;
-    border-color: #007bff; /* Highlight color */
-    background-color: #e6f2ff; /* Light blue background */
+    border-color: var(--kadr-primary); /* Highlight color */
+    background-color: var(--kadr-primary-soft); /* Soft brand background */
     transform: scale(1.02); /* Slightly enlarged */
   }
 

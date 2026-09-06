@@ -3,6 +3,7 @@ import VueCookies from 'vue-cookies'
 import { getApiBaseUrl } from './apiBase'
 import { getAccessToken, getRefreshToken, setTokens } from './tokenStorage'
 import { getMobileClientHeaders, isNativeApp } from './platform'
+import { notifyRequestStart, notifyRequestEnd } from './loadingBridge'
 
 export const REFRESH_TOKEN_ENDPOINT = '/refresh-token'
 
@@ -15,8 +16,10 @@ const EXCLUDED_ENDPOINTS = [
   '/confirmPasswordChange',
   '/newUserSignup',
   '/newMediatorSignup',
+  '/signup/upload-url',
   '/isEmailExist',
-  '/website-contact'
+  '/website-contact',
+  '/public/coupon-lookup'
 ]
 
 export const apiClient = axios.create({
@@ -34,10 +37,22 @@ function parseRefreshResponse (data) {
   return null
 }
 
+// Global loading tracking. Every request through apiClient shows the global
+// spinner unless it opts out via `config.meta.silent = true` (used for
+// background/silent calls like token refresh, polling, or debounced lookups).
+function isSilentRequest (config) {
+  return Boolean(config && config.meta && config.meta.silent)
+}
+
 apiClient.interceptors.request.use(async (config) => {
   config.headers = {
     ...getMobileClientHeaders(),
     ...config.headers
+  }
+
+  if (!isSilentRequest(config)) {
+    config.__loadingTracked = true
+    notifyRequestStart()
   }
   if (!isExcludedUrl(config.url)) {
     const token = await getAccessToken()
@@ -58,9 +73,27 @@ apiClient.interceptors.request.use(async (config) => {
   return config
 })
 
+// Balances the loading counter for a finished request (once per tracked
+// request). Clears the flag so the E102 retry below can re-track cleanly.
+function endLoadingFor (config) {
+  if (config && config.__loadingTracked) {
+    config.__loadingTracked = false
+    notifyRequestEnd()
+  }
+}
+
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    endLoadingFor(response.config)
+    return response
+  },
   async (error) => {
+    // End tracking for the failed request up front. If this was an E102 and we
+    // retry below, the retried request passes through the request interceptor
+    // again and gets its own fresh start/end pair — so the counter stays
+    // balanced either way.
+    endLoadingFor(error.config)
+
     const errorCode = error.response && error.response.data && error.response.data.errorCode
     if (errorCode !== 'E102') {
       return Promise.reject(error)
@@ -68,9 +101,11 @@ apiClient.interceptors.response.use(
     try {
       const refreshToken = await getRefreshToken()
       const body = refreshToken ? { refreshToken } : {}
+      // The silent flag keeps the token refresh out of the global spinner.
       const { data } = await apiClient.post(REFRESH_TOKEN_ENDPOINT, body, {
         headers: getMobileClientHeaders(),
-        withCredentials: !isNativeApp()
+        withCredentials: !isNativeApp(),
+        meta: { silent: true }
       })
       const accessToken = parseRefreshResponse(data)
       if (!accessToken) throw new Error('Refresh failed')

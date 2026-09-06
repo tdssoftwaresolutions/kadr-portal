@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid class="dashboard-client-page">
+  <b-container fluid class="dashboard-client-page kadr-animate-in">
     <kadr-dashboard-hero
       :name="user.name"
       :email="user.email"
@@ -72,7 +72,7 @@ import ClientCases from '../ClientControllers/ClientCases.vue'
 import KadrDashboardHero from '../../components/kadr/KadrDashboardHero.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
 import { adminUserHasComponent } from '../../utils/adminAccess'
-const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
+const KADR_EVENT_COLOR = 'var(--kadr-event-kadr)'
 
 export default {
   name: 'DashboardAdmin',

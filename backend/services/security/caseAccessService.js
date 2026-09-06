@@ -11,7 +11,9 @@ async function loadCaseAccess (caseId) {
       caseId: true,
       first_party: true,
       second_party: true,
-      mediator: true
+      mediator: true,
+      first_party_representative: true,
+      second_party_representative: true
     }
   })
 }
@@ -21,12 +23,45 @@ function isCaseParty (caseRow, userId) {
   return caseRow.first_party === userId || caseRow.second_party === userId
 }
 
+/**
+ * A representative inherits the access of the party they represent. This returns
+ * the party side ('first_party'|'second_party') a user represents on a case, or null.
+ */
+function representedSide (caseRow, userId) {
+  if (!caseRow || !userId) return null
+  if (caseRow.first_party_representative === userId) return 'first_party'
+  if (caseRow.second_party_representative === userId) return 'second_party'
+  return null
+}
+
+function isCaseRepresentative (caseRow, userId) {
+  return representedSide(caseRow, userId) !== null
+}
+
 function isCaseMediator (caseRow, userId) {
   return Boolean(caseRow && userId && caseRow.mediator === userId)
 }
 
 function isCaseParticipant (caseRow, userId) {
-  return isCaseParty(caseRow, userId) || isCaseMediator(caseRow, userId)
+  return isCaseParty(caseRow, userId) ||
+    isCaseMediator(caseRow, userId) ||
+    isCaseRepresentative(caseRow, userId)
+}
+
+/**
+ * Shared Prisma `where` fragment for "cases this user belongs to".
+ * Includes party, mediator, and representative membership. Use this everywhere
+ * a case list/visibility query previously hard-coded
+ * OR: [{ first_party }, { second_party }, { mediator }].
+ */
+function caseMembershipOr (userId) {
+  return [
+    { first_party: userId },
+    { second_party: userId },
+    { mediator: userId },
+    { first_party_representative: userId },
+    { second_party_representative: userId }
+  ]
 }
 
 async function assertCaseAccess (user, caseId, { allowAdmin = true, requireMediator = false } = {}) {
@@ -74,7 +109,10 @@ module.exports = {
   loadCaseAccess,
   isCaseParty,
   isCaseMediator,
+  isCaseRepresentative,
   isCaseParticipant,
+  representedSide,
+  caseMembershipOr,
   assertCaseAccess,
   assertCaseAccessFromRequest,
   assertNoteOwnership,

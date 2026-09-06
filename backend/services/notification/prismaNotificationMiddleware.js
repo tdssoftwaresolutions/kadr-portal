@@ -60,8 +60,14 @@ function normalizeCurrentRow (action, result, args) {
   return result || {}
 }
 
-async function runPostWriteEvaluation ({ tableName, previous, current, action }) {
-  const ctx = getNotificationContext() || {}
+async function runPostWriteEvaluation ({ tableName, previous, current, action, context }) {
+  // Prefer an explicitly-captured context. Evaluation is deferred via
+  // setImmediate, by which point the AsyncLocalStorage run() scope that held
+  // template vars (e.g. the generated password) has already unwound — so
+  // getNotificationContext() would return null here and drop data.password,
+  // silently skipping the welcomeCredentials email. Callers in this module
+  // capture the context synchronously inside the $use hook and pass it in.
+  const ctx = context || getNotificationContext() || {}
   const meta = Object.values(tableMap).find((m) => m.tableName === tableName)
   const userId = ctx.userId || resolveRecipientUserId(meta, current) || null
 
@@ -92,6 +98,16 @@ function applyNotificationMiddleware (prisma) {
     const meta = resolveTableMeta(params.model)
     if (!meta) return next(params)
 
+    // Capture the notification context synchronously, at the very top of the
+    // hook — before any await. Prisma's $use middleware does not run inside the
+    // caller's AsyncLocalStorage scope, so this relies on the synchronous
+    // fallback stack in notificationContext.js, which is only guaranteed to be
+    // populated at this point (the wrapping fn() pops it once the write settles,
+    // and the deferred setImmediate below runs even later). Capturing here keeps
+    // per-write template vars like the generated password available to the
+    // trigger evaluation.
+    const capturedContext = getNotificationContext() || {}
+
     let previous = null
     if (params.action === 'update' || params.action === 'upsert') {
       applying = true
@@ -114,7 +130,8 @@ function applyNotificationMiddleware (prisma) {
         tableName: meta.tableName,
         previous,
         current,
-        action: params.action
+        action: params.action,
+        context: capturedContext
       }).catch((err) => {
         console.error('[notification-hook] async evaluation error', err.message)
       })

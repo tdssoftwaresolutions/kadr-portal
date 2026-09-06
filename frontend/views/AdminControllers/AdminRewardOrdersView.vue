@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid>
+  <b-container fluid class="kadr-animate-in">
     <iq-card>
       <template v-slot:headerTitle>
         <h4 class="card-title mb-0">{{ $t('adminRewardOrders.title') }}</h4>

@@ -31,7 +31,7 @@
       />
       <div class="composer-actions">
         <button type="submit" class="btn btn-primary" :disabled="sending || !draft.trim()">
-          <span v-if="sending" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          <kadr-spinner v-if="sending" size="sm" class="me-2" />
           Send reply
         </button>
       </div>
@@ -105,18 +105,23 @@ export default {
       if (!body || this.sending) return
       this.sending = true
       this.toast = null
-      const res = await this.$store.dispatch('postAdminWebsiteContactReply', {
-        threadId: this.threadId,
-        body
-      })
-      this.sending = false
-      if (res.success) {
-        this.draft = ''
-        this.toast = 'Reply sent by email.'
-        this.$emit('thread-updated')
-        await this.load()
-      } else {
-        this.toast = res.message || 'Could not send.'
+      try {
+        const res = await this.$store.dispatch('postAdminWebsiteContactReply', {
+          threadId: this.threadId,
+          body
+        })
+        if (res.success) {
+          this.draft = ''
+          this.toast = 'Reply sent by email.'
+          this.$emit('thread-updated')
+          await this.load()
+        } else {
+          this.toast = res.message || 'Could not send.'
+        }
+      } catch (e) {
+        this.toast = e.message || 'Could not send.'
+      } finally {
+        this.sending = false
       }
     }
   }

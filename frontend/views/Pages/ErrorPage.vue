@@ -1,5 +1,5 @@
 <template>
-  <div class="container-fluid p-0">
+  <div class="container-fluid p-0 kadr-animate-in">
     <div class="row g-0">
       <div class="col-12 text-center">
         <div class="iq-error">

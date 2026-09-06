@@ -22,7 +22,10 @@ async function createClientInitiatedCase ({
   evidenceContent,
   oppositeName,
   oppositeEmail,
-  oppositePhone
+  oppositePhone,
+  representativeEmail,
+  representativeName,
+  representativePhone
 }) {
   if (!firstPartyUserId || !description || !category || !oppositeName || !oppositeEmail || !oppositePhone) {
     throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
@@ -85,6 +88,30 @@ async function createClientInitiatedCase ({
     update: { lastCaseId: newCaseId },
     create: { lastCaseId: newCaseId }
   })
+
+  // Tag the initiating client's representative (their lawyer), if provided.
+  // The initiating client is already active, so the representative is activated
+  // immediately (rather than in lockstep) via attachRepresentativeToCase's
+  // caller when appropriate. Here we create/link + notify; approval-time
+  // activation handles credential delivery for reps still inactive.
+  if (representativeEmail) {
+    try {
+      const { attachRepresentativeToCase, PARTY_SIDES } = require('./representativeService')
+      await attachRepresentativeToCase({
+        caseId: created.id,
+        side: PARTY_SIDES.FIRST,
+        representativeEmail,
+        representativeName,
+        representativePhone,
+        caseNumber: created.caseId,
+        category,
+        representedPartyName: firstParty.name,
+        activateImmediately: true
+      })
+    } catch (repErr) {
+      console.error('[clientCase] representative tagging failed', repErr.message)
+    }
+  }
 
   return created
 }

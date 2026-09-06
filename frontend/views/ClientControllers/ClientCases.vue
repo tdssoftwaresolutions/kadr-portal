@@ -1,15 +1,17 @@
 <template>
   <div>
+    <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
     <case-workspace-layout
       :has-cases="myCases.length > 0"
       :title="workspaceTitle"
       :subtitle="workspaceSubtitle"
-      :empty-action-label="canInitiateCase ? CASES.CREATE_CTA : ''"
+      :tabs="caseTabs"
+      :empty-action-label="canInitiateCase ? $t('clientCases.createCta') : ''"
       @empty-action="openInitiateCaseModal"
     >
       <template v-if="canInitiateCase" #head-extra>
         <button type="button" class="btn btn-primary btn-sm mt-2" @click="openInitiateCaseModal">
-          {{ CASES.CREATE_CTA }}
+          {{ $t('clientCases.createCta') }}
         </button>
       </template>
 
@@ -23,44 +25,48 @@
           @click="selectCase(caseItem)"
         >
           <span>{{ caseItem.caseId }}</span>
-          <small>{{ caseItem.case_statuses?.name || 'Unknown' }}</small>
+          <small>{{ caseItem.case_statuses?.name || $t('clientCases.unknown') }}</small>
         </button>
       </template>
 
-      <template #main>
+      <template #tab-overview>
+        <div v-if="selectedCase.case_progress && selectedCase.case_progress.isRepresentative" class="representative-banner">
+          <i class="ri-user-shared-line" aria-hidden="true"></i>
+          <span v-html="$t('clientCases.representativeBanner', { side: selectedCase.case_progress.representingSide === 'second_party' ? $t('clientCases.secondPartyLower') : $t('clientCases.firstPartyLower') })"></span>
+        </div>
         <div class="quick-info-grid">
           <article class="info-card">
-            <label>Case ID</label>
+            <label>{{ $t('clientCases.caseIdLabel') }}</label>
             <strong>{{ selectedCase.caseId || '-' }}</strong>
           </article>
           <article class="info-card">
-            <label>Status</label>
+            <label>{{ $t('clientCases.statusLabel') }}</label>
             <strong class="status-chip" :class="statusBadgeClass">
               {{ selectedCase.case_statuses?.name || '-' }}
             </strong>
           </article>
           <article class="info-card">
-            <label>Sub Status</label>
+            <label>{{ $t('clientCases.subStatusLabel') }}</label>
             <strong>{{ selectedCase.case_sub_statuses?.name || '-' }}</strong>
           </article>
           <article class="info-card">
-            <label>Filed On</label>
+            <label>{{ $t('clientCases.filedOnLabel') }}</label>
             <strong>{{ formatDateTime(selectedCase.created_at) }}</strong>
           </article>
           <article class="info-card">
-            <label>Case Type</label>
-            <strong>{{ selectedCase.case_type || CASES.AWAITING_TYPE }}</strong>
+            <label>{{ $t('clientCases.caseTypeLabel') }}</label>
+            <strong>{{ selectedCase.case_type || $t('clientCases.awaitingType') }}</strong>
           </article>
           <article class="info-card">
-            <label>Category</label>
+            <label>{{ $t('clientCases.categoryLabel') }}</label>
             <strong>{{ selectedCase.category || '-' }}</strong>
           </article>
         </div>
 
         <section class="info-card">
-          <label>Case Description</label>
+          <label>{{ $t('clientCases.caseDescriptionLabel') }}</label>
           <strong>
-            {{ selectedCase.description || 'No description provided for this case.' }}
+            {{ selectedCase.description || $t('clientCases.noDescription') }}
           </strong>
         </section>
 
@@ -68,9 +74,9 @@
           <div class="section-head">
             <h5>
               <i class="fas fa-exclamation-circle section-icon"></i>
-              Action Required
+              {{ $t('clientCases.actionRequired') }}
             </h5>
-            <small>Complete pending steps to keep the case moving.</small>
+            <small>{{ $t('clientCases.actionRequiredSubtitle') }}</small>
           </div>
           <div v-if="actionCards.length" class="action-grid">
             <article v-for="item in actionCards" :key="item.key" class="action-card" :class="item.variant">
@@ -84,7 +90,7 @@
                 :disabled="item.loading"
                 @click="item.action"
               >
-                <span v-if="item.loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <kadr-spinner v-if="item.loading" size="sm" class="me-2" />
                 {{ item.buttonText }}
               </button>
             </article>
@@ -92,55 +98,61 @@
           <kadr-empty-state
             v-else
             compact
-            description="No immediate action is required for this case."
+            :description="$t('clientCases.noActionRequired')"
           />
         </section>
+      </template>
 
+      <template #tab-parties>
         <section class="section-card">
           <div class="section-head">
-            <h5>Parties</h5>
-            <small>Primary participants associated with this case.</small>
+            <h5>{{ $t('clientCases.parties') }}</h5>
+            <small>{{ $t('clientCases.partiesSubtitle') }}</small>
           </div>
           <div class="party-grid">
             <article class="party-card">
-              <h6>First Party <span v-if="selectedCase.user_cases_first_partyTouser?.id === userid" class="badge-you">You</span></h6>
-              <p><span>Name:</span>{{ selectedCase.user_cases_first_partyTouser?.name || '-' }}</p>
-              <p><span>Email:</span>{{ selectedCase.user_cases_first_partyTouser?.email || '-' }}</p>
-              <p><span>Phone:</span>{{ selectedCase.user_cases_first_partyTouser?.phone_number || '-' }}</p>
+              <h6>{{ $t('clientCases.firstParty') }} <span v-if="selectedCase.user_cases_first_partyTouser?.id === userid" class="badge-you">{{ $t('clientCases.you') }}</span></h6>
+              <p><span>{{ $t('clientCases.nameLabel') }}</span>{{ selectedCase.user_cases_first_partyTouser?.name || '-' }}</p>
+              <p><span>{{ $t('clientCases.emailLabel') }}</span>{{ selectedCase.user_cases_first_partyTouser?.email || '-' }}</p>
+              <p><span>{{ $t('clientCases.phoneLabel') }}</span>{{ selectedCase.user_cases_first_partyTouser?.phone_number || '-' }}</p>
+              <p v-if="selectedCase.user_cases_first_party_repTouser?.name"><span>{{ $t('clientCases.representativeLabel') }}</span>{{ selectedCase.user_cases_first_party_repTouser.name }}</p>
             </article>
             <article class="party-card">
-              <h6>Second Party <span v-if="selectedCase.user_cases_second_partyTouser?.id === userid" class="badge-you">You</span></h6>
-              <p><span>Name:</span>{{ selectedCase.user_cases_second_partyTouser?.name || '-' }}</p>
-              <p><span>Email:</span>{{ selectedCase.user_cases_second_partyTouser?.email || '-' }}</p>
-              <p><span>Phone:</span>{{ selectedCase.user_cases_second_partyTouser?.phone_number || '-' }}</p>
+              <h6>{{ $t('clientCases.secondParty') }} <span v-if="selectedCase.user_cases_second_partyTouser?.id === userid" class="badge-you">{{ $t('clientCases.you') }}</span></h6>
+              <p><span>{{ $t('clientCases.nameLabel') }}</span>{{ selectedCase.user_cases_second_partyTouser?.name || '-' }}</p>
+              <p><span>{{ $t('clientCases.emailLabel') }}</span>{{ selectedCase.user_cases_second_partyTouser?.email || '-' }}</p>
+              <p><span>{{ $t('clientCases.phoneLabel') }}</span>{{ selectedCase.user_cases_second_partyTouser?.phone_number || '-' }}</p>
+              <p v-if="selectedCase.user_cases_second_party_repTouser?.name"><span>{{ $t('clientCases.representativeLabel') }}</span>{{ selectedCase.user_cases_second_party_repTouser.name }}</p>
             </article>
           </div>
         </section>
         <section class="section-card">
           <div class="section-head">
-            <h5>Mediator</h5>
-            <small>Mediator assigned to this case to help facilitate resolution.</small>
+            <h5>{{ $t('clientCases.mediator') }}</h5>
+            <small>{{ $t('clientCases.mediatorSubtitle') }}</small>
           </div>
           <div class="party-grid">
             <article class="party-card mediator" v-if="selectedCase.user_cases_mediatorTouser">
-              <h6>Assigned Mediator</h6>
-              <p><span>Name:</span>{{ selectedCase.user_cases_mediatorTouser.name || '-' }}</p>
-              <p><span>Email:</span>{{ selectedCase.user_cases_mediatorTouser.email || '-' }}</p>
-              <p><span>Phone:</span>{{ selectedCase.user_cases_mediatorTouser.phone_number || '-' }}</p>
+              <h6>{{ $t('clientCases.assignedMediator') }}</h6>
+              <p><span>{{ $t('clientCases.nameLabel') }}</span>{{ selectedCase.user_cases_mediatorTouser.name || '-' }}</p>
+              <p><span>{{ $t('clientCases.emailLabel') }}</span>{{ selectedCase.user_cases_mediatorTouser.email || '-' }}</p>
+              <p><span>{{ $t('clientCases.phoneLabel') }}</span>{{ selectedCase.user_cases_mediatorTouser.phone_number || '-' }}</p>
             </article>
             <article class="party-card mediator empty" v-else>
-              <h6>Assigned Mediator</h6>
-              <p class="muted-text">Mediator will appear here once assigned.</p>
+              <h6>{{ $t('clientCases.assignedMediator') }}</h6>
+              <p class="muted-text">{{ $t('clientCases.mediatorPending') }}</p>
             </article>
           </div>
         </section>
+      </template>
 
+      <template #tab-documents>
         <section class="section-card documents-section">
           <div class="section-head">
             <h5>
-              Documents
+              {{ $t('clientCases.documents') }}
             </h5>
-            <small>Access case files and supporting documents directly from here.</small>
+            <small>{{ $t('clientCases.documentsSubtitle') }}</small>
           </div>
           <div v-if="documents.length" class="docs-grid">
             <FilePreview
@@ -153,31 +165,33 @@
           <kadr-empty-state
             v-else
             compact
-            :description="CASES.NO_DOCUMENTS"
+            :description="$t('clientCases.noDocuments')"
           />
         </section>
+      </template>
 
+      <template #tab-meetings>
         <section class="section-card">
           <div class="section-head">
-            <h5>Meetings & Feedback</h5>
-            <small>Past and upcoming sessions; submit mediator notes or party ratings after a session ends.</small>
+            <h5>{{ $t('clientCases.meetingsFeedback') }}</h5>
+            <small>{{ $t('clientCases.meetingsFeedbackSubtitle') }}</small>
           </div>
           <div v-if="caseMeetingsSorted.length" class="meeting-list">
             <article v-for="event in caseMeetingsSorted" :key="event.id" class="meeting-item">
               <div class="meeting-item-body">
                 <div class="meeting-badges">
                   <span class="badge-soft" :class="meetingPast(event) ? 'badge-past' : 'badge-upcoming'">
-                    {{ meetingPast(event) ? 'Past' : 'Upcoming' }}
+                    {{ meetingPast(event) ? $t('clientCases.past') : $t('clientCases.upcoming') }}
                   </span>
-                  <span v-if="String(event.type || 'KADR').toUpperCase() === 'KADR'" class="badge-soft badge-kadr">Case meeting</span>
+                  <span v-if="String(event.type || 'KADR').toUpperCase() === 'KADR'" class="badge-soft badge-kadr">{{ $t('clientCases.caseMeeting') }}</span>
                 </div>
-                <h6>{{ event.title || 'Session' }}</h6>
+                <h6>{{ event.title || $t('clientCases.session') }}</h6>
                 <p>{{ formatDateTime(event.start_datetime) }}</p>
                 <div v-if="meetingPast(event) && isKadrMeeting(event)" class="feedback-summary">
-                  <p v-if="event.first_party_rating != null && userid === selectedCase.user_cases_first_partyTouser?.id"><span>Your rating:</span> {{ event.first_party_rating }}/5</p>
-                  <p v-if="event.second_party_rating != null && userid === selectedCase.user_cases_second_partyTouser?.id"><span>Your rating:</span> {{ event.second_party_rating }}/5</p>
-                  <p v-if="event.first_party_next_steps != null && userid === selectedCase.user_cases_first_partyTouser?.id"><span>Your comments:</span> {{ event.first_party_next_steps }}</p>
-                  <p v-if="event.second_party_next_steps != null && userid === selectedCase.user_cases_second_partyTouser?.id"><span>Your comments:</span> {{ event.second_party_next_steps }}</p>
+                  <p v-if="event.first_party_rating != null && userid === selectedCase.user_cases_first_partyTouser?.id"><span>{{ $t('clientCases.yourRating') }}</span> {{ event.first_party_rating }}/5</p>
+                  <p v-if="event.second_party_rating != null && userid === selectedCase.user_cases_second_partyTouser?.id"><span>{{ $t('clientCases.yourRating') }}</span> {{ event.second_party_rating }}/5</p>
+                  <p v-if="event.first_party_next_steps != null && userid === selectedCase.user_cases_first_partyTouser?.id"><span>{{ $t('clientCases.yourComments') }}</span> {{ event.first_party_next_steps }}</p>
+                  <p v-if="event.second_party_next_steps != null && userid === selectedCase.user_cases_second_partyTouser?.id"><span>{{ $t('clientCases.yourComments') }}</span> {{ event.second_party_next_steps }}</p>
                 </div>
               </div>
               <div class="meeting-actions">
@@ -187,7 +201,7 @@
                   target="_blank"
                   class="btn btn-outline-primary btn-sm"
                 >
-                  Join
+                  {{ $t('clientCases.join') }}
                 </a>
                 <button
                   v-if="showClientFeedbackButton(event)"
@@ -195,7 +209,7 @@
                   class="btn btn-warning btn-sm"
                   @click="openMeetingFeedbackModal(event, clientPartyRole)"
                 >
-                  Rate meeting
+                  {{ $t('clientCases.rateMeeting') }}
                 </button>
               </div>
             </article>
@@ -203,7 +217,7 @@
           <kadr-empty-state
             v-else
             compact
-            :description="CASES.NO_MEETING"
+            :description="$t('clientCases.noMeeting')"
           />
         </section>
       </template>
@@ -211,8 +225,8 @@
       <template #side>
         <section class="section-card">
           <div class="section-head">
-            <h5>Case progress</h5>
-            <small>Where you are now, what is next, and recent activity.</small>
+            <h5>{{ $t('clientCases.caseProgress') }}</h5>
+            <small>{{ $t('clientCases.caseProgressSubtitle') }}</small>
           </div>
           <CaseProgressPanel
             :progress="selectedCase.case_progress"
@@ -251,7 +265,7 @@
       modal-id="client-meeting-feedback"
       :role="feedbackContext.role"
       :event-title="feedbackContext.event && feedbackContext.event.title"
-      :case-label="selectedCase.caseId ? `Case #${selectedCase.caseId}` : ''"
+      :case-label="selectedCase.caseId ? $t('clientCases.caseLabel', { id: selectedCase.caseId }) : ''"
       :initial-summary="feedbackContext.event && feedbackContext.event.meeting_summary"
       :initial-mediator-steps="feedbackContext.event && feedbackContext.event.mediator_next_steps"
       :initial-party-steps="clientInitialPartySteps"
@@ -265,36 +279,44 @@
       @submitted="onNewCaseSubmitted"
     />
 
-    <div v-if="showAgreementModal" class="modal-overlay" @click="showAgreementModal = false">
-      <div class="signature-modal modal-content" @click.stop>
-        <h3>Sign Mediation Agreement</h3>
-        <p>Please sign below to complete the mediation agreement.</p>
-        <div class="signature-pad-container">
-          <VueSignaturePad
-            ref="signaturePad"
-            :options="{ backgroundColor: 'rgb(255, 255, 255)', penColor: 'rgb(0, 0, 0)' }"
-          />
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" @click="clearSignature">Clear</button>
-          <button class="btn btn-secondary" @click="showAgreementModal = false">Cancel</button>
-          <button class="btn btn-primary" @click="submitAgreement">Submit Signature</button>
-        </div>
+    <kadr-modal
+      v-model="showAgreementModal"
+      :busy="isSubmittingAgreement"
+      :title="$t('clientCases.signAgreementTitle')"
+      :aria-label="$t('clientCases.signAgreementAria')"
+      size="md"
+    >
+      <p>{{ $t('clientCases.signAgreementBody') }}</p>
+      <div class="signature-pad-container">
+        <VueSignaturePad
+          ref="signaturePad"
+          :options="{ backgroundColor: 'rgb(255, 255, 255)', penColor: 'rgb(0, 0, 0)' }"
+        />
+        <span class="signature-hint">{{ $t('clientCases.signHere') }}</span>
       </div>
-    </div>
+      <template #footer>
+        <button class="btn btn-secondary" :disabled="isSubmittingAgreement" @click="clearSignature">{{ $t('clientCases.clear') }}</button>
+        <button class="btn btn-secondary" :disabled="isSubmittingAgreement" @click="showAgreementModal = false">{{ $t('clientCases.cancel') }}</button>
+        <button class="btn btn-primary" :disabled="isSubmittingAgreement" @click="submitAgreement">
+          <kadr-spinner v-if="isSubmittingAgreement" size="sm" class="me-2" />
+          {{ isSubmittingAgreement ? $t('clientCases.submitting') : $t('clientCases.submitSignature') }}
+        </button>
+      </template>
+    </kadr-modal>
   </div>
 </template>
 <script>
 import { defineAsyncComponent } from 'vue'
 import { sofbox } from '../../config/pluginInit'
+import Alert from '../../components/sofbox/alert/Alert.vue'
 import FilePreview from '../../components/DocumentPreview.vue'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
 import CaseCorrespondencePanel from '../../components/CaseCorrespondencePanel.vue'
 import CaseProgressPanel from '../../components/cases/CaseProgressPanel.vue'
 import CaseWorkspaceLayout from '../../components/kadr/CaseWorkspaceLayout.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import KadrModal from '../../components/kadr/KadrModal.vue'
 import ClientInitiateNewCaseModal from '../../components/cases/ClientInitiateNewCaseModal.vue'
-import { CASES } from '../../constants/messages'
 import {
   isPastKadrCaseMeeting,
   clientNeedsMeetingFeedback,
@@ -305,6 +327,7 @@ import {
 export default {
   name: 'ClientCases',
   components: {
+    Alert,
     FilePreview,
     MeetingFeedbackModal,
     CaseCorrespondencePanel,
@@ -312,6 +335,7 @@ export default {
     PaymentCheckout: defineAsyncComponent(() => import('../../components/payment/PaymentCheckout.vue')),
     CaseWorkspaceLayout,
     KadrEmptyState,
+    KadrModal,
     ClientInitiateNewCaseModal
   },
   props: {
@@ -334,7 +358,6 @@ export default {
   },
   data () {
     return {
-      CASES,
       selectedCase: {},
       showPaymentModal: false,
       showAgreementModal: false,
@@ -351,7 +374,13 @@ export default {
         role: 'first'
       },
       feedbackSubmitting: false,
-      showInitiateCaseModal: false
+      showInitiateCaseModal: false,
+      alert: {
+        visible: false,
+        message: '',
+        timeout: 5000,
+        type: 'primary'
+      }
     }
   },
   computed: {
@@ -362,14 +391,22 @@ export default {
       return !this.isPastView && this.allowInitiateCase
     },
     workspaceTitle () {
-      return this.isPastView ? CASES.PAST_TITLE : CASES.ACTIVE_TITLE
+      return this.isPastView ? this.$t('clientCases.pastTitle') : this.$t('clientCases.activeTitle')
     },
     workspaceSubtitle () {
-      return this.isPastView ? CASES.PAST_SUBTITLE : CASES.ACTIVE_SUBTITLE
+      return this.isPastView ? this.$t('clientCases.pastSubtitle') : this.$t('clientCases.activeSubtitle')
     },
     caseMeetingsSorted () {
       const list = [...(this.selectedCase.events || [])]
       return list.sort((a, b) => new Date(b.start_datetime) - new Date(a.start_datetime))
+    },
+    caseTabs () {
+      return [
+        { key: 'overview', label: this.$t('clientCases.tabOverview'), icon: 'fas fa-clipboard-list' },
+        { key: 'parties', label: this.$t('clientCases.tabParties'), icon: 'fas fa-users' },
+        { key: 'documents', label: this.$t('clientCases.tabDocuments'), icon: 'fas fa-folder-open', badge: this.documents.length || null },
+        { key: 'meetings', label: this.$t('clientCases.tabMeetings'), icon: 'fas fa-calendar-day', badge: this.caseMeetingsSorted.length || null }
+      ]
     },
     clientPartyRole () {
       if (this.userid === this.selectedCase.user_cases_first_partyTouser?.id) return 'first'
@@ -408,10 +445,10 @@ export default {
       ) {
         actions.push({
           key: 'accept',
-          title: 'Accept Mediation',
-          description: 'Review the notice and make a payment of Rs. 1000 to continue with mediation proceedings.',
-          buttonText: this.isAcceptingMediation ? 'Accepting...' : 'I Accept',
-          loading: this.isAcceptingMediation,
+          title: this.$t('clientCases.acceptMediationTitle'),
+          description: this.$t('clientCases.acceptMediationDesc', { amount: '1,000' }),
+          buttonText: this.$t('clientCases.acceptAndPay', { amount: '1,000' }),
+          loading: false,
           action: () => this.initiatePayment('notice', this.selectedCase.user_cases_second_partyTouser.id),
           variant: 'success'
         })
@@ -420,9 +457,9 @@ export default {
       if (this.selectedCase.case_sub_statuses?.id === 'pending_notice_payment' && isFirstParty) {
         actions.push({
           key: 'notice-payment',
-          title: 'Notice Payment',
-          description: 'Pay Rs. 1000 to trigger legal notice dispatch to the opposite party.',
-          buttonText: 'Pay Rs. 1000',
+          title: this.$t('clientCases.noticePaymentTitle'),
+          description: this.$t('clientCases.noticePaymentDesc', { amount: '1000' }),
+          buttonText: this.$t('clientCases.payAmount', { amount: '1000' }),
           loading: false,
           action: () => this.initiatePayment('notice', this.selectedCase.user_cases_first_partyTouser.id),
           variant: 'primary'
@@ -432,9 +469,9 @@ export default {
       if (this.selectedCase.case_sub_statuses?.id === 'pending_mediation_payment' && isFirstParty) {
         actions.push({
           key: 'mediation-payment',
-          title: 'Mediation Fee',
-          description: 'Pay Rs. 5000 to initiate mediator assignment and meeting scheduling.',
-          buttonText: 'Pay Rs. 5000',
+          title: this.$t('clientCases.mediationFeeTitle'),
+          description: this.$t('clientCases.mediationFeeDesc', { amount: '5000' }),
+          buttonText: this.$t('clientCases.payAmount', { amount: '5000' }),
           loading: false,
           action: () => this.initiatePayment('mediation', this.selectedCase.user_cases_first_partyTouser.id),
           variant: 'warning'
@@ -447,9 +484,9 @@ export default {
       ) {
         actions.push({
           key: 'agreement-sign',
-          title: 'Sign Agreement',
-          description: 'Sign the mediation agreement to complete closure formalities.',
-          buttonText: this.isSubmittingAgreement ? 'Submitting...' : 'Sign Agreement',
+          title: this.$t('clientCases.signAgreementCardTitle'),
+          description: this.$t('clientCases.signAgreementCardDesc'),
+          buttonText: this.isSubmittingAgreement ? this.$t('clientCases.submittingShort') : this.$t('clientCases.signAgreementCardTitle'),
           loading: this.isSubmittingAgreement,
           action: this.initiateSigning,
           variant: 'success'
@@ -465,9 +502,12 @@ export default {
           if (!needs) continue
           actions.push({
             key: `meeting-feedback-${ev.id}`,
-            title: 'Rate a past meeting',
-            description: `Share how the session went for "${ev.title || 'your meeting'}" (${this.formatDateTime(ev.start_datetime)}).`,
-            buttonText: 'Give feedback',
+            title: this.$t('clientCases.ratePastMeetingTitle'),
+            description: this.$t('clientCases.ratePastMeetingDesc', {
+              title: ev.title || this.$t('clientCases.yourMeeting'),
+              date: this.formatDateTime(ev.start_datetime)
+            }),
+            buttonText: this.$t('clientCases.giveFeedback'),
             loading: false,
             action: () => this.openMeetingFeedbackModal(ev, partyRole),
             variant: 'warning'
@@ -478,21 +518,17 @@ export default {
       return actions
     },
     documents () {
-      const docsData =
-        [{
-          title: 'Evidence Document',
-          url: this.selectedCase.evidence_document_url
-        }]
-      if (Array.isArray(docsData)) return docsData
-      if (docsData && typeof docsData === 'object') return [docsData]
-      if (typeof docsData === 'string' && docsData.trim()) {
-        return [{ title: 'Document', url: docsData }]
+      const docs = []
+      const evidenceUrl = this.selectedCase.evidence_document_url
+      if (typeof evidenceUrl === 'string' && evidenceUrl.trim()) {
+        docs.push({ title: this.$t('clientCases.evidenceDocument'), url: evidenceUrl })
       }
-      return []
+      return docs
     }
   },
   mounted () {
     sofbox.index()
+    this.paymentTitle = this.$t('clientCases.completePayment')
     this.selectedCase = this.myCases[0] || {}
   },
   watch: {
@@ -537,11 +573,14 @@ export default {
         if (payload.party_next_steps) body.second_party_next_steps = payload.party_next_steps
       }
       this.feedbackSubmitting = true
-      const res = await this.$store.dispatch('submitMeetingFeedback', body)
-      this.feedbackSubmitting = false
-      if (res.success) {
-        this.feedbackModalVisible = false
-        this.$emit('refresh-dashboard')
+      try {
+        const res = await this.$store.dispatch('submitMeetingFeedback', body)
+        if (res.success) {
+          this.feedbackModalVisible = false
+          this.$emit('refresh-dashboard')
+        }
+      } finally {
+        this.feedbackSubmitting = false
       }
     },
     openInitiateCaseModal () {
@@ -595,10 +634,27 @@ export default {
         if (link) window.open(link, '_blank', 'noopener')
       }
     },
+    showAlert (message, type) {
+      this.alert = {
+        message,
+        type,
+        timeout: 5000,
+        visible: true
+      }
+    },
     async acceptMediationRequest () {
-      const res = await this.$store.dispatch('acceptMediationRequest', { caseId: this.selectedCase.id })
-      if (res.success) {
-        this.$emit('refresh-dashboard')
+      if (this.isAcceptingMediation) return
+      this.isAcceptingMediation = true
+      try {
+        const res = await this.$store.dispatch('acceptMediationRequest', { caseId: this.selectedCase.id })
+        if (res.success) {
+          this.showAlert(res.message || this.$t('clientCases.mediationAccepted'), 'success')
+          this.$emit('refresh-dashboard')
+        } else {
+          this.showAlert(res.message || this.$t('clientCases.mediationAcceptError'), 'danger')
+        }
+      } finally {
+        this.isAcceptingMediation = false
       }
     },
     initiatePayment (type) {
@@ -606,13 +662,13 @@ export default {
       if (type === 'notice') {
         this.paymentPurpose = 'CLIENT_NOTICE'
         this.paymentAmountInr = 1000
-        this.paymentTitle = 'Pay notice fee'
-        this.paymentSubtitle = 'This fee covers sending the formal notice to the responding party.'
+        this.paymentTitle = this.$t('clientCases.payNoticeFee')
+        this.paymentSubtitle = this.$t('clientCases.payNoticeFeeSubtitle')
       } else {
         this.paymentPurpose = 'CLIENT_MEDIATION'
         this.paymentAmountInr = 5000
-        this.paymentTitle = 'Pay mediation fee'
-        this.paymentSubtitle = 'This fee starts the mediation process and assigns a certified mediator.'
+        this.paymentTitle = this.$t('clientCases.payMediationFee')
+        this.paymentSubtitle = this.$t('clientCases.payMediationFeeSubtitle')
       }
       this.showPaymentModal = true
     },
@@ -625,13 +681,13 @@ export default {
     async submitAgreement () {
       const signatureData = this.$refs.signaturePad.saveSignature()
       if (signatureData.isEmpty) {
-        alert('Please sign the agreement')
+        this.showAlert(this.$t('clientCases.signBeforeSubmit'), 'danger')
         return
       }
 
       const requestId = this.selectedCase?.case_agreement_tracking?.signature_tracking?.[0]?.id
       if (!requestId) {
-        alert('No pending signature request found for this case. Please use the link from your email, or refresh and try again.')
+        this.showAlert(this.$t('clientCases.noPendingSignature'), 'danger')
         return
       }
 
@@ -643,10 +699,14 @@ export default {
         })
         if (response.success) {
           this.showAgreementModal = false
+          this.showAlert(response.message || this.$t('clientCases.agreementSigned'), 'success')
           this.$emit('refresh-dashboard')
+        } else {
+          this.showAlert(response.message || this.$t('clientCases.signatureSubmitError'), 'danger')
         }
       } catch (error) {
         console.error('Failed to submit agreement:', error)
+        this.showAlert(this.$t('clientCases.signatureSubmitException'), 'danger')
       } finally {
         this.isSubmittingAgreement = false
       }
@@ -661,7 +721,7 @@ export default {
       }
     },
     getDocumentPreview (url) {
-      if (!url) return 'No document link available'
+      if (!url) return this.$t('clientCases.noDocumentLink')
       return url.replace(/^https?:\/\//, '').replace(/\/$/, '')
     }
   }
@@ -669,6 +729,19 @@ export default {
 </script>
 
 <style scoped>
+.representative-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  background: var(--kadr-primary-soft);
+  border: 1px solid var(--kadr-primary-soft-border);
+  color: var(--kadr-primary-hover);
+  font-size: 0.9rem;
+}
+
 .badge-you {
   background: var(--kadr-success);
   color: var(--kadr-text-on-primary);
@@ -686,20 +759,21 @@ export default {
 }
 
 .document-card {
-  background: #fff8f1;
-  border: 1px solid #ffd7b8;
+  background: var(--kadr-surface-muted);
+  border: 1px solid var(--kadr-border);
   border-radius: var(--kadr-radius-lg);
   padding: 0.95rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform var(--kadr-duration-fast) var(--kadr-ease), box-shadow var(--kadr-duration-fast) var(--kadr-ease), border-color var(--kadr-duration-fast) var(--kadr-ease);
 }
 
 .document-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(255, 149, 54, 0.14);
+  box-shadow: var(--kadr-shadow-md);
+  border-color: var(--kadr-primary-soft-border);
 }
 
 .doc-card-title {
@@ -712,7 +786,7 @@ export default {
 
 .doc-icon {
   font-size: 1.1rem;
-  color: #d46e2f;
+  color: var(--kadr-primary);
 }
 
 .doc-preview {
@@ -727,18 +801,19 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: #b74c11;
+  color: var(--kadr-primary);
   font-weight: 600;
   text-decoration: none;
-  border: 1px solid rgba(183, 76, 17, 0.18);
+  border: 1px solid var(--kadr-primary-soft-border);
   padding: 0.35rem 0.65rem;
   border-radius: var(--kadr-radius);
-  background: rgba(255, 226, 189, 0.42);
+  background: var(--kadr-primary-soft);
+  transition: background var(--kadr-duration-fast) var(--kadr-ease), color var(--kadr-duration-fast) var(--kadr-ease);
 }
 
 .doc-link:hover {
-  background: rgba(255, 226, 189, 0.7);
-  color: #8e3c0d;
+  background: var(--kadr-primary-soft-border);
+  color: var(--kadr-primary-hover);
 }
 
 .party-grid {
@@ -826,13 +901,13 @@ export default {
 }
 
 .badge-upcoming {
-  background: #e8f2ff;
-  color: var(--kadr-accent);
+  background: var(--kadr-status-info-bg);
+  color: var(--kadr-status-info-text);
 }
 
 .badge-kadr {
-  background: #f3e8ff;
-  color: #6b21a8;
+  background: var(--kadr-primary-soft);
+  color: var(--kadr-primary);
 }
 
 .feedback-summary {
@@ -906,66 +981,31 @@ export default {
   font-weight: 600;
 }
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
-}
-
-.modal-content {
-  background: var(--kadr-bg-surface);
-  border-radius: var(--kadr-radius-lg);
-  padding: 1.2rem;
-  width: min(520px, 92vw);
-}
-
-.modal-content h3 {
-  margin-top: 0;
-}
-
-.form-group {
-  margin-bottom: 0.75rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.3rem;
-}
-
-.form-group input {
-  width: 100%;
-  border: 1px solid var(--kadr-border-strong);
-  border-radius: var(--kadr-radius);
-  padding: 0.6rem 0.75rem;
-}
-
-.modal-actions {
-  margin-top: 1rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
 .signature-pad-container {
+  position: relative;
   border: 1px solid var(--kadr-border-strong);
   border-radius: var(--kadr-radius);
   padding: 0.65rem;
   margin-top: 0.8rem;
 }
 
+.signature-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.9rem;
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--kadr-text-label);
+  pointer-events: none;
+}
+
 @media (max-width: 600px) {
   .meeting-item {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .modal-actions .btn {
-    width: 100%;
   }
 }
 </style>

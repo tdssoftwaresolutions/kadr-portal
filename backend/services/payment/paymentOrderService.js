@@ -125,12 +125,24 @@ async function verifyAndCompleteOrder (orderId, verificationPayload = {}) {
     result = adapter.verifyCallback(verificationPayload)
   } else if (order.gateway === 'cashfree') {
     result = verificationPayload?.webhook
-      ? adapter.verifyWebhook(verificationPayload)
+      ? adapter.verifyWebhook({
+        webhook: verificationPayload.webhook,
+        rawBody: verificationPayload.rawBody,
+        signature: verificationPayload.signature,
+        timestamp: verificationPayload.timestamp
+      })
       : await adapter.verifyOrder({ orderId: order.order_id })
   } else if (order.gateway === 'phonepe') {
     result = verificationPayload?.webhook
       ? adapter.verifyWebhook(verificationPayload)
       : await adapter.verifyStatus({ orderId: order.order_id })
+  }
+
+  // Gateway says payment is still in-flight (e.g. UPI collect awaiting approval).
+  // Leave the DB record as PENDING — do not mark it failed. The webhook or a
+  // later poll will complete it.
+  if (result?.pending) {
+    return { order, pending: true }
   }
 
   if (!result?.success) {

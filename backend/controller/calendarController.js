@@ -2,6 +2,7 @@ const prisma = require('../lib/prisma.js')
 const { success } = require('../utils/responses')
 const { assertAdminPage } = require('../utils/adminPermissionHelpers')
 const { parsePagination, parseDateRange, paginatedResponse } = require('../utils/pagination')
+const { caseMembershipOr } = require('../services/security/caseAccessService')
 
 const calendarEventSelect = {
   id: true,
@@ -70,11 +71,7 @@ module.exports = {
           { created_by: req.user.id },
           {
             cases: {
-              OR: [
-                { first_party: req.user.id },
-                { second_party: req.user.id },
-                { mediator: req.user.id }
-              ]
+              OR: caseMembershipOr(req.user.id)
             }
           }
         ]

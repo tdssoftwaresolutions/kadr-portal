@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid>
+  <b-container fluid class="kadr-animate-in">
     <kadr-page-header :title="$t('adminUsers.title')" :subtitle="$t('adminUsers.subtitle')" />
     <b-row>
       <b-col sm="12">
@@ -215,7 +215,7 @@
             </section>
             <template v-if="selectedUser.cases && selectedUser.cases.length > 0">
               <strong >{{ $t('adminUsers.cases') }}:</strong>
-              <div v-for="(caseItem, index) in selectedUser.cases" :key="index" style="border:1px solid #e6d6d6;padding:5px;margin:10px 3px;border-radius: 15px;">
+              <div v-for="(caseItem, index) in selectedUser.cases" :key="index" style="border:1px solid var(--kadr-border);padding:5px;margin:10px 3px;border-radius: 15px;">
                 <p class="mb-2"><strong>{{ $t('adminUsers.caseId') }}:</strong> {{ caseItem.caseId || $t('adminUsers.na') }}</p>
                 <p class="mb-2"><strong>{{ $t('adminUsers.complaintCategory') }}:</strong> {{ caseItem.category || $t('adminUsers.na') }}</p>
                 <p class="mb-2"><strong>{{ $t('adminUsers.disputeDescription') }}:</strong> {{ caseItem.description || $t('adminUsers.na') }}</p>
@@ -223,6 +223,29 @@
                   <p class="mb-2"><strong>{{ $t('adminUsers.oppositePartyName') }}:</strong> {{ caseItem.secondParty.name || $t('adminUsers.na') }}</p>
                   <p class="mb-2"><strong>{{ $t('adminUsers.oppositePartyEmail') }}:</strong> {{ caseItem.secondParty.email || $t('adminUsers.na') }}</p>
                   <p class="mb-2"><strong>{{ $t('adminUsers.oppositePartyPhone') }}:</strong> {{ caseItem.secondParty.phone_number || $t('adminUsers.na') }}</p>
+                </template>
+                <template v-if="caseItem.firstPartyRep || caseItem.secondPartyRep">
+                  <p class="mb-1 mt-2"><strong>{{ $t('adminUsers.representatives') }}</strong></p>
+                  <template v-if="caseItem.firstPartyRep">
+                    <p class="mb-1 small text-muted">{{ $t('adminUsers.claimantRep') }}</p>
+                    <p class="mb-1">{{ caseItem.firstPartyRep.name || $t('adminUsers.na') }}
+                      <b-badge :variant="caseItem.firstPartyRep.active ? 'success' : 'warning'" class="ms-1">
+                        {{ caseItem.firstPartyRep.active ? $t('adminUsers.repActive') : $t('adminUsers.repPending') }}
+                      </b-badge>
+                    </p>
+                    <p class="mb-1">{{ caseItem.firstPartyRep.email }}</p>
+                    <p v-if="caseItem.firstPartyRep.phone_number" class="mb-2">{{ caseItem.firstPartyRep.phone_number }}</p>
+                  </template>
+                  <template v-if="caseItem.secondPartyRep">
+                    <p class="mb-1 small text-muted">{{ $t('adminUsers.respondentRep') }}</p>
+                    <p class="mb-1">{{ caseItem.secondPartyRep.name || $t('adminUsers.na') }}
+                      <b-badge :variant="caseItem.secondPartyRep.active ? 'success' : 'warning'" class="ms-1">
+                        {{ caseItem.secondPartyRep.active ? $t('adminUsers.repActive') : $t('adminUsers.repPending') }}
+                      </b-badge>
+                    </p>
+                    <p class="mb-1">{{ caseItem.secondPartyRep.email }}</p>
+                    <p v-if="caseItem.secondPartyRep.phone_number" class="mb-2">{{ caseItem.secondPartyRep.phone_number }}</p>
+                  </template>
                 </template>
                 <div v-if="caseItem.evidence_document_url">
                   <p class="mb-2"><strong>{{ $t('adminUsers.attachments') }}:</strong></p>

@@ -457,6 +457,15 @@ async function onMediatorApproved (mediatorId, tx = null) {
     tx
   })
   await processReferralOnActivation(mediatorId, tx)
+  // Redeem a company coupon (quota decrement + premium grant) if the mediator
+  // signed up with one. Referral codes won't match the coupon table, so this is
+  // a no-op for referral signups (their reward is handled above).
+  try {
+    const { redeemCouponForApprovedMediator } = require('../coupon/couponService')
+    await redeemCouponForApprovedMediator(mediatorId, tx)
+  } catch (couponErr) {
+    console.error('Coupon redemption on mediator approval:', couponErr)
+  }
 }
 
 module.exports = {

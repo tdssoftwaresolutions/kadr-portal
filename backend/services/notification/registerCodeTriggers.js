@@ -49,7 +49,14 @@ registerTableTrigger('cases', async ({ previous, current }) => {
   if (!statusChanged && !subStatusChanged) return null
 
   const caseLabel = current?.caseId || 'your case'
-  const recipients = [current?.mediator, current?.first_party, current?.second_party]
+  // Representatives receive the same case-update fan-out as the party they represent.
+  const recipients = [
+    current?.mediator,
+    current?.first_party,
+    current?.second_party,
+    current?.first_party_representative,
+    current?.second_party_representative
+  ]
 
   await pushEvents.notifyUsers({
     userIds: recipients,

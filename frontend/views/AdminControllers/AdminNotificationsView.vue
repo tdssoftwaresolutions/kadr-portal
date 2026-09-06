@@ -1,8 +1,8 @@
 <template>
-  <b-container fluid class="admin-notifications-page">
+  <b-container fluid class="admin-notifications-page kadr-animate-in">
     <kadr-page-header :title="$t('adminNotifications.title')" :subtitle="$t('adminNotifications.subtitle')" />
 
-    <b-tabs v-model="activeTab" content-class="mt-3">
+    <b-tabs :index="activeTab" content-class="mt-3" @update:index="activeTab = $event">
       <b-tab :title="$t('adminNotifications.tabBrowser')">
         <b-row>
           <b-col lg="6">
@@ -133,7 +133,7 @@
                   </div>
                   <p class="small text-muted mb-2">{{ $t('adminNotifications.provider') }}: {{ ch.provider }}</p>
                   <template v-if="ch.channel === 'EMAIL'">
-                    <b-tabs v-model="emailLayoutTab" small class="mb-2">
+                    <b-tabs :index="emailLayoutTab" small class="mb-2" @update:index="emailLayoutTab = $event">
                       <b-tab :title="$t('adminNotifications.editHtml')">
                         <b-form-group :label="$t('adminNotifications.headerHtml')" label-size="sm" class="mt-2">
                           <html-code-editor
@@ -243,7 +243,7 @@
           <p v-if="isBuilderTemplate" class="small text-info mb-2">
             {{ $t('adminNotifications.builderNote') }}
           </p>
-          <b-tabs v-model="templateBodyTab" small class="mb-0">
+          <b-tabs :index="templateBodyTab" small class="mb-0" @update:index="templateBodyTab = $event">
             <b-tab :title="$t('adminNotifications.editHtml')">
               <html-code-editor
                 ref="templateBodyHtmlEditor"
@@ -259,11 +259,12 @@
             <b-tab :title="$t('adminNotifications.preview')">
               <div class="mt-2 border rounded p-2 bg-white template-body-preview">
                 <div v-if="editorPreviewLoading" class="small text-muted mb-2">{{ $t('adminNotifications.updatingPreview') }}</div>
-                <div v-if="editorPreviewSubject" class="small mb-2"><strong>{{ $t('adminNotifications.subject') }}:</strong> {{ editorPreviewSubject }}</div>
-                <div v-if="editorPreviewFullHtml" v-html="editorPreviewFullHtml" class="preview-html small" />
-                <p v-else-if="!editorPreviewLoading" class="small text-muted mb-0">
-                  {{ $t('adminNotifications.switchToPreview') }}
-                </p>
+                <div v-if="editorPreviewError && !editorPreviewLoading" class="small text-danger mb-0">{{ editorPreviewError }}</div>
+                <template v-else-if="!editorPreviewLoading">
+                  <div v-if="editorPreviewSubject" class="small mb-2"><strong>{{ $t('adminNotifications.subject') }}:</strong> {{ editorPreviewSubject }}</div>
+                  <div v-if="editorPreviewFullHtml" v-html="editorPreviewFullHtml" class="preview-html small" />
+                  <p v-else class="small text-muted mb-0">{{ $t('adminNotifications.switchToPreview') }}</p>
+                </template>
               </div>
             </b-tab>
           </b-tabs>
@@ -273,7 +274,7 @@
           :label="$t('adminNotifications.messageBody')"
           label-size="sm"
         >
-          <b-tabs v-model="templateBodyTab" small class="mb-0">
+          <b-tabs :index="templateBodyTab" small class="mb-0" @update:index="templateBodyTab = $event">
             <b-tab :title="$t('adminNotifications.editTab')">
               <b-form-textarea
                 v-model="templateEditor.body_text"
@@ -285,8 +286,11 @@
             <b-tab :title="$t('adminNotifications.preview')">
               <div class="mt-2 border rounded p-2 bg-white template-body-preview">
                 <div v-if="editorPreviewLoading" class="small text-muted mb-2">{{ $t('adminNotifications.updatingPreview') }}</div>
-                <pre v-if="editorPreviewText" class="small mb-0 bg-white">{{ editorPreviewText }}</pre>
-                <p v-else-if="!editorPreviewLoading" class="small text-muted mb-0">{{ $t('adminNotifications.editBodyToPreview') }}</p>
+                <div v-if="editorPreviewError && !editorPreviewLoading" class="small text-danger mb-0">{{ editorPreviewError }}</div>
+                <template v-else-if="!editorPreviewLoading">
+                  <pre v-if="editorPreviewText" class="small mb-0 bg-white">{{ editorPreviewText }}</pre>
+                  <p v-else class="small text-muted mb-0">{{ $t('adminNotifications.editBodyToPreview') }}</p>
+                </template>
               </div>
             </b-tab>
           </b-tabs>
@@ -392,6 +396,7 @@ export default {
       editorPreviewText: '',
       editorPreviewSubject: '',
       editorPreviewLoading: false,
+      editorPreviewError: '',
       editorPreviewTimer: null,
       editorPreviewVariableRows: [],
       channels: CHANNELS,
@@ -508,7 +513,10 @@ export default {
       if (val === 0 && this.templateModal) {
         this.$nextTick(() => this.refreshTemplateBodyEditor())
       }
-      if (val === 1) this.refreshEditorPreview()
+      if (val === 1) {
+        // Use $nextTick so any pending v-model updates are flushed before we read templateEditor fields
+        this.$nextTick(() => this.refreshEditorPreview())
+      }
     },
     detectedVars () {
       this.syncEditorPreviewVariables()
@@ -666,32 +674,45 @@ export default {
       this.editorPreviewFullHtml = ''
       this.editorPreviewText = ''
       this.editorPreviewSubject = ''
+      this.editorPreviewError = ''
     },
     scheduleEditorPreview () {
       clearTimeout(this.editorPreviewTimer)
       this.editorPreviewTimer = setTimeout(() => {
+        // Refresh immediately if already on the preview tab; the watcher
+        // handles the case where the user is still on the edit tab and switches later.
         if (this.templateBodyTab === 1) this.refreshEditorPreview()
       }, 400)
     },
     async refreshEditorPreview () {
       const key = String(this.templateEditor.template_key || '').trim()
-      if (!key && !this.templateEditor.body_html && !this.templateEditor.body_text) {
+      const hasBody = !!(this.templateEditor.body_html || this.templateEditor.body_text)
+      // Nothing to preview: no key AND no body content typed yet
+      if (!key && !hasBody) {
         this.clearEditorPreview()
         return
       }
       this.editorPreviewLoading = true
-      const res = await this.$store.dispatch('previewNotificationTemplate', {
-        templateKey: key,
-        channel: this.templateEditor.channel,
-        data: this.buildEditorPreviewData(),
-        draft: this.buildEditorPreviewDraft()
-      })
-      this.editorPreviewLoading = false
-      if (res.success && res.data) {
-        const r = res.data.rendered || {}
-        this.editorPreviewSubject = r.subject || ''
-        this.editorPreviewFullHtml = r.full_html || r.body_html || ''
-        this.editorPreviewText = r.body_text || r.body_html || ''
+      this.editorPreviewError = ''
+      try {
+        const res = await this.$store.dispatch('previewNotificationTemplate', {
+          templateKey: key,
+          channel: this.templateEditor.channel,
+          data: this.buildEditorPreviewData(),
+          draft: this.buildEditorPreviewDraft()
+        })
+        if (res && res.success && res.data) {
+          const r = res.data.rendered || {}
+          this.editorPreviewSubject = r.subject || ''
+          this.editorPreviewFullHtml = r.full_html || r.body_html || ''
+          this.editorPreviewText = r.body_text || r.body_html || ''
+        } else {
+          this.editorPreviewError = 'Preview unavailable. The template may be incomplete.'
+        }
+      } catch (err) {
+        this.editorPreviewError = (err && err.message) ? err.message : 'Failed to load preview.'
+      } finally {
+        this.editorPreviewLoading = false
       }
     },
     async saveTemplate () {
@@ -700,11 +721,14 @@ export default {
       }
       this.savingTemplate = true
       const payload = { ...this.templateEditor }
-      const res = await this.$store.dispatch('saveNotificationTemplate', payload)
-      this.savingTemplate = false
-      if (res.success) {
-        this.templateModal = false
-        this.loadTemplates()
+      try {
+        const res = await this.$store.dispatch('saveNotificationTemplate', payload)
+        if (res.success) {
+          this.templateModal = false
+          this.loadTemplates()
+        }
+      } finally {
+        this.savingTemplate = false
       }
     },
     async removeTemplate (row) {
@@ -773,19 +797,22 @@ export default {
         return
       }
       this.previewLoading = true
-      const res = await this.$store.dispatch('previewNotificationTemplate', {
-        templateKey: this.sendForm.templateKey,
-        channel: this.sendForm.channel,
-        data: this.buildVariableMap()
-      })
-      this.previewLoading = false
-      if (res.success && res.data) {
-        const r = res.data.rendered || {}
-        this.previewSubject = r.subject || ''
-        this.previewTitle = r.title || ''
-        this.previewHtml = r.body_html || ''
-        this.previewFullHtml = r.full_html || ''
-        this.previewText = r.body_text || ''
+      try {
+        const res = await this.$store.dispatch('previewNotificationTemplate', {
+          templateKey: this.sendForm.templateKey,
+          channel: this.sendForm.channel,
+          data: this.buildVariableMap()
+        })
+        if (res.success && res.data) {
+          const r = res.data.rendered || {}
+          this.previewSubject = r.subject || ''
+          this.previewTitle = r.title || ''
+          this.previewHtml = r.body_html || ''
+          this.previewFullHtml = r.full_html || ''
+          this.previewText = r.body_text || ''
+        }
+      } finally {
+        this.previewLoading = false
       }
     },
     async sendBulk () {
@@ -794,15 +821,18 @@ export default {
         : this.sendForm.userIds ? [this.sendForm.userIds] : []
       if (!userIds.length) return
       this.sending = true
-      const res = await this.$store.dispatch('sendAdminNotifications', {
-        templateKey: this.sendForm.templateKey,
-        channel: this.sendForm.channel,
-        userIds,
-        data: this.buildVariableMap()
-      })
-      this.sending = false
-      if (res.success) {
-        this.loadLogs()
+      try {
+        const res = await this.$store.dispatch('sendAdminNotifications', {
+          templateKey: this.sendForm.templateKey,
+          channel: this.sendForm.channel,
+          userIds,
+          data: this.buildVariableMap()
+        })
+        if (res.success) {
+          this.loadLogs()
+        }
+      } finally {
+        this.sending = false
       }
     },
     async saveChannel (ch) {
@@ -837,15 +867,15 @@ export default {
 }
 .preview-panel,
 .template-body-preview {
-  background: #fff !important;
+  background: var(--kadr-bg-surface) !important;
 }
 
 .preview-panel .preview-html,
 .template-body-preview .preview-html {
   max-height: 420px;
   overflow: auto;
-  background: #fff;
-  border: 1px solid #dee2e6;
+  background: var(--kadr-bg-surface);
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 4px;
   padding: 8px;
 }

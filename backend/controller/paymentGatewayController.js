@@ -80,13 +80,50 @@ module.exports = {
         throw createError(errorCodes.FORBIDDEN)
       }
 
-      const { order: completed, alreadyCompleted } = await verifyAndCompleteOrder(orderId, req.body.gatewayPayload || {})
+      const result = await verifyAndCompleteOrder(orderId, req.body.gatewayPayload || {})
+
+      if (result.pending) {
+        return success(res, {
+          orderId: result.order.order_id,
+          status: 'PENDING',
+          purpose: result.order.purpose,
+          pending: true
+        }, 'Payment is still being processed')
+      }
+
       success(res, {
-        orderId: completed.order_id,
-        status: completed.status,
-        purpose: completed.purpose,
-        alreadyCompleted
-      }, alreadyCompleted ? 'Payment already completed' : 'Payment verified successfully')
+        orderId: result.order.order_id,
+        status: result.order.status,
+        purpose: result.order.purpose,
+        alreadyCompleted: result.alreadyCompleted
+      }, result.alreadyCompleted ? 'Payment already completed' : 'Payment verified successfully')
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  cashfreeReturn: async function (req, res, next) {
+    // Cashfree redirects the customer to the return_url we supplied when
+    // creating the order. Because we set return_url to the frontend
+    // (/app/payment/return?...), this server-side handler is only reachable if
+    // something routes the customer here instead of to the SPA. We treat it as
+    // a simple passthrough — verify the order and redirect to the SPA result
+    // page so the user sees a proper confirmation screen.
+    try {
+      const orderId = req.query.order_id || req.query.orderId
+      if (!orderId) {
+        return res.redirect(`${getPortalBaseUrl()}/app/payment/return?status=failed&gateway=cashfree`)
+      }
+      try {
+        await verifyAndCompleteOrder(orderId, {})
+        return res.redirect(
+          `${getPortalBaseUrl()}/app/payment/return?status=success&order_id=${encodeURIComponent(orderId)}&gateway=cashfree`
+        )
+      } catch (err) {
+        return res.redirect(
+          `${getPortalBaseUrl()}/app/payment/return?status=failed&order_id=${encodeURIComponent(orderId)}&gateway=cashfree`
+        )
+      }
     } catch (error) {
       next(error)
     }
@@ -115,7 +152,12 @@ module.exports = {
       const body = req.body
       const orderId = body?.data?.order?.order_id || body?.order_id
       if (orderId) {
-        await verifyAndCompleteOrder(orderId, { webhook: body })
+        await verifyAndCompleteOrder(orderId, {
+          webhook: body,
+          rawBody: req.rawBody || JSON.stringify(body),
+          signature: req.headers['x-webhook-signature'] || '',
+          timestamp: req.headers['x-webhook-timestamp'] || ''
+        })
       }
       success(res, { received: true })
     } catch (error) {

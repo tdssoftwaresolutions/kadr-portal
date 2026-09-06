@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="kadr-animate-in">
     <b-row>
       <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
       <b-col md="12">
@@ -48,66 +48,229 @@
       </b-col>
     </b-row>
 
-    <b-modal v-model="modalVisible" size="lg" :title="$t('adminInactiveUsers.userDetails')" no-footer>
-      <div v-if="selectedUser">
-        <b-row>
-          <b-col :md="selectedUser.profile_picture_url ? 9 : 12">
-            <h4>{{ selectedUser.name || $t('adminInactiveUsers.na') }}</h4>
-            <p><strong>{{ $t('adminInactiveUsers.email') }}:</strong> {{ selectedUser.email || $t('adminInactiveUsers.na') }}</p>
-            <div v-for="(value, key) in filteredItem(selectedUser)" :key="key" class="mb-2">
-              <strong v-if="!isURL(value)">{{ formatKey(key) }}:</strong>
-              <span v-if="isURL(value)">
-              </span>
-              <span v-else-if="key === 'preferred_languages'">
-                {{ getFullLanguages(value) }}
-              </span>
-              <span v-else-if="isArrayValue(value)">
-                {{ convertToCommaSeparated(value) }}
-              </span>
-              <span v-else>
-                {{ capitalizeWord(value) }}
-              </span>
+    <b-modal
+      v-model="modalVisible"
+      size="lg"
+      centered
+      scrollable
+      no-header
+      no-footer
+      no-header-close
+      body-class="p-0"
+      dialog-class="review-modal"
+    >
+      <div v-if="selectedUser" class="review">
+        <!-- Header -->
+        <header class="review__header">
+          <div class="review__identity">
+            <div class="review__avatar">
+              <img
+                v-if="selectedUser.profile_picture_url"
+                :src="selectedUser.profile_picture_url"
+                alt="Profile"
+              />
+              <span v-else class="review__avatar-fallback">{{ initials(selectedUser.name) }}</span>
             </div>
-            <template v-if="type === 'CLIENT' && selectedUser.cases.length">
-              <div v-for="(caseItem, index) in selectedUser.cases" :key="index">
-                <p class="mb-2"><strong>{{ $t('adminInactiveUsers.caseId') }}:</strong> {{ caseItem.caseId || $t('adminInactiveUsers.na') }}</p>
-                <p class="mb-2"><strong>{{ $t('adminInactiveUsers.complaintCategory') }}:</strong> {{ caseItem.category || $t('adminInactiveUsers.na') }}</p>
-                <p class="mb-2"><strong>{{ $t('adminInactiveUsers.disputeDescription') }}:</strong> {{ caseItem.description || $t('adminInactiveUsers.na') }}</p>
-                <template v-if="caseItem.secondParty">
-                  <p class="mb-2"><strong>{{ $t('adminInactiveUsers.oppositePartyName') }}:</strong> {{ caseItem.secondParty.name || $t('adminInactiveUsers.na') }}</p>
-                  <p class="mb-2"><strong>{{ $t('adminInactiveUsers.oppositePartyEmail') }}:</strong> {{ caseItem.secondParty.email || $t('adminInactiveUsers.na') }}</p>
-                  <p class="mb-2"><strong>{{ $t('adminInactiveUsers.oppositePartyPhone') }}:</strong> {{ caseItem.secondParty.phone_number || $t('adminInactiveUsers.na') }}</p>
-                </template>
-                <div v-if="caseItem.evidence_document_url">
-                  <p class="mb-2"><strong>{{ $t('adminInactiveUsers.attachments') }}:</strong></p>
-                  <div class="docs-grid mt-2">
-                    <FilePreview
-                      :url="caseItem.evidence_document_url"
-                      :name="$t('adminInactiveUsers.evidenceDocument')"
-                    />
-                  </div>
-                </div>
+            <div class="review__identity-text">
+              <h2 class="review__name">{{ selectedUser.name || $t('adminInactiveUsers.na') }}</h2>
+              <div class="review__meta">
+                <span class="review__badge">{{ typeLabel }}</span>
+                <span class="review__pending">
+                  <i class="fas fa-clock" aria-hidden="true"></i>
+                  {{ $t('adminInactiveUsers.pendingApproval') }}
+                </span>
               </div>
-            </template>
-          </b-col>
-          <b-col md="3" v-if="selectedUser.profile_picture_url">
-            <img :src="selectedUser.profile_picture_url" class="img-fluid mb-3 avatar-120 rounded-circle" alt="Profile" />
-          </b-col>
-        </b-row>
-        <div v-if="certificateFields.length > 0" class="mt-4">
-          <p class="mb-2"><strong>{{ $t('adminInactiveUsers.attachments') }}:</strong></p>
-          <div v-if="certificateFields.length" class="docs-grid">
-               <FilePreview
-                  v-for="(field, index) in certificateFields"
-                  :key="index"
-                  :url="field.value"
-                  :name="formatKey(field.key)"
-                />
+            </div>
           </div>
+          <button type="button" class="review__close" @click="modalVisible = false" :aria-label="$t('adminInactiveUsers.close')">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <!-- Body -->
+        <div class="review__body">
+          <!-- Contact -->
+          <section class="review__section">
+            <h3 class="review__section-title">{{ $t('adminInactiveUsers.sectionContact') }}</h3>
+            <dl class="review__facts">
+              <div class="review__fact">
+                <dt>{{ $t('adminInactiveUsers.email') }}</dt>
+                <dd>
+                  <a v-if="selectedUser.email" :href="`mailto:${selectedUser.email}`">{{ selectedUser.email }}</a>
+                  <span v-else>{{ $t('adminInactiveUsers.na') }}</span>
+                </dd>
+              </div>
+              <div class="review__fact">
+                <dt>{{ $t('adminInactiveUsers.state') }}</dt>
+                <dd>{{ selectedUser.state || $t('adminInactiveUsers.na') }}</dd>
+              </div>
+              <div v-if="selectedUser.preferred_languages" class="review__fact">
+                <dt>{{ $t('adminInactiveUsers.language') }}</dt>
+                <dd>{{ getFullLanguages(selectedUser.preferred_languages) || $t('adminInactiveUsers.na') }}</dd>
+              </div>
+              <div class="review__fact">
+                <dt>{{ $t('adminInactiveUsers.created') }}</dt>
+                <dd>{{ formatDate(selectedUser.created_at) }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <!-- Additional details -->
+          <section class="review__section">
+            <h3 class="review__section-title">{{ $t('adminInactiveUsers.sectionAdditional') }}</h3>
+            <dl v-if="additionalFacts.length" class="review__facts">
+              <div v-for="fact in additionalFacts" :key="fact.key" class="review__fact">
+                <dt>{{ fact.label }}</dt>
+                <dd>{{ fact.value }}</dd>
+              </div>
+            </dl>
+            <p v-else class="review__empty">{{ $t('adminInactiveUsers.noAdditionalDetails') }}</p>
+          </section>
+
+          <!-- Case details (clients) -->
+          <template v-if="type === 'CLIENT' && selectedUser.cases && selectedUser.cases.length">
+            <section
+              v-for="(caseItem, index) in selectedUser.cases"
+              :key="index"
+              class="review__section"
+            >
+              <h3 class="review__section-title">
+                {{ $t('adminInactiveUsers.sectionCase') }}
+                <span v-if="selectedUser.cases.length > 1" class="review__section-count">
+                  {{ $t('adminInactiveUsers.sectionCaseCount', { index: index + 1, total: selectedUser.cases.length }) }}
+                </span>
+              </h3>
+              <dl class="review__facts">
+                <div class="review__fact">
+                  <dt>{{ $t('adminInactiveUsers.caseId') }}</dt>
+                  <dd>{{ caseItem.caseId || $t('adminInactiveUsers.na') }}</dd>
+                </div>
+                <div class="review__fact">
+                  <dt>{{ $t('adminInactiveUsers.complaintCategory') }}</dt>
+                  <dd>{{ caseItem.category || $t('adminInactiveUsers.na') }}</dd>
+                </div>
+              </dl>
+              <div class="review__note">
+                <span class="review__note-label">{{ $t('adminInactiveUsers.disputeDescription') }}</span>
+                <p class="review__note-text">{{ caseItem.description || $t('adminInactiveUsers.na') }}</p>
+              </div>
+
+              <template v-if="caseItem.secondParty">
+                <h4 class="review__subheading">{{ $t('adminInactiveUsers.sectionOppositeParty') }}</h4>
+                <dl class="review__facts">
+                  <div class="review__fact">
+                    <dt>{{ $t('adminInactiveUsers.oppositePartyName') }}</dt>
+                    <dd>{{ caseItem.secondParty.name || $t('adminInactiveUsers.na') }}</dd>
+                  </div>
+                  <div class="review__fact">
+                    <dt>{{ $t('adminInactiveUsers.oppositePartyEmail') }}</dt>
+                    <dd>{{ caseItem.secondParty.email || $t('adminInactiveUsers.na') }}</dd>
+                  </div>
+                  <div class="review__fact">
+                    <dt>{{ $t('adminInactiveUsers.oppositePartyPhone') }}</dt>
+                    <dd>{{ caseItem.secondParty.phone_number || $t('adminInactiveUsers.na') }}</dd>
+                  </div>
+                </dl>
+              </template>
+
+              <template v-if="caseItem.firstPartyRep || caseItem.secondPartyRep">
+                <h4 class="review__subheading">{{ $t('adminInactiveUsers.sectionRepresentatives') }}</h4>
+                <dl class="review__facts">
+                  <template v-if="caseItem.firstPartyRep">
+                    <div class="review__fact">
+                      <dt>{{ $t('adminInactiveUsers.firstPartyRepName') }}</dt>
+                      <dd>
+                        {{ caseItem.firstPartyRep.name || $t('adminInactiveUsers.na') }}
+                        <b-badge :variant="caseItem.firstPartyRep.active ? 'success' : 'warning'" class="ms-1">
+                          {{ caseItem.firstPartyRep.active ? $t('adminInactiveUsers.repActive') : $t('adminInactiveUsers.repPending') }}
+                        </b-badge>
+                      </dd>
+                    </div>
+                    <div class="review__fact">
+                      <dt>{{ $t('adminInactiveUsers.firstPartyRepEmail') }}</dt>
+                      <dd>{{ caseItem.firstPartyRep.email || $t('adminInactiveUsers.na') }}</dd>
+                    </div>
+                    <div v-if="caseItem.firstPartyRep.phone_number" class="review__fact">
+                      <dt>{{ $t('adminInactiveUsers.firstPartyRepPhone') }}</dt>
+                      <dd>{{ caseItem.firstPartyRep.phone_number }}</dd>
+                    </div>
+                  </template>
+                  <template v-if="caseItem.secondPartyRep">
+                    <div class="review__fact">
+                      <dt>{{ $t('adminInactiveUsers.secondPartyRepName') }}</dt>
+                      <dd>
+                        {{ caseItem.secondPartyRep.name || $t('adminInactiveUsers.na') }}
+                        <b-badge :variant="caseItem.secondPartyRep.active ? 'success' : 'warning'" class="ms-1">
+                          {{ caseItem.secondPartyRep.active ? $t('adminInactiveUsers.repActive') : $t('adminInactiveUsers.repPending') }}
+                        </b-badge>
+                      </dd>
+                    </div>
+                    <div class="review__fact">
+                      <dt>{{ $t('adminInactiveUsers.secondPartyRepEmail') }}</dt>
+                      <dd>{{ caseItem.secondPartyRep.email || $t('adminInactiveUsers.na') }}</dd>
+                    </div>
+                    <div v-if="caseItem.secondPartyRep.phone_number" class="review__fact">
+                      <dt>{{ $t('adminInactiveUsers.secondPartyRepPhone') }}</dt>
+                      <dd>{{ caseItem.secondPartyRep.phone_number }}</dd>
+                    </div>
+                  </template>
+                </dl>
+              </template>
+
+              <div v-if="caseItem.evidence_document_url" class="review__docs">
+                <FilePreview
+                  :url="caseItem.evidence_document_url"
+                  :name="$t('adminInactiveUsers.evidenceDocument')"
+                />
+              </div>
+            </section>
+          </template>
+
+          <!-- Documents & certificates -->
+          <section v-if="certificateFields.length > 0" class="review__section">
+            <h3 class="review__section-title">{{ $t('adminInactiveUsers.sectionDocuments') }}</h3>
+            <div class="review__docs">
+              <FilePreview
+                v-for="(field, index) in certificateFields"
+                :key="index"
+                :url="field.value"
+                :name="formatKey(field.key)"
+              />
+            </div>
+          </section>
         </div>
-        <div class="d-flex justify-content-end mt-3">
-          <b-button variant="secondary" @click="modalVisible = false">{{ $t('adminInactiveUsers.close') }}</b-button>
-        </div>
+
+        <!-- Footer / actions -->
+        <footer class="review__footer">
+          <div v-if="type === 'CLIENT'" class="review__casetype">
+            <label class="review__casetype-label" :for="`case-type-${selectedUser.userId}`">
+              {{ $t('adminInactiveUsers.caseType') }}
+            </label>
+            <b-form-select
+              :id="`case-type-${selectedUser.userId}`"
+              v-model="selectedUser.case_type"
+              :options="categoryOptions"
+              size="sm"
+              :disabled="selectedUser.approved"
+            />
+            <span v-if="!selectedUser.case_type && !selectedUser.approved" class="review__hint">
+              {{ $t('adminInactiveUsers.reviewCaseTypeHint') }}
+            </span>
+          </div>
+          <div class="review__actions">
+            <b-button variant="outline-secondary" @click="modalVisible = false">
+              {{ $t('adminInactiveUsers.close') }}
+            </b-button>
+            <b-button
+              variant="success"
+              :disabled="selectedUser.approved || approving || (type === 'CLIENT' && !selectedUser.case_type)"
+              @click="approve(selectedUser)"
+            >
+              <i class="fas fa-check me-1" aria-hidden="true"></i>
+              {{ approving ? $t('adminInactiveUsers.approving') : $t('adminInactiveUsers.approve') }}
+            </b-button>
+          </div>
+        </footer>
       </div>
     </b-modal>
   </div>
@@ -167,6 +330,28 @@ export default {
       return Object.entries(this.selectedUser)
         .filter(([key, value]) => ['certificate', 'document'].some(certKey => key.toLowerCase().includes(certKey)) && value && this.isURL(value))
         .map(([key, value]) => ({ key, value }))
+    },
+    typeLabel () {
+      return this.type === 'MEDIATOR'
+        ? this.$t('adminInactiveUsers.typeMediator')
+        : this.$t('adminInactiveUsers.typeClient')
+    },
+    additionalFacts () {
+      if (!this.selectedUser) return []
+      // Keys already shown in dedicated sections of the modal.
+      const handledKeys = ['state', 'preferred_languages', 'profile_picture_url', 'phone_number']
+      return Object.entries(this.filteredItem(this.selectedUser))
+        .filter(([key, value]) => !handledKeys.includes(key) && !this.isURL(value))
+        .map(([key, value]) => {
+          let display
+          if (key === 'preferred_area_of_practice' || this.isArrayValue(value)) {
+            display = this.convertToCommaSeparated(value)
+          } else {
+            display = this.capitalizeWord(value)
+          }
+          return { key, label: this.formatKey(key), value: display }
+        })
+        .filter(fact => fact.value !== '' && fact.value !== null && fact.value !== undefined)
     },
     clientCases () {
       if (!this.selectedUser || !this.selectedUser.cases) return []
@@ -237,23 +422,37 @@ export default {
     syncWithProp () {
       this.paginatedData = { ...this.users }
     },
+    initials (name) {
+      if (!name || typeof name !== 'string') return '?'
+      return name
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map(part => part.charAt(0).toUpperCase())
+        .join('') || '?'
+    },
     async approve (item) {
       if (this.type === 'CLIENT' && !item.case_type) {
         this.showAlert(this.$t('adminInactiveUsers.selectCaseTypeAlert'), 'danger')
         return
       }
-      const response = await this.$store.dispatch('updateInactiveUsers', {
-        isActive: true,
-        caseId: item.cases && item.cases[0] ? item.cases[0].id : null,
-        userId: item.userId,
-        caseType: item.case_type
-      })
-      if (response.success) {
-        this.showAlert(response.message, 'success')
-        item.approved = true
-        if (this.modalVisible && this.selectedUser === item) {
-          this.modalVisible = false
+      this.approving = true
+      try {
+        const response = await this.$store.dispatch('updateInactiveUsers', {
+          isActive: true,
+          caseId: item.cases && item.cases[0] ? item.cases[0].id : null,
+          userId: item.userId,
+          caseType: item.case_type
+        })
+        if (response.success) {
+          this.showAlert(response.message, 'success')
+          item.approved = true
+          if (this.modalVisible && this.selectedUser === item) {
+            this.modalVisible = false
+          }
         }
+      } finally {
+        this.approving = false
       }
     },
     async fetchUsers (newPage) {
@@ -311,10 +510,10 @@ export default {
         timeout: 5000,
         type: 'primary'
       },
-      loading: false,
       modalVisible: false,
       selectedUser: null,
-      languages: {}
+      languages: {},
+      approving: false
     }
   }
 }
@@ -328,17 +527,17 @@ export default {
 }
 
 .user-card {
-  background-color: #fcfdff !important;
-  border: 1px solid #dee2e6 !important;
+  background-color: var(--kadr-bg-surface) !important;
+  border: 1px solid var(--kadr-border) !important;
 }
 
 .card {
-  transition: transform 0.2s;
+  transition: transform var(--kadr-duration-fast) var(--kadr-ease);
 }
 
 .card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--kadr-shadow-md);
 }
 
 .certificate-card {
@@ -358,5 +557,291 @@ export default {
 
 .rounded-circle {
   object-fit: cover;
+}
+
+/* ---- Review modal ---------------------------------------------------- */
+.review-modal .modal-content {
+  border: none;
+  border-radius: var(--kadr-radius-lg, 12px);
+  overflow: hidden;
+  box-shadow: var(--kadr-shadow-lg, 0 12px 30px rgba(31, 36, 50, 0.12));
+}
+
+.review {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--kadr-bg-surface, #fff);
+  color: var(--kadr-text-primary, #1f2432);
+}
+
+.review__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--kadr-space-3, 12px);
+  padding: var(--kadr-space-5, 24px);
+  background: linear-gradient(135deg, var(--kadr-hero-from, #4b3fbf), var(--kadr-hero-to, #7b6ef0));
+  color: var(--kadr-text-on-primary, #fff);
+}
+
+.review__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--kadr-space-4, 16px);
+  min-width: 0;
+}
+
+.review__avatar {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.review__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.review__avatar-fallback {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.review__identity-text {
+  min-width: 0;
+}
+
+.review__name {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  word-break: break-word;
+}
+
+.review__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kadr-space-2, 8px);
+}
+
+.review__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--kadr-primary, #5a4bd4);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.review__pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.review__close {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color var(--kadr-duration-fast, 150ms) var(--kadr-ease, ease);
+}
+
+.review__close:hover {
+  background-color: rgba(255, 255, 255, 0.32);
+}
+
+.review__body {
+  padding: var(--kadr-space-5, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--kadr-space-5, 24px);
+}
+
+.review__section {
+  padding-bottom: var(--kadr-space-5, 24px);
+  border-bottom: 1px solid var(--kadr-border, #e9eaf2);
+}
+
+.review__section:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.review__section-title {
+  margin: 0 0 var(--kadr-space-3, 12px);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--kadr-text-label, #8b92a6);
+}
+
+.review__section-count {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--kadr-text-muted, #737b90);
+}
+
+.review__subheading {
+  margin: var(--kadr-space-4, 16px) 0 var(--kadr-space-2, 8px);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--kadr-text-secondary, #4a5163);
+}
+
+.review__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--kadr-space-3, 12px) var(--kadr-space-5, 24px);
+  margin: 0;
+}
+
+.review__fact {
+  margin: 0;
+  min-width: 0;
+}
+
+.review__fact dt {
+  margin: 0 0 2px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--kadr-text-label, #8b92a6);
+}
+
+.review__fact dd {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--kadr-text-primary, #1f2432);
+  word-break: break-word;
+}
+
+.review__fact dd a {
+  color: var(--kadr-primary, #5a4bd4);
+  text-decoration: none;
+}
+
+.review__fact dd a:hover {
+  text-decoration: underline;
+}
+
+.review__note {
+  margin-top: var(--kadr-space-3, 12px);
+  padding: var(--kadr-space-3, 12px) var(--kadr-space-4, 16px);
+  background-color: var(--kadr-surface-muted, #f7f8fc);
+  border: 1px solid var(--kadr-border, #e9eaf2);
+  border-radius: var(--kadr-radius, 8px);
+}
+
+.review__note-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--kadr-text-label, #8b92a6);
+  margin-bottom: 4px;
+}
+
+.review__note-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--kadr-text-secondary, #4a5163);
+  white-space: pre-line;
+}
+
+.review__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--kadr-text-muted, #737b90);
+  font-style: italic;
+}
+
+.review__docs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--kadr-space-3, 12px);
+  margin-top: var(--kadr-space-3, 12px);
+}
+
+.review__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--kadr-space-3, 12px);
+  padding: var(--kadr-space-4, 16px) var(--kadr-space-5, 24px);
+  background-color: var(--kadr-surface-muted, #f7f8fc);
+  border-top: 1px solid var(--kadr-border, #e9eaf2);
+}
+
+.review__casetype {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 220px;
+}
+
+.review__casetype-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--kadr-text-label, #8b92a6);
+}
+
+.review__hint {
+  font-size: 0.75rem;
+  color: var(--kadr-warning, #c98a2b);
+}
+
+.review__actions {
+  display: flex;
+  gap: var(--kadr-space-2, 8px);
+  margin-left: auto;
+}
+
+@media (max-width: 575.98px) {
+  .review__header,
+  .review__body,
+  .review__footer {
+    padding-left: var(--kadr-space-4, 16px);
+    padding-right: var(--kadr-space-4, 16px);
+  }
+
+  .review__actions {
+    width: 100%;
+  }
+
+  .review__actions .btn {
+    flex: 1;
+  }
 }
 </style>

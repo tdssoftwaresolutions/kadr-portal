@@ -1,5 +1,5 @@
 <template>
-  <div class="iq-comingsoon pt-5">
+  <div class="iq-comingsoon pt-5 kadr-animate-in">
     <div class="container-fluid">
       <div class="row justify-content-center">
         <div class="col-8 text-center">

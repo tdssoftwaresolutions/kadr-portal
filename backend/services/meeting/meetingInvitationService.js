@@ -156,7 +156,9 @@ async function createAndInviteCaseMeeting ({
       category: true,
       user_cases_first_partyTouser: { select: { email: true, name: true } },
       user_cases_second_partyTouser: { select: { email: true, name: true } },
-      user_cases_mediatorTouser: { select: { email: true, name: true } }
+      user_cases_mediatorTouser: { select: { email: true, name: true } },
+      user_cases_first_party_repTouser: { select: { email: true, name: true, is_deleted: true } },
+      user_cases_second_party_repTouser: { select: { email: true, name: true, is_deleted: true } }
     }
   })
   if (!caseRecord) throw new Error(`Case not found: ${caseId}`)
@@ -164,12 +166,18 @@ async function createAndInviteCaseMeeting ({
   const firstParty = caseRecord.user_cases_first_partyTouser
   const secondParty = caseRecord.user_cases_second_partyTouser
   const mediator = caseRecord.user_cases_mediatorTouser
+  // Representatives inherit their party's meeting access: auto-added to attendees
+  // and invited by email (same as the party they represent).
+  const firstPartyRep = caseRecord.user_cases_first_party_repTouser
+  const secondPartyRep = caseRecord.user_cases_second_party_repTouser
   const caseNumber = caseRecord.caseId
 
   const attendees = []
   if (firstParty?.email) attendees.push({ email: firstParty.email })
   if (secondParty?.email) attendees.push({ email: secondParty.email })
   if (mediator?.email) attendees.push({ email: mediator.email })
+  if (firstPartyRep?.email && !firstPartyRep.is_deleted) attendees.push({ email: firstPartyRep.email })
+  if (secondPartyRep?.email && !secondPartyRep.is_deleted) attendees.push({ email: secondPartyRep.email })
 
   const scheduledMeeting = await helper.scheduleMeeting(title, description, startDate, attendees)
   const meetingLink = scheduledMeeting?.meetingLink || ''
@@ -232,6 +240,27 @@ async function createAndInviteCaseMeeting ({
       emailJobs.push(
         helper.sendTemplatedEmail(partyTemplateKey, secondParty.email, {
           recipientName: secondParty.name,
+          ...baseInviteVars,
+          ...partyTemplateVars,
+          ...secondPartyExtraVars
+        }, attachments)
+      )
+    }
+    // Representatives get the same meeting invite as the party they represent.
+    if (firstPartyRep?.email && !firstPartyRep.is_deleted) {
+      emailJobs.push(
+        helper.sendTemplatedEmail(partyTemplateKey, firstPartyRep.email, {
+          recipientName: firstPartyRep.name,
+          ...baseInviteVars,
+          ...partyTemplateVars,
+          ...firstPartyExtraVars
+        }, attachments)
+      )
+    }
+    if (secondPartyRep?.email && !secondPartyRep.is_deleted) {
+      emailJobs.push(
+        helper.sendTemplatedEmail(partyTemplateKey, secondPartyRep.email, {
+          recipientName: secondPartyRep.name,
           ...baseInviteVars,
           ...partyTemplateVars,
           ...secondPartyExtraVars

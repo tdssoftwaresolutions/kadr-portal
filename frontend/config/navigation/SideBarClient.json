@@ -1,6 +1,7 @@
 [
   {
     "title": "Home",
+    "i18nKey": "nav.home",
     "name": "sidebar.dashboard",
     "is_heading": false,
     "is_active": false,
@@ -11,6 +12,7 @@
   },
   {
     "title": "Mediation",
+    "i18nKey": "nav.mediation",
     "name": "sidebar.mediation",
     "is_heading": false,
     "is_group": true,
@@ -20,6 +22,7 @@
     "children": [
       {
         "title": "Past Mediations",
+        "i18nKey": "nav.pastMediations",
         "name": "app.past-mediations",
         "is_heading": false,
         "is_active": false,
@@ -30,6 +33,7 @@
       },
       {
         "title": "My Calendar",
+        "i18nKey": "nav.myCalendar",
         "name": "app.client-calendar",
         "is_heading": false,
         "is_active": false,
@@ -42,6 +46,7 @@
   },
   {
     "title": "Support",
+    "i18nKey": "nav.support",
     "name": "app.support",
     "is_heading": false,
     "is_active": false,

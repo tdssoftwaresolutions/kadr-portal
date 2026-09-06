@@ -18,6 +18,43 @@ const ALLOWED_MIME_TYPES = {
 
 const DEFAULT_MAX_BYTES = 8 * 1024 * 1024
 
+function getBucketConfig () {
+  return {
+    region: process.env.S3_REGION || 'ap-south-1',
+    bucket: process.env.S3_BUCKET_NAME
+  }
+}
+
+function createS3Client () {
+  const { region } = getBucketConfig()
+  return new S3Client({
+    region,
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY_ID,
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
+    },
+    useGlobalEndpoint: false
+  })
+}
+
+function buildObjectUrl (key) {
+  const { region, bucket } = getBucketConfig()
+  return `https://${bucket}.s3.${region}.amazonaws.com/${key}`
+}
+
+/**
+ * Accept an object URL from the client only if it points at our own S3 bucket.
+ * The browser uploads files directly to S3 via presigned URLs and then submits
+ * the resulting URL — this guard prevents a caller from persisting an arbitrary
+ * external link on a record. Returns the URL when valid, otherwise null.
+ */
+function sanitizeBucketUrl (candidate) {
+  if (!candidate || typeof candidate !== 'string') return null
+  const { bucket } = getBucketConfig()
+  if (!bucket) return null
+  return candidate.startsWith(buildObjectUrl('')) ? candidate : null
+}
+
 function parseBase64Upload (base64Content) {
   const matches = base64Content.match(/^data:(.+);base64,(.+)$/)
   if (matches && matches.length === 3) {
@@ -48,17 +85,8 @@ function validateUpload ({ base64Content, maxBytes = DEFAULT_MAX_BYTES, allowedM
 
 async function uploadToS3 (base64Content, fileNamePrefix, options = {}) {
   const { mimeType, fileBuffer, extension } = validateUpload({ base64Content, ...options })
-  const region = process.env.S3_REGION || 'ap-south-1'
-  const bucket = process.env.S3_BUCKET_NAME
-
-  const s3 = new S3Client({
-    region,
-    credentials: {
-      accessKeyId: process.env.S3_ACCESS_KEY_ID,
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
-    },
-    useGlobalEndpoint: false
-  })
+  const { bucket } = getBucketConfig()
+  const s3 = createS3Client()
 
   const safePrefix = String(fileNamePrefix || 'upload').replace(/[^a-zA-Z0-9-_]/g, '-')
   const fullFileName = `${safePrefix}-${uuidv4()}.${extension}`
@@ -70,7 +98,54 @@ async function uploadToS3 (base64Content, fileNamePrefix, options = {}) {
     ContentType: mimeType
   }))
 
-  return `https://${bucket}.s3.${region}.amazonaws.com/${fullFileName}`
+  return buildObjectUrl(fullFileName)
+}
+
+/**
+ * Generate a presigned PUT URL so a browser can upload a file directly to S3
+ * without routing the bytes through this server.
+ *
+ * The content type is validated against the allow-list up front, and the
+ * generated URL is bound to that exact content type — the client MUST send the
+ * same `Content-Type` header on the PUT or S3 rejects the request. This keeps
+ * the upload constrained to the file type we approved.
+ *
+ * @param {object} params
+ * @param {string} params.contentType - MIME type the client intends to upload.
+ * @param {string} [params.fileNamePrefix] - Human-readable key prefix.
+ * @param {number} [params.expiresIn] - URL validity in seconds (default 300).
+ * @returns {Promise<{uploadUrl: string, key: string, publicUrl: string, contentType: string, expiresIn: number}>}
+ */
+async function getPresignedUploadUrl ({ contentType, fileNamePrefix = 'upload', expiresIn = 300 } = {}) {
+  const normalizedType = String(contentType || '').toLowerCase()
+  const extension = ALLOWED_MIME_TYPES[normalizedType]
+  if (!extension) {
+    throw createError(errorCodes.INVALID_REQUEST, { message: `File type not allowed: ${contentType}` })
+  }
+
+  const { bucket } = getBucketConfig()
+  if (!bucket || !process.env.S3_ACCESS_KEY_ID) {
+    throw createError(errorCodes.INVALID_REQUEST, { message: 'File storage is not configured.' })
+  }
+
+  const safePrefix = String(fileNamePrefix || 'upload').replace(/[^a-zA-Z0-9-_]/g, '-')
+  const key = `${safePrefix}-${uuidv4()}.${extension}`
+
+  const s3 = createS3Client()
+  const command = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    ContentType: normalizedType
+  })
+  const uploadUrl = await getSignedUrl(s3, command, { expiresIn })
+
+  return {
+    uploadUrl,
+    key,
+    publicUrl: buildObjectUrl(key),
+    contentType: normalizedType,
+    expiresIn
+  }
 }
 
 /**
@@ -120,5 +195,7 @@ module.exports = {
   validateUpload,
   uploadToS3,
   parseBase64Upload,
-  getPresignedUrl
+  getPresignedUrl,
+  getPresignedUploadUrl,
+  sanitizeBucketUrl
 }

@@ -1,194 +1,239 @@
 <template>
-    <div>
-        <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
-        <div v-if="step === 1">
-            <div class="mb-3">
-                <label for="name">Full Name <span class="text-danger">*</span></label>
-                <input type="text" class="form-control capitalize-first-word" id="name" v-model="formData.name" placeholder="Your Full Name" />
-            </div>
-            <div class="mb-3">
-                <label for="profileLogo">Upload Profile Picture</label>
-                <div class="file-upload">
-                <input type="file" class="form-control-file" id="profileLogo" @change="handlProfilePictureUpload" accept="image/*"/>
-                <label for="profileLogo" class="custom-file-upload">
-                    Choose File
-                </label>
-                <img v-if="formData.profilePictureContent" @click="onClickProfilePicture(formData.profilePictureContent)" :src="formData.profilePictureContent" alt="Profile Logo Preview" class="img-thumbnail" style="margin-left: 2rem;width:50px;height:50px;cursor: pointer;"/>
-              </div>
-            </div>
-            <div class="mb-3">
-                <label for="email">Email Address <span class="text-danger">*</span></label>
-                <input type="email" class="form-control" id="email" v-model="formData.email" placeholder="Enter Email" />
-            </div>
-            <div class="mb-3">
-                <label for="phone">Phone Number <span class="text-danger">*</span></label>
-                <input type="tel" class="form-control" id="phone" v-model="formData.phone" placeholder="Phone Number" />
-            </div>
-            <div class="mb-3">
-                <label for="state">State <span class="text-danger">*</span></label>
-                <select id="state" v-model="formData.state" class="form-control">
-                <option value="">Select State</option>
-                <option v-for="(item, index) in states" :key="index" :value="item">
-                    {{ item }}
-                </option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="city">City <span class="text-danger">*</span></label>
-                <input type="text" class="form-control capitalize-first-word" id="city" v-model="formData.city" placeholder="City" />
-            </div>
-            <div class="mb-3">
-                <label for="pincode">Pin Code <span class="text-danger">*</span></label>
-                <input type="number" class="form-control" id="pincode" v-model="formData.pincode" placeholder="Pin Code" />
-            </div>
-            <div class="mb-3">
-                <label for="referralCode">Referral code (optional)</label>
-                <input type="text" class="form-control text-uppercase" id="referralCode" v-model="formData.referralCode" maxlength="12" />
-                <small class="text-muted">If a mediator invited you, enter their referral code.</small>
-            </div>
-            <div class="d-flex justify-content-between">
-                <div>
-                <button type="button" class="btn btn-secondary" @click="prevStep(1)">Previous</button>
-                <button type="button" class="btn btn-primary ml" @click="nextStep(1)">Next</button>
-                </div>
-                <div class="align-self-center">
-                <span class="dark-color d-inline-block line-height-2">
-                    Already Have an Account? <a href="#" @click="onClickLogin">Log In</a>
-                </span>
-                </div>
-            </div>
-        </div>
-        <div v-if="step === 2">
-          <label style="font-weight: bold;margin-bottom: 1rem">LLB Degree Details</label>
-          <div class="mb-3">
-              <label for="degreeCollege">College Name <span class="text-danger">*</span></label>
-              <input type="text" class="form-control capitalize-first-word" id="degreeCollege" v-model="formData.llbCollege" placeholder="LLB Degree College" />
-          </div>
-          <div class="mb-3">
-              <label for="degreeUniversity">University <span class="text-danger">*</span></label>
-              <input type="text" class="form-control capitalize-first-word" id="degreeUniversity" v-model="formData.llbUniversity" placeholder="LLB Degree University" />
-          </div>
-          <div class="mb-3">
-              <label for="degreeYear">Year of Completion <span class="text-danger">*</span></label>
-              <select class="form-control" id="degreeYear" v-model="formData.llbYear">
-                <option value="0" disabled>Select year</option>
-                <option v-for="(item, index) in years" :key="index" :value="item">
-                  {{item}}
-                </option>
-              </select>
-          </div>
-          <div class="mb-3">
-              <label for="llbDegree">Upload LLB Degree Certificate <span class="text-danger">*</span></label>
-              <div class="file-upload">
-              <input type="file" class="form-control-file" id="llbDegree" @change="onUploadLLBDegreeCertificate" />
-              <label for="llbDegree" class="custom-file-upload">
-                  Choose File
-              </label>
-              <span v-if="formData.llbCertificate" class="file-name">{{ formData.llbCertificate.name }}</span>
-              </div>
-          </div>
-          <label style="font-weight: bold;margin-bottom: 1rem;margin-top:1rem;">Mediator Course (MCPC)</label>
-          <div class="mb-3">
-              <label for="mcpcDegreeYear">Year of Completion <span class="text-danger">*</span></label>
-              <select class="form-control" id="mcpcDegreeYear" v-model="formData.mediatorCourseYear">
-                <option value="0" disabled>Select year</option>
-                <option v-for="(item, index) in years" :key="index" :value="item">
-                  {{item}}
-                </option>
-              </select>
-          </div>
-          <div class="mb-3">
-              <label for="mcpcCertificate">Upload MCPC Certificate <span class="text-danger">*</span></label>
-              <div class="file-upload">
-              <input type="file" class="form-control-file" id="mcpcCertificate" @change="onUploadMCPCCertificate" />
-              <label for="mcpcCertificate" class="custom-file-upload">
-                  Choose File
-              </label>
-              <span v-if="formData.mcpcCertificate" class="file-name">{{ formData.mcpcCertificate.name }}</span>
-              </div>
-          </div>
-          <div class="d-flex justify-content-between">
-              <div>
-              <button type="button" class="btn btn-secondary" @click="prevStep(2)">Previous</button>
-              <button type="button" class="btn btn-primary float-end ml" @click="nextStep(2)">Next</button>
-              </div>
-              <div class="align-self-center">
-              <span class="dark-color d-inline-block line-height-2">
-                  Already Have an Account? <a href="#" @click="onClickLogin">Log In</a>
-              </span>
-              </div>
-          </div>
-        </div>
-        <div v-if="step === 3">
-            <label style="font-weight: bold;margin-bottom: 1rem">Practice Details</label>
-            <div class="mb-3">
-              <label for="barEnrollmentNo">Bar Enrollment Number <span class="text-danger">*</span></label>
-              <input type="text" class="form-control capitalize-first-word" id="barEnrollmentNo" v-model="formData.barEnrollmentNo" placeholder="Bar Enrollment Number" />
-            </div>
-            <div class="mb-3">
-              <label for="language">Preferred Languages (Max 3) <span class="text-danger">*</span></label>
-              <div class="d-flex flex-wrap" style="height: 125px;overflow-y: scroll;">
-                <div
-                  v-for="(option, index) in availableLanguges"
-                  :key="index"
-                  class="option-card"
-                  :class="{ selected: formData.preferredLanguages.includes(option.value), disabled: formData.preferredLanguages.length >= 3 && !formData.preferredLanguages.includes(option.value) }"
-                  @click="toggleSelection(option)">
-                  {{ option.text }}
-                </div>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label for="areaOfPractice">Preferred Area of Practice  (Max 3) <span class="text-danger">*</span></label>
-              <div class="d-flex flex-wrap" style="height: 60px;overflow-y: scroll;">
-                <div
-                  v-for="(option, index) in availableAreaOfPractice"
-                  :key="index"
-                  class="option-card"
-                  :class="{ selected: formData.preferredAreaOfPractice.includes(option), disabled: formData.preferredAreaOfPractice.length >= 3 && !formData.preferredAreaOfPractice.includes(option) }"
-                  @click="toggleExpertiseSelection(option)">
-                  {{ option }}
-                </div>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label for="areaOfPractice">Available For <span class="text-danger">*</span></label>
-              <div class="text-start">
-                <div class="checkbox-group">
-                  <div class="form-check form-check-inline">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="physicalHearing"
-                      value="physical"
-                      v-model="formData.selectedHearingTypes"
-                    />
-                    <label class="form-check-label" for="physicalHearing">
-                      Physical Hearing
-                    </label>
-                  </div>
-                  <div class="form-check form-check-inline">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="virtualHearing"
-                      value="virtual"
-                      v-model="formData.selectedHearingTypes"
-                    />
-                    <label class="form-check-label" for="virtualHearing">
-                      Virtual Hearing
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button type="button" class="btn btn-secondary" @click="prevStep(3)">Previous</button>
-            <button type="button" class="btn btn-success float-end ml" @click="submitClientForm">Submit</button>
-        </div>
+  <div class="signup-form">
+    <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
+
+    <div class="signup-form-header">
+      <div class="signup-form-heading">
+        <h2 class="signup-form-title">{{ $t('mediatorSignup.title') }}</h2>
+        <p class="signup-form-sub">{{ stepSubtitle }}</p>
+      </div>
+      <ol class="stepper" aria-label="Progress">
+        <li
+          v-for="s in steps"
+          :key="s.n"
+          class="stepper-item"
+          :class="{ 'is-active': step === s.n, 'is-done': step > s.n }"
+        >
+          <span class="stepper-dot">
+            <i v-if="step > s.n" class="ri-check-line" aria-hidden="true"></i>
+            <span v-else>{{ s.n }}</span>
+          </span>
+          <span class="stepper-label">{{ s.label }}</span>
+        </li>
+      </ol>
     </div>
+
+    <div class="signup-form-body">
+      <!-- Step 1: profile -->
+      <div v-if="step === 1" class="field-grid">
+        <div class="field-item">
+          <label for="name" class="field-label">{{ $t('auth.signup.fullName') }} <span class="req">*</span></label>
+          <input type="text" class="app-input capitalize-first-word" id="name" v-model="formData.name" :placeholder="$t('auth.signup.fullNameHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="email" class="field-label">{{ $t('auth.signup.emailAddress') }} <span class="req">*</span></label>
+          <input type="email" class="app-input" id="email" v-model="formData.email" placeholder="you@example.com" />
+        </div>
+
+        <div class="field-item">
+          <label for="phone" class="field-label">{{ $t('auth.signup.phoneNumber') }} <span class="req">*</span></label>
+          <input type="tel" class="app-input" id="phone" v-model="formData.phone" :placeholder="$t('auth.signup.phoneHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="state" class="field-label">{{ $t('auth.signup.stateLabel') }} <span class="req">*</span></label>
+          <div class="app-select-wrap">
+            <select id="state" v-model="formData.state" class="app-input app-select">
+              <option value="">{{ $t('auth.signup.selectState') }}</option>
+              <option v-for="(item, index) in states" :key="index" :value="item">{{ item }}</option>
+            </select>
+            <i class="ri-arrow-down-s-line app-select-caret" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <div class="field-item">
+          <label for="city" class="field-label">{{ $t('auth.signup.cityLabel') }} <span class="req">*</span></label>
+          <input type="text" class="app-input capitalize-first-word" id="city" v-model="formData.city" :placeholder="$t('auth.signup.cityHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="pincode" class="field-label">{{ $t('auth.signup.pincodeLabel') }} <span class="req">*</span></label>
+          <input type="text" inputmode="numeric" maxlength="6" class="app-input" id="pincode" v-model="formData.pincode" :placeholder="$t('auth.signup.pincodeHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="profileLogo" class="field-label">{{ $t('auth.signup.profilePicture') }}</label>
+          <div class="upload-row">
+            <input type="file" class="upload-native" id="profileLogo" @change="handlProfilePictureUpload" accept="image/*" />
+            <label for="profileLogo" class="upload-btn">
+              <i class="ri-upload-2-line" aria-hidden="true"></i> {{ $t('auth.signup.chooseImage') }}
+            </label>
+            <img
+              v-if="formData.profilePictureContent"
+              @click="onClickProfilePicture(formData.profilePictureContent)"
+              :src="formData.profilePictureContent"
+              alt="Profile preview"
+              class="upload-thumb"
+            />
+          </div>
+        </div>
+
+        <div class="field-item field-item--full">
+          <coupon-field
+            v-model="formData.referralCode"
+            input-id="mediatorReferral"
+            :label="$t('mediatorSignup.referralLabel')"
+            :hint="$t('mediatorSignup.referralHint')"
+            :maxlength="40"
+          />
+        </div>
+      </div>
+
+      <!-- Step 2: qualifications -->
+      <div v-if="step === 2" class="field-grid">
+        <div class="step-section-title">{{ $t('mediatorSignup.llbDegreeDetails') }}</div>
+
+        <div class="field-item">
+          <label for="degreeCollege" class="field-label">{{ $t('mediatorSignup.collegeName') }} <span class="req">*</span></label>
+          <input type="text" class="app-input capitalize-first-word" id="degreeCollege" v-model="formData.llbCollege" :placeholder="$t('mediatorSignup.collegeHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="degreeUniversity" class="field-label">{{ $t('mediatorSignup.university') }} <span class="req">*</span></label>
+          <input type="text" class="app-input capitalize-first-word" id="degreeUniversity" v-model="formData.llbUniversity" :placeholder="$t('mediatorSignup.universityHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="degreeYear" class="field-label">{{ $t('mediatorSignup.yearOfCompletion') }} <span class="req">*</span></label>
+          <div class="app-select-wrap">
+            <select class="app-input app-select" id="degreeYear" v-model="formData.llbYear">
+              <option value="0" disabled>{{ $t('mediatorSignup.selectYear') }}</option>
+              <option v-for="(item, index) in years" :key="index" :value="item">{{ item }}</option>
+            </select>
+            <i class="ri-arrow-down-s-line app-select-caret" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <div class="field-item">
+          <label for="llbDegree" class="field-label">{{ $t('mediatorSignup.llbCertificate') }} <span class="req">*</span></label>
+          <div class="upload-row">
+            <input type="file" class="upload-native" id="llbDegree" @change="onUploadLLBDegreeCertificate" />
+            <label for="llbDegree" class="upload-btn">
+              <i class="ri-attachment-2" aria-hidden="true"></i> {{ $t('auth.signup.chooseFile') }}
+            </label>
+            <span v-if="formData.llbCertificate" class="upload-filename">{{ formData.llbCertificate.name }}</span>
+          </div>
+        </div>
+
+        <div class="step-section-title">{{ $t('mediatorSignup.mcpcCourse') }}</div>
+
+        <div class="field-item">
+          <label for="mcpcDegreeYear" class="field-label">{{ $t('mediatorSignup.yearOfCompletion') }} <span class="req">*</span></label>
+          <div class="app-select-wrap">
+            <select class="app-input app-select" id="mcpcDegreeYear" v-model="formData.mediatorCourseYear">
+              <option value="0" disabled>{{ $t('mediatorSignup.selectYear') }}</option>
+              <option v-for="(item, index) in years" :key="index" :value="item">{{ item }}</option>
+            </select>
+            <i class="ri-arrow-down-s-line app-select-caret" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <div class="field-item">
+          <label for="mcpcCertificate" class="field-label">{{ $t('mediatorSignup.mcpcCertificate') }} <span class="req">*</span></label>
+          <div class="upload-row">
+            <input type="file" class="upload-native" id="mcpcCertificate" @change="onUploadMCPCCertificate" />
+            <label for="mcpcCertificate" class="upload-btn">
+              <i class="ri-attachment-2" aria-hidden="true"></i> {{ $t('auth.signup.chooseFile') }}
+            </label>
+            <span v-if="formData.mcpcCertificate" class="upload-filename">{{ formData.mcpcCertificate.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: practice details -->
+      <div v-if="step === 3" class="field-grid">
+        <div class="field-item field-item--full">
+          <label for="barEnrollmentNo" class="field-label">{{ $t('mediatorSignup.barEnrollmentNumber') }} <span class="req">*</span></label>
+          <input type="text" class="app-input capitalize-first-word" id="barEnrollmentNo" v-model="formData.barEnrollmentNo" :placeholder="$t('mediatorSignup.barEnrollmentHint')" />
+        </div>
+
+        <div class="field-item field-item--full">
+          <label class="field-label">{{ $t('mediatorSignup.preferredLanguages') }} <span class="req">*</span></label>
+          <div class="chip-group chip-group--scroll">
+            <div
+              v-for="(option, index) in availableLanguges"
+              :key="index"
+              class="chip"
+              :class="{ 'is-selected': formData.preferredLanguages.includes(option.value), 'is-disabled': formData.preferredLanguages.length >= 3 && !formData.preferredLanguages.includes(option.value) }"
+              @click="toggleSelection(option)"
+            >
+              <i v-if="formData.preferredLanguages.includes(option.value)" class="ri-check-line" aria-hidden="true"></i>
+              {{ option.text }}
+            </div>
+          </div>
+        </div>
+
+        <div class="field-item field-item--full">
+          <label class="field-label">{{ $t('mediatorSignup.preferredAreaOfPractice') }} <span class="req">*</span></label>
+          <div class="chip-group">
+            <div
+              v-for="(option, index) in availableAreaOfPractice"
+              :key="index"
+              class="chip"
+              :class="{ 'is-selected': formData.preferredAreaOfPractice.includes(option), 'is-disabled': formData.preferredAreaOfPractice.length >= 3 && !formData.preferredAreaOfPractice.includes(option) }"
+              @click="toggleExpertiseSelection(option)"
+            >
+              <i v-if="formData.preferredAreaOfPractice.includes(option)" class="ri-check-line" aria-hidden="true"></i>
+              {{ option }}
+            </div>
+          </div>
+        </div>
+
+        <div class="field-item field-item--full">
+          <label class="field-label">{{ $t('mediatorSignup.availableFor') }} <span class="req">*</span></label>
+          <div class="toggle-row">
+            <label class="toggle-pill" :class="{ 'is-selected': formData.selectedHearingTypes.includes('physical') }">
+              <input type="checkbox" value="physical" v-model="formData.selectedHearingTypes" />
+              {{ $t('mediatorSignup.physicalHearing') }}
+            </label>
+            <label class="toggle-pill" :class="{ 'is-selected': formData.selectedHearingTypes.includes('virtual') }">
+              <input type="checkbox" value="virtual" v-model="formData.selectedHearingTypes" />
+              {{ $t('mediatorSignup.virtualHearing') }}
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="signup-form-footer">
+      <div class="footer-left">
+        <button type="button" class="btn-ghost" @click="prevStep(step)">
+          <i class="ri-arrow-left-line" aria-hidden="true"></i> {{ step === 1 ? $t('auth.signup.back') : $t('auth.signup.previous') }}
+        </button>
+      </div>
+      <div class="footer-right">
+        <span class="footer-login">
+          {{ $t('auth.signup.alreadyHaveAccount') }} <a href="#" @click.prevent="onClickLogin">{{ $t('auth.signup.logIn') }}</a>
+        </span>
+        <button v-if="step === 1" type="button" class="btn-primary-cta" @click="nextStep(1)">
+          {{ $t('auth.signup.continue') }} <i class="ri-arrow-right-line" aria-hidden="true"></i>
+        </button>
+        <button v-else-if="step === 2" type="button" class="btn-primary-cta" @click="nextStep(2)">
+          {{ $t('auth.signup.continue') }} <i class="ri-arrow-right-line" aria-hidden="true"></i>
+        </button>
+        <button v-else-if="step === 3" type="button" class="btn-primary-cta btn-success-cta" @click="submitClientForm">
+          <i class="ri-check-line" aria-hidden="true"></i> {{ $t('auth.signup.createAccountBtn') }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
+import CouponField from '../../components/shared/CouponField.vue'
+import { uploadSignupFile } from '../../utils/directUpload'
+import { notifyRequestStart, notifyRequestEnd } from '../../utils/loadingBridge'
 const allowedTypes = [
   'application/pdf',
   'application/msword',
@@ -201,7 +246,8 @@ const maxSize = 2 * 1024 * 1024
 export default {
   name: 'SignUpClient',
   components: {
-    Alert
+    Alert,
+    CouponField
   },
   props: {
     states: []
@@ -254,6 +300,20 @@ export default {
       years: []
     }
   },
+  computed: {
+    steps () {
+      return [
+        { n: 1, label: this.$t('mediatorSignup.stepProfile') },
+        { n: 2, label: this.$t('mediatorSignup.stepQualifications') },
+        { n: 3, label: this.$t('mediatorSignup.stepPractice') }
+      ]
+    },
+    stepSubtitle () {
+      if (this.step === 1) return this.$t('mediatorSignup.subtitleProfile')
+      if (this.step === 2) return this.$t('mediatorSignup.subtitleQualifications')
+      return this.$t('mediatorSignup.subtitlePractice')
+    }
+  },
   mounted () {
     this.loadAvailableLanguages()
     this.generateYears()
@@ -278,7 +338,7 @@ export default {
         `)
         popupWindow.document.close()
       } else {
-        alert('Please allow popups to open the image.')
+        alert(this.$t('mediatorSignup.popupBlocked'))
       }
     },
     showAlert (message, type) {
@@ -303,6 +363,8 @@ export default {
     handlProfilePictureUpload (event) {
       const file = event.target.files[0]
       if (file) {
+        // Keep a local data URL purely for the on-screen preview thumbnail.
+        // The actual file is uploaded directly to S3 at submit time.
         const reader = new FileReader()
         reader.onload = () => {
           this.formData.profilePictureContent = reader.result
@@ -317,28 +379,12 @@ export default {
     onUploadMCPCCertificate (event) {
       const file = event.target.files[0]
       if (file) {
-        const reader = new FileReader()
-        reader.onload = () => {
-          this.formData.mcpcCertificateContent = reader.result
-        }
-        reader.onerror = (error) => {
-          console.error('Error reading file:', error)
-        }
-        reader.readAsDataURL(file)
         this.formData.mcpcCertificate = file
       }
     },
     onUploadLLBDegreeCertificate (event) {
       const file = event.target.files[0]
       if (file) {
-        const reader = new FileReader()
-        reader.onload = () => {
-          this.formData.llbCertificateContent = reader.result
-        }
-        reader.onerror = (error) => {
-          console.error('Error reading file:', error)
-        }
-        reader.readAsDataURL(file)
         this.formData.llbCertificate = file
       }
     },
@@ -374,42 +420,42 @@ export default {
     async nextStep (currentStep) {
       if (currentStep === 1) {
         if (this.formData.name.trim() === '') {
-          this.showAlert('Enter your full name', 'danger')
+          this.showAlert(this.$t('auth.signup.enterName'), 'danger')
           return
         }
         if (this.formData.email.trim() === '') {
-          this.showAlert('Enter email address', 'danger')
+          this.showAlert(this.$t('auth.signup.enterEmail'), 'danger')
           return
         }
         const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
         if (!emailPattern.test(this.formData.email)) {
-          this.showAlert('Invalid email address', 'danger')
+          this.showAlert(this.$t('auth.signup.invalidAccountEmail'), 'danger')
           return
         }
         if (this.formData.phone.trim() === '') {
-          this.showAlert('Enter phone number', 'danger')
+          this.showAlert(this.$t('auth.signup.enterPhone'), 'danger')
           return
         }
         const phonePattern = /^(?:\+91|0)?[789]\d{9}$/
         if (!phonePattern.test(this.formData.phone)) {
-          this.showAlert('Enter valid phone number', 'danger')
+          this.showAlert(this.$t('auth.signup.invalidPhone'), 'danger')
           return
         }
         if (this.formData.state.trim() === '') {
-          this.showAlert('Select state', 'danger')
+          this.showAlert(this.$t('auth.signup.selectStateError'), 'danger')
           return
         }
         if (this.formData.city.trim() === '') {
-          this.showAlert('Enter city', 'danger')
+          this.showAlert(this.$t('auth.signup.enterCity'), 'danger')
           return
         }
         if (this.formData.pincode.trim() === '') {
-          this.showAlert('Enter pincode', 'danger')
+          this.showAlert(this.$t('auth.signup.enterPincode'), 'danger')
           return
         }
         const pinCodePattern = /^[1-9][0-9]{5}$/
         if (!pinCodePattern.test(this.formData.pincode)) {
-          this.showAlert('Enter valid pincode', 'danger')
+          this.showAlert(this.$t('auth.signup.invalidPincode'), 'danger')
           return
         }
         const response = await this.$store.dispatch('isEmailExist', {
@@ -418,50 +464,50 @@ export default {
         })
         if (response.success && response.data.exists) {
           const msg = response.data.pendingApproval
-            ? 'Your registration is already pending approval. Please wait for the Kadr team to activate your account.'
-            : (response.message || 'You already have a mediator account with this email. Please log in instead.')
+            ? this.$t('auth.signup.pendingApproval')
+            : (response.message || this.$t('mediatorSignup.accountExists'))
           this.showAlert(msg, 'danger')
           return false
         }
       } else if (currentStep === 2) {
         if (this.formData.llbCollege.trim() === '') {
-          this.showAlert('Enter LLB College Name', 'danger')
+          this.showAlert(this.$t('mediatorSignup.enterLlbCollege'), 'danger')
           return
         }
         if (this.formData.llbUniversity.trim() === '') {
-          this.showAlert('Enter LLB College University', 'danger')
+          this.showAlert(this.$t('mediatorSignup.enterLlbUniversity'), 'danger')
           return
         }
         if (this.formData.llbYear === 0) {
-          this.showAlert('Select LLB Degree Completion Year', 'danger')
+          this.showAlert(this.$t('mediatorSignup.selectLlbYear'), 'danger')
           return
         }
         if (!this.formData.llbCertificate) {
-          this.showAlert('Upload the LLB Degree Certificate', 'danger')
+          this.showAlert(this.$t('mediatorSignup.uploadLlbCertificate'), 'danger')
           return
         }
         if (!allowedTypes.includes(this.formData.llbCertificate.type)) {
-          this.showAlert('Invalid file type for LLB Degree  Certificate. Allowed types: PDF, DOC, DOCX, JPEG, PNG.', 'danger')
+          this.showAlert(this.$t('mediatorSignup.invalidLlbFileType'), 'danger')
           return
         }
         if (this.formData.llbCertificate.size > maxSize) {
-          this.showAlert('LLB Degree Certificate file size exceeds 2MB.', 'danger')
+          this.showAlert(this.$t('mediatorSignup.llbFileTooLarge'), 'danger')
           return
         }
         if (this.formData.mediatorCourseYear === 0) {
-          this.showAlert('Select MCPC Completion Year', 'danger')
+          this.showAlert(this.$t('mediatorSignup.selectMcpcYear'), 'danger')
           return
         }
         if (!this.formData.mcpcCertificate) {
-          this.showAlert('Upload the MCPC Certificate', 'danger')
+          this.showAlert(this.$t('mediatorSignup.uploadMcpcCertificate'), 'danger')
           return
         }
         if (!allowedTypes.includes(this.formData.mcpcCertificate.type)) {
-          this.showAlert('Invalid MCPC Certificate file type. Allowed types: PDF, DOC, DOCX, JPEG, PNG.', 'danger')
+          this.showAlert(this.$t('mediatorSignup.invalidMcpcFileType'), 'danger')
           return
         }
         if (this.formData.mcpcCertificate.size > maxSize) {
-          this.showAlert('MCPC Certificate file size exceeds 2MB.', 'danger')
+          this.showAlert(this.$t('mediatorSignup.mcpcFileTooLarge'), 'danger')
           return
         }
       }
@@ -476,29 +522,71 @@ export default {
     },
     async submitClientForm () {
       if (this.formData.barEnrollmentNo.trim() === '') {
-        this.showAlert('Enter bar enrollment number', 'danger')
+        this.showAlert(this.$t('mediatorSignup.enterBarEnrollment'), 'danger')
         return
       }
       if (this.formData.preferredLanguages.length === 0) {
-        this.showAlert('Select your preferred language', 'danger')
+        this.showAlert(this.$t('mediatorSignup.selectLanguage'), 'danger')
         return
       }
       if (this.formData.preferredAreaOfPractice.length === 0) {
-        this.showAlert('Select your preferred area of practice', 'danger')
+        this.showAlert(this.$t('mediatorSignup.selectAreaOfPractice'), 'danger')
         return
       }
       if (this.formData.selectedHearingTypes.length === 0) {
-        this.showAlert('Select hearing type', 'danger')
+        this.showAlert(this.$t('mediatorSignup.selectHearingType'), 'danger')
         return
       }
-      const response = await this.$store.dispatch('newMediatorSignup', {
-        userDetails: this.formData
-      })
-      if (response.success) {
-        this.showAlertWithTimeout(response.message, 'success', 7000)
-        setTimeout(() => {
-          this.onClickLogin()
-        }, 1500)
+
+      // Hold the global spinner up for the WHOLE submit — both the direct-to-S3
+      // uploads and the backend signup call. The S3 PUTs use a bare axios call
+      // that the interceptor does not track, so without this manual bracket the
+      // spinner would drop between the presign requests and the backend save,
+      // producing a visible flicker/gap. notifyRequestStart/End increment the
+      // same pending counter the interceptor uses, so nested tracked requests
+      // never drop the count to zero mid-flow. The matching End lives in the
+      // single finally below so it always releases, even on error.
+      notifyRequestStart()
+      try {
+        // Upload files directly to S3 first, then submit the signup with just
+        // the resulting object URLs (no base64 in the request body).
+        let mcpcCertificateUrl = ''
+        let llbCertificateUrl = ''
+        let profilePictureUrl = ''
+        try {
+          ;[mcpcCertificateUrl, llbCertificateUrl, profilePictureUrl] = await Promise.all([
+            uploadSignupFile('mcpc-certificate', this.formData.mcpcCertificate),
+            uploadSignupFile('llb-certificate', this.formData.llbCertificate),
+            uploadSignupFile('profile-picture', this.formData.profilePicture)
+          ])
+        } catch (error) {
+          this.showAlert(error?.message || this.$t('mediatorSignup.fileUploadFailed'), 'danger')
+          return
+        }
+
+        // Send only the plain fields plus the uploaded file URLs. The large File
+        // objects and preview data URL are intentionally excluded.
+        const {
+          profilePicture, mcpcCertificate, llbCertificate, profilePictureContent,
+          ...plainFields
+        } = this.formData
+
+        const response = await this.$store.dispatch('newMediatorSignup', {
+          userDetails: {
+            ...plainFields,
+            mcpcCertificateUrl,
+            llbCertificateUrl,
+            profilePictureUrl
+          }
+        })
+        if (response.success) {
+          this.showAlertWithTimeout(response.message, 'success', 7000)
+          setTimeout(() => {
+            this.onClickLogin()
+          }, 1500)
+        }
+      } finally {
+        notifyRequestEnd()
       }
     }
   }
@@ -506,154 +594,5 @@ export default {
 </script>
 
 <style scoped>
-/* Full Height and Centering */
-body, html {
-  height: 100%;
-  margin: 0;
-}
-
-/* Main container that takes full screen height */
-.container {
-  display: flex;
-  justify-content: center; /* Horizontally center */
-  align-items: center; /* Vertically center */
-  height: 100vh; /* Full height of the viewport */
-}
-
-/* Form container (including Step 0) */
-.form-container {
-  max-width: 600px;
-  width: 100%;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.card {
-  margin-bottom: 20px;
-}
-
-/* Empty step placeholders */
-.empty-step {
-  height: 200px;
-  background-color: #f8f9fa;
-  border: 1px solid #ddd;
-  margin: 10px 0;
-}
-
-/* Ensuring the header stays at the top, regardless of the screen size */
-.header {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  right: 20px;
-  text-align: center;
-}
-
-/* Style for the file upload container */
-.file-upload {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-}
-
-/* Hide the default file input button */
-.file-upload input[type="file"] {
-  display: none;
-}
-
-/* Style the custom file upload label button */
-.custom-file-upload {
-  display: inline-block;
-  padding: 10px 20px;
-  font-size: 14px;
-  cursor: pointer;
-  background-color: #007bff;
-  color: #fff;
-  border: 1px solid #007bff;
-  border-radius: 4px;
-  text-align: center;
-  width: auto;
-  margin-top: 5px;
-}
-
-/* Hover effect for the custom button */
-.custom-file-upload:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
-}
-
-/* Style for the file name to appear once a file is selected */
-.file-name {
-  display: inline-block;
-  margin-top: 5px;
-  color: #555;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* Optional: Styling for focus or when the file is selected */
-.file-upload input[type="file"]:focus + .custom-file-upload,
-.file-upload input[type="file"]:active + .custom-file-upload {
-  border-color: #0056b3;
-  background-color: #e6f0ff;
-}
-.toast.toast-error {
-  background-color: #dc3545; /* Red background */
-  color: white;              /* White text */
-}
-
-.b-toaster-slot{
-  margin-left: auto;
-  margin-right: auto;
-}
-.ml {
-    margin-left: 0.5rem;
-}
-.capitalize-first-word {
-  text-transform: capitalize;
-}
-.checkbox-group .form-check {
-  margin-right: 15px; /* Add spacing between checkboxes */
-}
-
-.checkbox-group .form-check-label {
-  margin-left:0.3rem
-}
-
-.checkbox-group .form-check-input {
-  accent-color: #0d6efd; /* Customize checkbox color */
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: 0.25rem; /* Proper alignment with label */
-}
-.option-card {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #007bff;
-      border-radius: 20px;
-      padding: 0.5rem 1rem;
-      margin: 0.5rem;
-      cursor: pointer;
-      transition: all 0.3s ease-in-out;
-    }
-
-    .option-card.selected {
-      background-color: #007bff;
-      color: #fff;
-      border-color: #0056b3;
-    }
-
-    .option-card.disabled {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-
-    .limit-reached {
-      color: red;
-      font-size: 0.875rem;
-      margin-top: 1rem;
-    }
+@import "../../assets/css/signupForm.css";
 </style>

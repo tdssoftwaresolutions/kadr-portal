@@ -103,8 +103,8 @@ export default {
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  background: linear-gradient(120deg, var(--kadr-primary, #0084ff), #3c7dff);
-  color: #fff;
+  background: linear-gradient(120deg, var(--kadr-hero-from), var(--kadr-hero-to));
+  color: var(--kadr-text-on-primary);
   border-radius: var(--kadr-radius-lg, 12px);
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
@@ -143,7 +143,7 @@ export default {
 .push-banner__close {
   border: 0;
   background: transparent;
-  color: #fff;
+  color: var(--kadr-text-on-primary);
   font-size: 1.4rem;
   line-height: 1;
   cursor: pointer;

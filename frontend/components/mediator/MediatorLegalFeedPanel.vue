@@ -130,7 +130,7 @@ export default {
 
 .feed-item {
   padding: 0.5rem 0;
-  border-bottom: 1px solid #ebedf5;
+  border-bottom: 1px solid var(--kadr-border-info);
 }
 
 .feed-item:last-child {
@@ -139,7 +139,7 @@ export default {
 
 .feed-title {
   font-weight: 600;
-  color: #2b4ecf;
+  color: var(--kadr-primary);
   display: block;
   line-height: 1.35;
   margin-bottom: 0.2rem;
@@ -147,7 +147,7 @@ export default {
 }
 
 .feed-title:hover {
-  color: #1a3aab;
+  color: var(--kadr-primary-hover);
   text-decoration: none;
 }
 
@@ -158,9 +158,9 @@ export default {
 
 .empty-data {
   text-align: center;
-  color: #7c86a7;
+  color: var(--kadr-text-muted);
   padding: 0.8rem 0.5rem;
-  border: 1px dashed #d8dded;
+  border: 1px dashed var(--kadr-border-strong);
   border-radius: 8px;
   font-size: 0.85rem;
 }

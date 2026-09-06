@@ -308,8 +308,7 @@ export default {
 
     async verifySignature ({ commit, dispatch }, { signature, userData, silent = false }) {
       try {
-        if (!silent) dispatch('spinner/showSpinner')
-        const { data } = await apiClient.post(VERIFY_SIGNATURE_ENDPOINT, { signature, userData })
+        const { data } = await apiClient.post(VERIFY_SIGNATURE_ENDPOINT, { signature, userData }, { meta: { silent } })
         if (!data.success) throw new Error(data.error.message)
         commit('setUser', userData)
         return data

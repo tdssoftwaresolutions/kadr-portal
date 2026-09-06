@@ -4,16 +4,16 @@
       <b-col cols="12" md="4" class="mb-3">
         <iq-card>
           <template v-slot:headerTitle>
-            <h4 class="card-title mb-0">Kadr support</h4>
+            <h4 class="card-title mb-0">{{ $t('standardPages.supportTitle') }}</h4>
           </template>
           <template v-slot:body>
             <KadrSupportChannels variant="standalone" />
             <hr class="my-3">
-            <p class="small text-muted mb-2">Your conversations with our team (not tied to a case).</p>
+            <p class="small text-muted mb-2">{{ $t('standardPages.supportConversationsNote') }}</p>
             <b-button variant="outline-primary" size="sm" block class="mb-2" @click="startNew">
-              New conversation
+              {{ $t('standardPages.newConversation') }}
             </b-button>
-            <div v-if="loadingList" class="text-muted small py-2">Loading…</div>
+            <div v-if="loadingList" class="text-muted small py-2">{{ $t('standardPages.loading') }}</div>
             <div v-else class="support-thread-list">
               <button
                 v-for="t in threads"
@@ -26,7 +26,7 @@
                 <div class="font-weight-bold text-break">{{ t.title }}</div>
                 <div class="small text-muted text-break">{{ t.last_preview || '—' }}</div>
               </button>
-              <p v-if="!threads.length" class="text-muted small mb-0">No threads yet. Start a new conversation.</p>
+              <p v-if="!threads.length" class="text-muted small mb-0">{{ $t('standardPages.noThreads') }}</p>
             </div>
           </template>
         </iq-card>
@@ -34,17 +34,17 @@
       <b-col cols="12" md="8">
         <iq-card v-if="mode === 'compose'" class="h-100">
           <template v-slot:headerTitle>
-            <h4 class="card-title mb-0">Message the Kadr team</h4>
+            <h4 class="card-title mb-0">{{ $t('standardPages.messageKadrTeam') }}</h4>
           </template>
           <template v-slot:body>
-            <b-form-group label="What is this about?">
+            <b-form-group :label="$t('standardPages.whatIsThisAbout')">
               <b-form-select v-model="newTopic" :options="topicOptions" />
             </b-form-group>
-            <b-form-group label="Your message">
-              <b-form-textarea v-model="newBody" rows="6" maxlength="8000" placeholder="Describe your question or feedback…" />
+            <b-form-group :label="$t('standardPages.yourMessage')">
+              <b-form-textarea v-model="newBody" rows="6" maxlength="8000" :placeholder="$t('standardPages.messagePlaceholder')" />
             </b-form-group>
             <b-button variant="primary" :disabled="sending || !newBody.trim()" @click="submitNew">
-              {{ sending ? 'Sending…' : 'Send message' }}
+              {{ sending ? $t('standardPages.sending') : $t('standardPages.sendMessage') }}
             </b-button>
             <p v-if="newToast" class="small mt-2 mb-0" :class="newToastOk ? 'text-success' : 'text-danger'">{{ newToast }}</p>
           </template>
@@ -70,18 +70,18 @@
                 </div>
               </article>
             </div>
-            <b-form-group label="Your reply" class="mt-3 mb-0">
+            <b-form-group :label="$t('standardPages.yourReply')" class="mt-3 mb-0">
               <b-form-textarea v-model="replyBody" rows="4" maxlength="8000" />
             </b-form-group>
             <b-button class="mt-2" variant="primary" :disabled="replySending || !replyBody.trim()" @click="sendReply">
-              {{ replySending ? 'Sending…' : 'Send reply' }}
+              {{ replySending ? $t('standardPages.sending') : $t('standardPages.sendReply') }}
             </b-button>
             <p v-if="replyToast" class="small mt-2 mb-0" :class="replyToastOk ? 'text-success' : 'text-danger'">{{ replyToast }}</p>
           </template>
         </iq-card>
         <iq-card v-else>
           <template v-slot:body>
-            <p class="text-muted mb-0">Pick a thread on the left or start a <strong>New conversation</strong>.</p>
+            <p class="text-muted mb-0">{{ $t('standardPages.pickThreadOrStart') }}</p>
           </template>
         </iq-card>
       </b-col>
@@ -114,18 +114,20 @@ export default {
       replyBody: '',
       replySending: false,
       replyToast: '',
-      replyToastOk: false,
-      topicOptions: [
-        { value: 'GENERAL', text: 'General' },
-        { value: 'PORTAL', text: 'Portal / account' },
-        { value: 'TECHNICAL', text: 'Technical' },
-        { value: 'CASE_RELATED', text: 'Case-related (no case selected)' }
-      ]
+      replyToastOk: false
     }
   },
   computed: {
     isComposeQuery () {
       return this.isTruthyCompose(this.$route.query.compose)
+    },
+    topicOptions () {
+      return [
+        { value: 'GENERAL', text: this.$t('standardPages.topicGeneral') },
+        { value: 'PORTAL', text: this.$t('standardPages.topicPortal') },
+        { value: 'TECHNICAL', text: this.$t('standardPages.topicTechnical') },
+        { value: 'CASE_RELATED', text: this.$t('standardPages.topicCaseRelated') }
+      ]
     }
   },
   watch: {
@@ -191,7 +193,7 @@ export default {
       const res = await this.$store.dispatch('getPortalSupportThread', { threadId })
       this.loadingThread = false
       if (res.success && res.data) {
-        this.activeTitle = (res.data.thread && res.data.thread.title) || 'Support'
+        this.activeTitle = (res.data.thread && res.data.thread.title) || this.$t('standardPages.support')
         this.messages = res.data.messages || []
         this.$nextTick(() => {
           const el = this.$el && this.$el.querySelector('.messages-scroll-support')
@@ -199,17 +201,17 @@ export default {
         })
       } else {
         this.messages = []
-        this.replyToast = res.message || 'Could not load thread.'
+        this.replyToast = res.message || this.$t('standardPages.couldNotLoadThread')
         this.replyToastOk = false
       }
     },
     formatAuthor (m) {
       if (m.author_type === 'ADMIN') {
-        const n = m.admin && m.admin.name ? m.admin.name : 'Kadr team'
-        return `Kadr: ${n}`
+        const n = m.admin && m.admin.name ? m.admin.name : this.$t('standardPages.kadrTeam')
+        return this.$t('standardPages.kadrPrefix', { name: n })
       }
-      if (m.author_type === 'PORTAL_USER') return 'You'
-      return 'Message'
+      if (m.author_type === 'PORTAL_USER') return this.$t('standardPages.you')
+      return this.$t('standardPages.message')
     },
     formatTime (d) {
       return this.$formatDateTime(d)
@@ -219,19 +221,25 @@ export default {
       if (!body || this.sending) return
       this.sending = true
       this.newToast = ''
-      const res = await this.$store.dispatch('createPortalSupportThread', {
-        topic: this.newTopic,
-        body
-      })
-      this.sending = false
-      if (res.success && res.data && res.data.threadId) {
-        this.newToastOk = true
-        this.newToast = 'Sent. Our team will respond here and by email.'
-        await this.refreshList()
-        await this.openThread(res.data.threadId)
-      } else {
+      try {
+        const res = await this.$store.dispatch('createPortalSupportThread', {
+          topic: this.newTopic,
+          body
+        })
+        if (res.success && res.data && res.data.threadId) {
+          this.newToastOk = true
+          this.newToast = this.$t('standardPages.sentTeamWillRespond')
+          await this.refreshList()
+          await this.openThread(res.data.threadId)
+        } else {
+          this.newToastOk = false
+          this.newToast = res.message || this.$t('standardPages.couldNotSend')
+        }
+      } catch (e) {
         this.newToastOk = false
-        this.newToast = res.message || 'Could not send.'
+        this.newToast = e.message || this.$t('standardPages.couldNotSend')
+      } finally {
+        this.sending = false
       }
     },
     async sendReply () {
@@ -239,20 +247,26 @@ export default {
       if (!body || !this.selectedId || this.replySending) return
       this.replySending = true
       this.replyToast = ''
-      const res = await this.$store.dispatch('postPortalSupportUserMessage', {
-        threadId: this.selectedId,
-        body
-      })
-      this.replySending = false
-      if (res.success) {
-        this.replyToastOk = true
-        this.replyToast = 'Message sent.'
-        this.replyBody = ''
-        await this.refreshList()
-        await this.openThread(this.selectedId, { skipRouter: true })
-      } else {
+      try {
+        const res = await this.$store.dispatch('postPortalSupportUserMessage', {
+          threadId: this.selectedId,
+          body
+        })
+        if (res.success) {
+          this.replyToastOk = true
+          this.replyToast = this.$t('standardPages.messageSent')
+          this.replyBody = ''
+          await this.refreshList()
+          await this.openThread(this.selectedId, { skipRouter: true })
+        } else {
+          this.replyToastOk = false
+          this.replyToast = res.message || this.$t('standardPages.couldNotSend')
+        }
+      } catch (e) {
         this.replyToastOk = false
-        this.replyToast = res.message || 'Could not send.'
+        this.replyToast = e.message || this.$t('standardPages.couldNotSend')
+      } finally {
+        this.replySending = false
       }
     }
   }
@@ -263,12 +277,12 @@ export default {
 .portal-support-page {
   width: 100%;
   max-width: none;
-  background: #f4f6fb;
+  background: var(--kadr-bg-page);
 }
 .support-thread-list {
   max-height: min(420px, 55vh);
   overflow-y: auto;
-  border: 1px solid #e8ecf4;
+  border: 1px solid var(--kadr-border);
   border-radius: 8px;
 }
 .support-thread-row {
@@ -277,26 +291,26 @@ export default {
   text-align: left;
   padding: 10px 12px;
   border: none;
-  border-bottom: 1px solid #eef1f8;
-  background: #fff;
+  border-bottom: 1px solid var(--kadr-border-info);
+  background: var(--kadr-bg-surface);
   cursor: pointer;
 }
 .support-thread-row:last-child {
   border-bottom: none;
 }
 .support-thread-row:hover {
-  background: #f7f9ff;
+  background: var(--kadr-surface-muted);
 }
 .support-thread-row.active {
-  background: #e8eeff;
+  background: var(--kadr-primary-soft);
 }
 .messages-scroll-support {
   max-height: min(400px, 50vh);
   overflow-y: auto;
-  border: 1px solid #edf0f7;
+  border: 1px solid var(--kadr-border-info);
   border-radius: 8px;
   padding: 0.5rem;
-  background: #fafbff;
+  background: var(--kadr-surface-info);
 }
 .msg-row-support {
   display: flex;
@@ -310,24 +324,24 @@ export default {
   max-width: min(92%, 520px);
   border-radius: 10px;
   padding: 0.5rem 0.65rem;
-  background: #f4f6fb;
-  border: 1px solid #e2e8f5;
+  background: var(--kadr-surface-muted);
+  border: 1px solid var(--kadr-border-info);
 }
 .msg-own-support .msg-bubble-support {
-  background: #e8eeff;
-  border-color: #c8d4f8;
+  background: var(--kadr-primary-soft);
+  border-color: var(--kadr-primary-soft-border);
 }
 .msg-meta-support {
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
   font-size: 0.75rem;
-  color: #5c678a;
+  color: var(--kadr-text-muted);
   margin-bottom: 0.25rem;
 }
 .msg-author-support {
   font-weight: 700;
-  color: #2f3752;
+  color: var(--kadr-text-primary);
 }
 .msg-body-support {
   white-space: pre-wrap;

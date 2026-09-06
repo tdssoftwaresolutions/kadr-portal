@@ -6,15 +6,47 @@
 }
 
 .hero-card {
+  position: relative;
+  overflow: hidden;
   border-radius: var(--kadr-radius-2xl);
-  padding: 1.25rem;
-  margin-bottom: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
   background: linear-gradient(120deg, var(--kadr-hero-from) 0%, var(--kadr-hero-to) 100%);
   color: var(--kadr-text-on-primary);
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+  box-shadow: var(--kadr-shadow-primary);
+}
+
+/* Soft decorative glow — adds depth without distracting. */
+.hero-card::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+}
+
+.hero-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.stat-card {
+  transition: transform var(--kadr-duration-fast) var(--kadr-ease),
+    background var(--kadr-duration-fast) var(--kadr-ease);
+}
+
+.stat-card-link:hover,
+.stat-card-link:focus {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.24);
+  outline: none;
 }
 
 .hero-profile {
@@ -93,6 +125,17 @@
 
 .workspace-card {
   border-radius: var(--kadr-radius-xl);
+  box-shadow: var(--kadr-shadow-sm);
+}
+
+.schedule-item {
+  transition: border-color var(--kadr-duration-fast) var(--kadr-ease),
+    box-shadow var(--kadr-duration-fast) var(--kadr-ease);
+}
+
+.schedule-item:hover {
+  border-color: var(--kadr-primary-soft-border);
+  box-shadow: var(--kadr-shadow-xs);
 }
 
 .list-scroll {
@@ -164,9 +207,10 @@
 
 .empty-state i,
 .empty-state .empty-state-icon {
-  color: #a3acc7;
+  color: var(--kadr-primary);
+  opacity: 0.55;
   margin-bottom: 0.7rem;
-  font-size: 2rem;
+  font-size: 2.25rem;
   display: block;
 }
 
@@ -196,8 +240,9 @@
 
 .kadr-page-header__title {
   margin: 0;
-  font-size: 1.35rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--kadr-text-primary);
 }
 
@@ -255,6 +300,7 @@
   border: 1px solid var(--kadr-border);
   border-radius: var(--kadr-radius-xl);
   padding: 1rem;
+  box-shadow: var(--kadr-shadow-sm);
 }
 
 .overview-head h4 {
@@ -284,9 +330,17 @@
   align-items: flex-start;
 }
 
+.case-pill {
+  transition: border-color var(--kadr-duration-fast) var(--kadr-ease), background var(--kadr-duration-fast) var(--kadr-ease);
+}
+
+.case-pill:hover {
+  border-color: var(--kadr-primary-soft-border);
+}
+
 .case-pill.active {
-  border-color: var(--kadr-accent);
-  background: #edf2ff;
+  border-color: var(--kadr-primary);
+  background: var(--kadr-primary-soft);
 }
 
 .case-pill span {
@@ -366,6 +420,7 @@
   border-radius: var(--kadr-radius-lg);
   padding: 0.9rem;
   background: var(--kadr-bg-surface);
+  box-shadow: var(--kadr-shadow-xs);
 }
 
 .section-head h5 {
@@ -386,38 +441,39 @@
 .action-card {
   border-radius: var(--kadr-radius-md);
   padding: 0.9rem;
-  color: #3d2716;
-  border: 1px solid #f4c7b0;
-  background: linear-gradient(135deg, #fff2ec 0%, #ffe4d6 100%);
-  box-shadow: 0 1px 14px rgba(211, 116, 52, 0.12);
+  color: var(--kadr-text-primary);
+  border: 1px solid var(--kadr-primary-soft-border);
+  background: linear-gradient(135deg, var(--kadr-surface-muted) 0%, var(--kadr-primary-soft) 100%);
+  box-shadow: var(--kadr-shadow-xs);
 }
 
 .action-card--clickable {
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform var(--kadr-duration-fast) var(--kadr-ease), box-shadow var(--kadr-duration-fast) var(--kadr-ease);
 }
 
 .action-card--clickable:hover,
 .action-card--clickable:focus {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 18px rgba(211, 116, 52, 0.18);
+  transform: translateY(-2px);
+  box-shadow: var(--kadr-shadow-md);
   outline: none;
 }
 
 .action-card.primary {
-  background: linear-gradient(135deg, #fff4e9, #ffe4c9);
-  border-color: #f2c8a5;
+  background: linear-gradient(135deg, #f2effc, var(--kadr-primary-soft));
+  border-color: var(--kadr-primary-soft-border);
 }
 
 .action-card.success {
-  background: linear-gradient(135deg, #e6f7ea, #ccecd5);
-  border-color: #a7d7b1;
-  color: #1f5137;
+  background: linear-gradient(135deg, #eef8f2, var(--kadr-status-success-bg));
+  border-color: #bfe6d2;
+  color: var(--kadr-status-success-text);
 }
 
 .action-card.warning {
-  background: linear-gradient(135deg, #fff6e4, #ffe1c1);
-  border-color: #f1c08a;
+  background: linear-gradient(135deg, #fdf6e8, var(--kadr-status-warning-bg));
+  border-color: #eed6a6;
+  color: var(--kadr-status-warning-text);
 }
 
 .action-card p {
@@ -432,7 +488,7 @@
 
 .action-card-icon {
   font-size: 0.95rem;
-  color: #c84a2d;
+  color: var(--kadr-primary);
 }
 
 .action-required-section .section-head h5,
@@ -444,12 +500,85 @@
 
 .section-icon {
   font-size: 1rem;
-  color: #d94430;
+  color: var(--kadr-primary);
 }
 
 .workspace-side-stack {
   position: sticky;
   top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Case workspace tabs — group the dense case sections so users don't
+   scroll a long vertical stack to reach the part they need. */
+.workspace-tabs {
+  display: flex;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid var(--kadr-border);
+  -webkit-overflow-scrolling: touch;
+}
+
+.workspace-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--kadr-text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--kadr-radius-md) var(--kadr-radius-md) 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--kadr-duration-fast) var(--kadr-ease),
+    background var(--kadr-duration-fast) var(--kadr-ease),
+    border-color var(--kadr-duration-fast) var(--kadr-ease);
+}
+
+.workspace-tab i {
+  font-size: 0.85rem;
+}
+
+.workspace-tab:hover,
+.workspace-tab:focus {
+  color: var(--kadr-primary);
+  background: var(--kadr-primary-soft);
+  outline: none;
+}
+
+.workspace-tab.is-active {
+  color: var(--kadr-primary);
+  border-bottom-color: var(--kadr-primary);
+  font-weight: 600;
+}
+
+.workspace-tab-badge {
+  background: var(--kadr-primary-soft);
+  color: var(--kadr-primary);
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.18rem 0.42rem;
+  min-width: 1.15rem;
+  text-align: center;
+}
+
+.workspace-tab.is-active .workspace-tab-badge {
+  background: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
+}
+
+.workspace-tab-panel {
+  padding-top: 0.9rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;

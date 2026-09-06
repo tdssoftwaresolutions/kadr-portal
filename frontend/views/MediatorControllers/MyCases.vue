@@ -7,6 +7,7 @@
       :has-cases="myCases.length > 0"
       :title="workspaceTitle"
       :subtitle="workspaceSubtitle"
+      :tabs="caseTabs"
       :empty-title="emptyTitle"
       :empty-description="emptyDescription"
     >
@@ -20,42 +21,42 @@
           @click="selectCase(caseItem)"
         >
           <span>{{ caseItem.caseId }}</span>
-          <small>{{ caseItem.case_statuses?.name || 'Unknown' }}</small>
+          <small>{{ caseItem.case_statuses?.name || $t('mediatorCases.unknownStatus') }}</small>
         </button>
       </template>
 
-      <template #main>
+      <template #tab-overview>
         <div class="quick-info-grid">
           <article class="info-card">
-            <label>Case ID</label>
+            <label>{{ $t('mediatorCases.caseIdLabel') }}</label>
             <strong>{{ selectedCase.caseId || '-' }}</strong>
           </article>
           <article class="info-card">
-            <label>Status</label>
+            <label>{{ $t('mediatorCases.statusLabel') }}</label>
             <strong class="status-chip" :class="statusBadgeClass">{{ selectedCase.case_statuses?.name || '-' }}</strong>
           </article>
           <article class="info-card">
-            <label>Sub Status</label>
+            <label>{{ $t('mediatorCases.subStatusLabel') }}</label>
             <strong>{{ selectedCase.case_sub_statuses?.name || '-' }}</strong>
           </article>
           <article class="info-card">
-            <label>Filed On</label>
+            <label>{{ $t('mediatorCases.filedOnLabel') }}</label>
             <strong>{{ formatDateTime(selectedCase.created_at) }}</strong>
           </article>
           <article class="info-card">
-            <label>Type</label>
+            <label>{{ $t('mediatorCases.typeLabel') }}</label>
             <strong>{{ selectedCase.case_type || '-' }}</strong>
           </article>
           <article class="info-card">
-            <label>Category</label>
+            <label>{{ $t('mediatorCases.categoryLabel') }}</label>
             <strong>{{ selectedCase.category || '-' }}</strong>
           </article>
         </div>
 
         <section class="info-card">
-          <label>Case Description</label>
+          <label>{{ $t('mediatorCases.caseDescriptionLabel') }}</label>
           <strong>
-            {{ selectedCase.description || 'No description provided for this case.' }}
+            {{ selectedCase.description || $t('mediatorCases.noDescription') }}
           </strong>
         </section>
 
@@ -63,9 +64,9 @@
           <div class="section-head">
             <h5>
               <i class="fas fa-exclamation-circle section-icon"></i>
-              Action Required
+              {{ $t('mediatorCases.actionRequiredHeading') }}
             </h5>
-            <small>Complete pending steps for this case.</small>
+            <small>{{ $t('mediatorCases.actionRequiredSubtitle') }}</small>
           </div>
           <div v-if="mediatorActionCards.length" class="action-grid">
             <article
@@ -93,88 +94,103 @@
             v-else
             compact
             icon=""
-            description="No immediate action is required for this case."
+            :description="$t('mediatorCases.noActionRequired')"
           />
         </section>
 
         <section v-if="!isPastView" class="section-card">
           <div class="section-head">
-            <h5>Mediator Actions</h5>
-            <small>Run key workflows directly from this case workspace.</small>
+            <h5>{{ $t('mediatorCases.mediatorActionsHeading') }}</h5>
+            <small>{{ $t('mediatorCases.mediatorActionsSubtitle') }}</small>
           </div>
           <div class="action-grid">
             <article class="action-card primary">
-              <h6><i class="fas fa-calendar-plus action-card-icon"></i> Schedule Meeting</h6>
-              <p>Create a meeting for this case without leaving the dashboard.</p>
-              <button class="btn btn-sm btn-light" @click="openMeetingModal">Create Meeting</button>
+              <h6><i class="fas fa-calendar-plus action-card-icon"></i> {{ $t('mediatorCases.scheduleMeetingCardTitle') }}</h6>
+              <p>{{ $t('mediatorCases.scheduleMeetingCardBody') }}</p>
+              <button class="btn btn-sm btn-light" @click="openMeetingModal">{{ $t('mediatorCases.createMeetingButton') }}</button>
             </article>
             <article class="action-card warning">
-              <h6><i class="fas fa-random action-card-icon"></i>Close Case</h6>
-              <p>Update internal tracking stage to move to close stage.</p>
-              <button class="btn btn-sm btn-primary" @click="applyWorkflowStatus">Apply</button>
+              <h6><i class="fas fa-flag-checkered action-card-icon"></i>{{ $t('mediatorCases.closeCaseCardTitle') }}</h6>
+              <p>{{ $t('mediatorCases.closeCaseCardBody') }}</p>
+              <button class="btn btn-sm btn-primary" @click="applyWorkflowStatus">{{ $t('mediatorCases.closeCaseButton') }}</button>
             </article>
           </div>
         </section>
+      </template>
 
+      <template #tab-parties>
         <section class="section-card">
           <div class="section-head">
-            <h5>Parties</h5>
-            <small>Both disputing parties attached to this case.</small>
+            <h5>{{ $t('mediatorCases.partiesHeading') }}</h5>
+            <small>{{ $t('mediatorCases.partiesSubtitle') }}</small>
           </div>
           <div class="party-grid">
             <article class="party-card">
-              <h6>First Party</h6>
-              <p><span>Name:</span>{{ selectedCase.user_cases_first_partyTouser?.name || '-' }}</p>
-              <p><span>Email:</span>{{ selectedCase.user_cases_first_partyTouser?.email || '-' }}</p>
-              <p><span>Phone:</span>{{ selectedCase.user_cases_first_partyTouser?.phone_number || '-' }}</p>
+              <h6>{{ $t('mediatorCases.firstPartyHeading') }}</h6>
+              <p><span>{{ $t('mediatorCases.nameLabel') }}</span>{{ selectedCase.user_cases_first_partyTouser?.name || '-' }}</p>
+              <p><span>{{ $t('mediatorCases.emailLabel') }}</span>{{ selectedCase.user_cases_first_partyTouser?.email || '-' }}</p>
+              <p><span>{{ $t('mediatorCases.phoneLabel') }}</span>{{ selectedCase.user_cases_first_partyTouser?.phone_number || '-' }}</p>
+              <template v-if="selectedCase.user_cases_first_party_repTouser">
+                <p><span>{{ $t('mediatorCases.representativeLabel') }}</span>{{ selectedCase.user_cases_first_party_repTouser.name || '-' }}</p>
+                <p v-if="selectedCase.user_cases_first_party_repTouser.email"><span>{{ $t('mediatorCases.repEmailLabel') }}</span>{{ selectedCase.user_cases_first_party_repTouser.email }}</p>
+              </template>
             </article>
             <article class="party-card">
-              <h6>Second Party</h6>
-              <p><span>Name:</span>{{ selectedCase.user_cases_second_partyTouser?.name || '-' }}</p>
-              <p><span>Email:</span>{{ selectedCase.user_cases_second_partyTouser?.email || '-' }}</p>
-              <p><span>Phone:</span>{{ selectedCase.user_cases_second_partyTouser?.phone_number || '-' }}</p>
+              <h6>{{ $t('mediatorCases.secondPartyHeading') }}</h6>
+              <p><span>{{ $t('mediatorCases.nameLabel') }}</span>{{ selectedCase.user_cases_second_partyTouser?.name || '-' }}</p>
+              <p><span>{{ $t('mediatorCases.emailLabel') }}</span>{{ selectedCase.user_cases_second_partyTouser?.email || '-' }}</p>
+              <p><span>{{ $t('mediatorCases.phoneLabel') }}</span>{{ selectedCase.user_cases_second_partyTouser?.phone_number || '-' }}</p>
+              <template v-if="selectedCase.user_cases_second_party_repTouser">
+                <p><span>{{ $t('mediatorCases.representativeLabel') }}</span>{{ selectedCase.user_cases_second_party_repTouser.name || '-' }}</p>
+                <p v-if="selectedCase.user_cases_second_party_repTouser.email"><span>{{ $t('mediatorCases.repEmailLabel') }}</span>{{ selectedCase.user_cases_second_party_repTouser.email }}</p>
+              </template>
             </article>
           </div>
         </section>
 
+      </template>
+
+      <template #tab-documents>
         <section class="section-card documents-section">
           <div class="section-head">
-            <h5>Documents</h5>
-            <small>Access case files and supporting documents directly from here.</small>
+            <h5>{{ $t('mediatorCases.documentsHeading') }}</h5>
+            <small>{{ $t('mediatorCases.documentsSubtitle') }}</small>
           </div>
           <div v-if="selectedCase.evidence_document_url" class="docs-grid">
             <FilePreview
               :key="selectedCase.evidence_document_url"
               :url="selectedCase.evidence_document_url"
-              name="Evidence Document"
+              :name="$t('mediatorCases.evidenceDocumentName')"
             />
           </div>
           <kadr-empty-state
             v-else
             compact
             icon=""
-            :description="CASES.NO_DOCUMENTS"
+            :description="$t('mediatorCases.noDocuments')"
           />
         </section>
+      </template>
 
+      <template #tab-meetings>
         <section class="section-card">
           <div class="section-head">
-            <h5>Meetings</h5>
-            <small>Upcoming and past sessions; add summary and next steps after each past case meeting.</small>
+            <h5>{{ $t('mediatorCases.meetingsHeading') }}</h5>
+            <small>{{ $t('mediatorCases.meetingsSubtitle') }}</small>
           </div>
           <div v-if="caseMeetingsSorted.length" class="meeting-list">
             <article v-for="meeting in caseMeetingsSorted" :key="meeting.id" class="meeting-item">
               <div class="meeting-item-body">
                 <div class="meeting-badges">
                   <span class="badge-soft" :class="meetingPast(meeting) ? 'badge-past' : 'badge-upcoming'">
-                    {{ meetingPast(meeting) ? 'Past' : 'Upcoming' }}
+                    {{ meetingPast(meeting) ? $t('mediatorCases.badgePast') : $t('mediatorCases.badgeUpcoming') }}
                   </span>
                 </div>
-                <h6>{{ meeting.title || `Case #${selectedCase.caseId}` }}</h6>
+                <h6>{{ meeting.title || $t('mediatorCases.meetingTitleFallback', { caseId: selectedCase.caseId }) }}</h6>
                 <p>{{ formatDateTime(meeting.start_datetime || meeting.startDate) }}</p>
                 <div v-if="meetingPast(meeting) && isKadrMeeting(meeting)" class="feedback-summary">
-                  <p v-if="meeting.meeting_summary && userId === selectedCase.user_cases_mediatorTouser?.id"><span>Summary:</span> {{ meeting.meeting_summary }}</p>
-                  <p v-if="meeting.mediator_next_steps && userId === selectedCase.user_cases_mediatorTouser?.id"><span>Next steps:</span> {{ meeting.mediator_next_steps }}</p>
+                  <p v-if="meeting.meeting_summary && userId === selectedCase.user_cases_mediatorTouser?.id"><span>{{ $t('mediatorCases.summaryLabel') }}</span> {{ meeting.meeting_summary }}</p>
+                  <p v-if="meeting.mediator_next_steps && userId === selectedCase.user_cases_mediatorTouser?.id"><span>{{ $t('mediatorCases.nextStepsLabel') }}</span> {{ meeting.mediator_next_steps }}</p>
                 </div>
               </div>
               <div class="meeting-actions">
@@ -184,7 +200,7 @@
                   target="_blank"
                   class="btn btn-outline-primary btn-sm"
                 >
-                  Join
+                  {{ $t('mediatorCases.joinButton') }}
                 </a>
                 <button
                   v-if="showMediatorFeedbackButton(meeting)"
@@ -192,7 +208,7 @@
                   class="btn btn-warning btn-sm"
                   @click="openMeetingFeedbackModal(meeting)"
                 >
-                  Add meeting notes
+                  {{ $t('mediatorCases.addMeetingNotesButton') }}
                 </button>
               </div>
             </article>
@@ -201,7 +217,7 @@
             v-else
             compact
             icon=""
-            :description="CASES.NO_MEETING"
+            :description="$t('mediatorCases.noMeetings')"
           />
         </section>
       </template>
@@ -209,14 +225,28 @@
       <template v-if="selectedCase.id" #side>
         <section class="section-card side-progress-card">
           <div class="section-head">
-            <h5>Case progress</h5>
-            <small>Current stage, coming up, and activity.</small>
+            <h5>{{ $t('mediatorCases.caseProgressHeading') }}</h5>
+            <small>{{ $t('mediatorCases.caseProgressSubtitle') }}</small>
           </div>
           <CaseProgressPanel
             :progress="selectedCase.case_progress"
             :is-past-view="isPastView"
             @action="handleProgressAction"
           />
+        </section>
+        <section v-if="!isPastView" class="section-card note-card">
+          <div class="section-head">
+            <h5>{{ $t('mediatorCases.privateNotesHeading') }}</h5>
+            <small>{{ $t('mediatorCases.privateNotesSubtitle') }}</small>
+          </div>
+          <textarea
+            v-model="caseNote"
+            class="note-input"
+            :placeholder="$t('mediatorCases.notePlaceholder')"
+          ></textarea>
+          <div class="note-actions">
+            <button type="button" class="btn btn-sm btn-primary" @click="saveCaseNote">{{ $t('mediatorCases.saveNoteButton') }}</button>
+          </div>
         </section>
         <section v-if="showCorrespondencePanel" class="section-card side-correspondence-card">
           <CaseCorrespondencePanel
@@ -233,45 +263,56 @@
       </template>
     </case-workspace-layout>
 
-     <b-modal size="xl" id="resolve-modal" v-model="showResolveModal" title="Mark Case as Resolved" no-footer>
+     <b-modal
+       size="xl"
+       id="resolve-modal"
+       v-model="showResolveModal"
+       :title="$t('mediatorCases.resolveModalTitle')"
+       no-footer
+       :no-close-on-backdrop="resolveSubmitting"
+       :no-close-on-esc="resolveSubmitting"
+       :hide-header-close="resolveSubmitting"
+     >
       <form @submit.prevent="submitResolve">
         <div class="form-group mb-3">
-          <label>Status</label>
+          <label>{{ $t('mediatorCases.resolveStatusLabel') }}</label>
           <div class="resolve-status-selector">
             <button
               type="button"
               :class="['resolve-status-btn', { active: resolveStatus === 'closed_success', success: resolveStatus === 'closed_success' }]"
+              :aria-pressed="resolveStatus === 'closed_success'"
               @click="setResolveStatus('closed_success')"
             >
-              Success
+              {{ $t('mediatorCases.resolveStatusSuccess') }}
             </button>
             <button
               type="button"
               :class="['resolve-status-btn', { active: resolveStatus === 'closed_no_success', failed: resolveStatus === 'closed_no_success' }]"
+              :aria-pressed="resolveStatus === 'closed_no_success'"
               @click="setResolveStatus('closed_no_success')"
             >
-              Failed
+              {{ $t('mediatorCases.resolveStatusFailed') }}
             </button>
           </div>
         </div>
         <div class="form-group mb-3">
-          <label>Agreed terms</label>
+          <label>{{ $t('mediatorCases.agreedTermsLabel') }}</label>
           <editor v-model="resolveForm.agreementText" :init="options" license-key="gpl"></editor>
         </div>
         <div class="form-group mb-3">
-          <label>Signature:</label>
+          <label>{{ $t('mediatorCases.signatureLabel') }}</label>
           <div class="signature-type-selector">
             <button
               type="button"
               :class="{ active: signatureType === 'digital' }"
               @click="setSignatureType('digital')">
-              Digital Signature
+              {{ $t('mediatorCases.digitalSignatureButton') }}
             </button>
             <button
               type="button"
               :class="{ active: signatureType === 'manual' }"
               @click="setSignatureType('manual')">
-              Sign Manually
+              {{ $t('mediatorCases.manualSignatureButton') }}
             </button>
           </div>
           <div v-if="signatureType === 'digital'" class="digital-signature-box full-width">
@@ -280,13 +321,30 @@
           <div v-else-if="signatureType === 'manual'" class="manual-signature">
             <canvas ref="signaturePad" class="signature-canvas"></canvas>
             <button type="button" @click="clearResolveSignature" class="btn btn-secondary" style="margin: 0px;width: 100%;">
-              Clear <i class="ri-refresh-line"></i>
+              {{ $t('mediatorCases.clearButton') }} <i class="ri-refresh-line"></i>
             </button>
           </div>
         </div>
+        <div v-if="resolveConfirming" class="resolve-confirm-note" role="alert">
+          <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+          <span>{{ $t('mediatorCases.resolveConfirmNote') }}</span>
+        </div>
         <div class="text-end" style="margin-top: 24px; display: flex; gap: 16px; justify-content: flex-end;">
-          <b-button variant="secondary" @click="showResolveModal = false" type="button">Cancel</b-button>
-          <b-button type="submit" variant="primary">Save</b-button>
+          <b-button
+            variant="secondary"
+            :disabled="resolveSubmitting"
+            type="button"
+            @click="resolveConfirming ? cancelResolveConfirm() : (showResolveModal = false)"
+          >
+            {{ resolveConfirming ? $t('mediatorCases.goBackButton') : $t('mediatorCases.cancelButton') }}
+          </b-button>
+          <b-button v-if="!resolveConfirming" type="submit" variant="primary" :disabled="resolveSubmitting">
+            {{ $t('mediatorCases.closeCaseButton') }}
+          </b-button>
+          <b-button v-else type="button" variant="danger" :disabled="resolveSubmitting" @click="confirmResolve">
+            <kadr-spinner v-if="resolveSubmitting" size="sm" class="me-2" />
+            {{ resolveSubmitting ? $t('mediatorCases.closingCaseButton') : $t('mediatorCases.confirmCloseButton') }}
+          </b-button>
         </div>
       </form>
     </b-modal>
@@ -295,13 +353,13 @@
       size="lg"
       id="schedule-meeting-modal"
       v-model="showScheduleMeetingModal"
-      title="Schedule Case Meeting"
+      :title="$t('mediatorCases.scheduleMeetingModalTitle')"
       @ok="submitMeeting"
       scrollable
     >
       <div class="data-row">
         <div class="col-12">
-          <div class="data-title">Title</div>
+          <div class="data-title">{{ $t('mediatorCases.meetingTitleLabel') }}</div>
           <b-form-input
             id="title"
             type="text"
@@ -313,11 +371,11 @@
       </div>
       <div class="data-row">
         <div class="col-12">
-          <div class="data-title">Description</div>
+          <div class="data-title">{{ $t('mediatorCases.meetingDescriptionLabel') }}</div>
           <b-form-textarea
             id="textarea"
             v-model="meetingForm.description"
-            placeholder="Enter description.."
+            :placeholder="$t('mediatorCases.meetingDescriptionPlaceholder')"
             rows="3"
             class="form-control"
             max-rows="6"
@@ -326,12 +384,12 @@
       </div>
       <div class="data-row">
         <div class="col-12">
-            <div class="data-title">Select Date and Time</div>
+            <div class="data-title">{{ $t('mediatorCases.meetingDateTimeLabel') }}</div>
             <kadr-date-time-picker
               id="appointment-datetime"
               v-model="meetingForm.start"
               min-date="today"
-              placeholder="Select date and time"
+              :placeholder="$t('mediatorCases.meetingDateTimePlaceholder')"
             />
         </div>
       </div>
@@ -342,7 +400,7 @@
       modal-id="mediator-meeting-feedback"
       role="mediator"
       :event-title="feedbackEvent && feedbackEvent.title"
-      :case-label="selectedCase.caseId ? `Case #${selectedCase.caseId}` : ''"
+      :case-label="selectedCase.caseId ? $t('mediatorCases.caseLabel', { caseId: selectedCase.caseId }) : ''"
       :initial-summary="feedbackEvent && feedbackEvent.meeting_summary"
       :initial-mediator-steps="feedbackEvent && feedbackEvent.mediator_next_steps"
       :submitting="feedbackSubmitting"
@@ -418,24 +476,21 @@ export default {
     }
   },
   computed: {
-    CASES () {
-      return CASES
-    },
     workspaceTitle () {
-      return this.isPastView ? CASES.PAST_TITLE : 'Mediator Case Workspace'
+      return this.isPastView ? CASES.PAST_TITLE : this.$t('mediatorCases.workspaceTitle')
     },
     workspaceSubtitle () {
       return this.isPastView
         ? CASES.PAST_SUBTITLE
-        : 'Switch between assigned cases, schedule meetings, track status and keep case-level notes.'
+        : this.$t('mediatorCases.workspaceSubtitle')
     },
     emptyTitle () {
-      return this.isPastView ? 'No Past Mediations' : 'No Assigned Cases'
+      return this.isPastView ? this.$t('mediatorCases.emptyTitlePast') : this.$t('mediatorCases.emptyTitleActive')
     },
     emptyDescription () {
       return this.isPastView
-        ? 'No completed, cancelled, or failed mediation cases are available right now.'
-        : 'Assigned mediator cases will appear here with complete case context and actions.'
+        ? this.$t('mediatorCases.emptyDescriptionPast')
+        : this.$t('mediatorCases.emptyDescriptionActive')
     },
     resolveUserInitials () {
       // Use the mediator's name or fallback
@@ -452,6 +507,14 @@ export default {
       const list = [...(this.selectedCase.events || [])]
       return list.sort((a, b) => new Date(b.start_datetime) - new Date(a.start_datetime))
     },
+    caseTabs () {
+      return [
+        { key: 'overview', label: this.$t('mediatorCases.overviewTab'), icon: 'fas fa-clipboard-list' },
+        { key: 'parties', label: this.$t('mediatorCases.partiesTab'), icon: 'fas fa-users' },
+        { key: 'documents', label: this.$t('mediatorCases.documentsTab'), icon: 'fas fa-folder-open', badge: this.selectedCase.evidence_document_url ? 1 : null },
+        { key: 'meetings', label: this.$t('mediatorCases.meetingsTab'), icon: 'fas fa-calendar-day', badge: this.caseMeetingsSorted.length || null }
+      ]
+    },
     mediatorActionCards () {
       if (this.isPastView) return []
       const actions = []
@@ -461,9 +524,12 @@ export default {
         if (!mediatorNeedsMeetingFeedback(ev)) continue
         actions.push({
           key: `meeting-notes-${ev.id}`,
-          title: 'Post-meeting notes',
-          description: `Add summary and next steps for "${ev.title || 'a session'}" (${this.formatDateTime(ev.start_datetime)}).`,
-          buttonText: 'Open form',
+          title: this.$t('mediatorCases.postMeetingNotesTitle'),
+          description: this.$t('mediatorCases.postMeetingNotesDescription', {
+            title: ev.title || this.$t('mediatorCases.sessionFallback'),
+            dateTime: this.formatDateTime(ev.start_datetime)
+          }),
+          buttonText: this.$t('mediatorCases.addMeetingNotesButton'),
           loading: false,
           action: () => this.openMeetingFeedbackModal(ev),
           variant: 'warning'
@@ -483,29 +549,48 @@ export default {
     }
   },
   methods: {
-    async submitResolve () {
+    // Validate the form, then ask for explicit confirmation before the
+    // irreversible close. The actual submit happens in confirmResolve().
+    submitResolve () {
       if (this.signatureType === 'manual') {
         if (this.signaturePad && !this.signaturePad.isEmpty()) this.resolveForm.signature = this.signaturePad.toDataURL()
-        else return this.showAlert('Please provide a manual signature.', 'danger')
+        else return this.showAlert(this.$t('mediatorCases.manualSignatureRequired'), 'danger')
       } else this.resolveForm.signature = this.resolveUserInitials
 
-      if (!this.resolveForm.agreementText.trim()) return this.showAlert('Please enter what both parties agreed.', 'danger')
+      if (!this.resolveForm.agreementText.trim()) return this.showAlert(this.$t('mediatorCases.agreementTextRequired'), 'danger')
+
+      this.resolveConfirming = true
+    },
+    cancelResolveConfirm () {
+      this.resolveConfirming = false
+    },
+    async confirmResolve () {
       const payload = {
         caseId: this.resolveForm.caseId,
         resolveStatus: this.resolveStatus,
         agreementText: this.resolveForm.agreementText,
         signature: this.resolveForm.signature
       }
-      const response = await this.$store.dispatch('markCaseResolved', payload)
-      if (response.success) {
-        this.showAlert(response.message, 'success')
-        this.showResolveModal = false
-        if (this.paginatedData && this.paginatedData.casesWithEvents) {
-          this.paginatedData.casesWithEvents = this.paginatedData.casesWithEvents.filter(
-            c => c.id !== this.resolveForm.caseId
-          )
-          if (typeof this.paginatedData.total === 'number') this.paginatedData.total = Math.max(0, this.paginatedData.total - 1)
+      this.resolveSubmitting = true
+      try {
+        const response = await this.$store.dispatch('markCaseResolved', payload)
+        if (response.success) {
+          this.showAlert(response.message || this.$t('mediatorCases.caseClosedSuccess'), 'success')
+          this.resolveConfirming = false
+          this.showResolveModal = false
+          if (this.paginatedData && this.paginatedData.casesWithEvents) {
+            this.paginatedData.casesWithEvents = this.paginatedData.casesWithEvents.filter(
+              c => c.id !== this.resolveForm.caseId
+            )
+            if (typeof this.paginatedData.total === 'number') this.paginatedData.total = Math.max(0, this.paginatedData.total - 1)
+          }
+        } else {
+          // Drop back to the editable form so the mediator can retry/adjust.
+          this.resolveConfirming = false
+          this.showAlert(response.message || this.$t('mediatorCases.caseCloseFailed'), 'danger')
         }
+      } finally {
+        this.resolveSubmitting = false
       }
     },
     setResolveStatus (status) {
@@ -575,14 +660,20 @@ export default {
     },
     openMeetingModal () {
       this.meetingForm = {
-        title: this.selectedCase.caseId ? `Meeting for Case ${this.selectedCase.caseId}` : 'Case Meeting',
+        title: this.selectedCase.caseId
+          ? this.$t('mediatorCases.defaultMeetingTitle', { caseId: this.selectedCase.caseId })
+          : this.$t('mediatorCases.defaultMeetingTitleFallback'),
         start: '',
         description: this.getDefaultMeetingDescription()
       }
       this.showScheduleMeetingModal = true
     },
     getDefaultMeetingDescription () {
-      return `Case #${this.selectedCase.caseId || '-'}\n1st Party: ${this.selectedCase.user_cases_first_partyTouser?.name || '-'}\n2nd Party: ${this.selectedCase.user_cases_second_partyTouser?.name || '-'}`
+      return this.$t('mediatorCases.defaultMeetingDescription', {
+        caseId: this.selectedCase.caseId || '-',
+        firstParty: this.selectedCase.user_cases_first_partyTouser?.name || '-',
+        secondParty: this.selectedCase.user_cases_second_partyTouser?.name || '-'
+      })
     },
     async submitMeeting (event) {
       // Keep the modal open by default; we close it explicitly via v-model only
@@ -592,7 +683,7 @@ export default {
         event.preventDefault()
       }
       if (!this.meetingForm.start) {
-        this.showAlert('Please select date and time for the meeting.', 'danger')
+        this.showAlert(this.$t('mediatorCases.selectMeetingDateTime'), 'danger')
         return
       }
       this.loading = true
@@ -603,7 +694,7 @@ export default {
           title: this.meetingForm.title,
           start: this.meetingForm.start,
           end: endDate,
-          color: 'rgb(121, 134, 203)',
+          color: '#5a4bd4',
           caseId: this.selectedCase.id,
           description: this.meetingForm.description,
           type: 'kadr',
@@ -611,11 +702,11 @@ export default {
         }
         const response = await this.$store.dispatch('newCalendarEvent', { event: payload })
         if (response.success || !response.error) {
-          this.showAlert('Meeting scheduled successfully.', 'success')
+          this.showAlert(this.$t('mediatorCases.meetingScheduledSuccess'), 'success')
           this.showScheduleMeetingModal = false
           this.$emit('refresh-dashboard')
         } else {
-          this.showAlert(response.message || 'Unable to schedule meeting.', 'danger')
+          this.showAlert(response.message || this.$t('mediatorCases.meetingScheduleFailed'), 'danger')
         }
       } finally {
         this.loading = false
@@ -630,6 +721,7 @@ export default {
       }
       this.signatureType = 'digital'
       this.resolveStatus = 'closed_success'
+      this.resolveConfirming = false
       this.showResolveModal = true
       this.$nextTick(() => {
         if (this.signatureType === 'manual') {
@@ -637,20 +729,30 @@ export default {
         }
       })
     },
-    getCaseNoteKey () {
-      return `mediator_case_note_${this.selectedCase.id || 'draft'}`
-    },
-    loadCaseNote () {
-      if (!this.selectedCase?.id) {
-        this.caseNote = ''
-        return
-      }
-      this.caseNote = localStorage.getItem(this.getCaseNoteKey()) || ''
-    },
-    saveCaseNote () {
+    async loadCaseNote () {
+      this.caseNote = ''
+      this.caseNoteId = null
       if (!this.selectedCase?.id) return
-      localStorage.setItem(this.getCaseNoteKey(), this.caseNote || '')
-      this.showAlert('Case note saved.', 'success')
+      const requestedCaseId = this.selectedCase.id
+      const note = await this.$store.dispatch('getCaseNote', { caseId: requestedCaseId })
+      // Guard against a stale response if the mediator switched cases meanwhile.
+      if (this.selectedCase?.id !== requestedCaseId) return
+      if (note) {
+        this.caseNote = note.note_text || ''
+        this.caseNoteId = note.id || null
+      }
+    },
+    async saveCaseNote () {
+      if (!this.selectedCase?.id) return
+      const response = await this.$store.dispatch('saveNote', {
+        content: this.caseNote || '',
+        id: this.caseNoteId || undefined,
+        case_id: this.selectedCase.id
+      })
+      if (response && response.success !== false) {
+        if (response.data?.noteId) this.caseNoteId = response.data.noteId
+        this.showAlert(this.$t('mediatorCases.caseNoteSaved'), 'success')
+      }
     },
     getYesterdayDate () {
       const yesterday = new Date()
@@ -681,11 +783,14 @@ export default {
         mediator_next_steps: payload.mediator_next_steps
       }
       this.feedbackSubmitting = true
-      const res = await this.$store.dispatch('submitMeetingFeedback', body)
-      this.feedbackSubmitting = false
-      if (res.success) {
-        this.feedbackModalVisible = false
-        this.$emit('refresh-dashboard')
+      try {
+        const res = await this.$store.dispatch('submitMeetingFeedback', body)
+        if (res.success) {
+          this.feedbackModalVisible = false
+          this.$emit('refresh-dashboard')
+        }
+      } finally {
+        this.feedbackSubmitting = false
       }
     }
   },
@@ -697,7 +802,7 @@ export default {
         content_css: false,
         height: 400,
         plugins: [
-          'autosave lists link image table media fullscreen color preview',
+          'autosave lists link image table media fullscreen preview',
           'paste charmap hr anchor insertdatetime wordcount'
         ],
         toolbar: [
@@ -724,7 +829,7 @@ export default {
               const maxFileSizeMB = 1
               const maxFileSizeBytes = maxFileSizeMB * 1024 * 1024
               if (file.size > maxFileSizeBytes) {
-                ref.showAlert(`The file size exceeds the ${maxFileSizeMB} MB limit.`, 'danger')
+                ref.showAlert(ref.$t('mediatorCases.fileSizeExceeds', { size: maxFileSizeMB }), 'danger')
                 ref.loading = false
                 return
               }
@@ -734,7 +839,7 @@ export default {
                 ref.loading = false
               }
               reader.onerror = function () {
-                ref.showAlert('Failed to load the file. Please try again.', 'danger')
+                ref.showAlert(ref.$t('mediatorCases.fileLoadFailed'), 'danger')
                 ref.loading = false
               }
               reader.readAsDataURL(file)
@@ -768,6 +873,7 @@ export default {
       selectedWorkflowStatus: 'Case Review',
       workflowStatusOptions: ['Closed - Mediation Successful', 'Closed - Mediation Unsuccessful'],
       caseNote: '',
+      caseNoteId: null,
       meetingForm: {
         title: '',
         start: '',
@@ -794,6 +900,8 @@ export default {
       },
       loading: false,
       resolveStatus: 'closed_success',
+      resolveConfirming: false,
+      resolveSubmitting: false,
       resolveSignaturePad: null
     }
   }
@@ -824,7 +932,7 @@ export default {
 }
 
 .signature-type-selector button:hover {
-  background-color: #d9e6f2;
+  background-color: var(--kadr-primary-soft);
 }
 
 .signature-btn {
@@ -845,7 +953,7 @@ export default {
 }
 
 .signature-btn:hover {
-  background-color: #d9e6f2;
+  background-color: var(--kadr-primary-soft);
 }
 
 .digital-signature-box {
@@ -913,7 +1021,26 @@ export default {
 }
 
 .resolve-status-btn:hover {
-  background-color: #d9e6f2;
+  background-color: var(--kadr-primary-soft);
+}
+
+.resolve-confirm-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--kadr-radius);
+  background: var(--kadr-status-warning-bg);
+  border: 1px solid var(--kadr-status-warning-bg);
+  color: var(--kadr-status-warning-text);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.resolve-confirm-note i {
+  margin-top: 0.1rem;
+  flex-shrink: 0;
 }
 
 .docs-grid {
@@ -1051,8 +1178,8 @@ export default {
 }
 
 .badge-upcoming {
-  background: #e8f2ff;
-  color: var(--kadr-accent);
+  background: var(--kadr-status-info-bg);
+  color: var(--kadr-status-info-text);
 }
 
 .feedback-summary {

@@ -105,7 +105,7 @@
         </div>
 
         <div v-if="detailsLoading" class="court-case-modal__loading">
-          <b-spinner small class="me-2" />
+          <kadr-spinner size="sm" class="me-2" />
           Loading saved case data…
         </div>
         <p v-else-if="detailsError" class="text-danger small mb-0 px-1">{{ detailsError }}</p>
@@ -332,7 +332,7 @@ export default {
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.55rem 0;
-  border-bottom: 1px solid #ebedf5;
+  border-bottom: 1px solid var(--kadr-border-info);
 }
 
 .tracker-item--clickable {
@@ -340,7 +340,7 @@ export default {
 }
 
 .tracker-item--clickable:hover {
-  background: #f8f9fd;
+  background: var(--kadr-surface-muted);
   margin-left: -0.35rem;
   margin-right: -0.35rem;
   padding-left: 0.35rem;
@@ -354,7 +354,7 @@ export default {
 
 .case-cnr {
   font-weight: 600;
-  color: #2b4ecf;
+  color: var(--kadr-primary);
   font-size: 0.9rem;
   font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
@@ -362,11 +362,11 @@ export default {
 .case-line {
   font-size: 0.8rem;
   line-height: 1.35;
-  color: #4a5472;
+  color: var(--kadr-text-secondary);
 }
 
 .case-line--title {
-  color: #1e2640;
+  color: var(--kadr-text-primary);
   margin-top: 0.15rem;
 }
 
@@ -379,8 +379,8 @@ export default {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  background: #eef2ff;
-  color: #2b4ecf;
+  background: var(--kadr-primary-soft);
+  color: var(--kadr-primary);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
   margin-right: 0.35rem;
@@ -388,7 +388,7 @@ export default {
 
 .tracker-label {
   font-size: 0.75rem;
-  color: #7c86a7;
+  color: var(--kadr-text-muted);
 }
 
 .tracker-remove-btn {
@@ -397,9 +397,9 @@ export default {
 
 .empty-data {
   text-align: center;
-  color: #7c86a7;
+  color: var(--kadr-text-muted);
   padding: 0.8rem 0.5rem;
-  border: 1px dashed #d8dded;
+  border: 1px dashed var(--kadr-border-strong);
   border-radius: 8px;
   font-size: 0.85rem;
 }
@@ -448,7 +448,7 @@ export default {
   gap: 1rem;
   padding: 1rem 0 0.75rem;
   margin-bottom: 0.25rem;
-  border-bottom: 1px solid #ebedf5;
+  border-bottom: 1px solid var(--kadr-border-info);
 }
 
 .court-case-modal__toolbar-left {
@@ -459,28 +459,28 @@ export default {
 
 .court-case-modal__cnr {
   font-size: 0.85rem;
-  background: #eef2ff;
-  color: #2b4ecf;
+  background: var(--kadr-primary-soft);
+  color: var(--kadr-primary);
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
 }
 
 .court-case-modal__pulled {
   font-size: 0.78rem;
-  color: #5a6a8e;
+  color: var(--kadr-text-muted);
 }
 
 .court-case-modal__pulled--muted {
-  color: #9aa3bd;
+  color: var(--kadr-text-label);
 }
 
 .court-case-modal__close {
-  background: #f4f6fb;
+  background: var(--kadr-surface-muted);
   border: none;
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  color: #4a5472;
+  color: var(--kadr-text-secondary);
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
@@ -488,15 +488,15 @@ export default {
 }
 
 .court-case-modal__close:hover {
-  background: #e8ecf5;
-  color: #1e2640;
+  background: var(--kadr-primary-soft);
+  color: var(--kadr-text-primary);
 }
 
 .court-case-modal__loading {
   display: flex;
   align-items: center;
   padding: 2rem 0;
-  color: #5a6a8e;
+  color: var(--kadr-text-muted);
   font-size: 0.9rem;
 }
 </style>

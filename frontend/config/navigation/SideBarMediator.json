@@ -1,6 +1,7 @@
 [
   {
     "title": "Home",
+    "i18nKey": "nav.home",
     "name": "sidebar.dashboard",
     "is_heading": false,
     "is_active": false,
@@ -11,6 +12,7 @@
   },
   {
     "title": "Mediation",
+    "i18nKey": "nav.mediation",
     "name": "sidebar.mediation",
     "is_heading": false,
     "is_group": true,
@@ -20,6 +22,7 @@
     "children": [
       {
         "title": "Past Mediations",
+        "i18nKey": "nav.pastMediations",
         "name": "app.past-mediations",
         "is_heading": false,
         "is_active": false,
@@ -30,6 +33,7 @@
       },
       {
         "title": "My Calendar",
+        "i18nKey": "nav.myCalendar",
         "name": "app.calendar",
         "is_heading": false,
         "is_active": false,
@@ -42,6 +46,7 @@
   },
   {
     "title": "Content",
+    "i18nKey": "nav.content",
     "name": "sidebar.content",
     "is_heading": false,
     "is_group": true,
@@ -51,6 +56,7 @@
     "children": [
       {
         "title": "My Blogs",
+        "i18nKey": "nav.myBlogs",
         "name": "blog.list",
         "is_heading": false,
         "is_active": false,
@@ -61,6 +67,7 @@
       },
       {
         "title": "Video reels",
+        "i18nKey": "nav.videoReels",
         "name": "reels.list",
         "is_heading": false,
         "is_active": false,
@@ -73,6 +80,7 @@
   },
   {
     "title": "Business",
+    "i18nKey": "nav.business",
     "name": "sidebar.business",
     "is_heading": false,
     "is_group": true,
@@ -82,6 +90,7 @@
     "children": [
       {
         "title": "Reward Store",
+        "i18nKey": "nav.rewardStore",
         "name": "app.rewards",
         "is_heading": false,
         "is_active": false,
@@ -92,6 +101,7 @@
       },
       {
         "title": "Invoices",
+        "i18nKey": "nav.invoices",
         "name": "app.invoices",
         "is_heading": false,
         "is_active": false,
@@ -104,6 +114,7 @@
   },
   {
     "title": "Support",
+    "i18nKey": "nav.support",
     "name": "app.support",
     "is_heading": false,
     "is_active": false,

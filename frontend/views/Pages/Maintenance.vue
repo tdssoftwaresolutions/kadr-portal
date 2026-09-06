@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-5 iq-maintenance">
+  <div class="mt-5 iq-maintenance kadr-animate-in">
     <div class="container-fluid p-0">
       <div class="row g-0">
         <div class="col-12 text-center">

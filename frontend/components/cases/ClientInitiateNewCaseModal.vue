@@ -61,6 +61,21 @@
         <label for="new-case-opp-phone">Opposite Party Phone <span class="text-danger">*</span></label>
         <input id="new-case-opp-phone" v-model="form.oppositePhone" type="tel" class="form-control" placeholder="Phone" />
       </div>
+      <p class="text-muted small mb-2">
+        Your representative (e.g. your lawyer) can join to view this case, attend meetings, and act on your behalf.
+      </p>
+      <div class="mb-3">
+        <label for="new-case-rep-name">Representative Name</label>
+        <input id="new-case-rep-name" v-model="form.representativeName" type="text" class="form-control" placeholder="Full name (optional)" />
+      </div>
+      <div class="mb-3">
+        <label for="new-case-rep-email">Representative Email <span class="text-danger">*</span></label>
+        <input id="new-case-rep-email" v-model="form.representativeEmail" type="email" class="form-control" placeholder="Email" />
+      </div>
+      <div class="mb-3">
+        <label for="new-case-rep-phone">Representative Phone</label>
+        <input id="new-case-rep-phone" v-model="form.representativePhone" type="tel" class="form-control" placeholder="Phone (optional)" />
+      </div>
       <div class="mb-3 border rounded p-3 bg-light">
         <b-form-checkbox v-model="form.adultPlatformLiabilityAck">
           I confirm that I am 18 years of age or older, that I take full responsibility for my actions on this platform, and that I agree to use the services in accordance with the platform’s terms and policies.
@@ -71,7 +86,7 @@
         <div>
           <b-button variant="secondary" class="me-2" @click="$emit('close')">Cancel</b-button>
           <b-button variant="success" :disabled="submitting" @click="submit">
-            <span v-if="submitting" class="spinner-border spinner-border-sm me-1" role="status" />
+            <kadr-spinner v-if="submitting" size="sm" class="me-1" />
             Submit case
           </b-button>
         </div>
@@ -106,6 +121,9 @@ export default {
         oppositeName: '',
         oppositeEmail: '',
         oppositePhone: '',
+        representativeName: '',
+        representativeEmail: '',
+        representativePhone: '',
         adultPlatformLiabilityAck: false
       }
     },
@@ -186,24 +204,42 @@ export default {
         this.showAlert('Enter a valid opposite party phone number')
         return
       }
+      if (!this.form.representativeEmail.trim()) {
+        this.showAlert('Enter representative email')
+        return
+      }
+      if (!emailPattern.test(this.form.representativeEmail)) {
+        this.showAlert('Invalid representative email address')
+        return
+      }
+      if (this.form.representativePhone.trim() && !phonePattern.test(this.form.representativePhone)) {
+        this.showAlert('Enter a valid representative phone number')
+        return
+      }
       if (!this.form.adultPlatformLiabilityAck) {
         this.showAlert('Please confirm that you are 18+ and accept responsibility for your use of the platform.')
         return
       }
       this.submitting = true
-      const response = await this.$store.dispatch('initiateNewCase', {
-        description: this.form.description.trim(),
-        category: this.form.category,
-        evidenceContent: this.form.evidenceContent,
-        oppositeName: this.form.oppositeName.trim(),
-        oppositeEmail: this.form.oppositeEmail.trim().toLowerCase(),
-        oppositePhone: this.form.oppositePhone.trim(),
-        adultPlatformLiabilityAck: true
-      })
-      this.submitting = false
-      if (response.success) {
-        this.$emit('submitted')
-        this.$emit('close')
+      try {
+        const response = await this.$store.dispatch('initiateNewCase', {
+          description: this.form.description.trim(),
+          category: this.form.category,
+          evidenceContent: this.form.evidenceContent,
+          oppositeName: this.form.oppositeName.trim(),
+          oppositeEmail: this.form.oppositeEmail.trim().toLowerCase(),
+          oppositePhone: this.form.oppositePhone.trim(),
+          representativeName: this.form.representativeName.trim(),
+          representativeEmail: this.form.representativeEmail.trim().toLowerCase(),
+          representativePhone: this.form.representativePhone.trim(),
+          adultPlatformLiabilityAck: true
+        })
+        if (response.success) {
+          this.$emit('submitted')
+          this.$emit('close')
+        }
+      } finally {
+        this.submitting = false
       }
     }
   }

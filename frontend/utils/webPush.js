@@ -43,7 +43,7 @@ async function registerServiceWorker () {
 }
 
 async function fetchVapidPublicKey () {
-  const { data } = await apiClient.get(PUSH_VAPID_PUBLIC_KEY_ENDPOINT)
+  const { data } = await apiClient.get(PUSH_VAPID_PUBLIC_KEY_ENDPOINT, { meta: { silent: true } })
   const key = data?.data?.publicKey || data?.publicKey
   if (!key) {
     throw new Error('Web Push is not configured on the server (missing VAPID key).')
@@ -92,7 +92,7 @@ export async function subscribe () {
 
   await apiClient.post(PUSH_REGISTER_ENDPOINT, {
     subscription: subscription.toJSON()
-  })
+  }, { meta: { silent: true } })
 
   return subscription
 }
@@ -157,6 +157,6 @@ export async function unsubscribe () {
   }
   await apiClient.post(PUSH_UNREGISTER_ENDPOINT, {
     subscription: { endpoint }
-  })
+  }, { meta: { silent: true } })
   return { removed: true }
 }

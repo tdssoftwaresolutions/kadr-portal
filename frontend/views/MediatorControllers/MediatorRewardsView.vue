@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid class="mediator-rewards-page">
+  <b-container fluid class="mediator-rewards-page kadr-animate-in">
     <mediator-rewards-panel />
   </b-container>
 </template>

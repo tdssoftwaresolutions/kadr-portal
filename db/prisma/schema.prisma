@@ -20,7 +20,7 @@ model user {
   is_deleted                     Boolean         @default(false)
   reward_points_balance          Int             @default(0)
   referred_by_id                 String?         @db.Char(36)
-  referral_code                  String?         @unique(map: "uq_user_referral_code") @db.VarChar(12)
+  referral_code                  String?         @unique(map: "uq_user_referral_code") @db.VarChar(100)
   city                           String?         @db.VarChar(100)
   state                          String?         @db.VarChar(100)
   pincode                        String?         @db.Char(6)
@@ -42,6 +42,8 @@ model user {
   mediator_video_reels           MediatorVideoReel[]
   cases_cases_first_partyTouser  cases[]         @relation("cases_first_partyTouser")
   cases_cases_second_partyTouser cases[]         @relation("cases_second_partyTouser")
+  cases_cases_first_party_repTouser  cases[]     @relation("cases_first_party_repTouser")
+  cases_cases_second_party_repTouser cases[]     @relation("cases_second_party_repTouser")
   cases_cases_mediatorTouser     cases[]         @relation("cases_mediatorTouser")
   events                         events[]
   notes                          notes[]
@@ -68,6 +70,7 @@ model user {
   subscription_expires_at        DateTime?                      @db.DateTime(0)
   timezone                       String?         @db.VarChar(64)
   locale                         String?         @db.VarChar(32)
+  signup_coupon_code             String?         @db.VarChar(40)
   referred_by                    user?           @relation("user_referrals", fields: [referred_by_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_user_referred_by")
   referrals                      user[]          @relation("user_referrals")
 
@@ -77,6 +80,21 @@ model user {
   @@index([subscription_tier, subscription_expires_at], map: "idx_user_subscription")
   @@index([is_deleted], map: "idx_user_is_deleted")
   @@index([referred_by_id], map: "idx_user_referred_by")
+}
+
+model coupon_codes {
+  id                    String    @id @default(uuid()) @db.Char(36)
+  code                  String    @unique(map: "uq_coupon_code") @db.VarChar(40)
+  title                 String    @db.VarChar(255)
+  description           String?   @db.Text
+  premium_days          Int       @default(0)
+  usage_limit           Int?
+  redeemed_count        Int       @default(0)
+  active                Boolean   @default(true)
+  created_at            DateTime? @default(now()) @db.Timestamp(0)
+  updated_at            DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+
+  @@index([active], map: "idx_coupon_active")
 }
 
 model mediator_court_case_trackers {
@@ -297,6 +315,8 @@ model cases {
   mediator                      String?                  @db.Char(36)
   first_party                   String?                  @db.Char(36)
   second_party                  String?                  @db.Char(36)
+  first_party_representative    String?                  @db.Char(36)
+  second_party_representative   String?                  @db.Char(36)
   caseId                        String?                  @db.Char(50)
   case_type                     String?                  @db.VarChar(255)
   mediator_commission           Decimal?                 @db.Decimal(5, 2)
@@ -312,6 +332,8 @@ model cases {
   case_sub_statuses             case_sub_statuses?       @relation(fields: [sub_status], references: [id], onDelete: Cascade, map: "fk_cases_sub_status")
   user_cases_first_partyTouser  user?                    @relation("cases_first_partyTouser", fields: [first_party], references: [id], onUpdate: Restrict, map: "fk_client_1")
   user_cases_second_partyTouser user?                    @relation("cases_second_partyTouser", fields: [second_party], references: [id], onUpdate: Restrict, map: "fk_client_2")
+  user_cases_first_party_repTouser  user?                @relation("cases_first_party_repTouser", fields: [first_party_representative], references: [id], onUpdate: Restrict, map: "fk_first_party_rep")
+  user_cases_second_party_repTouser user?                @relation("cases_second_party_repTouser", fields: [second_party_representative], references: [id], onUpdate: Restrict, map: "fk_second_party_rep")
   user_cases_mediatorTouser     user?                    @relation("cases_mediatorTouser", fields: [mediator], references: [id], onUpdate: Restrict, map: "fk_mediator")
   events                        events[]
   transactions                  transactions[]
@@ -320,9 +342,12 @@ model cases {
   signature_tracking signature_tracking[]
   case_messages      case_messages[]
   payment_orders     payment_orders[]
+  notes              notes[]
   @@index([mediator], map: "fk_mediator")
   @@index([first_party], map: "fk_first_party")
   @@index([second_party], map: "fk_second_party")
+  @@index([first_party_representative], map: "fk_first_party_rep")
+  @@index([second_party_representative], map: "fk_second_party_rep")
   @@index([status], map: "fk_cases_status")
   @@index([sub_status], map: "fk_cases_sub_status")
   @@index([mediator, status], map: "idx_cases_mediator_status")
@@ -439,12 +464,16 @@ model available_languages {
 model notes {
   id        String    @id @default(uuid()) @db.Char(36)
   user_id   String    @db.Char(36)
+  case_id   String?   @db.Char(36)
   note_text String    @db.Text
   created   DateTime? @default(now()) @db.DateTime(0)
   updated   DateTime? @default(now()) @db.DateTime(0)
   user      user      @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_user_id")
+  cases     cases?    @relation(fields: [case_id], references: [id], onDelete: Cascade, map: "fk_notes_case_id")
 
   @@index([user_id], map: "fk_user_id")
+  @@index([case_id], map: "fk_notes_case_id")
+  @@index([user_id, case_id], map: "idx_notes_user_case")
 }
 
 model transactions {
@@ -703,6 +732,7 @@ enum user_user_type {
   ADMIN
   MEDIATOR
   CLIENT
+  REPRESENTATIVE
 }
 
 enum events_type {
@@ -878,6 +908,25 @@ model notification_channel_settings {
   provider   String               @default("default") @db.VarChar(64)
   config     Json?
   updated_at DateTime?            @default(now()) @updatedAt @db.Timestamp(0)
+}
+
+// Admin action audit trail. Written by services/audit/auditLogService.js.
+// Columns match the raw INSERT there: id, admin_id, action, target_type,
+// target_id, details (JSON string), request_id, created_at.
+model admin_audit_logs {
+  id          String    @id @default(uuid()) @db.Char(36)
+  admin_id    String?   @db.Char(36)
+  action      String    @db.VarChar(120)
+  target_type String?   @db.VarChar(120)
+  target_id   String?   @db.VarChar(191)
+  details     String?   @db.Text
+  request_id  String?   @db.VarChar(191)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([admin_id], map: "idx_admin_audit_logs_admin_id")
+  @@index([action], map: "idx_admin_audit_logs_action")
+  @@index([target_type, target_id], map: "idx_admin_audit_logs_target")
+  @@index([created_at], map: "idx_admin_audit_logs_created_at")
 }
 
 model notification_trigger_rules {

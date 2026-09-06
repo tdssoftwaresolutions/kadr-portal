@@ -1,50 +1,61 @@
 <template>
   <div class="signup-root">
-    <form>
-      <!-- Step 0: role selection -->
-      <div v-if="step === 0" class="signup-step-zero mt-4">
-        <header class="signup-intro">
-          <h1 class="mb-2">Sign up</h1>
-          <p class="signup-lead mb-0">
-            Are you a dispute resolution expert or a client? Choose your role to continue registration.
-          </p>
-        </header>
+    <!-- Step 0: role selection -->
+    <div v-if="step === 0" class="signup-step-zero">
+      <header class="signup-intro">
+        <h1 class="signup-title">{{ $t('auth.signup.createTitle') }}</h1>
+        <p class="signup-lead">
+          {{ $t('auth.signup.createLead') }}
+        </p>
+      </header>
 
-        <div class="signup-actions" role="group" aria-label="Sign up options">
-          <button
-            type="button"
-            class="btn btn-primary btn-block signup-action-btn"
-            @click="selectUserType('mediator')"
-          >
-            Sign up as dispute resolution expert
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary btn-block signup-action-btn"
-            @click="selectUserType('client')"
-          >
-            Sign up as client
-          </button>
-        </div>
-
-        <div class="sign-info">
-          <span class="dark-color d-inline-block line-height-2">
-            Already have an account?
-            <a href="#" @click.prevent="onClickLogin">Log in</a>
+      <div class="role-grid" role="group" :aria-label="$t('auth.signup.createTitle')">
+        <button
+          type="button"
+          class="role-card"
+          @click="selectUserType('client')"
+        >
+          <span class="role-icon role-icon--client">
+            <i class="ri-user-3-line" aria-hidden="true"></i>
           </span>
-        </div>
+          <span class="role-body">
+            <span class="role-name">{{ $t('auth.signup.roleClientName') }}</span>
+            <span class="role-desc">{{ $t('auth.signup.roleClientDesc') }}</span>
+          </span>
+          <i class="ri-arrow-right-line role-arrow" aria-hidden="true"></i>
+        </button>
+
+        <button
+          type="button"
+          class="role-card"
+          @click="selectUserType('mediator')"
+        >
+          <span class="role-icon role-icon--mediator">
+            <i class="ri-scales-3-line" aria-hidden="true"></i>
+          </span>
+          <span class="role-body">
+            <span class="role-name">{{ $t('auth.signup.roleMediatorName') }}</span>
+            <span class="role-desc">{{ $t('auth.signup.roleMediatorDesc') }}</span>
+          </span>
+          <i class="ri-arrow-right-line role-arrow" aria-hidden="true"></i>
+        </button>
       </div>
 
-      <div v-if="step === 1">
-        <Sign-up-client
-          v-if="userType === 'client'"
-          :defaultUser="defaultUser"
-          :states="states"
-          @onBack="onClickBack"
-        />
-        <Sign-up-mediator v-else :states="states" @onBack="onClickBack" />
+      <div class="signup-login-row">
+        <span>{{ $t('auth.signup.alreadyHaveAccount') }}</span>
+        <a href="#" @click.prevent="onClickLogin">{{ $t('auth.signup.logIn') }}</a>
       </div>
-    </form>
+    </div>
+
+    <div v-if="step === 1" class="signup-form-host">
+      <Sign-up-client
+        v-if="userType === 'client'"
+        :defaultUser="defaultUser"
+        :states="states"
+        @onBack="onClickBack"
+      />
+      <Sign-up-mediator v-else :states="states" @onBack="onClickBack" />
+    </div>
   </div>
 </template>
 
@@ -129,50 +140,125 @@ export default {
   box-sizing: border-box;
 }
 
-.signup-intro h1 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  line-height: 1.25;
+.signup-step-zero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.signup-intro {
+  margin-bottom: 1.75rem;
+}
+
+.signup-title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--kadr-text-primary);
+  margin-bottom: 0.5rem;
 }
 
 .signup-lead {
-  color: #6c757d;
-  font-size: 0.9375rem;
+  color: var(--kadr-text-muted);
+  font-size: 0.95rem;
   line-height: 1.55;
-  max-width: 36rem;
+  margin: 0;
 }
 
-.signup-actions {
-  margin-top: 1.75rem;
-  margin-bottom: 0.25rem;
+.role-grid {
+  display: grid;
+  gap: 0.9rem;
 }
 
-.signup-action-btn {
-  white-space: normal;
-  line-height: 1.35;
-  padding-top: 0.65rem;
-  padding-bottom: 0.65rem;
+.role-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  text-align: left;
+  padding: 1.1rem 1.15rem;
+  background: var(--kadr-bg-surface);
+  border: 1.5px solid var(--kadr-border-strong);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
-.signup-action-btn + .signup-action-btn {
-  margin-top: 0.75rem;
+.role-card:hover {
+  border-color: var(--kadr-primary);
+  box-shadow: var(--kadr-shadow-primary);
+  transform: translateY(-2px);
 }
 
-.toast.toast-error {
-  background-color: #dc3545;
-  color: white;
+.role-icon {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
 }
 
-.b-toaster-slot {
+.role-icon--client {
+  background: var(--kadr-status-info-bg);
+  color: var(--kadr-status-info-text);
+}
+
+.role-icon--mediator {
+  background: var(--kadr-primary-soft);
+  color: var(--kadr-primary);
+}
+
+.role-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.role-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--kadr-text-primary);
+  line-height: 1.3;
+}
+
+.role-desc {
+  font-size: 0.83rem;
+  color: var(--kadr-text-muted);
+  line-height: 1.4;
+}
+
+.role-arrow {
   margin-left: auto;
-  margin-right: auto;
+  color: var(--kadr-text-label);
+  font-size: 1.25rem;
+  transition: transform 0.18s ease, color 0.18s ease;
 }
 
-.ml {
-  margin-left: 0.5rem;
+.role-card:hover .role-arrow {
+  color: var(--kadr-primary);
+  transform: translateX(3px);
 }
 
-.capitalize-first-word {
-  text-transform: capitalize;
+.signup-login-row {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--kadr-border);
+  font-size: 0.9rem;
+  color: var(--kadr-text-muted);
+}
+
+.signup-login-row a {
+  color: var(--kadr-primary);
+  font-weight: 600;
+  margin-left: 0.35rem;
+}
+
+.signup-form-host {
+  width: 100%;
 }
 </style>

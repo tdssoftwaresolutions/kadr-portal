@@ -1,15 +1,14 @@
 <template>
-  <div>
+  <div class="kadr-animate-in">
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
-    <Spinner :isVisible="loading" />
     <iq-card v-if="page === 'HOME'">
       <template v-slot:headerTitle>
-        <h4 class="card-title">My video reels</h4>
+        <h4 class="card-title">{{ $t('mediatorTools.reelsTitle') }}</h4>
       </template>
       <template v-slot:headerAction>
         <b-button variant="primary" size="sm" @click="newReel" class="professional-btn">
           <i class="ri-add-line me-1"></i>
-          New video
+          {{ $t('mediatorTools.reelsNewVideo') }}
         </b-button>
       </template>
       <template v-slot:body>
@@ -28,14 +27,14 @@
                         loading="lazy"
                       />
                     </div>
-                    <div v-else class="reel-thumb-placeholder">Invalid YouTube link</div>
+                    <div v-else class="reel-thumb-placeholder">{{ $t('mediatorTools.reelInvalidLink') }}</div>
                   </div>
                   <h5 class="card-title text-truncate">{{ reel.title }}</h5>
                   <p class="text-muted small text-truncate-3">{{ reel.description || '—' }}</p>
                   <small class="text-muted">{{ formatDateTime(reel.created_at) }}</small>
                   <div class="mt-auto d-flex justify-content-between pt-2">
-                    <b-button variant="outline-primary" size="sm" @click="onEditReel(reel)">Edit</b-button>
-                    <b-button variant="outline-danger" size="sm" @click="deleteReel(reel)">Delete</b-button>
+                    <b-button variant="outline-primary" size="sm" @click="onEditReel(reel)">{{ $t('mediatorTools.reelEdit') }}</b-button>
+                    <b-button variant="outline-danger" size="sm" @click="deleteReel(reel)">{{ $t('mediatorTools.reelDelete') }}</b-button>
                   </div>
                 </b-card-body>
               </b-card>
@@ -44,8 +43,8 @@
           <div v-else class="text-center py-5">
             <div class="empty-state">
               <i class="ri-movie-2-line empty-icon"></i>
-              <h5 class="empty-title">No videos yet</h5>
-              <p class="empty-subtitle">Add a YouTube link with a title and short description for the public reels page.</p>
+              <h5 class="empty-title">{{ $t('mediatorTools.reelsEmptyTitle') }}</h5>
+              <p class="empty-subtitle">{{ $t('mediatorTools.reelsEmptySubtitle') }}</p>
             </div>
           </div>
           <b-pagination
@@ -62,57 +61,57 @@
     </iq-card>
     <iq-card v-if="page === 'VIEW_EDIT'">
       <template v-slot:headerTitle>
-        <h4 class="card-title">{{ selectedReel.id ? 'Edit video' : 'New video' }}</h4>
+        <h4 class="card-title">{{ selectedReel.id ? $t('mediatorTools.reelFormEditTitle') : $t('mediatorTools.reelFormNewTitle') }}</h4>
       </template>
       <template v-slot:headerAction>
-        <button type="button" class="btn btn-primary" @click="saveReel">Save</button>
-        <button type="button" class="btn btn-danger" v-if="selectedReel.id" @click="deleteReel(selectedReel)">Delete</button>
-        <button type="button" class="btn btn-outline-secondary" @click="cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" @click="saveReel">{{ $t('mediatorTools.reelSave') }}</button>
+        <button type="button" class="btn btn-danger" v-if="selectedReel.id" @click="deleteReel(selectedReel)">{{ $t('mediatorTools.reelDelete') }}</button>
+        <button type="button" class="btn btn-outline-secondary" @click="cancel">{{ $t('mediatorTools.reelCancel') }}</button>
       </template>
       <template v-slot:body>
         <div class="row">
           <div class="col-lg-7">
             <div class="mb-3">
-              <label for="reel-title" class="form-label fw-semibold">Title</label>
+              <label for="reel-title" class="form-label fw-semibold">{{ $t('mediatorTools.reelTitleLabel') }}</label>
               <input
                 id="reel-title"
                 v-model="selectedReel.title"
                 type="text"
                 class="form-control"
-                placeholder="Short title shown on the reel"
+                :placeholder="$t('mediatorTools.reelTitlePlaceholder')"
                 maxlength="255"
               />
             </div>
             <div class="mb-3">
-              <label for="reel-desc" class="form-label fw-semibold">Short description</label>
+              <label for="reel-desc" class="form-label fw-semibold">{{ $t('mediatorTools.reelDescLabel') }}</label>
               <textarea
                 id="reel-desc"
                 v-model="selectedReel.description"
                 class="form-control"
                 rows="4"
-                placeholder="Brief description for viewers"
+                :placeholder="$t('mediatorTools.reelDescPlaceholder')"
               />
             </div>
             <div class="mb-3">
-              <label for="reel-url" class="form-label fw-semibold">YouTube video link</label>
+              <label for="reel-url" class="form-label fw-semibold">{{ $t('mediatorTools.reelUrlLabel') }}</label>
               <input
                 id="reel-url"
                 v-model="selectedReel.youtube_url"
                 type="url"
                 class="form-control"
-                placeholder="https://www.youtube.com/watch?v=… or youtu.be/…"
+                :placeholder="$t('mediatorTools.reelUrlPlaceholder')"
                 @input="onUrlInput"
               />
-              <small class="text-muted">Paste a standard watch, embed, Shorts, or youtu.be URL.</small>
+              <small class="text-muted">{{ $t('mediatorTools.reelUrlHint') }}</small>
             </div>
             <div class="mb-3 border rounded p-3 bg-light">
               <b-form-checkbox v-model="selectedReel.contentRightsConfirmed" class="mb-0">
-                I confirm this video and its description are my own or I have full rights to feature them on this website, they are not copied from a third party without permission, and I accept responsibility for any copyright claims.
+                {{ $t('mediatorTools.reelRightsConfirm') }}
               </b-form-checkbox>
             </div>
           </div>
           <div class="col-lg-5">
-            <label class="form-label fw-semibold">Preview</label>
+            <label class="form-label fw-semibold">{{ $t('mediatorTools.reelPreviewLabel') }}</label>
             <div class="preview-panel">
               <div v-if="previewVideoId" class="preview-frame mx-auto">
                 <iframe
@@ -124,7 +123,7 @@
               </div>
               <div v-else class="preview-placeholder">
                 <i class="ri-youtube-line preview-icon"></i>
-                <p>Enter a valid YouTube URL to see how this video will appear on the website.</p>
+                <p>{{ $t('mediatorTools.reelPreviewPlaceholder') }}</p>
               </div>
             </div>
           </div>
@@ -137,18 +136,16 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import Alert from '../../components/sofbox/alert/Alert.vue'
-import Spinner from '../../components/sofbox/spinner/spinner.vue'
 
 export default {
   name: 'MyVideoReels',
-  components: { Alert, Spinner },
+  components: { Alert },
   mounted () {
     sofbox.index()
     this.fetchReels(1)
   },
   data () {
     return {
-      loading: false,
       page: 'HOME',
       currentPage: 1,
       perPage: 10,
@@ -248,15 +245,15 @@ export default {
     },
     async saveReel () {
       if (!this.selectedReel.title || !this.selectedReel.title.trim()) {
-        this.showAlert('Title is required.', 'danger')
+        this.showAlert(this.$t('mediatorTools.reelTitleRequired'), 'danger')
         return
       }
       if (!this.previewVideoId) {
-        this.showAlert('Please enter a valid YouTube video URL.', 'danger')
+        this.showAlert(this.$t('mediatorTools.reelUrlInvalid'), 'danger')
         return
       }
       if (!this.selectedReel.contentRightsConfirmed) {
-        this.showAlert('Please confirm originality and rights for this video before saving.', 'danger')
+        this.showAlert(this.$t('mediatorTools.reelRightsRequired'), 'danger')
         return
       }
       const response = await this.$store.dispatch('saveVideoReel', {
@@ -270,7 +267,7 @@ export default {
       })
       if (response.success) {
         const saved = response.data.reel
-        this.showAlert('Video saved.', 'success')
+        this.showAlert(this.$t('mediatorTools.reelSaved'), 'success')
         this.reelsCache = {}
         await this.fetchReels(this.currentPage, true)
         this.cancel()
@@ -281,12 +278,12 @@ export default {
     },
     async deleteReel (reel) {
       if (!reel || !reel.id) return
-      if (!confirm('Delete this video from your reels?')) return
+      if (!confirm(this.$t('mediatorTools.reelDeleteConfirm'))) return
       const response = await this.$store.dispatch('deleteVideoReel', reel.id)
       if (response.success) {
         this.reelsCache = {}
         await this.fetchReels(this.currentPage, true)
-        this.showAlert('Video deleted.', 'success')
+        this.showAlert(this.$t('mediatorTools.reelDeleted'), 'success')
         if (this.page === 'VIEW_EDIT') this.cancel()
       }
     }
@@ -296,10 +293,10 @@ export default {
 
 <style scoped>
 .reel-card {
-  border: 1px solid #e1e5e9;
+  border: 1px solid var(--kadr-border);
   border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: var(--kadr-bg-surface);
+  box-shadow: var(--kadr-shadow-sm);
 }
 .reel-thumb-wrap {
   border-radius: 8px;
@@ -314,9 +311,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #888;
+  color: var(--kadr-text-muted);
   font-size: 13px;
-  background: #f4f4f4;
+  background: var(--kadr-surface-muted);
 }
 .text-truncate-3 {
   display: -webkit-box;
@@ -326,11 +323,11 @@ export default {
 }
 .empty-icon {
   font-size: 48px;
-  color: #adb5bd;
+  color: var(--kadr-text-label);
 }
 .preview-panel {
-  background: #f8f9fa;
-  border: 1px solid #e1e5e9;
+  background: var(--kadr-surface-muted);
+  border: 1px solid var(--kadr-border);
   border-radius: 12px;
   padding: 16px;
   min-height: 280px;
@@ -353,13 +350,13 @@ export default {
 .preview-placeholder {
   text-align: center;
   padding: 40px 16px;
-  color: #6c757d;
+  color: var(--kadr-text-muted);
   font-size: 14px;
 }
 .preview-icon {
   font-size: 42px;
   display: block;
   margin-bottom: 12px;
-  color: #c00;
+  color: var(--kadr-danger);
 }
 </style>

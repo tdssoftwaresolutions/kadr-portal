@@ -10,11 +10,36 @@ function resolveViewerRole (caseItem, viewer = {}) {
   const viewerType = (viewer.type || viewer.userType || '').toUpperCase()
   const firstPartyId = caseItem.first_party || caseItem.user_cases_first_partyTouser?.id
   const secondPartyId = caseItem.second_party || caseItem.user_cases_second_partyTouser?.id
+  const firstPartyRepId = caseItem.first_party_representative || caseItem.user_cases_first_party_repTouser?.id
+  const secondPartyRepId = caseItem.second_party_representative || caseItem.user_cases_second_party_repTouser?.id
   if (viewerType === 'MEDIATOR') return 'mediator'
   if (viewerType === 'ADMIN') return 'admin'
   if (viewerId && normalizeId(firstPartyId) === normalizeId(viewerId)) return 'first_party'
   if (viewerId && normalizeId(secondPartyId) === normalizeId(viewerId)) return 'second_party'
+  // A representative inherits the effective role of the party they represent so
+  // all downstream action-card logic treats them identically to that party.
+  if (viewerId && normalizeId(firstPartyRepId) === normalizeId(viewerId)) return 'first_party'
+  if (viewerId && normalizeId(secondPartyRepId) === normalizeId(viewerId)) return 'second_party'
   return 'observer'
+}
+
+/**
+ * Whether the viewer is a representative on this case, and which party side they
+ * represent ('first_party'|'second_party'|null). Used by the UI to show the
+ * "you are tagged as Representative" label instead of the party label.
+ */
+function resolveRepresentativeContext (caseItem, viewer = {}) {
+  const viewerId = viewer.userId || viewer.id
+  if (!viewerId) return { isRepresentative: false, representingSide: null }
+  const firstPartyRepId = caseItem.first_party_representative || caseItem.user_cases_first_party_repTouser?.id
+  const secondPartyRepId = caseItem.second_party_representative || caseItem.user_cases_second_party_repTouser?.id
+  if (normalizeId(firstPartyRepId) === normalizeId(viewerId)) {
+    return { isRepresentative: true, representingSide: 'first_party' }
+  }
+  if (normalizeId(secondPartyRepId) === normalizeId(viewerId)) {
+    return { isRepresentative: true, representingSide: 'second_party' }
+  }
+  return { isRepresentative: false, representingSide: null }
 }
 
 function getAgreementStatus (caseItem) {
@@ -374,6 +399,7 @@ function buildUpcomingSteps (caseEvents, currentPhaseId, historyMap, currentSubS
 function buildCaseProgress (caseItem, caseEventsCatalog, viewer = {}) {
   const caseEvents = Array.isArray(caseEventsCatalog) ? caseEventsCatalog : []
   const viewerRole = resolveViewerRole(caseItem, viewer)
+  const representativeContext = resolveRepresentativeContext(caseItem, viewer)
   const historyMap = historyByEventId(caseItem)
   const currentPhaseId = phaseForCase(caseItem)
 
@@ -399,6 +425,9 @@ function buildCaseProgress (caseItem, caseEventsCatalog, viewer = {}) {
 
   return {
     viewerRole,
+    isRepresentative: representativeContext.isRepresentative,
+    representingSide: representativeContext.representingSide,
+    viewerLabel: representativeContext.isRepresentative ? 'Representative' : viewerRole,
     currentPhaseId,
     humanStatus: buildNowCard(caseItem, viewerRole).headline,
     now: buildNowCard(caseItem, viewerRole),
@@ -417,5 +446,6 @@ function buildCaseProgress (caseItem, caseEventsCatalog, viewer = {}) {
 module.exports = {
   buildCaseProgress,
   resolveViewerRole,
+  resolveRepresentativeContext,
   formatDisplayDate
 }

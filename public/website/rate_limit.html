@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <meta name="robots" content="noindex, nofollow"/>
+  <meta name="description" content="Too many requests. Please wait a moment and try again."/>
+  <meta name="theme-color" content="#FAF0E0"/>
+
+  <title>Too Many Requests — KADR.live</title>
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/admin/img/icons/apple-touch-icon.png"/>
+  <link rel="apple-touch-icon" sizes="152x152" href="/admin/img/icons/apple-touch-icon-152x152.png"/>
+  <link rel="apple-touch-icon" sizes="120x120" href="/admin/img/icons/apple-touch-icon-120x120.png"/>
+  <link rel="apple-touch-icon" sizes="76x76" href="/admin/img/icons/apple-touch-icon-76x76.png"/>
+  <link rel="apple-touch-icon" sizes="60x60" href="/admin/img/icons/apple-touch-icon-60x60.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/admin/img/icons/favicon-32x32.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="/admin/img/icons/favicon-16x16.png"/>
+  <link rel="manifest" href="/admin/img/icons/site.webmanifest"/>
+  <link rel="mask-icon" href="/admin/img/icons/safari-pinned-tab.svg" color="#8C4820"/>
+  <link rel="shortcut icon" href="/admin/img/icons/favicon.ico"/>
+
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+
+  <link rel="stylesheet" href="css/site-core.css"/>
+  <link rel="stylesheet" href="css/site-responsive.css"/>
+
+  <style>
+    html,
+    body {
+      min-height: 100%;
+      overflow: auto !important;
+      height: auto !important;
+      background: #FAF0E0 !important;
+    }
+
+    body {
+      color: var(--text, #2F241D);
+      font-family: "DM Sans", sans-serif;
+    }
+
+    .view,
+    .page {
+      display: block !important;
+    }
+
+    .kadr-429 {
+      min-height: calc(100vh - 80px);
+      display: flex;
+      align-items: center;
+      padding: 64px 24px 84px;
+    }
+
+    .kadr-429-inner {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+    }
+
+    .kadr-429-card {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(280px, .9fr) minmax(0, 1.1fr);
+      align-items: center;
+      gap: clamp(42px, 7vw, 92px);
+      padding: clamp(34px, 6vw, 72px);
+      border: 1px solid rgba(140, 72, 32, .14);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(196, 150, 72, .12), transparent 28%),
+        radial-gradient(circle at 90% 90%, rgba(111, 139, 115, .10), transparent 30%),
+        #FFFDF8;
+      box-shadow: 0 24px 70px rgba(93, 60, 35, .10);
+    }
+
+    .kadr-429-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: linear-gradient(90deg, var(--b700, #7D3F1D), var(--g500, #C79A46), var(--s600, #728A73));
+    }
+
+    .kadr-429-visual {
+      position: relative;
+      min-height: 360px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .kadr-429-orbit {
+      position: absolute;
+      width: min(320px, 78vw);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1px solid rgba(140,72,32,.14);
+      background:
+        radial-gradient(circle, rgba(199,154,70,.18) 0 2%, transparent 2.5% 100%),
+        radial-gradient(circle at 35% 30%, rgba(140,72,32,.10), transparent 55%);
+      box-shadow: inset 0 0 0 22px rgba(255,255,255,.32);
+    }
+
+    .kadr-429-orbit::before,
+    .kadr-429-orbit::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      border: 1px dashed rgba(140,72,32,.16);
+    }
+
+    .kadr-429-orbit::before {
+      inset: 32px;
+    }
+
+    .kadr-429-orbit::after {
+      inset: 78px;
+    }
+
+    .kadr-429-badge {
+      position: absolute;
+      z-index: 3;
+      top: 8px;
+      right: 8%;
+      width: 68px;
+      height: 68px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #FFF8E9;
+      border: 1px solid rgba(199,154,70,.42);
+      color: var(--g700, #8E6C2F);
+      font-size: 28px;
+      box-shadow: 0 12px 28px rgba(140,72,32,.12);
+    }
+
+    .kadr-429-device {
+      position: relative;
+      z-index: 2;
+      width: min(224px, 62vw);
+      aspect-ratio: 1.05;
+      padding: 16px;
+      border-radius: 32px;
+      background: linear-gradient(145deg, #FFFDF8, #F1E7D7);
+      border: 1px solid rgba(140,72,32,.16);
+      box-shadow: 0 28px 55px rgba(90,55,32,.16), inset 0 2px 0 rgba(255,255,255,.75);
+    }
+
+    .kadr-429-device-screen {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border-radius: 23px;
+      background: linear-gradient(155deg, var(--b900, #4F2615), var(--b700, #7D3F1D));
+      color: #FFF9F1;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+
+    .kadr-429-number {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(58px, 8vw, 88px);
+      line-height: .9;
+      font-weight: 800;
+      letter-spacing: -3px;
+    }
+
+    .kadr-429-screen-label {
+      max-width: 150px;
+      color: rgba(255,249,241,.76);
+      font-size: 12px;
+      line-height: 1.4;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .kadr-429-orbit-dot {
+      position: absolute;
+      z-index: 2;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--g500, #C79A46);
+      box-shadow: 0 0 0 6px rgba(199,154,70,.10);
+    }
+
+    .kadr-429-orbit-dot.dot-1 { top: 20%; left: 8%; }
+    .kadr-429-orbit-dot.dot-2 { bottom: 11%; right: 13%; width: 9px; height: 9px; background: var(--s600, #728A73); }
+
+    .kadr-429-copy {
+      max-width: 620px;
+    }
+
+    .kadr-429-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      color: var(--b500, #A95F31);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .kadr-429-kicker::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: var(--g500, #C79A46);
+    }
+
+    .kadr-429-title {
+      margin: 0 0 20px;
+      color: var(--b800, #613016);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(42px, 6vw, 68px);
+      line-height: 1.02;
+      letter-spacing: -2px;
+      font-weight: 700;
+    }
+
+    .kadr-429-title em {
+      color: var(--b500, #A95F31);
+      font-style: italic;
+    }
+
+    .kadr-429-desc {
+      max-width: 570px;
+      margin: 0 0 28px;
+      color: var(--text-muted, #75675D);
+      font-size: 17px;
+      line-height: 1.72;
+    }
+
+    .kadr-429-notice {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 26px;
+      padding: 17px 18px;
+      border: 1px solid var(--s200, #DDE5DC);
+      border-radius: 16px;
+      background: #F2F6F1;
+    }
+
+    .kadr-429-notice-icon {
+      flex: 0 0 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: #FFFDF8;
+      border: 1px solid rgba(114,138,115,.16);
+      font-size: 19px;
+    }
+
+    .kadr-429-notice strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--s700, #536A55);
+      font-size: 13px;
+    }
+
+    .kadr-429-notice span {
+      color: var(--text-muted, #75675D);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .kadr-429-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .kadr-429-btn {
+      min-height: 50px;
+      padding: 0 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+
+    .kadr-429-btn-primary {
+      border: 1px solid var(--b700, #7D3F1D);
+      color: #fffaf3;
+      background: var(--b700, #7D3F1D);
+      box-shadow: 0 10px 24px rgba(125,63,29,.18);
+    }
+
+    .kadr-429-btn-primary:hover {
+      transform: translateY(-2px);
+      background: var(--b800, #613016);
+      box-shadow: 0 14px 28px rgba(125,63,29,.23);
+    }
+
+    .kadr-429-btn-secondary {
+      color: var(--b700, #7D3F1D);
+      background: transparent;
+      border: 1px solid rgba(125,63,29,.24);
+    }
+
+    .kadr-429-btn-secondary:hover {
+      background: rgba(125,63,29,.05);
+    }
+
+    .kadr-429-meta {
+      color: var(--text-muted, #75675D);
+      font-size: 11px;
+      letter-spacing: .02em;
+    }
+
+    .kadr-429-help {
+      margin-top: 60px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border-top: 1px solid rgba(140,72,32,.13);
+    }
+
+    .kadr-429-help-item {
+      padding: 26px 24px 10px 0;
+    }
+
+    .kadr-429-help-item + .kadr-429-help-item {
+      padding-left: 24px;
+      border-left: 1px solid rgba(140,72,32,.10);
+    }
+
+    .kadr-429-help-icon {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 11px;
+      border-radius: 11px;
+      background: rgba(199,154,70,.12);
+      border: 1px solid rgba(199,154,70,.15);
+      font-size: 17px;
+    }
+
+    .kadr-429-help h2 {
+      margin: 0 0 6px;
+      color: var(--b800, #613016);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .kadr-429-help p {
+      margin: 0;
+      color: var(--text-muted, #75675D);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .kadr-429-countdown {
+      color: var(--b500, #A95F31);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 900px) {
+      .kadr-429 {
+        padding: 28px 20px 62px;
+      }
+
+      .kadr-429-card {
+        grid-template-columns: 1fr;
+        gap: 18px;
+        text-align: center;
+        padding: 38px 28px 34px;
+      }
+
+      .kadr-429-copy {
+        margin: 0 auto;
+      }
+
+      .kadr-429-kicker {
+        justify-content: center;
+      }
+
+      .kadr-429-desc {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .kadr-429-notice {
+        text-align: left;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .kadr-429-actions {
+        justify-content: center;
+      }
+
+      .kadr-429-visual {
+        min-height: 300px;
+        order: -1;
+      }
+
+      .kadr-429-help {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .kadr-429 {
+        padding: 18px 14px 45px;
+      }
+
+      .kadr-429-card {
+        border-radius: 22px;
+        padding: 28px 18px 24px;
+      }
+
+      .kadr-429-visual {
+        min-height: 245px;
+        transform: scale(.86);
+        margin: -18px 0;
+      }
+
+      .kadr-429-title {
+        font-size: 42px;
+        letter-spacing: -1.4px;
+      }
+
+      .kadr-429-desc {
+        font-size: 15px;
+      }
+
+      .kadr-429-actions {
+        flex-direction: column;
+      }
+
+      .kadr-429-btn {
+        width: 100%;
+      }
+
+      .kadr-429-help {
+        grid-template-columns: 1fr;
+        margin-top: 42px;
+      }
+
+      .kadr-429-help-item,
+      .kadr-429-help-item + .kadr-429-help-item {
+        padding: 20px 0;
+        border-left: 0;
+        border-top: 1px solid rgba(140,72,32,.10);
+      }
+
+      .kadr-429-help-item:first-child {
+        border-top: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="lang-en" style="overflow:auto;height:auto;">
+
+  <!-- Use the same site chrome as index.html -->
+  <header id="kadr-site-header" data-kadr-active=""></header>
+
+  <main class="kadr-429">
+    <div class="kadr-429-inner">
+
+      <section class="kadr-429-card" aria-labelledby="rate-limit-title">
+
+        <div class="kadr-429-visual" aria-hidden="true">
+          <div class="kadr-429-orbit"></div>
+          <div class="kadr-429-orbit-dot dot-1"></div>
+          <div class="kadr-429-orbit-dot dot-2"></div>
+
+          <div class="kadr-429-badge">!</div>
+
+          <div class="kadr-429-device">
+            <div class="kadr-429-device-screen">
+              <div class="kadr-429-number">429</div>
+              <div class="kadr-429-screen-label">Too Many Requests</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kadr-429-copy">
+
+          <div class="kadr-429-kicker">
+            Please take a short pause
+          </div>
+
+          <h1 class="kadr-429-title" id="rate-limit-title">
+            Thoda <em>ruk jaiye.</em><br/>
+            You're moving a little fast.
+          </h1>
+
+          <p class="kadr-429-desc">
+            To keep KADR.live secure, reliable and available for everyone,
+            we've temporarily limited requests from your connection.
+            Your account and case data are safe.
+          </p>
+
+          <div class="kadr-429-notice">
+            <div class="kadr-429-notice-icon">⏱</div>
+            <div>
+              <strong>Your access will return automatically</strong>
+              <span>
+                Please wait a moment and try again.
+                <span class="kadr-429-countdown">
+                  Try again in <span id="countdown">15:00</span>
+                </span>
+              </span>
+            </div>
+          </div>
+
+          <div class="kadr-429-actions">
+            <button class="kadr-429-btn kadr-429-btn-primary" id="retryBtn" type="button">
+              ↻&nbsp; Try Again
+            </button>
+
+            <a href="/" class="kadr-429-btn kadr-429-btn-secondary">
+              Back to KADR.live
+            </a>
+          </div>
+
+          <div class="kadr-429-meta">
+            HTTP 429 · Too Many Requests
+          </div>
+
+        </div>
+      </section>
+
+      <section class="kadr-429-help" aria-label="What you can do">
+
+        <div class="kadr-429-help-item">
+          <div class="kadr-429-help-icon">🌐</div>
+          <h2>Keep things simple</h2>
+          <p>
+            Avoid repeatedly refreshing the page while the limit is active.
+          </p>
+        </div>
+
+        <div class="kadr-429-help-item">
+          <div class="kadr-429-help-icon">⏳</div>
+          <h2>Give it a moment</h2>
+          <p>
+            The request limit resets automatically. You don't need to do anything.
+          </p>
+        </div>
+
+        <div class="kadr-429-help-item">
+          <div class="kadr-429-help-icon">⚖️</div>
+          <h2>Need assistance?</h2>
+          <p>
+            Return to KADR.live or contact the KADR team if this keeps happening.
+          </p>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Use the same site footer as index.html -->
+  <div id="kadr-site-footer"></div>
+
+  <script src="js/site-chrome.js" defer></script>
+
+  <script>
+    /*
+     * This page is static HTML, so JavaScript is used to render
+     * the current year instead of leaving ${new Date().getFullYear()}
+     * as literal text.
+     *
+     * The rate-limit window in the server is 15 minutes.
+     */
+    (function () {
+      var countdown = document.getElementById('countdown');
+      var retryBtn = document.getElementById('retryBtn');
+      var remaining = 15 * 60;
+      var timer;
+
+      function renderCountdown() {
+        var minutes = Math.floor(remaining / 60);
+        var seconds = remaining % 60;
+
+        countdown.textContent =
+          minutes + ':' + String(seconds).padStart(2, '0');
+
+        if (remaining <= 0) {
+          clearInterval(timer);
+          countdown.textContent = 'now';
+          retryBtn.disabled = false;
+          return;
+        }
+
+        remaining -= 1;
+      }
+
+      retryBtn.addEventListener('click', function () {
+        window.location.reload();
+      });
+
+      renderCountdown();
+      timer = setInterval(renderCountdown, 1000);
+    })();
+  </script>
+
+  <!-- Set the footer year after the shared site chrome has rendered it. -->
+  <script>
+    (function () {
+      function updateYear() {
+        var year = String(new Date().getFullYear());
+
+        document.querySelectorAll('[data-current-year], .current-year, #current-year')
+          .forEach(function (el) {
+            el.textContent = year;
+          });
+
+        document.querySelectorAll('footer').forEach(function (footer) {
+          footer.innerHTML = footer.innerHTML.replace(
+            /\$\{new Date\(\)\.getFullYear\(\)\}/g,
+            year
+          );
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateYear);
+      } else {
+        updateYear();
+      }
+
+      setTimeout(updateYear, 300);
+      setTimeout(updateYear, 1000);
+    })();
+  </script>
+
+</body>
+</html>

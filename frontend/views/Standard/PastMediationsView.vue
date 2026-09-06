@@ -1,6 +1,6 @@
 <template>
   <b-container fluid class="past-mediations-page">
-    <kadr-page-header :title="CASES.PAST_TITLE" :subtitle="CASES.PAST_SUBTITLE" />
+    <kadr-page-header :title="$t('standardPages.pastTitle')" :subtitle="$t('standardPages.pastSubtitle')" />
 
     <my-cases
       v-if="isMediator"
@@ -22,8 +22,8 @@
     <kadr-empty-state
       v-else
       icon="fas fa-folder-open"
-      :title="EMPTY.GENERIC_TITLE"
-      :description="CASES.PAST_UNAVAILABLE"
+      :title="$t('standardPages.genericEmptyTitle')"
+      :description="$t('standardPages.pastUnavailable')"
     />
   </b-container>
 </template>
@@ -33,7 +33,6 @@ import MyCases from '../MediatorControllers/MyCases.vue'
 import ClientCases from '../ClientControllers/ClientCases.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
-import { CASES, EMPTY } from '../../constants/messages'
 import { sofbox } from '../../config/pluginInit'
 
 export default {
@@ -46,8 +45,6 @@ export default {
   },
   data () {
     return {
-      CASES,
-      EMPTY,
       pastCases: {
         casesWithEvents: [],
         total: 0,
@@ -64,7 +61,7 @@ export default {
       return this.user.type === 'MEDIATOR'
     },
     isClient () {
-      return this.user.type === 'CLIENT'
+      return this.user.type === 'CLIENT' || this.user.type === 'REPRESENTATIVE'
     }
   },
   mounted () {
@@ -84,6 +81,6 @@ export default {
 
 <style scoped>
 .past-mediations-page {
-  background: #f4f6fb;
+  background: var(--kadr-bg-page);
 }
 </style>

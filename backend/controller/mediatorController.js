@@ -6,6 +6,8 @@ const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { success } = require('../utils/responses')
 const { v4: uuidv4 } = require('uuid')
 const { resolveReferrerMediatorId, ensureMediatorReferralCode } = require('../utils/referralCode')
+const { normalizeCode: normalizeCouponCode } = require('../services/coupon/couponService')
+const { sanitizeBucketUrl } = require('../utils/uploadService')
 
 module.exports = {
   assignMediator: async function (req, res, next) {
@@ -189,22 +191,34 @@ Issued by: Kadr.live`
   newMediatorSignup: async function (req, res, next) {
     try {
       const {
-        name, email, phone, city, state, pincode, preferredLanguages, llbCollege, llbUniversity, llbYear,
+        name, email, phone, phone_number: phoneNumber, city, state, pincode, preferredLanguages, llbCollege, llbUniversity, llbYear,
         profilePictureContent, mediatorCourseYear, mcpcCertificateContent, llbCertificateContent,
+        mcpcCertificateUrl, llbCertificateUrl, profilePictureUrl,
         preferredAreaOfPractice, selectedHearingTypes, barEnrollmentNo, referralCode
       } = req.body.userDetails || req.body
+      // Web forms send `phone`; the mobile app sends `phone_number`.
+      const phoneValue = phone || phoneNumber
 
-      let uploadedMCPCFileResponse = null; let uploadedLLbFileResponse = null; let uploadedProfilePictureResponse = null
-      if (mcpcCertificateContent) { uploadedMCPCFileResponse = await helper.deployToS3Bucket(mcpcCertificateContent, `mcpc-certificate-${uuidv4()}`) }
-      if (llbCertificateContent) { uploadedLLbFileResponse = await helper.deployToS3Bucket(llbCertificateContent, `llb-certificate-${uuidv4()}`) }
-      if (profilePictureContent) { uploadedProfilePictureResponse = await helper.deployToS3Bucket(profilePictureContent, `profile-picture-${uuidv4()}`) }
+      // Files are uploaded directly to S3 by the browser (presigned URLs), so we
+      // normally receive their object URLs. The legacy base64 fields are still
+      // accepted as a fallback (e.g. older mobile clients) and uploaded here.
+      let uploadedMCPCFileResponse = sanitizeBucketUrl(mcpcCertificateUrl)
+      let uploadedLLbFileResponse = sanitizeBucketUrl(llbCertificateUrl)
+      let uploadedProfilePictureResponse = sanitizeBucketUrl(profilePictureUrl)
+      if (!uploadedMCPCFileResponse && mcpcCertificateContent) { uploadedMCPCFileResponse = await helper.deployToS3Bucket(mcpcCertificateContent, `mcpc-certificate-${uuidv4()}`) }
+      if (!uploadedLLbFileResponse && llbCertificateContent) { uploadedLLbFileResponse = await helper.deployToS3Bucket(llbCertificateContent, `llb-certificate-${uuidv4()}`) }
+      if (!uploadedProfilePictureResponse && profilePictureContent) { uploadedProfilePictureResponse = await helper.deployToS3Bucket(profilePictureContent, `profile-picture-${uuidv4()}`) }
 
       const referredById = await resolveReferrerMediatorId(prisma, referralCode)
+      // Store the raw code the mediator entered for audit + later redemption at
+      // approval. A code can be a company coupon or another mediator's referral
+      // code; both are captured verbatim (normalized) on the user record.
+      const signupCouponCode = normalizeCouponCode(referralCode) || null
 
       const signupData = {
         name,
         email,
-        phone_number: phone,
+        phone_number: phoneValue,
         password_hash: '',
         user_type: 'MEDIATOR',
         active: false,
@@ -224,7 +238,8 @@ Issued by: Kadr.live`
         preferred_area_of_practice: JSON.stringify(preferredAreaOfPractice),
         selected_hearing_types: JSON.stringify(selectedHearingTypes),
         bar_enrollment_no: barEnrollmentNo,
-        referred_by_id: referredById
+        referred_by_id: referredById,
+        signup_coupon_code: signupCouponCode
       }
 
       const existing = await prisma.user.findUnique({

@@ -1,136 +1,234 @@
 <template>
-    <div>
-        <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
-        <div v-if="step === 1">
-            <div class="mb-3">
-                <label for="name">Full Name <span class="text-danger">*</span></label>
-                <input type="text" class="form-control capitalize-first-word" :disabled="existingUser"  id="name" v-model="formData.name" placeholder="Your Full Name" />
-            </div>
-            <div class="mb-3">
-              <label for="profileLogo">Upload Profile Picture</label>
-              <div class="file-upload">
-                <input type="file" class="form-control-file" id="profileLogo" @change="handlProfilePictureUpload" accept="image/*"/>
-                <label for="profileLogo" class="custom-file-upload">
-                    Choose File
-                </label>
-                <img v-if="formData.profilePictureContent" @click="onClickProfilePicture(formData.profilePictureContent)" :src="formData.profilePictureContent" alt="Profile Logo Preview" class="img-thumbnail" style="margin-left: 2rem;width:50px;height:50px;cursor: pointer;"/>
-              </div>
-            </div>
-            <div class="mb-3">
-                <label for="email">Email Address <span class="text-danger">*</span></label>
-                <input type="email" class="form-control" :disabled="existingUser" id="email" v-model="formData.email" placeholder="Enter Email" />
-            </div>
-            <div class="mb-3">
-                <label for="phone">Phone Number <span class="text-danger">*</span></label>
-                <input type="tel" class="form-control" :disabled="existingUser" id="phone" v-model="formData.phone" placeholder="Phone Number" />
-            </div>
-            <div class="mb-3">
-                <label for="language">Preferred Language <span class="text-danger">*</span></label>
-                <select id="language" v-model="formData.preferredLanguage" class="form-control">
-                <option value="">Select Language</option>
-                <option v-for="(item, index) in availableLanguges" :key="index" :value="item.id">
-                    {{ item.language }}
-                </option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="state">State <span class="text-danger">*</span></label>
-                <select id="state" v-model="formData.state" class="form-control">
-                <option value="">Select State</option>
-                <option v-for="(item, index) in states" :key="index" :value="item">
-                    {{ item }}
-                </option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="city">City <span class="text-danger">*</span></label>
-                <input type="text" class="form-control capitalize-first-word" id="city" v-model="formData.city" placeholder="City" />
-            </div>
-            <div class="mb-3">
-                <label for="pincode">Pin Code <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="pincode" v-model="formData.pincode" placeholder="Pin Code" />
-            </div>
-            <div v-if="existingUser" class="mb-3 border rounded p-3 bg-light">
-              <b-form-checkbox v-model="formData.adultPlatformLiabilityAck">
-                I confirm that I am 18 years of age or older, that I take full responsibility for my actions on this platform, and that I agree to use the services in accordance with the platform’s terms and policies.
-              </b-form-checkbox>
-            </div>
-            <div class="d-flex justify-content-between">
-                <div>
-                  <button type="button" class="btn btn-secondary" @click="prevStep(1)">Previous</button>
-                  <button type="button" class="btn btn-primary ml" @click="nextStep(1)" v-if="existingUser === false">Next</button>
-                  <button type="button" class="btn btn-primary ml" @click="submitClientForm" v-else>Submit</button>
-                </div>
-                <div class="align-self-center">
-                <span class="dark-color d-inline-block line-height-2">
-                    Already Have an Account? <a href="#" @click="onClickLogin">Log In</a>
-                </span>
-                </div>
-            </div>
-        </div>
-        <div v-if="step === 2">
-            <div class="mb-3">
-                <label for="description">Describe your dispute in brief <span class="text-danger">*</span></label>
-                <textarea class="form-control" id="description" v-model="formData.description" placeholder="Describe your complaint" style="height:150px"></textarea>
-            </div>
-            <div class="mb-3">
-                <label for="category">Complaint Category <span class="text-danger">*</span></label>
-                <select class="form-control" id="category" v-model="formData.category">
-                  <option value="" disabled>Select Category</option>
-                  <option value="Payment related">Payment Related</option>
-                  <option value="Family related">Family Related</option>
-                  <option value="E-commerce">E-Commerce</option>
-                  <option value="Insurance">Insurance</option>
-                  <option value="Other">Other</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="evidence">Upload Evidence</label>
-                <div class="file-upload">
-                <input type="file" class="form-control-file" id="evidence" @change="onEvidenceChange" />
-                <label for="evidence" class="custom-file-upload">
-                    Choose File
-                </label>
-                <span v-if="formData.evidence" class="file-name">{{ formData.evidence.name }}</span>
-                </div>
-            </div>
-            <div class="d-flex justify-content-between">
-                <div>
-                <button type="button" class="btn btn-secondary" @click="prevStep(2)">Previous</button>
-                <button type="button" class="btn btn-primary float-end ml" @click="nextStep(2)">Next</button>
-                </div>
-                <div class="align-self-center">
-                <span class="dark-color d-inline-block line-height-2">
-                    Already Have an Account? <a href="#" @click="onClickLogin">Log In</a>
-                </span>
-                </div>
-            </div>
-        </div>
-        <div v-if="step === 3">
-            <div class="mb-3">
-                <label for="oppositeName">Opposite Party Name <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="oppositeName" v-model="formData.oppositeName" placeholder="Name" />
-            </div>
-            <div class="mb-3">
-                <label for="oppositeEmail">Opposite Party Email <span class="text-danger">*</span></label>
-                <input type="email" class="form-control" id="oppositeEmail" v-model="formData.oppositeEmail" placeholder="Email" />
-            </div>
-            <div class="mb-3">
-                <label for="oppositePhone">Opposite Party Phone <span class="text-danger">*</span></label>
-                <input type="tel" class="form-control" id="oppositePhone" v-model="formData.oppositePhone" placeholder="Phone" />
-            </div>
-            <div class="mb-3 border rounded p-3 bg-light">
-              <b-form-checkbox v-model="formData.adultPlatformLiabilityAck">
-                I confirm that I am 18 years of age or older, that I take full responsibility for my actions on this platform, and that I agree to use the services in accordance with the platform’s terms and policies.
-              </b-form-checkbox>
-            </div>
-            <button type="button" class="btn btn-secondary" @click="prevStep(3)">Previous</button>
-            <button type="button" class="btn btn-success float-end ml" @click="submitClientForm">Submit</button>
-        </div>
+  <div class="signup-form">
+    <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
+
+    <!-- Header: title + step progress -->
+    <div class="signup-form-header">
+      <div class="signup-form-heading">
+        <h2 class="signup-form-title">{{ $t('auth.signup.clientTitle') }}</h2>
+        <p class="signup-form-sub">{{ stepSubtitle }}</p>
+      </div>
+      <ol class="stepper" aria-label="Progress">
+        <li
+          v-for="s in steps"
+          :key="s.n"
+          class="stepper-item"
+          :class="{ 'is-active': step === s.n, 'is-done': step > s.n }"
+        >
+          <span class="stepper-dot">
+            <i v-if="step > s.n" class="ri-check-line" aria-hidden="true"></i>
+            <span v-else>{{ s.n }}</span>
+          </span>
+          <span class="stepper-label">{{ s.label }}</span>
+        </li>
+      </ol>
     </div>
+
+    <!-- Scrollable body only if content overflows; header/footer stay fixed -->
+    <div class="signup-form-body">
+      <!-- Step 1: profile -->
+      <div v-if="step === 1" class="field-grid">
+        <div class="field-item">
+          <label for="name" class="field-label">{{ $t('auth.signup.fullName') }} <span class="req">*</span></label>
+          <input type="text" class="app-input capitalize-first-word" :disabled="existingUser" id="name" v-model="formData.name" :placeholder="$t('auth.signup.fullNameHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="email" class="field-label">{{ $t('auth.signup.emailAddress') }} <span class="req">*</span></label>
+          <input type="email" class="app-input" :disabled="existingUser" id="email" v-model="formData.email" :placeholder="$t('auth.emailPlaceholder')" />
+        </div>
+
+        <div class="field-item">
+          <label for="phone" class="field-label">{{ $t('auth.signup.phoneNumber') }} <span class="req">*</span></label>
+          <input type="tel" class="app-input" :disabled="existingUser" id="phone" v-model="formData.phone" :placeholder="$t('auth.signup.phoneHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="language" class="field-label">{{ $t('auth.signup.preferredLanguage') }} <span class="req">*</span></label>
+          <div class="app-select-wrap">
+            <select id="language" v-model="formData.preferredLanguage" class="app-input app-select">
+              <option value="">{{ $t('auth.signup.selectLanguage') }}</option>
+              <option v-for="(item, index) in availableLanguges" :key="index" :value="item.id">
+                {{ item.language }}
+              </option>
+            </select>
+            <i class="ri-arrow-down-s-line app-select-caret" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <div class="field-item">
+          <label for="state" class="field-label">{{ $t('auth.signup.stateLabel') }} <span class="req">*</span></label>
+          <div class="app-select-wrap">
+            <select id="state" v-model="formData.state" class="app-input app-select">
+              <option value="">{{ $t('auth.signup.selectState') }}</option>
+              <option v-for="(item, index) in states" :key="index" :value="item">{{ item }}</option>
+            </select>
+            <i class="ri-arrow-down-s-line app-select-caret" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <div class="field-item">
+          <label for="city" class="field-label">{{ $t('auth.signup.cityLabel') }} <span class="req">*</span></label>
+          <input type="text" class="app-input capitalize-first-word" id="city" v-model="formData.city" :placeholder="$t('auth.signup.cityHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="pincode" class="field-label">{{ $t('auth.signup.pincodeLabel') }} <span class="req">*</span></label>
+          <input type="text" class="app-input" id="pincode" v-model="formData.pincode" :placeholder="$t('auth.signup.pincodeHint')" />
+        </div>
+
+        <div class="field-item">
+          <label for="profileLogo" class="field-label">{{ $t('auth.signup.profilePicture') }}</label>
+          <div class="upload-row">
+            <input type="file" class="upload-native" id="profileLogo" @change="handlProfilePictureUpload" accept="image/*" />
+            <label for="profileLogo" class="upload-btn">
+              <i class="ri-upload-2-line" aria-hidden="true"></i> {{ $t('auth.signup.chooseImage') }}
+            </label>
+            <img
+              v-if="formData.profilePictureContent"
+              @click="onClickProfilePicture(formData.profilePictureContent)"
+              :src="formData.profilePictureContent"
+              alt="Profile preview"
+              class="upload-thumb"
+            />
+          </div>
+        </div>
+
+        <div v-if="existingUser" class="field-item field-item--full">
+          <label class="consent-box">
+            <b-form-checkbox v-model="formData.adultPlatformLiabilityAck">
+              {{ $t('auth.signup.adultAck') }}
+            </b-form-checkbox>
+          </label>
+        </div>
+      </div>
+
+      <!-- Step 2: dispute -->
+      <div v-if="step === 2" class="field-grid">
+        <div class="field-item field-item--full">
+          <label for="description" class="field-label">{{ $t('auth.signup.describeDispute') }} <span class="req">*</span></label>
+          <textarea class="app-input app-textarea" id="description" v-model="formData.description" :placeholder="$t('auth.signup.describeDisputeHint')"></textarea>
+        </div>
+
+        <div class="field-item">
+          <label for="category" class="field-label">{{ $t('auth.signup.complaintCategory') }} <span class="req">*</span></label>
+          <div class="app-select-wrap">
+            <select class="app-input app-select" id="category" v-model="formData.category">
+              <option value="" disabled>{{ $t('auth.signup.selectCategory') }}</option>
+              <option value="Payment related">Payment Related</option>
+              <option value="Family related">Family Related</option>
+              <option value="E-commerce">E-Commerce</option>
+              <option value="Insurance">Insurance</option>
+              <option value="Other">Other</option>
+            </select>
+            <i class="ri-arrow-down-s-line app-select-caret" aria-hidden="true"></i>
+          </div>
+        </div>
+
+        <div class="field-item">
+          <label for="evidence" class="field-label">{{ $t('auth.signup.uploadEvidence') }}</label>
+          <div class="upload-row">
+            <input type="file" class="upload-native" id="evidence" @change="onEvidenceChange" />
+            <label for="evidence" class="upload-btn">
+              <i class="ri-attachment-2" aria-hidden="true"></i> {{ $t('auth.signup.chooseFile') }}
+            </label>
+            <span v-if="formData.evidence" class="upload-filename">{{ formData.evidence.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: opposite party -->
+      <div v-if="step === 3" class="field-grid">
+        <div class="field-item">
+          <label for="oppositeName" class="field-label">{{ $t('auth.signup.oppositeName') }} <span class="req">*</span></label>
+          <input type="text" class="app-input" id="oppositeName" v-model="formData.oppositeName" :placeholder="$t('auth.signup.fullNamePlaceholder')" />
+        </div>
+        <div class="field-item">
+          <label for="oppositeEmail" class="field-label">{{ $t('auth.signup.oppositeEmail') }} <span class="req">*</span></label>
+          <input type="email" class="app-input" id="oppositeEmail" v-model="formData.oppositeEmail" :placeholder="$t('auth.signup.emailPlaceholder')" />
+        </div>
+        <div class="field-item">
+          <label for="oppositePhone" class="field-label">{{ $t('auth.signup.oppositePhone') }} <span class="req">*</span></label>
+          <input type="tel" class="app-input" id="oppositePhone" v-model="formData.oppositePhone" :placeholder="$t('auth.signup.phonePlaceholder')" />
+        </div>
+        <div class="field-item field-item--full">
+          <p class="rep-section-hint">
+            {{ $t('auth.signup.repHint') }}
+          </p>
+        </div>
+        <div class="field-item">
+          <label for="representativeName" class="field-label">{{ $t('auth.signup.repName') }}</label>
+          <input type="text" class="app-input" id="representativeName" v-model="formData.representativeName" :placeholder="$t('auth.signup.repNamePlaceholder')" />
+        </div>
+        <div class="field-item">
+          <label for="representativeEmail" class="field-label">{{ $t('auth.signup.repEmail') }} <span class="req">*</span></label>
+          <input type="email" class="app-input" id="representativeEmail" v-model="formData.representativeEmail" :placeholder="$t('auth.signup.emailPlaceholder')" />
+        </div>
+        <div class="field-item">
+          <label for="representativePhone" class="field-label">{{ $t('auth.signup.repPhone') }}</label>
+          <input type="tel" class="app-input" id="representativePhone" v-model="formData.representativePhone" :placeholder="$t('auth.signup.repPhonePlaceholder')" />
+        </div>
+        <div class="field-item field-item--full">
+          <label class="consent-box">
+            <b-form-checkbox v-model="formData.adultPlatformLiabilityAck">
+              {{ $t('auth.signup.adultAck') }}
+            </b-form-checkbox>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer: navigation -->
+    <div class="signup-form-footer">
+      <div class="footer-left">
+        <button type="button" class="btn-ghost" @click="prevStep(step)">
+          <i class="ri-arrow-left-line" aria-hidden="true"></i> {{ step === 1 ? $t('auth.signup.back') : $t('auth.signup.previous') }}
+        </button>
+      </div>
+      <div class="footer-right">
+        <span class="footer-login">
+          {{ $t('auth.signup.alreadyHaveAccount') }} <a href="#" @click.prevent="onClickLogin">{{ $t('auth.signup.logIn') }}</a>
+        </span>
+        <button
+          v-if="step === 1 && existingUser === false"
+          type="button"
+          class="btn-primary-cta"
+          @click="nextStep(1)"
+        >
+          {{ $t('auth.signup.continue') }} <i class="ri-arrow-right-line" aria-hidden="true"></i>
+        </button>
+        <button
+          v-else-if="step === 1 && existingUser"
+          type="button"
+          class="btn-primary-cta"
+          @click="submitClientForm"
+        >
+          {{ $t('auth.signup.submit') }}
+        </button>
+        <button
+          v-else-if="step === 2"
+          type="button"
+          class="btn-primary-cta"
+          @click="nextStep(2)"
+        >
+          {{ $t('auth.signup.continue') }} <i class="ri-arrow-right-line" aria-hidden="true"></i>
+        </button>
+        <button
+          v-else-if="step === 3"
+          type="button"
+          class="btn-primary-cta btn-success-cta"
+          @click="submitClientForm"
+        >
+          <i class="ri-check-line" aria-hidden="true"></i> {{ $t('auth.signup.createAccountBtn') }}
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
+import { uploadSignupFile } from '../../utils/directUpload'
+import { notifyRequestStart, notifyRequestEnd } from '../../utils/loadingBridge'
 
 export default {
   name: 'SignUpClient',
@@ -159,6 +257,9 @@ export default {
         oppositeEmail: '',
         preferredLanguage: '',
         oppositePhone: '',
+        representativeName: '',
+        representativeEmail: '',
+        representativePhone: '',
         adultPlatformLiabilityAck: false,
         profilePicture: null,
         profilePictureContent: null,
@@ -172,6 +273,20 @@ export default {
       },
       existingUser: false,
       availableLanguges: {}
+    }
+  },
+  computed: {
+    steps () {
+      return [
+        { n: 1, label: this.$t('auth.signup.stepProfile') },
+        { n: 2, label: this.$t('auth.signup.stepDispute') },
+        { n: 3, label: this.$t('auth.signup.stepOtherParty') }
+      ]
+    },
+    stepSubtitle () {
+      if (this.step === 1) return this.$t('auth.signup.profileSubtitle')
+      if (this.step === 2) return this.$t('auth.signup.disputeSubtitle')
+      return this.$t('auth.signup.otherPartySubtitle')
     }
   },
   mounted () {
@@ -209,6 +324,8 @@ export default {
     handlProfilePictureUpload (event) {
       const file = event.target.files[0]
       if (file) {
+        // Keep a local data URL purely for the on-screen preview thumbnail.
+        // The actual file is uploaded directly to S3 at submit time.
         const reader = new FileReader()
         reader.onload = () => {
           this.formData.profilePictureContent = reader.result
@@ -251,46 +368,46 @@ export default {
         return false
       }
       if (this.formData.email.trim() === '') {
-        this.showAlert('Enter email address', 'danger')
+        this.showAlert(this.$t('auth.signup.enterEmail'), 'danger')
         return false
       }
       const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
       if (!emailPattern.test(this.formData.email)) {
-        this.showAlert('Invalid email address', 'danger')
+        this.showAlert(this.$t('auth.signup.invalidAccountEmail'), 'danger')
         return false
       }
       if (this.formData.phone.trim() === '') {
-        this.showAlert('Enter phone number', 'danger')
+        this.showAlert(this.$t('auth.signup.enterPhone'), 'danger')
         return false
       }
       const phonePattern = /^(?:\+91|0)?[789]\d{9}$/
       if (!phonePattern.test(this.formData.phone)) {
-        this.showAlert('Enter valid phone number', 'danger')
+        this.showAlert(this.$t('auth.signup.invalidPhone'), 'danger')
         return false
       }
       if (this.formData.preferredLanguage.trim() === '') {
-        this.showAlert('Select your preferred language', 'danger')
+        this.showAlert(this.$t('auth.signup.selectLanguageError'), 'danger')
         return false
       }
       if (this.formData.state.trim() === '') {
-        this.showAlert('Select state', 'danger')
+        this.showAlert(this.$t('auth.signup.selectStateError'), 'danger')
         return false
       }
       if (this.formData.city.trim() === '') {
-        this.showAlert('Enter city', 'danger')
+        this.showAlert(this.$t('auth.signup.enterCity'), 'danger')
         return false
       }
       if (this.formData.pincode.trim() === '') {
-        this.showAlert('Enter pincode', 'danger')
+        this.showAlert(this.$t('auth.signup.enterPincode'), 'danger')
         return false
       }
       const pinCodePattern = /^[1-9][0-9]{5}$/
       if (!pinCodePattern.test(this.formData.pincode)) {
-        this.showAlert('Enter valid pincode', 'danger')
+        this.showAlert(this.$t('auth.signup.invalidPincode'), 'danger')
         return false
       }
       if (this.existingUser === true && !this.formData.adultPlatformLiabilityAck) {
-        this.showAlert('Please confirm that you are 18+ and accept responsibility for your use of the platform.', 'danger')
+        this.showAlert(this.$t('auth.signup.adultAckRequired'), 'danger')
         return false
       }
       if (this.existingUser === false) {
@@ -300,8 +417,8 @@ export default {
         })
         if (response.success && response.data.exists) {
           const msg = response.data.pendingApproval
-            ? 'Your registration is already pending approval. Please wait for the Kadr team to activate your account.'
-            : (response.message || 'You already have a client account. Please log in and start a new case from My Cases.')
+            ? this.$t('auth.signup.pendingApproval')
+            : (response.message || this.$t('auth.signup.accountExists'))
           this.showAlert(msg, 'danger')
           return false
         }
@@ -310,11 +427,11 @@ export default {
     },
     page2Validation () {
       if (this.formData.description.trim() === '') {
-        this.showAlert('Enter complaint description', 'danger')
+        this.showAlert(this.$t('auth.signup.enterDescription'), 'danger')
         return false
       }
       if (this.formData.category.trim() === '') {
-        this.showAlert('Enter complaint category', 'danger')
+        this.showAlert(this.$t('auth.signup.enterCategory'), 'danger')
         return false
       }
       if (this.formData.evidence) {
@@ -328,11 +445,11 @@ export default {
         const maxSize = 2 * 1024 * 1024
 
         if (!allowedTypes.includes(this.formData.evidence.type)) {
-          this.showAlert('Invalid file type. Allowed types: PDF, DOC, DOCX, JPEG, PNG.', 'danger')
+          this.showAlert(this.$t('auth.signup.invalidFileType'), 'danger')
           return false
         }
         if (this.formData.evidence.size > maxSize) {
-          this.showAlert('File size exceeds 2MB.', 'danger')
+          this.showAlert(this.$t('auth.signup.fileTooLarge'), 'danger')
           return false
         }
       }
@@ -358,58 +475,101 @@ export default {
     onEvidenceChange (event) {
       const file = event.target.files[0]
       if (file) {
-        const reader = new FileReader()
-        reader.onload = () => {
-          this.formData.evidenceContent = reader.result
-        }
-        reader.onerror = (error) => {
-          console.error('Error reading file:', error)
-        }
-        reader.readAsDataURL(file)
         this.formData.evidence = file
       }
     },
     async submitClientForm () {
       if (this.existingUser === false) {
         if (!this.formData.adultPlatformLiabilityAck) {
-          this.showAlert('Please confirm that you are 18+ and accept responsibility for your use of the platform.', 'danger')
+          this.showAlert(this.$t('auth.signup.adultAckRequired'), 'danger')
           return
         }
         if (this.formData.oppositeName.trim() === '') {
-          this.showAlert('Enter opposite party name', 'danger')
+          this.showAlert(this.$t('auth.signup.enterOppositeName'), 'danger')
           return
         }
         if (this.formData.oppositeEmail.trim() === '') {
-          this.showAlert('Enter opposite party email', 'danger')
+          this.showAlert(this.$t('auth.signup.enterOppositeEmail'), 'danger')
           return
         }
         const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
         if (!emailPattern.test(this.formData.oppositeEmail)) {
-          this.showAlert('Invalid email address', 'danger')
+          this.showAlert(this.$t('auth.signup.invalidEmail'), 'danger')
           return
         }
         if (this.formData.oppositePhone.trim() === '') {
-          this.showAlert('Enter opposite party phone', 'danger')
+          this.showAlert(this.$t('auth.signup.enterOppositePhone'), 'danger')
           return
         }
         const phonePattern = /^(?:\+91|0)?[789]\d{9}$/
         if (!phonePattern.test(this.formData.oppositePhone)) {
-          this.showAlert('Enter valid phone number', 'danger')
+          this.showAlert(this.$t('auth.signup.invalidPhone'), 'danger')
+          return
+        }
+        if (this.formData.representativeEmail.trim() === '') {
+          this.showAlert(this.$t('auth.signup.enterRepEmail'), 'danger')
+          return
+        }
+        if (!emailPattern.test(this.formData.representativeEmail)) {
+          this.showAlert(this.$t('auth.signup.invalidRepEmail'), 'danger')
+          return
+        }
+        if (this.formData.representativePhone.trim() !== '' && !phonePattern.test(this.formData.representativePhone)) {
+          this.showAlert(this.$t('auth.signup.invalidRepPhone'), 'danger')
           return
         }
       } else {
         const isValid = await this.page1Validation()
         if (!isValid) return
       }
-      const response = await this.$store.dispatch('newUserSignup', {
-        userDetails: this.formData,
-        existingUser: this.existingUser
-      })
-      if (response.success) {
-        this.showAlertWithTimeout(response.message, 'success', 7000)
-        setTimeout(() => {
-          this.onClickLogin()
-        }, 1500)
+
+      // Hold the global spinner up for the WHOLE submit — both the direct-to-S3
+      // uploads and the backend signup call. The S3 PUTs use a bare axios call
+      // that the interceptor does not track, so without this manual bracket the
+      // spinner would drop between the presign requests and the backend save,
+      // producing a visible flicker/gap. notifyRequestStart/End increment the
+      // same pending counter the interceptor uses, so nested tracked requests
+      // never drop the count to zero mid-flow. The matching End lives in the
+      // single finally below so it always releases, even on error.
+      notifyRequestStart()
+      try {
+        // Upload files directly to S3 first, then submit the signup with just
+        // the resulting object URLs (no base64 in the request body).
+        let profilePictureUrl = ''
+        let evidenceUrl = ''
+        try {
+          ;[profilePictureUrl, evidenceUrl] = await Promise.all([
+            uploadSignupFile('profile-picture', this.formData.profilePicture),
+            uploadSignupFile('evidence', this.formData.evidence)
+          ])
+        } catch (error) {
+          this.showAlert(error?.message || this.$t('auth.signup.fileTooLarge'), 'danger')
+          return
+        }
+
+        // Send only the plain fields plus the uploaded file URLs. The large File
+        // objects and preview data URL are intentionally excluded.
+        const {
+          profilePicture, evidence, profilePictureContent, evidenceContent,
+          ...plainFields
+        } = this.formData
+
+        const response = await this.$store.dispatch('newUserSignup', {
+          userDetails: {
+            ...plainFields,
+            profilePictureUrl,
+            evidenceUrl
+          },
+          existingUser: this.existingUser
+        })
+        if (response.success) {
+          this.showAlertWithTimeout(response.message, 'success', 7000)
+          setTimeout(() => {
+            this.onClickLogin()
+          }, 1500)
+        }
+      } finally {
+        notifyRequestEnd()
       }
     }
   }
@@ -417,112 +577,11 @@ export default {
 </script>
 
 <style scoped>
-/* Full Height and Centering */
-body, html {
-  height: 100%;
-  margin: 0;
-}
+@import "../../assets/css/signupForm.css";
 
-/* Main container that takes full screen height */
-.container {
-  display: flex;
-  justify-content: center; /* Horizontally center */
-  align-items: center; /* Vertically center */
-  height: 100vh; /* Full height of the viewport */
-}
-
-/* Form container (including Step 0) */
-.form-container {
-  max-width: 600px;
-  width: 100%;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.card {
-  margin-bottom: 20px;
-}
-
-/* Empty step placeholders */
-.empty-step {
-  height: 200px;
-  background-color: #f8f9fa;
-  border: 1px solid #ddd;
-  margin: 10px 0;
-}
-
-/* Ensuring the header stays at the top, regardless of the screen size */
-.header {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  right: 20px;
-  text-align: center;
-}
-
-/* Style for the file upload container */
-.file-upload {
-  position: relative;
-  display: inline-block;
-  width: 100%;
-}
-
-/* Hide the default file input button */
-.file-upload input[type="file"] {
-  display: none;
-}
-
-/* Style the custom file upload label button */
-.custom-file-upload {
-  display: inline-block;
-  padding: 10px 20px;
-  font-size: 14px;
-  cursor: pointer;
-  background-color: #007bff;
-  color: #fff;
-  border: 1px solid #007bff;
-  border-radius: 4px;
-  text-align: center;
-  width: auto;
-  margin-top: 5px;
-}
-
-/* Hover effect for the custom button */
-.custom-file-upload:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
-}
-
-/* Style for the file name to appear once a file is selected */
-.file-name {
-  display: inline-block;
-  margin-top: 5px;
-  color: #555;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* Optional: Styling for focus or when the file is selected */
-.file-upload input[type="file"]:focus + .custom-file-upload,
-.file-upload input[type="file"]:active + .custom-file-upload {
-  border-color: #0056b3;
-  background-color: #e6f0ff;
-}
-.toast.toast-error {
-  background-color: #dc3545; /* Red background */
-  color: white;              /* White text */
-}
-
-.b-toaster-slot{
-  margin-left: auto;
-  margin-right: auto;
-}
-.ml {
-    margin-left: 0.5rem;
-}
-.capitalize-first-word {
-  text-transform: capitalize;
+.rep-section-hint {
+  margin: 0.25rem 0 0.25rem;
+  font-size: 0.85rem;
+  color: var(--kadr-text-muted);
 }
 </style>

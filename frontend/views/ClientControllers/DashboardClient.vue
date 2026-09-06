@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid class="dashboard-client-page">
+  <b-container fluid class="dashboard-client-page kadr-animate-in">
     <kadr-dashboard-hero
       :name="user.name"
       :email="user.email"
@@ -10,7 +10,7 @@
     <div class="workspace-grid workspace-grid--single">
       <iq-card class="workspace-card schedule-card">
         <template v-slot:headerTitle>
-          <h4 class="card-title">Today's Schedule</h4>
+          <h4 class="card-title">{{ $t('clientDashboard.todaysSchedule') }}</h4>
         </template>
         <template v-slot:body>
           <div v-if="todaysEvents.length" class="list-scroll">
@@ -22,8 +22,8 @@
               <div class="schedule-main">
                 <i class="ri-checkbox-blank-circle-fill schedule-dot" :style="{ color: kadrEventColor }"></i>
                 <div class="schedule-text">
-                  <h6>Case #{{ event.caseId }}</h6>
-                  <p>{{ event.caseFirstPartyName }} vs {{ event.caseSecondPartyName }}</p>
+                  <h6>{{ $t('clientDashboard.caseNumber', { id: event.caseId }) }}</h6>
+                  <p>{{ event.caseFirstPartyName }} {{ $t('clientDashboard.vs') }} {{ event.caseSecondPartyName }}</p>
                   <span>{{ formatDate(event.start_datetime) }} - {{ formatDate(event.end_datetime) }}</span>
                 </div>
               </div>
@@ -33,7 +33,7 @@
                 target="_blank"
                 class="btn btn-primary btn-sm"
               >
-                Join
+                {{ $t('clientDashboard.join') }}
               </a>
             </div>
           </div>
@@ -41,7 +41,7 @@
             v-else
             compact
             icon=""
-            :description="DASHBOARD.NO_MEETINGS_TODAY"
+            :description="$t('clientDashboard.noMeetingsToday')"
           />
         </template>
       </iq-card>
@@ -51,9 +51,9 @@
       <div class="section-head">
         <h5>
           <i class="fas fa-exclamation-circle section-icon"></i>
-          Action Required
+          {{ $t('clientDashboard.actionRequired') }}
         </h5>
-        <small>Complete pending steps across your cases.</small>
+        <small>{{ $t('clientDashboard.actionRequiredSubtitle') }}</small>
       </div>
       <div class="action-grid">
         <article
@@ -73,10 +73,11 @@
           <p>{{ item.description }}</p>
           <button
             type="button"
-            class="btn btn-sm btn-light"
+            class="btn btn-sm btn-primary action-card-cta"
             @click.stop="runWorkspaceAction(item)"
           >
             {{ item.buttonText }}
+            <i class="ri-arrow-right-line" aria-hidden="true"></i>
           </button>
         </article>
       </div>
@@ -94,10 +95,9 @@
 import ClientCases from './ClientCases.vue'
 import KadrDashboardHero from '../../components/kadr/KadrDashboardHero.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
-import { DASHBOARD } from '../../constants/messages'
 import { formatTime } from '../../utils/dateFormat'
 
-const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
+const KADR_EVENT_COLOR = 'var(--kadr-event-kadr)'
 
 export default {
   name: 'DashboardClient',
@@ -112,8 +112,7 @@ export default {
   },
   data () {
     return {
-      kadrEventColor: KADR_EVENT_COLOR,
-      DASHBOARD
+      kadrEventColor: KADR_EVENT_COLOR
     }
   },
   computed: {
@@ -128,8 +127,8 @@ export default {
     },
     heroStats () {
       return [
-        { key: 'cases', label: 'Ongoing Cases', value: this.myCases.length },
-        { key: 'meetings', label: 'Meetings Today', value: this.todaysEvents.length }
+        { key: 'cases', label: this.$t('clientDashboard.ongoingCases'), value: this.myCases.length },
+        { key: 'meetings', label: this.$t('clientDashboard.meetingsToday'), value: this.todaysEvents.length }
       ]
     },
     actionCards () {
@@ -140,7 +139,9 @@ export default {
       for (const c of this.myCases) {
         const isSecondParty = userid === c.user_cases_second_partyTouser?.id
         const isFirstParty = userid === c.user_cases_first_partyTouser?.id
-        const caseLabel = c.caseId ? `Case #${c.caseId}` : 'a case'
+        const caseLabel = c.caseId
+          ? this.$t('clientDashboard.caseNumber', { id: c.caseId })
+          : this.$t('clientDashboard.aCase')
 
         if (
           c.case_statuses?.id === 'in_progress' &&
@@ -150,9 +151,9 @@ export default {
           cards.push({
             key: `accept-${c.id}`,
             caseId: c.id,
-            title: 'Accept mediation',
-            description: `${caseLabel}: review the notice and pay Rs. 1000 to continue.`,
-            buttonText: 'I Accept',
+            title: this.$t('clientDashboard.acceptMediation'),
+            description: this.$t('clientDashboard.acceptMediationDesc', { caseLabel, amount: 1000 }),
+            buttonText: this.$t('clientDashboard.iAccept'),
             trigger: 'payment',
             paymentType: 'notice',
             variant: 'success'
@@ -163,9 +164,9 @@ export default {
           cards.push({
             key: `notice-pay-${c.id}`,
             caseId: c.id,
-            title: 'Notice payment due',
-            description: `${caseLabel}: pay Rs. 1000 to dispatch the legal notice.`,
-            buttonText: 'Pay Rs. 1000',
+            title: this.$t('clientDashboard.noticePaymentDue'),
+            description: this.$t('clientDashboard.noticePaymentDesc', { caseLabel, amount: 1000 }),
+            buttonText: this.$t('clientDashboard.payAmount', { amount: 1000 }),
             trigger: 'payment',
             paymentType: 'notice',
             variant: 'primary'
@@ -176,9 +177,9 @@ export default {
           cards.push({
             key: `mediation-pay-${c.id}`,
             caseId: c.id,
-            title: 'Mediation fee due',
-            description: `${caseLabel}: pay Rs. 5000 to assign a mediator.`,
-            buttonText: 'Pay Rs. 5000',
+            title: this.$t('clientDashboard.mediationFeeDue'),
+            description: this.$t('clientDashboard.mediationFeeDesc', { caseLabel, amount: 5000 }),
+            buttonText: this.$t('clientDashboard.payAmount', { amount: 5000 }),
             trigger: 'payment',
             paymentType: 'mediation',
             variant: 'warning'
@@ -192,9 +193,9 @@ export default {
           cards.push({
             key: `sign-${c.id}`,
             caseId: c.id,
-            title: 'Signature needed',
-            description: `${caseLabel}: sign the mediation agreement to continue.`,
-            buttonText: 'Sign Agreement',
+            title: this.$t('clientDashboard.signatureNeeded'),
+            description: this.$t('clientDashboard.signatureNeededDesc', { caseLabel }),
+            buttonText: this.$t('clientDashboard.signAgreement'),
             trigger: 'sign',
             variant: 'success'
           })
@@ -235,3 +236,19 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.action-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.action-card-cta i {
+  transition: transform var(--kadr-duration-fast) var(--kadr-ease);
+}
+
+.action-card--clickable:hover .action-card-cta i {
+  transform: translateX(3px);
+}
+</style>

@@ -25,7 +25,8 @@ export async function bootstrapMobileSession () {
       { refreshToken },
       {
         headers: getMobileClientHeaders(),
-        withCredentials: false
+        withCredentials: false,
+        meta: { silent: true }
       }
     )
     const accessToken = parseRefreshResponse(data)
@@ -76,7 +77,7 @@ async function initPushNotifications (store) {
         await apiClient.post('/push/register', {
           token: token.value,
           platform
-        })
+        }, { meta: { silent: true } })
       } catch (e) {
         console.warn('[push] register failed', e)
       }
@@ -109,6 +110,6 @@ async function initPushNotifications (store) {
 export async function unregisterPushToken (token) {
   if (!token || !isNativeApp()) return
   try {
-    await apiClient.post('/push/unregister', { token })
+    await apiClient.post('/push/unregister', { token }, { meta: { silent: true } })
   } catch (_) { /* empty */ }
 }

@@ -1,9 +1,9 @@
 <template>
   <b-container fluid class="notification-settings-page">
     <div class="page-head mb-3">
-      <h4 class="page-title">Notifications</h4>
+      <h4 class="page-title">{{ $t('standardPages.notificationsTitle') }}</h4>
       <p class="text-muted mb-0">
-        Choose how you'd like to be notified about your account and cases.
+        {{ $t('standardPages.notificationsSubtitle') }}
       </p>
     </div>
     <b-row>

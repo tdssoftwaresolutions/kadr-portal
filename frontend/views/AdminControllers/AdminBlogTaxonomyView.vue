@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid>
+  <b-container fluid class="kadr-animate-in">
     <b-row>
       <b-col md="6">
         <iq-card>

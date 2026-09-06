@@ -55,6 +55,24 @@ function createApp (options = {}) {
   app.use(requestLogger)
   app.use(corsMiddleware)
   app.use(globalLimiter)
+
+  // Capture raw body for webhook signature verification (Cashfree HMAC-SHA256).
+  // Must be registered before express.json() so the raw buffer is still available.
+  app.use('/api/payment/webhook/cashfree', (req, res, next) => {
+    let data = ''
+    req.setEncoding('utf8')
+    req.on('data', (chunk) => { data += chunk })
+    req.on('end', () => {
+      req.rawBody = data
+      try {
+        req.body = JSON.parse(data)
+      } catch (e) {
+        req.body = {}
+      }
+      next()
+    })
+  })
+
   app.use(express.json({ limit: bodyLimit }))
   app.use(express.urlencoded({ limit: bodyLimit, extended: true }))
   app.use(cookieParser())

@@ -2,7 +2,10 @@
 @import "~bootstrap/scss/bootstrap";
 
 @import "../../theme/tokens.css";
+@import "../../theme/motion.css";
+@import "../../theme/spinner.css";
 @import "./workspace";
+@import "../../theme/mobile.css";
 
 // --- Bootstrap 4 -> 5 card padding fix ---------------------------------------
 // Bootstrap 5 changed `.card-body` padding from a hardcoded value to

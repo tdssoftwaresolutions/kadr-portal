@@ -1,357 +1,177 @@
 <template>
-  <div
-    class="html-code-editor"
-    :class="[
-      `html-code-editor--${theme}`,
-      { 'html-code-editor--disabled': disabled, 'html-code-editor--focused': focused }
-    ]"
-  >
-    <div v-if="showToolbar" class="html-code-editor__toolbar">
-      <b-button
-        size="sm"
-        variant="outline-primary"
-        class="html-code-editor__format-btn"
-        :disabled="disabled || !String(modelValue || '').trim()"
+  <div class="hce-wrap" :class="{ 'hce-wrap--disabled': disabled, 'hce-wrap--focused': focused }">
+    <div v-if="showToolbar" class="hce-toolbar">
+      <button
+        type="button"
+        class="hce-btn"
+        :disabled="disabled || !currentValue.trim()"
         @click="formatCode"
       >
         Format HTML
-      </b-button>
-      </div>
-    <div ref="host" class="html-code-editor__host" :style="hostStyle" />
+      </button>
+    </div>
+    <textarea
+      ref="ta"
+      class="hce-textarea"
+      :style="textareaStyle"
+      :value="currentValue"
+      :placeholder="placeholder"
+      :disabled="disabled"
+      :readonly="disabled"
+      spellcheck="false"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      @input="onInput"
+      @focus="focused = true"
+      @blur="focused = false"
+      @keydown.tab.prevent="onTab"
+    />
   </div>
 </template>
 
 <script>
-import CodeMirror from 'codemirror'
-import 'codemirror/lib/codemirror.css'
-import 'codemirror/mode/xml/xml'
-import 'codemirror/mode/javascript/javascript'
-import 'codemirror/mode/css/css'
-import 'codemirror/mode/htmlmixed/htmlmixed'
-import 'codemirror/addon/mode/overlay'
-import 'codemirror/addon/display/placeholder'
 import { formatHtml } from '../../utils/htmlHighlight'
-
-const PLACEHOLDER_OVERLAY = {
-  token (stream) {
-    if (stream.match(/\{[a-zA-Z][a-zA-Z0-9_]*\}/)) {
-      return 'cm-placeholder'
-    }
-    stream.next()
-    return null
-  }
-}
-
-let htmlModeRegistered = false
-function registerHtmlMode () {
-  if (htmlModeRegistered) return
-  htmlModeRegistered = true
-  CodeMirror.defineMode('kadr-html', (config) => {
-    return CodeMirror.overlayMode(
-      CodeMirror.getMode(config, 'htmlmixed'),
-      PLACEHOLDER_OVERLAY
-    )
-  })
-}
-registerHtmlMode()
 
 export default {
   name: 'HtmlCodeEditor',
+
   props: {
-    modelValue: {
-      type: String,
-      default: ''
-    },
-    rows: {
-      type: [Number, String],
-      default: 8
-    },
-    minHeight: {
-      type: String,
-      default: ''
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    placeholder: {
-      type: String,
-      default: ''
-    },
-    theme: {
-      type: String,
-      default: 'light',
-      validator: (v) => ['dark', 'light'].includes(v)
-    },
-    showToolbar: {
-      type: Boolean,
-      default: true
-    },
-    /** Set false when parent tab/modal is hidden so we can refresh when it opens */
-    visible: {
-      type: Boolean,
-      default: true
-    }
+    modelValue: { type: String, default: null },
+    value: { type: String, default: null },
+    rows: { type: [Number, String], default: 8 },
+    minHeight: { type: String, default: '' },
+    disabled: { type: Boolean, default: false },
+    placeholder: { type: String, default: '' },
+    theme: { type: String, default: 'light', validator: (v) => ['dark', 'light'].includes(v) },
+    showToolbar: { type: Boolean, default: true },
+    visible: { type: Boolean, default: true } // kept for API compat, unused
   },
+
+  emits: ['update:modelValue', 'input'],
+
   data () {
-    return {
-      focused: false,
-      editor: null,
-      skipExternalSync: false,
-      resizeObserver: null,
-      intersectionObserver: null
-    }
+    return { focused: false }
   },
+
   computed: {
-    hostStyle () {
-      const styles = {}
-      if (this.minHeight) {
-        styles.minHeight = this.minHeight
-        return styles
-      }
-      const rowCount = Number(this.rows) || 8
-      styles.minHeight = `${Math.max(4, rowCount) * 21 + 24}px`
-      return styles
+    currentValue () {
+      const v = this.modelValue != null ? this.modelValue : (this.value != null ? this.value : '')
+      return String(v)
+    },
+    textareaStyle () {
+      const rows = Math.max(4, Number(this.rows) || 8)
+      if (this.minHeight) return { minHeight: this.minHeight }
+      return { minHeight: `${rows * 21}px` }
     }
   },
-  emits: ['update:modelValue'],
+
   watch: {
-    modelValue (next) {
-      if (!this.editor || this.skipExternalSync) return
-      this.syncEditorValue(next)
-    },
-    visible (next) {
-      if (next) {
-        this.$nextTick(() => this.refreshEditor())
-      }
-    },
-    disabled (next) {
-      if (this.editor) {
-        this.editor.setOption('readOnly', next)
-      }
-    },
-    placeholder (next) {
-      if (this.editor) {
-        this.editor.setOption('placeholder', next || '')
+    // Keep the native DOM value in sync when the prop changes externally
+    // (e.g. when parent resets the editor or programmatically sets content).
+    currentValue (next) {
+      const ta = this.$refs.ta
+      if (ta && ta.value !== next) {
+        ta.value = next
       }
     }
   },
-  mounted () {
-    const heightPx = this.editorHeightPx()
-    this.editor = CodeMirror(this.$refs.host, {
-      value: this.modelValue || '',
-      mode: 'kadr-html',
-      lineNumbers: true,
-      lineWrapping: true,
-      indentUnit: 2,
-      tabSize: 2,
-      indentWithTabs: false,
-      readOnly: this.disabled,
-      placeholder: this.placeholder || '',
-      extraKeys: {
-        Tab: (cm) => {
-          if (cm.somethingSelected()) {
-            cm.indentSelection('add')
-          } else {
-            cm.replaceSelection('  ', 'end')
-          }
-        }
-      }
-    })
-    this.editor.setSize('100%', heightPx)
 
-    this.editor.on('change', this.onEditorChange)
-    this.editor.on('focus', () => {
-      this.focused = true
-      this.refreshEditor()
-    })
-    this.editor.on('blur', () => { this.focused = false })
-
-    this.bindVisibilityObservers()
-    this.syncEditorValue(this.modelValue)
-  },
-  beforeUnmount () {
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect()
-      this.resizeObserver = null
-    }
-    if (this.intersectionObserver) {
-      this.intersectionObserver.disconnect()
-      this.intersectionObserver = null
-    }
-    if (!this.editor) return
-    this.editor.off('change', this.onEditorChange)
-    const wrapper = this.editor.getWrapperElement()
-    if (wrapper && wrapper.parentNode) {
-      wrapper.parentNode.removeChild(wrapper)
-    }
-    this.editor = null
-  },
   methods: {
-    editorHeightPx () {
-      if (this.minHeight) {
-        const parsed = parseInt(String(this.minHeight), 10)
-        if (!Number.isNaN(parsed)) return parsed
-      }
-      const rowCount = Number(this.rows) || 8
-      return Math.max(4, rowCount) * 21 + 24
-    },
-    refreshEditor () {
-      if (!this.editor) return
-      this.editor.refresh()
-    },
-    syncEditorValue (next) {
-      if (!this.editor) return
-      const value = next == null ? '' : String(next)
-      if (this.editor.getValue() !== value) {
-        this.editor.setValue(value)
-      }
-      this.scheduleRefreshes()
-    },
-    scheduleRefreshes () {
-      this.$nextTick(() => {
-        this.refreshEditor()
-        requestAnimationFrame(() => this.refreshEditor())
-      })
-      window.setTimeout(() => this.refreshEditor(), 50)
-      window.setTimeout(() => this.refreshEditor(), 280)
-    },
-    bindVisibilityObservers () {
-      const el = this.$refs.host
-      if (!el || typeof ResizeObserver === 'undefined') return
-
-      this.resizeObserver = new ResizeObserver(() => {
-        if (el.offsetWidth > 0 && el.offsetHeight > 0) {
-          this.refreshEditor()
-        }
-      })
-      this.resizeObserver.observe(el)
-
-      if (typeof IntersectionObserver !== 'undefined') {
-        this.intersectionObserver = new IntersectionObserver((entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              this.refreshEditor()
-            }
-          }
-        }, { threshold: 0.01 })
-        this.intersectionObserver.observe(el)
-      }
-    },
-    onEditorChange (editor) {
-      const next = editor.getValue()
-      if (next === this.modelValue) return
-      this.skipExternalSync = true
+    onInput (e) {
+      const next = e.target.value
       this.$emit('update:modelValue', next)
-      this.$nextTick(() => {
-        this.skipExternalSync = false
-      })
+      this.$emit('input', next)
     },
+
+    onTab (e) {
+      if (this.disabled) return
+      const ta = e.target
+      const start = ta.selectionStart
+      const end = ta.selectionEnd
+      const next = ta.value.substring(0, start) + '  ' + ta.value.substring(end)
+      ta.value = next
+      ta.selectionStart = ta.selectionEnd = start + 2
+      this.$emit('update:modelValue', next)
+      this.$emit('input', next)
+    },
+
     formatCode () {
-      if (this.disabled || !this.editor) return
-      const formatted = formatHtml(this.modelValue)
-      if (formatted !== this.modelValue) {
-        this.editor.setValue(formatted)
+      if (this.disabled) return
+      const formatted = formatHtml(this.currentValue)
+      if (formatted !== this.currentValue) {
         this.$emit('update:modelValue', formatted)
+        this.$emit('input', formatted)
+        this.$nextTick(() => {
+          if (this.$refs.ta) this.$refs.ta.value = formatted
+        })
       }
-    }
+    },
+
+    // Called by parent via $refs — no longer needed but kept for compatibility
+    refreshEditor () {}
   }
 }
 </script>
 
 <style scoped>
-.html-code-editor {
+.hce-wrap {
   width: 100%;
-  background: #fff;
 }
 
-.html-code-editor__toolbar {
+.hce-toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1rem;
   margin-bottom: 0.35rem;
 }
 
-.html-code-editor__format-btn {
+.hce-btn {
+  padding: 2px 12px;
   font-size: 0.75rem;
-}
-
-.html-code-editor__hint {
-  color: #6b7280;
-}
-
-.html-code-editor__hint code {
-  font-size: 0.85em;
-  color: #b45309;
-  background: transparent;
-}
-
-.html-code-editor__host {
+  line-height: 1.5;
   border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid #dee2e6;
-  background: #fff;
+  border: 1px solid var(--kadr-primary, #5a4bd4);
+  color: var(--kadr-primary, #5a4bd4);
+  background: transparent;
+  cursor: pointer;
+}
+.hce-btn:hover:not(:disabled) {
+  background: var(--kadr-primary, #5a4bd4);
+  color: #fff;
+}
+.hce-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
-.html-code-editor--dark .html-code-editor__host {
-  border-color: #334155;
-  background: #0f172a;
-}
-
-.html-code-editor--focused .html-code-editor__host {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
-}
-
-.html-code-editor--disabled .html-code-editor__host {
-  opacity: 0.65;
-}
-</style>
-
-<style>
-.html-code-editor .CodeMirror {
-  height: 100%;
-  min-height: inherit;
+.hce-textarea {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
   font-family: Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 13px;
   line-height: 21px;
+  color: var(--kadr-text-primary, #212529);
+  background: var(--kadr-bg-surface, #fff);
+  border: 1px solid var(--kadr-border-strong, #ced4da);
   border-radius: 4px;
+  resize: vertical;
+  box-sizing: border-box;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 2;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.html-code-editor--light .CodeMirror {
-  background: #fff;
-  color: #111827;
+.hce-wrap--focused .hce-textarea {
+  border-color: var(--kadr-primary, #5a4bd4);
+  box-shadow: 0 0 0 0.2rem rgba(90, 75, 212, 0.18);
 }
 
-.html-code-editor--dark .CodeMirror {
-  background: #0f172a;
-  color: #e2e8f0;
-}
-
-.html-code-editor--dark .CodeMirror-gutters {
-  background: #0f172a;
-  border-right-color: #334155;
-}
-
-.html-code-editor--dark .CodeMirror-linenumber {
-  color: #64748b;
-}
-
-.html-code-editor .cm-placeholder {
-  color: #c2410c;
-  font-weight: 600;
-}
-
-.html-code-editor--dark .cm-placeholder {
-  color: #fdba74;
-}
-
-.html-code-editor .CodeMirror-placeholder {
-  color: #adb5bd;
-}
-
-.html-code-editor--dark .CodeMirror-placeholder {
-  color: #64748b;
+.hce-wrap--disabled .hce-textarea {
+  background: var(--kadr-bg-subtle, #f8f9fa);
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 </style>

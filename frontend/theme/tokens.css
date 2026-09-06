@@ -1,43 +1,60 @@
 :root {
-  /* Brand */
-  --kadr-primary: #0084ff;
-  --kadr-primary-hover: #0062cc;
-  --kadr-hero-from: #2b4ecf;
-  --kadr-hero-to: #5e7df7;
-  --kadr-accent: #3758d5;
+  /* ==========================================================================
+     Kadr design tokens — one source of truth for the whole app.
+     Palette: a calm, professional indigo. Deliberately avoids harsh
+     red/orange/bright-green; status colors are muted and easy on the eyes.
+     Token NAMES are stable so every screen that already consumes them
+     re-themes automatically.
+     ========================================================================== */
 
-  /* Text */
-  --kadr-text-primary: #374948;
-  --kadr-text-secondary: #777d74;
-  --kadr-text-muted: #6d7693;
-  --kadr-text-label: #707a98;
+  /* Brand — indigo */
+  --kadr-primary: #5a4bd4;
+  --kadr-primary-hover: #4a3cc0;
+  --kadr-primary-soft: #ece9fb;
+  --kadr-primary-soft-border: #d6cffa;
+  --kadr-hero-from: #4b3fbf;
+  --kadr-hero-to: #7b6ef0;
+  --kadr-accent: #5a4bd4;
+
+  /* Calendar / schedule event dots (calm, not alarming) */
+  --kadr-event-kadr: #5a4bd4;
+  --kadr-event-personal: #4a8fb0;
+
+  /* Text — soft slate, not pure black */
+  --kadr-text-primary: #1f2432;
+  --kadr-text-secondary: #4a5163;
+  --kadr-text-muted: #737b90;
+  --kadr-text-label: #8b92a6;
   --kadr-text-on-primary: #ffffff;
 
-  /* Surfaces */
-  --kadr-bg-page: #f3f7fd;
+  /* Surfaces — near-white with a faint cool tint */
+  --kadr-bg-page: #f6f7fb;
   --kadr-bg-surface: #ffffff;
-  --kadr-surface-muted: #f8faff;
-  --kadr-surface-info: #fcfdff;
+  --kadr-surface-muted: #f7f8fc;
+  --kadr-surface-info: #fbfbfe;
 
   /* Borders */
-  --kadr-border: #e8ebf5;
-  --kadr-border-strong: #d8deef;
-  --kadr-border-info: #ebeffa;
+  --kadr-border: #e9eaf2;
+  --kadr-border-strong: #dcdeec;
+  --kadr-border-info: #ecedf6;
 
-  /* Status */
-  --kadr-error: #c03020;
-  --kadr-success: #28a745;
-  --kadr-warning: #ffc107;
-  --kadr-danger: #dc3545;
-  --kadr-info: #17a2b8;
+  /* Status — muted, professional (no alarming pure red/orange) */
+  --kadr-error: #b4404e;
+  --kadr-success: #2f9e6f;
+  --kadr-warning: #c98a2b;
+  --kadr-danger: #b4404e;
+  --kadr-info: #4a8fb0;
 
-  --kadr-status-secondary-bg: #eceff5;
-  --kadr-status-warning-bg: #fff2d9;
-  --kadr-status-warning-text: #7a5700;
-  --kadr-status-success-bg: #dff7e8;
-  --kadr-status-success-text: #115f31;
-  --kadr-status-danger-bg: #fde2e4;
-  --kadr-status-danger-text: #842029;
+  --kadr-status-secondary-bg: #eef0f5;
+  --kadr-status-secondary-text: #4a5163;
+  --kadr-status-warning-bg: #fbf1dd;
+  --kadr-status-warning-text: #8a5e17;
+  --kadr-status-success-bg: #e4f5ec;
+  --kadr-status-success-text: #1c6a49;
+  --kadr-status-danger-bg: #fbe7ea;
+  --kadr-status-danger-text: #8f2f3b;
+  --kadr-status-info-bg: #e7f1f6;
+  --kadr-status-info-text: #2d6580;
 
   /* Radius scale */
   --kadr-radius-sm: 6px;
@@ -47,9 +64,12 @@
   --kadr-radius-xl: 14px;
   --kadr-radius-2xl: 16px;
 
-  /* Shadows */
-  --kadr-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --kadr-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  /* Shadows — soft, tinted toward the brand for depth without harshness */
+  --kadr-shadow-xs: 0 1px 2px rgba(31, 36, 50, 0.06);
+  --kadr-shadow-sm: 0 1px 3px rgba(31, 36, 50, 0.08);
+  --kadr-shadow-md: 0 6px 18px rgba(31, 36, 50, 0.10);
+  --kadr-shadow-lg: 0 12px 30px rgba(31, 36, 50, 0.12);
+  --kadr-shadow-primary: 0 6px 18px rgba(90, 75, 212, 0.22);
 
   /* Spacing (8px base) */
   --kadr-spacing-unit: 8px;
@@ -59,17 +79,57 @@
   --kadr-space-4: 16px;
   --kadr-space-5: 24px;
   --kadr-space-6: 32px;
+
+  /* Motion — lightweight, consistent easing/durations */
+  --kadr-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --kadr-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --kadr-duration-fast: 0.15s;
+  --kadr-duration: 0.22s;
+  --kadr-duration-slow: 0.35s;
+
+  /* Map Bootstrap's primary onto the brand so BootstrapVueNext components
+     (badges, buttons, links, spinners) inherit the palette automatically. */
+  --bs-primary: #5a4bd4;
+  --bs-primary-rgb: 90, 75, 212;
+  --bs-link-color: #5a4bd4;
+  --bs-link-hover-color: #4a3cc0;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Primary buttons — elevated, consistent with the auth screens               */
+/* -------------------------------------------------------------------------- */
 .btn-primary {
   background-color: var(--kadr-primary);
   border-color: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
+  transition: background-color var(--kadr-duration-fast) var(--kadr-ease),
+    border-color var(--kadr-duration-fast) var(--kadr-ease),
+    box-shadow var(--kadr-duration-fast) var(--kadr-ease),
+    transform var(--kadr-duration-fast) var(--kadr-ease);
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
   background-color: var(--kadr-primary-hover);
   border-color: var(--kadr-primary-hover);
+  box-shadow: var(--kadr-shadow-primary);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-outline-primary {
+  color: var(--kadr-primary);
+  border-color: var(--kadr-primary);
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+  background-color: var(--kadr-primary);
+  border-color: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
 }
 
 .text-primary {
@@ -86,4 +146,52 @@
 
 .border-kadr {
   border-color: var(--kadr-border) !important;
+}
+
+a {
+  color: var(--kadr-primary);
+}
+
+a:hover {
+  color: var(--kadr-primary-hover);
+}
+
+/* Consistent, gentle focus ring for interactive controls across the app. */
+.btn:focus-visible,
+.form-control:focus,
+.form-select:focus,
+a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(90, 75, 212, 0.18);
+}
+
+/* Bootstrap badge variants → muted status palette. */
+.badge.bg-success,
+.badge.text-bg-success {
+  background-color: var(--kadr-status-success-bg) !important;
+  color: var(--kadr-status-success-text) !important;
+}
+
+.badge.bg-danger,
+.badge.text-bg-danger {
+  background-color: var(--kadr-status-danger-bg) !important;
+  color: var(--kadr-status-danger-text) !important;
+}
+
+.badge.bg-warning,
+.badge.text-bg-warning {
+  background-color: var(--kadr-status-warning-bg) !important;
+  color: var(--kadr-status-warning-text) !important;
+}
+
+.badge.bg-info,
+.badge.text-bg-info {
+  background-color: var(--kadr-status-info-bg) !important;
+  color: var(--kadr-status-info-text) !important;
+}
+
+.badge.bg-secondary,
+.badge.text-bg-secondary {
+  background-color: var(--kadr-status-secondary-bg) !important;
+  color: var(--kadr-status-secondary-text) !important;
 }

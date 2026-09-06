@@ -15,7 +15,7 @@
       <div id="content-page" class="content-page">
         <push-notification-banner v-if="user" />
         <router-view v-if="user != null" v-slot="{ Component }">
-          <transition name="router-anim">
+          <transition name="kadr-page" mode="out-in">
             <component :is="Component" :user="user" />
           </transition>
         </router-view>
@@ -116,8 +116,10 @@
 
     <FooterStyle1>
       <template v-slot:left>
-        <li class="list-inline-item"><a href="#">Privacy Policy</a></li>
-        <li class="list-inline-item"><a href="#">Terms of Use</a></li>
+        <li class="list-inline-item"><a href="/privacy_policy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+        <li class="list-inline-item"><a href="/terms_of_use_users.html" target="_blank" rel="noopener noreferrer">Terms for Users</a></li>
+        <li class="list-inline-item"><a href="/terms_of_use_experts.html" target="_blank" rel="noopener noreferrer">Terms for Experts</a></li>
+        <li class="list-inline-item"><a href="/code_of_conduct.html" target="_blank" rel="noopener noreferrer">Code of Conduct</a></li>
       </template>
       <template v-slot:right>
         Copyright {{ currentYear }} <a href="https://kadr.live">KADR.live</a> All Rights Reserved.

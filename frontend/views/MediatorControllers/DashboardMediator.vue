@@ -1,7 +1,6 @@
 <template>
-  <b-container fluid class="dashboard-client-page">
+  <b-container fluid class="dashboard-client-page kadr-animate-in">
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
-    <Spinner :isVisible="loading" />
 
     <kadr-dashboard-hero
       :name="user.name"
@@ -12,7 +11,7 @@
     <div class="workspace-grid">
       <iq-card class="workspace-card">
         <template v-slot:headerTitle>
-          <h4 class="card-title">Today's Schedule</h4>
+          <h4 class="card-title">{{ $t('mediatorDashboard.todaysSchedule') }}</h4>
         </template>
         <template v-slot:body>
           <div v-if="todaysEvents.length" class="list-scroll">
@@ -25,8 +24,8 @@
                   <i class="ri-checkbox-blank-circle-fill schedule-dot" :style="{ color: kadrEventColor }" v-if="event.type == 'KADR'"></i>
                   <i class="ri-checkbox-blank-circle-fill schedule-dot" :style="{ color: personalEventColor }" v-else></i>
                   <div class="schedule-text" v-if="event.type == 'KADR'">
-                    <h6>Case #{{ event.caseId || event.caseNumber || '-' }}</h6>
-                    <p>{{ event.caseFirstPartyName || event.firstPartyName || '-' }} vs {{ event.caseSecondPartyName || event.secondPartyName || '-' }}</p>
+                    <h6>{{ $t('mediatorDashboard.caseNumber', { id: event.caseId || event.caseNumber || '-' }) }}</h6>
+                    <p>{{ event.caseFirstPartyName || event.firstPartyName || '-' }} {{ $t('mediatorDashboard.vs') }} {{ event.caseSecondPartyName || event.secondPartyName || '-' }}</p>
                     <span>{{ formatDate(event.start_datetime || event.startDate) }} - {{ formatDate(event.end_datetime || event.endDate) }}</span>
                   </div>
                    <div class="schedule-text" v-else>
@@ -41,7 +40,7 @@
                   target="_blank"
                   class="btn btn-primary btn-sm"
                 >
-                  Join
+                  {{ $t('mediatorDashboard.join') }}
                 </a>
               </div>
             </template>
@@ -50,18 +49,18 @@
             v-else
             compact
             icon=""
-            :description="DASHBOARD.NO_MEETINGS_TODAY"
+            :description="$t('mediatorDashboard.noMeetingsToday')"
           />
         </template>
       </iq-card>
 
       <iq-card class="workspace-card">
         <template v-slot:headerTitle>
-          <h4 class="card-title">Notes</h4>
+          <h4 class="card-title">{{ $t('mediatorDashboard.notes') }}</h4>
         </template>
         <template v-slot:headerAction>
           <button type="button" class="btn btn-primary btn-sm" @click="onClickNewAdd('', '')">
-            Add Note
+            {{ $t('mediatorDashboard.addNote') }}
           </button>
         </template>
         <template v-slot:body>
@@ -73,7 +72,7 @@
                   v-model="note.content"
                   @input="onContentChange(index)"
                   :data-index="index"
-                  placeholder="Write global mediator notes..."
+                  :placeholder="$t('mediatorDashboard.notePlaceholder')"
                 ></textarea>
                 <div class="note-actions">
                   <button
@@ -81,10 +80,10 @@
                     class="btn btn-sm btn-success"
                     @click="onClickSave(index)"
                   >
-                    Save
+                    {{ $t('mediatorDashboard.save') }}
                   </button>
                   <button class="btn btn-sm btn-outline-danger" @click="onClickDelete(index)">
-                    Delete
+                    {{ $t('mediatorDashboard.delete') }}
                   </button>
                 </div>
               </div>
@@ -93,7 +92,7 @@
               v-else
               compact
               icon=""
-              :description="DASHBOARD.NO_NOTES"
+              :description="$t('mediatorDashboard.noNotes')"
             />
           </div>
         </template>
@@ -113,15 +112,13 @@
 </template>
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
-import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import MyCases from './MyCases.vue'
 import MediatorCourtCaseTracker from '../../components/mediator/MediatorCourtCaseTracker.vue'
 import MediatorLegalFeedPanel from '../../components/mediator/MediatorLegalFeedPanel.vue'
 import KadrDashboardHero from '../../components/kadr/KadrDashboardHero.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
-import { DASHBOARD } from '../../constants/messages'
-const PERSONAL_EVENT_COLOR = 'rgb(244, 81, 30)'
-const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
+const PERSONAL_EVENT_COLOR = 'var(--kadr-event-personal)'
+const KADR_EVENT_COLOR = 'var(--kadr-event-kadr)'
 
 export default {
   name: 'DashboardMediator',
@@ -131,7 +128,6 @@ export default {
   },
   components: {
     Alert,
-    Spinner,
     MyCases,
     MediatorCourtCaseTracker,
     MediatorLegalFeedPanel,
@@ -156,14 +152,14 @@ export default {
     },
     heroStats () {
       return [
-        { key: 'cases', label: 'Assigned Cases', value: this.totalCases },
-        { key: 'meetings', label: 'Meetings Today', value: this.todaysEvents.length },
+        { key: 'cases', label: this.$t('mediatorDashboard.assignedCases'), value: this.totalCases },
+        { key: 'meetings', label: this.$t('mediatorDashboard.meetingsToday'), value: this.todaysEvents.length },
         {
           key: 'rewards',
-          label: 'Reward Points',
+          label: this.$t('mediatorDashboard.rewardPoints'),
           value: this.rewardBalance,
-          hint: 'View store →',
-          title: 'View reward store',
+          hint: this.$t('mediatorDashboard.viewStore'),
+          title: this.$t('mediatorDashboard.viewRewardStore'),
           onClick: () => this.goToRewards()
         }
       ]
@@ -184,7 +180,7 @@ export default {
       }
     },
     async onClickDelete (index) {
-      if (confirm('Are you sure you want to delete this note?')) {
+      if (confirm(this.$t('mediatorDashboard.confirmDeleteNote'))) {
         const noteToDelete = this.notes[index]
         if (noteToDelete.id !== '') {
           await this.$store.dispatch('deleteNote', {
@@ -192,7 +188,7 @@ export default {
           })
         }
         this.notes.splice(index, 1)
-        this.showAlert('Your note has been deleted successfully!', 'success')
+        this.showAlert(this.$t('mediatorDashboard.noteDeleted'), 'success')
       }
     },
     onContentChange (index) {
@@ -212,7 +208,7 @@ export default {
           id: note.id
         })
         if (!response.errorCode) {
-          this.showAlert('Your note has been successfully saved!', 'success')
+          this.showAlert(this.$t('mediatorDashboard.noteSaved'), 'success')
         }
         note.isModified = false
       }
@@ -247,14 +243,12 @@ export default {
     return {
       personalEventColor: PERSONAL_EVENT_COLOR,
       kadrEventColor: KADR_EVENT_COLOR,
-      DASHBOARD,
       alert: {
         visible: false,
         message: '',
         timeout: 5000,
         type: 'primary'
       },
-      loading: false,
       notes: [],
       chart1: null,
       chart4: null

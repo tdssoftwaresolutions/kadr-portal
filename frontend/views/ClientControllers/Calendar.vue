@@ -1,55 +1,56 @@
 <template>
-  <b-container fluid class="calendar-page">
-    <kadr-page-header :title="CALENDAR.TITLE" :subtitle="CALENDAR.SUBTITLE" />
+  <b-container fluid class="calendar-page kadr-animate-in">
+    <Spinner :isVisible="loading" />
+    <kadr-page-header :title="$t('clientCalendar.title')" :subtitle="$t('clientCalendar.subtitle')" />
 
-    <kadr-section-card title="Your meetings">
+    <kadr-section-card :title="$t('clientCalendar.yourMeetings')">
       <FullCalendar :calendarEvents="events" :eventClick="openDetailsModal" :read-only="true" />
     </kadr-section-card>
 
-    <b-modal id="view-appointment-modal-id" cancel-disabled v-model="showDetailsModal" size="lg" title="View Appointment" scrollable no-footer>
+    <b-modal id="view-appointment-modal-id" cancel-disabled v-model="showDetailsModal" size="lg" :title="$t('clientCalendar.viewAppointment')" scrollable no-footer>
       <div class="appointment-details" v-if="selectedAppointment != null">
         <div class="data-row">
             <div class="col-6">
-                <div class="data-title">Title</div>
+                <div class="data-title">{{ $t('clientCalendar.labelTitle') }}</div>
                 <div>{{ selectedAppointment.title }}</div>
             </div>
             <div class="col-6">
-                <div class="data-title">Meeting link</div>
-                <div v-if="selectedAppointment.meetingLink"><a :href="selectedAppointment.meetingLink" target="_blank">Join</a></div>
+                <div class="data-title">{{ $t('clientCalendar.meetingLink') }}</div>
+                <div v-if="selectedAppointment.meetingLink"><a :href="selectedAppointment.meetingLink" target="_blank">{{ $t('clientCalendar.join') }}</a></div>
                 <div v-else class="text-muted">—</div>
             </div>
         </div>
         <div class="data-row">
             <div class="col-6">
-                <div class="data-title">Start Time</div>
+                <div class="data-title">{{ $t('clientCalendar.startTime') }}</div>
                 <div>{{ formatDateTime(selectedAppointment.start) }}</div>
             </div>
             <div class="col-6">
-                <div class="data-title">End Time</div>
+                <div class="data-title">{{ $t('clientCalendar.endTime') }}</div>
                 <div> {{ formatDateTime(selectedAppointment.end) }} </div>
             </div>
         </div>
 
         <div class="data-row" v-if="selectedAppointment.caseNumber">
             <div class="col-6">
-                <div class="data-title">Case Id</div>
+                <div class="data-title">{{ $t('clientCalendar.caseId') }}</div>
                 <div>#{{ selectedAppointment.caseNumber }}</div>
             </div>
             <div class="col-6">
             </div>
         </div>
         <div class="long-description">
-            <div class="data-title">Description</div>
+            <div class="data-title">{{ $t('clientCalendar.description') }}</div>
             <textarea rows="5" readonly :value="selectedAppointment.description">
             </textarea>
         </div>
         <div v-if="selectedAppointment && calendarFeedbackHint" class="calendar-feedback-prompt">
           <p class="mb-2">{{ calendarFeedbackHint }}</p>
           <b-button variant="warning" size="sm" @click="openFeedbackFromCalendar">
-            Rate meeting
+            {{ $t('clientCalendar.rateMeeting') }}
           </b-button>
         </div>
-        <b-button class="btn btn-primary modal-close-btn" @click="showDetailsModal = false">Close</b-button>
+        <b-button class="btn btn-primary modal-close-btn" @click="showDetailsModal = false">{{ $t('clientCalendar.close') }}</b-button>
       </div>
     </b-modal>
 
@@ -71,22 +72,22 @@
 <script>
 import { sofbox } from '../../config/pluginInit'
 import MeetingFeedbackModal from '../../components/MeetingFeedbackModal.vue'
+import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrSectionCard from '../../components/kadr/KadrSectionCard.vue'
-import { CALENDAR } from '../../constants/messages'
 import {
   isPastKadrCaseMeeting,
   clientNeedsMeetingFeedback
 } from '../../utils/meetingFeedback'
-const KADR_EVENT_COLOR = 'rgb(121, 134, 203)'
-const PERSONAL_EVENT_COLOR = 'rgb(244, 81, 30)'
+const KADR_EVENT_COLOR = '#5a4bd4'
+const PERSONAL_EVENT_COLOR = '#4a8fb0'
 
 export default {
   name: 'calendar',
-  components: { MeetingFeedbackModal, KadrPageHeader, KadrSectionCard },
+  components: { MeetingFeedbackModal, Spinner, KadrPageHeader, KadrSectionCard },
   data () {
     return {
-      CALENDAR,
+      loading: false,
       selectedAppointment: null,
       showDetailsModal: false,
       events: [],
@@ -116,7 +117,7 @@ export default {
       const ev = this.calendarEventPayload(sa)
       if (!ev || !isPastKadrCaseMeeting(ev)) return ''
       if (!this.calendarSyntheticCase || !clientNeedsMeetingFeedback(ev, this.currentUserId, this.calendarSyntheticCase)) return ''
-      return 'This case meeting has ended. Please rate how the session went.'
+      return this.$t('clientCalendar.feedbackPrompt')
     },
     calendarFeedbackEventTitle () {
       return (this.selectedAppointment && this.selectedAppointment.title) || ''
@@ -124,7 +125,7 @@ export default {
     calendarFeedbackCaseLabel () {
       const sa = this.selectedAppointment
       if (!sa || !sa.caseNumber) return ''
-      return `Case #${sa.caseNumber}`
+      return this.$t('clientCalendar.caseLabel', { caseNumber: sa.caseNumber })
     },
     calendarFeedbackInitialSummary () {
       return this.selectedAppointment && this.selectedAppointment.meeting_summary
@@ -166,6 +167,13 @@ export default {
     },
     async initCalendar (skipCache) {
       this.loading = true
+      try {
+        await this.loadCalendarEvents(skipCache)
+      } finally {
+        this.loading = false
+      }
+    },
+    async loadCalendarEvents (skipCache) {
       const response = await this.$store.dispatch('getCalendarInit', { skipCache })
       this.events = []
       if (response.success) {
@@ -179,7 +187,7 @@ export default {
             end: event.end_datetime,
             color,
             extendedProps: {
-              description: event.description || 'No description provided',
+              description: event.description || this.$t('clientCalendar.noDescription'),
               meetingLink: event.meeting_link,
               caseId: event.cases ? event.cases.id : null,
               caseNumber: event.cases ? event.cases.caseId : null,
@@ -197,7 +205,6 @@ export default {
           })
         }
       }
-      this.loading = false
     },
     formatDateTime (dateString) {
       return this.$formatDateTime(dateString)

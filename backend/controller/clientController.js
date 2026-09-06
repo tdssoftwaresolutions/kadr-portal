@@ -5,6 +5,7 @@ const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
 const { CaseTypes } = require('../utils/caseConstants')
 const { v4: uuidv4 } = require('uuid')
+const { sanitizeBucketUrl } = require('../utils/uploadService')
 
 const CLIENT_EMAIL_KEY = (email) => ({
   email_user_type: { email, user_type: 'CLIENT' }
@@ -14,16 +15,21 @@ module.exports = {
 
   newUserSignup: async function (req, res, next) {
     try {
-      const { name, email, phone, city, state, pincode, description, category, preferredLanguage, evidenceContent, profilePictureContent, oppositeName, oppositeEmail, oppositePhone, existingUser, adultPlatformLiabilityAck } = req.body
+      const { name, email, phone, phone_number: phoneNumber, city, state, pincode, description, category, preferredLanguage, evidenceContent, profilePictureContent, evidenceUrl, profilePictureUrl, oppositeName, oppositeEmail, oppositePhone, existingUser, adultPlatformLiabilityAck, representativeEmail, representativeName, representativePhone } = req.body
+      // Web forms send `phone`; the mobile app sends `phone_number`.
+      const phoneValue = phone || phoneNumber
       if (!adultPlatformLiabilityAck) {
         throw createError(errorCodes.INVALID_REQUEST)
       }
-      let uploadedProfilePictureResponse = null
-      if (profilePictureContent) { uploadedProfilePictureResponse = await helper.deployToS3Bucket(profilePictureContent, `profile-picture-${uuidv4()}`) }
+      // Files are uploaded directly to S3 by the browser (presigned URLs), so we
+      // normally receive their object URLs. The legacy base64 fields are still
+      // accepted as a fallback (e.g. older mobile clients) and uploaded here.
+      let uploadedProfilePictureResponse = sanitizeBucketUrl(profilePictureUrl)
+      if (!uploadedProfilePictureResponse && profilePictureContent) { uploadedProfilePictureResponse = await helper.deployToS3Bucket(profilePictureContent, `profile-picture-${uuidv4()}`) }
       const userRequestData = {
         name,
         email,
-        phone_number: phone,
+        phone_number: phoneValue,
         password_hash: '',
         user_type: 'CLIENT',
         active: false,
@@ -69,8 +75,8 @@ module.exports = {
             throw createError(errorCodes.CLIENT_ACCOUNT_EXISTS)
           }
         }
-        let uploadedFileResponse = null
-        if (evidenceContent) uploadedFileResponse = await helper.deployToS3Bucket(evidenceContent, `evidence-${uuidv4()}`)
+        let uploadedFileResponse = sanitizeBucketUrl(evidenceUrl)
+        if (!uploadedFileResponse && evidenceContent) uploadedFileResponse = await helper.deployToS3Bucket(evidenceContent, `evidence-${uuidv4()}`)
         const user = existing?.is_deleted
           ? await prisma.user.findUnique({ where: CLIENT_EMAIL_KEY(email) })
           : await prisma.user.create({
@@ -96,7 +102,7 @@ module.exports = {
           newCaseId = tracker.lastCaseId + 1
         }
 
-        await prisma.cases.create({
+        const createdCase = await prisma.cases.create({
           data: {
             first_party: user.id,
             second_party: oppositePartyUser.id,
@@ -113,6 +119,28 @@ module.exports = {
           update: { lastCaseId: newCaseId },
           create: { lastCaseId: newCaseId }
         })
+
+        // Tag the signing-up client's representative (their lawyer), if provided.
+        // The representative is created inactive and activated in lockstep when
+        // the client account is approved (generalController.updateInactiveUser).
+        if (representativeEmail) {
+          try {
+            const { attachRepresentativeToCase, PARTY_SIDES } = require('../services/case/representativeService')
+            await attachRepresentativeToCase({
+              caseId: createdCase.id,
+              side: PARTY_SIDES.FIRST,
+              representativeEmail,
+              representativeName,
+              representativePhone,
+              caseNumber: createdCase.caseId,
+              category,
+              representedPartyName: name
+            })
+          } catch (repErr) {
+            console.error('[signup] representative tagging failed', repErr.message)
+          }
+        }
+
         await helper.sendTemplatedEmail('registrationUnderReview', email, {
           recipientName: name
         })
@@ -149,7 +177,10 @@ module.exports = {
         oppositeName,
         oppositeEmail,
         oppositePhone,
-        adultPlatformLiabilityAck
+        adultPlatformLiabilityAck,
+        representativeEmail,
+        representativeName,
+        representativePhone
       } = req.body
       if (!adultPlatformLiabilityAck) {
         throw createError(errorCodes.INVALID_REQUEST, {
@@ -164,7 +195,10 @@ module.exports = {
         evidenceContent,
         oppositeName,
         oppositeEmail,
-        oppositePhone
+        oppositePhone,
+        representativeEmail,
+        representativeName,
+        representativePhone
       })
       try {
         await helper.sendTemplatedEmail('registrationUnderReview', req.user.email, {

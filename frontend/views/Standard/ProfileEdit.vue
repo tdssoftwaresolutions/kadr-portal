@@ -1,7 +1,7 @@
 <template>
   <b-container fluid>
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
-    <kadr-page-header :title="PROFILE.TITLE" :subtitle="PROFILE.SUBTITLE" />
+    <kadr-page-header :title="$t('profileEdit.title')" :subtitle="$t('profileEdit.subtitle')" />
     <b-row>
       <b-col lg="12">
         <iq-card>
@@ -10,47 +10,47 @@
               <ul class="iq-edit-profile nav nav-pills mb-4" :class="{ 'iq-edit-profile--mediator': isMediator }">
                 <li class="iq-edit-profile__tab">
                   <a class="nav-link" :class="{active: activeTab==='personal'}" @click="activeTab='personal'">
-                    Personal Information
+                    {{ $t('profileEdit.tabPersonal') }}
                   </a>
                 </li>
                 <li class="iq-edit-profile__tab">
                   <a class="nav-link" :class="{active: activeTab==='password'}" @click="activeTab='password'">
-                    Change Password
+                    {{ $t('profileEdit.tabPassword') }}
                   </a>
                 </li>
                 <li class="iq-edit-profile__tab">
                   <a class="nav-link" :class="{active: activeTab==='preferences'}" @click="activeTab='preferences'">
-                    Preferences
+                    {{ $t('profileEdit.tabPreferences') }}
                   </a>
                 </li>
                 <li v-if="isMediator" class="iq-edit-profile__tab">
                   <a class="nav-link" :class="{active: activeTab==='subscription'}" @click="activeTab='subscription'">
-                    My plan
+                    {{ $t('profileEdit.tabSubscription') }}
                   </a>
                 </li>
                 <li class="iq-edit-profile__tab">
                   <a class="nav-link" :class="{active: activeTab==='account'}" @click="activeTab='account'">
-                    Account
+                    {{ $t('profileEdit.tabAccount') }}
                   </a>
                 </li>
               </ul>
             </div>
             <div class="iq-edit-list-data">
               <div v-show="activeTab==='personal'" class="profile-section">
-                <h4 class="profile-section-title">Personal Information</h4>
+                <h4 class="profile-section-title">{{ $t('profileEdit.personalHeading') }}</h4>
                 <b-form @submit.prevent="onSave">
                   <div class="form-group row align-items-center">
                     <div class="col-md-12">
-                      <label class="d-block font-weight-bold mb-2">Profile picture</label>
-                      <p class="text-muted small mb-2">Click the photo or pencil to upload a new image (JPEG or PNG, max 2&nbsp;MB).</p>
+                      <label class="d-block font-weight-bold mb-2">{{ $t('profileEdit.profilePicture') }}</label>
+                      <p class="text-muted small mb-2">{{ $t('profileEdit.profilePictureHint') }}</p>
                       <div class="profile-img-edit">
                         <img
                           class="profile-pic"
                           :src="profilePicturePreview || form.profile_picture_url || defaultProfileImage"
-                          alt="Your profile picture"
+                          :alt="$t('profileEdit.profilePictureAlt')"
                           @click="triggerProfilePictureUpload"
                         >
-                        <div class="p-image" @click.stop="triggerProfilePictureUpload" title="Change profile picture">
+                        <div class="p-image" @click.stop="triggerProfilePictureUpload" :title="$t('profileEdit.changeProfilePicture')">
                           <i class="ri-pencil-line upload-button" aria-hidden="true"></i>
                           <input
                             ref="profilePictureInput"
@@ -65,21 +65,21 @@
                   </div>
                   <div class="row align-items-center">
                     <div class="col-sm-6 mb-3">
-                      <kadr-form-field label="Full name" id="name">
+                      <kadr-form-field :label="$t('profileEdit.fullName')" id="name">
                         <template v-slot="{ id }">
                           <b-form-input :id="id" v-model="form.name" required />
                         </template>
                       </kadr-form-field>
                     </div>
                     <div class="col-sm-6 mb-3">
-                      <kadr-form-field label="Email" id="email" hint="Email cannot be changed here.">
+                      <kadr-form-field :label="$t('profileEdit.email')" id="email" :hint="$t('profileEdit.emailHint')">
                         <template v-slot="{ id }">
                           <b-form-input :id="id" :value="user.email" readonly />
                         </template>
                       </kadr-form-field>
                     </div>
                     <div class="col-sm-6 mb-3">
-                      <kadr-form-field label="Phone number" id="phone">
+                      <kadr-form-field :label="$t('profileEdit.phoneNumber')" id="phone">
                         <template v-slot="{ id }">
                           <b-form-input :id="id" v-model="form.phone_number" />
                         </template>
@@ -89,25 +89,25 @@
                   <div v-if="isMediator" class="reward-profile-link mb-4 p-3 border rounded bg-light">
                     <div class="d-flex justify-content-between align-items-center flex-wrap">
                       <div>
-                        <strong>Reward points</strong>
-                        <p class="mb-0 text-muted small">Balance: {{ rewardBalance.toLocaleString() }} pts</p>
+                        <strong>{{ $t('profileEdit.rewardPoints') }}</strong>
+                        <p class="mb-0 text-muted small">{{ $t('profileEdit.rewardBalance', { balance: rewardBalance.toLocaleString() }) }}</p>
                       </div>
                       <b-button variant="outline-primary" size="sm" class="mt-2 mt-sm-0" @click="goToRewards">
-                        Reward store & referral
+                        {{ $t('profileEdit.rewardStoreReferral') }}
                       </b-button>
                     </div>
                   </div>
                   <button type="submit" class="btn btn-primary me-2">
-                    <span>Save</span>
+                    <span>{{ $t('profileEdit.save') }}</span>
                   </button>
                 </b-form>
               </div>
               <div v-show="activeTab==='preferences'" class="profile-section">
-                <h4 class="profile-section-title">Preferences</h4>
-                <p class="text-muted small mb-3">Synced to your account when you are logged in.</p>
+                <h4 class="profile-section-title">{{ $t('profileEdit.preferencesHeading') }}</h4>
+                <p class="text-muted small mb-3">{{ $t('profileEdit.preferencesHint') }}</p>
                 <b-form @submit.prevent="onSavePreferences">
                   <div class="mb-3">
-                    <label class="d-block mb-2">Timezone</label>
+                    <label class="d-block mb-2">{{ $t('profileEdit.timezone') }}</label>
                     <b-form-radio-group
                       v-model="prefs.timezoneMode"
                       :options="timezoneModeOptions"
@@ -116,10 +116,10 @@
                       class="mb-2"
                     />
                     <p v-if="prefs.timezoneMode === 'auto'" class="text-muted small mb-0">
-                      Detected: <strong>{{ detectedTimezone }}</strong>
+                      {{ $t('profileEdit.timezoneDetected', { timezone: detectedTimezone }) }}
                     </p>
                     <div v-else style="max-width: 360px;">
-                      <kadr-form-field label="Select timezone" id="prefTimezone">
+                      <kadr-form-field :label="$t('profileEdit.selectTimezone')" id="prefTimezone">
                         <template v-slot="{ id }">
                           <b-form-select :id="id" v-model="prefs.timezone" :options="timezoneOptions" />
                         </template>
@@ -128,44 +128,43 @@
                   </div>
                   <div class="mb-3">
                     <b-form-checkbox v-model="prefs.notificationEmail">
-                      Receive notification emails
+                      {{ $t('profileEdit.receiveNotificationEmails') }}
                     </b-form-checkbox>
                   </div>
-                  <button type="submit" class="btn btn-primary me-2">Save preferences</button>
+                  <button type="submit" class="btn btn-primary me-2">{{ $t('profileEdit.savePreferences') }}</button>
                 </b-form>
               </div>
               <div v-show="activeTab==='subscription' && isMediator" class="profile-section">
-                <h4 class="profile-section-title">Subscription</h4>
-                <p v-if="subscriptionLoading" class="text-muted">Loading plan…</p>
+                <h4 class="profile-section-title">{{ $t('profileEdit.subscriptionHeading') }}</h4>
+                <p v-if="subscriptionLoading" class="text-muted">{{ $t('profileEdit.planLoading') }}</p>
                 <template v-else>
-                  <p class="mb-2">Current plan: <b-badge :variant="subscription.tier === 'PRO' ? 'success' : 'secondary'">{{ subscription.tier === 'PRO' ? 'Pro' : 'Free' }}</b-badge></p>
-                  <p v-if="subscription.tier === 'PRO' && subscriptionExpiryLabel" class="text-muted small">Valid through: {{ subscriptionExpiryLabel }}</p>
-                  <b-button v-if="subscription.tier !== 'PRO'" variant="primary" class="mt-2" @click="showProPayment = true">Upgrade to Pro — ₹{{ subscription.monthlyPriceInr }}/month</b-button>
+                  <p class="mb-2">{{ $t('profileEdit.currentPlan') }} <b-badge :variant="subscription.tier === 'PRO' ? 'success' : 'secondary'">{{ subscription.tier === 'PRO' ? $t('profileEdit.planPro') : $t('profileEdit.planFree') }}</b-badge></p>
+                  <p v-if="subscription.tier === 'PRO' && subscriptionExpiryLabel" class="text-muted small">{{ $t('profileEdit.validThrough', { date: subscriptionExpiryLabel }) }}</p>
+                  <b-button v-if="subscription.tier !== 'PRO'" variant="primary" class="mt-2" @click="showProPayment = true">{{ $t('profileEdit.upgradeToPro', { amount: subscription.monthlyPriceInr }) }}</b-button>
                 </template>
               </div>
               <div v-show="activeTab==='account'" class="profile-section">
-                <h4 class="profile-section-title text-danger">Delete account</h4>
+                <h4 class="profile-section-title text-danger">{{ $t('profileEdit.deleteAccountHeading') }}</h4>
                 <p>
-                  Removing your account disables login and platform access. Your cases and records stay in our system
-                  for audit and compliance only — they are not used for any other purpose.
+                  {{ $t('profileEdit.deleteAccountInfo') }}
                 </p>
                 <b-form-checkbox v-model="deleteConfirm" class="mb-3">
-                  I understand my account will be removed from the platform and data will be kept securely for audit purposes.
+                  {{ $t('profileEdit.deleteAccountConfirm') }}
                 </b-form-checkbox>
                 <button type="button" class="btn btn-danger" :disabled="!deleteConfirm" @click="onDeleteAccount">
-                  Delete my account
+                  {{ $t('profileEdit.deleteMyAccount') }}
                 </button>
               </div>
               <div v-show="activeTab==='password'" class="profile-section">
-                <h4 class="profile-section-title">Change Password</h4>
-                <p class="text-muted small mb-3">Use at least 7 characters with an uppercase letter, a number, and a special character.</p>
+                <h4 class="profile-section-title">{{ $t('profileEdit.changePasswordHeading') }}</h4>
+                <p class="text-muted small mb-3">{{ $t('profileEdit.passwordHint') }}</p>
                 <b-form @submit.prevent="onSavePassword">
                   <div class="mb-3 position-relative">
-                    <kadr-form-field label="Current password" id="profileCurrentPassword">
+                    <kadr-form-field :label="$t('profileEdit.currentPassword')" id="profileCurrentPassword">
                       <template v-slot="{ id }">
                         <div class="position-relative">
-                          <input v-model="form.currentPassword" :type="showPassword ? 'text' : 'password'" class="form-control mb-0" :id="id" placeholder="Current password" autocomplete="current-password">
-                          <button type="button" class="password-toggle-icon-btn" @click="togglePasswordVisibility" :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                          <input v-model="form.currentPassword" :type="showPassword ? 'text' : 'password'" class="form-control mb-0" :id="id" :placeholder="$t('profileEdit.currentPassword')" autocomplete="current-password">
+                          <button type="button" class="password-toggle-icon-btn" @click="togglePasswordVisibility" :aria-label="showPassword ? $t('profileEdit.hidePassword') : $t('profileEdit.showPassword')">
                             <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
                           </button>
                         </div>
@@ -173,11 +172,11 @@
                     </kadr-form-field>
                   </div>
                   <div class="mb-3 position-relative">
-                    <kadr-form-field label="New password" id="profilePassword">
+                    <kadr-form-field :label="$t('profileEdit.newPassword')" id="profilePassword">
                       <template v-slot="{ id }">
                         <div class="position-relative">
-                          <input v-model="form.password" :type="showPassword ? 'text' : 'password'" class="form-control mb-0" :id="id" placeholder="New password" autocomplete="new-password">
-                          <button type="button" class="password-toggle-icon-btn" @click="togglePasswordVisibility" :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                          <input v-model="form.password" :type="showPassword ? 'text' : 'password'" class="form-control mb-0" :id="id" :placeholder="$t('profileEdit.newPassword')" autocomplete="new-password">
+                          <button type="button" class="password-toggle-icon-btn" @click="togglePasswordVisibility" :aria-label="showPassword ? $t('profileEdit.hidePassword') : $t('profileEdit.showPassword')">
                             <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
                           </button>
                         </div>
@@ -185,11 +184,11 @@
                     </kadr-form-field>
                   </div>
                   <div class="mb-3 position-relative">
-                    <kadr-form-field label="Confirm new password" id="profileConfirmPassword">
+                    <kadr-form-field :label="$t('profileEdit.confirmNewPassword')" id="profileConfirmPassword">
                       <template v-slot="{ id }">
                         <div class="position-relative">
-                          <input v-model="form.confirmPassword" :type="showPassword ? 'text' : 'password'" class="form-control mb-0" :id="id" placeholder="Confirm new password" autocomplete="new-password">
-                          <button type="button" class="password-toggle-icon-btn" @click="togglePasswordVisibility" :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                          <input v-model="form.confirmPassword" :type="showPassword ? 'text' : 'password'" class="form-control mb-0" :id="id" :placeholder="$t('profileEdit.confirmNewPassword')" autocomplete="new-password">
+                          <button type="button" class="password-toggle-icon-btn" @click="togglePasswordVisibility" :aria-label="showPassword ? $t('profileEdit.hidePassword') : $t('profileEdit.showPassword')">
                             <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
                           </button>
                         </div>
@@ -197,7 +196,7 @@
                     </kadr-form-field>
                   </div>
                   <button type="submit" class="btn btn-primary me-2">
-                    <span>Change Password</span>
+                    <span>{{ $t('profileEdit.changePasswordButton') }}</span>
                   </button>
                 </b-form>
               </div>
@@ -210,8 +209,8 @@
       :visible="showProPayment"
       purpose="MEDIATOR_PRO"
       :amount-inr="subscription.monthlyPriceInr || 1000"
-      title="Upgrade to Kadr Mediator Pro"
-      subtitle="Unlock private invoices, court tracking, legal feeds, and more."
+      :title="$t('profileEdit.checkoutTitle')"
+      :subtitle="$t('profileEdit.checkoutSubtitle')"
       @close="showProPayment = false"
     />
   </b-container>
@@ -223,7 +222,6 @@ import Alert from '../../components/sofbox/alert/Alert.vue'
 import PaymentCheckout from '../../components/payment/PaymentCheckout.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrFormField from '../../components/kadr/KadrFormField.vue'
-import { PROFILE } from '../../constants/messages'
 import {
   getUserPreferences,
   setUserPreferences,
@@ -250,7 +248,6 @@ export default {
   },
   data () {
     return {
-      PROFILE,
       showPassword: false,
       defaultProfileImage: profile,
       activeTab: 'personal',
@@ -271,10 +268,6 @@ export default {
       },
       prefs: getUserPreferences(),
       timezoneOptions: getTimezoneOptions(),
-      timezoneModeOptions: [
-        { text: 'Auto (use this device)', value: 'auto' },
-        { text: 'Manual', value: 'manual' }
-      ],
       detectedTimezone: detectDeviceTimezone(),
       profilePictureFile: null,
       profilePicturePreview: null,
@@ -292,6 +285,12 @@ export default {
     }
   },
   computed: {
+    timezoneModeOptions () {
+      return [
+        { text: this.$t('profileEdit.timezoneModeAuto'), value: 'auto' },
+        { text: this.$t('profileEdit.timezoneModeManual'), value: 'manual' }
+      ]
+    },
     isMediator () {
       return this.$store.state.currentUser && this.$store.state.currentUser.type === 'MEDIATOR'
     },
@@ -385,11 +384,11 @@ export default {
         const reader = new FileReader()
         reader.onload = e => {
           if (!allowedTypes.includes(ref.profilePictureFile.type)) {
-            ref.showAlert('Invalid file type. Allowed types: JPEG, PNG.', 'danger')
+            ref.showAlert(ref.$t('profileEdit.alertInvalidFileType'), 'danger')
             return
           }
           if (ref.profilePictureFile.size > maxSize) {
-            ref.showAlert('Profile picture size exceeds 2MB.', 'danger')
+            ref.showAlert(ref.$t('profileEdit.alertFileTooLarge'), 'danger')
             return
           }
           this.profilePicturePreview = e.target.result
@@ -428,7 +427,7 @@ export default {
             photo: updated.photo || this.user.photo
           }
         }
-        this.showAlert(response.message || 'Profile updated.', 'success')
+        this.showAlert(response.message || this.$t('profileEdit.alertProfileUpdated'), 'success')
       }
     },
     async updateUserProfile (payload) {
@@ -448,14 +447,14 @@ export default {
         timezone: mode === 'manual' ? timezone : null,
         locale: this.prefs.locale || null
       })
-      this.showAlert('Preferences saved and synced to your account.', 'success')
+      this.showAlert(this.$t('profileEdit.alertPreferencesSaved'), 'success')
     },
     async onDeleteAccount () {
       if (!this.deleteConfirm) return
-      if (!window.confirm('Are you sure you want to delete your account? You will be logged out immediately.')) return
+      if (!window.confirm(this.$t('profileEdit.confirmDeleteAccount'))) return
       const response = await this.$store.dispatch('deleteMyAccount', { confirm: true })
       if (response.success) {
-        this.showAlert(response.message || 'Account removed.', 'success')
+        this.showAlert(response.message || this.$t('profileEdit.alertAccountRemoved'), 'success')
         setTimeout(async () => {
           await this.$store.dispatch('logout')
           this.$router.push({ name: 'auth.sign-in' })
@@ -463,10 +462,10 @@ export default {
       }
     },
     async onSavePassword () {
-      if (this.form.currentPassword.trim() === '') return this.showAlert('Please enter your current password', 'danger')
-      if (this.form.password.trim() === '') return this.showAlert('Please enter password', 'danger')
-      if (this.form.confirmPassword.trim() === '') return this.showAlert('Please enter confirm password', 'danger')
-      if (this.form.password !== this.form.confirmPassword) return this.showAlert('Passwords do not match', 'danger')
+      if (this.form.currentPassword.trim() === '') return this.showAlert(this.$t('profileEdit.alertEnterCurrentPassword'), 'danger')
+      if (this.form.password.trim() === '') return this.showAlert(this.$t('profileEdit.alertEnterPassword'), 'danger')
+      if (this.form.confirmPassword.trim() === '') return this.showAlert(this.$t('profileEdit.alertEnterConfirmPassword'), 'danger')
+      if (this.form.password !== this.form.confirmPassword) return this.showAlert(this.$t('profileEdit.alertPasswordsMismatch'), 'danger')
       const passwordValidation = this.validatePassword(this.form.password)
       if (passwordValidation.error) return this.showAlert(passwordValidation.message, 'danger')
 
@@ -478,7 +477,7 @@ export default {
         this.form.currentPassword = ''
         this.form.password = ''
         this.form.confirmPassword = ''
-        this.showAlert(response.message || 'Password updated.', 'success')
+        this.showAlert(response.message || this.$t('profileEdit.alertPasswordUpdated'), 'success')
       }
     }
   }
@@ -505,9 +504,9 @@ export default {
 .iq-edit-profile .nav-link {
   border-radius: 0;
   border: none;
-  border-left: 1px solid #e8ecf5;
-  color: #495057;
-  background: #f8f9fa;
+  border-left: 1px solid var(--kadr-border-info);
+  color: var(--kadr-text-secondary);
+  background: var(--kadr-surface-muted);
   text-align: center;
   font-weight: 500;
   font-size: clamp(0.72rem, 1.1vw, 0.95rem);
@@ -525,8 +524,8 @@ export default {
   border-radius: 0 5px 5px 0;
 }
 .iq-edit-profile .nav-link.active {
-  background: #007bff;
-  color: #fff;
+  background: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
 }
 .profile-section-title {
   font-size: 1.15rem;
@@ -569,7 +568,7 @@ export default {
   height: 130px;
   object-fit: cover;
   border-radius: 50%;
-  border: 2px solid #eee;
+  border: 2px solid var(--kadr-border);
   display: block;
   cursor: pointer;
 }
@@ -577,13 +576,13 @@ export default {
   position: absolute;
   bottom: 18px;
   right: 18px;
-  background: #007bff;
+  background: var(--kadr-primary);
   border-radius: 50%;
   padding: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: var(--kadr-shadow-sm);
   cursor: pointer;
   font-size: 18px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--kadr-border-strong);
   z-index: 2;
   display: flex;
   align-items: center;
@@ -591,12 +590,12 @@ export default {
   transition: background 0.2s;
 }
 .p-image i {
-  color: #fff !important;
+  color: var(--kadr-text-on-primary) !important;
   font-size: 20px;
   line-height: 1;
 }
 .p-image:hover {
-  background: #0056b3;
+  background: var(--kadr-primary-hover);
 }
 .file-upload {
   display: none;

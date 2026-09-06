@@ -8,6 +8,8 @@ const publicProfileController = require('../../controller/publicProfileControlle
 const videoReelController = require('../../controller/videoReelController')
 const generalController = require('../../controller/generalController')
 const websiteContentController = require('../../controller/websiteContentController')
+const couponController = require('../../controller/couponController')
+const uploadController = require('../../controller/uploadController')
 const { signupLimiter, signatureLimiter } = require('../../middleware/rateLimitMiddleware')
 const validate = require('../../middleware/validate')
 const { clientSignupSchema, mediatorSignupSchema } = require('../../utils/validationSchemas')
@@ -15,8 +17,10 @@ const { clientSignupSchema, mediatorSignupSchema } = require('../../utils/valida
 const router = express.Router()
 
 router.post('/newUserSignup', signupLimiter, validate(clientSignupSchema), clientController.newUserSignup)
-router.post('/newMediatorSignup', signupLimiter, validate(mediatorSignupSchema), mediatorController.newMediatorSignup)
+router.post('/newMediatorSignup', signupLimiter, validate(mediatorSignupSchema, 'body.userDetails'), mediatorController.newMediatorSignup)
+router.post('/signup/upload-url', signupLimiter, uploadController.createSignupUploadUrl)
 router.post('/public/website-contact-lead', websiteContactController.submitPublicLead)
+router.get('/public/coupon-lookup', couponController.lookupSignupCode)
 
 router.get('/getSignatureRequestDetails', signatureLimiter, signatureController.getSignatureRequestDetails)
 router.post('/submitSignature', signatureLimiter, signatureController.submitSignature)

@@ -421,7 +421,7 @@ export default {
     max-height: 100vh;
     padding: 0;
     background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
-    border-right: 1px solid rgba(0, 132, 255, 0.08);
+    border-right: 1px solid rgba(90, 75, 212, 0.08);
     border-radius: 0;
     box-shadow: 14px 0 28px rgba(45, 69, 95, 0.08);
     overflow: visible;
@@ -459,7 +459,7 @@ export default {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 132, 255, 0.35) transparent;
+    scrollbar-color: rgba(90, 75, 212, 0.35) transparent;
   }
 
   body.compact-sidebar .iq-sidebar.compact-sidebar-shell #sidebar-scrollbar.compact-sidebar-scroll::-webkit-scrollbar {
@@ -467,7 +467,7 @@ export default {
   }
 
   body.compact-sidebar .iq-sidebar.compact-sidebar-shell #sidebar-scrollbar.compact-sidebar-scroll::-webkit-scrollbar-thumb {
-    background: rgba(0, 132, 255, 0.35);
+    background: rgba(90, 75, 212, 0.35);
     border-radius: 4px;
   }
 
@@ -492,8 +492,8 @@ export default {
     margin: 0 auto;
     padding: 0;
     border-radius: 50%;
-    background: linear-gradient(180deg, #fff8ec 0%, #eef6ff 100%);
-    box-shadow: 0 10px 24px rgba(0, 132, 255, 0.08), inset 0 0 0 1px rgba(0, 132, 255, 0.08);
+    background: linear-gradient(180deg, #ffffff 0%, #ece9fb 100%);
+    box-shadow: 0 10px 24px rgba(90, 75, 212, 0.08), inset 0 0 0 1px rgba(90, 75, 212, 0.08);
   }
 
   body.compact-sidebar .compact-brand-mark {
@@ -566,7 +566,7 @@ export default {
     background: rgba(255, 255, 255, 0.7);
     overflow: visible;
     line-height: 1;
-    box-shadow: inset 0 0 0 1px rgba(0, 132, 255, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(90, 75, 212, 0.05);
     transition: all 0.2s ease, transform 0.18s ease, box-shadow 0.18s ease;
     position: relative;
     text-indent: 0;
@@ -588,9 +588,9 @@ export default {
   body.compact-sidebar .compact-sidebar-menu .iq-menu > li.active > a.sidebar-link.root-link,
   body.compact-sidebar .compact-sidebar-menu .iq-menu > li.active > button.menu-group-trigger.sidebar-link.root-link,
   body.compact-sidebar .compact-sidebar-menu .iq-menu > li > a.sidebar-link.root-link.router-link-exact-active {
-    color: #0084ff;
-    background: linear-gradient(180deg, rgba(214, 235, 255, 0.95) 0%, rgba(198, 228, 255, 0.88) 100%);
-    box-shadow: 0 10px 20px rgba(0, 132, 255, 0.12), inset 0 0 0 1px rgba(0, 132, 255, 0.08);
+    color: var(--kadr-primary);
+    background: linear-gradient(180deg, rgba(233, 230, 251, 0.95) 0%, rgba(222, 217, 249, 0.88) 100%);
+    box-shadow: 0 10px 20px rgba(90, 75, 212, 0.14), inset 0 0 0 1px rgba(90, 75, 212, 0.1);
     transform: translateY(-1px) scale(1.02);
   }
 
@@ -672,7 +672,7 @@ export default {
     position: absolute;
     inset: -6px 0;
     border-radius: 20px;
-    background: linear-gradient(180deg, rgba(0, 132, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(180deg, rgba(90, 75, 212, 0.04) 0%, rgba(255, 255, 255, 0) 100%);
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.18s ease;
@@ -757,8 +757,8 @@ export default {
   body.compact-sidebar .compact-sidebar-menu .iq-submenu a.sidebar-link.child-link:hover,
   body.compact-sidebar .compact-sidebar-menu .iq-submenu li.active > a.sidebar-link.child-link,
   body.compact-sidebar .compact-sidebar-menu .iq-submenu a.sidebar-link.child-link.router-link-exact-active {
-    color: #0084ff;
-    background: rgba(0, 132, 255, 0.08);
+    color: var(--kadr-primary);
+    background: rgba(90, 75, 212, 0.08);
   }
 
   body.compact-sidebar .compact-sidebar-menu .iq-submenu a.sidebar-link.child-link .menu-title {
@@ -799,7 +799,7 @@ export default {
     gap: 10px;
     margin-top: 16px;
     padding: 16px 0 8px;
-    border-top: 1px solid rgba(0, 132, 255, 0.08);
+    border-top: 1px solid rgba(90, 75, 212, 0.08);
     overflow: visible;
   }
 
@@ -816,7 +816,7 @@ export default {
     background: rgba(255, 255, 255, 0.78);
     color: #65758b;
     cursor: pointer;
-    box-shadow: inset 0 0 0 1px rgba(0, 132, 255, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(90, 75, 212, 0.05);
     transition: all 0.18s ease;
     position: relative;
   }
@@ -824,9 +824,9 @@ export default {
   body.compact-sidebar .compact-action-button:hover,
   body.compact-sidebar .compact-profile-button:hover {
     transform: translateY(-1px);
-    color: #0084ff;
-    background: linear-gradient(180deg, rgba(214, 235, 255, 0.95) 0%, rgba(198, 228, 255, 0.88) 100%);
-    box-shadow: 0 10px 20px rgba(0, 132, 255, 0.12), inset 0 0 0 1px rgba(0, 132, 255, 0.08);
+    color: var(--kadr-primary);
+    background: linear-gradient(180deg, rgba(233, 230, 251, 0.95) 0%, rgba(222, 217, 249, 0.88) 100%);
+    box-shadow: 0 10px 20px rgba(90, 75, 212, 0.14), inset 0 0 0 1px rgba(90, 75, 212, 0.1);
   }
 
   body.compact-sidebar .compact-action-icon,

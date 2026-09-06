@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid class="admin-website-content-page">
+  <b-container fluid class="admin-website-content-page kadr-animate-in">
     <b-row class="mb-3 align-items-center">
       <b-col>
         <h4 class="mb-1">{{ $t('adminWebsite.title') }}</h4>
@@ -392,16 +392,16 @@ export default {
   background: none;
   font-size: 1.75rem;
   line-height: 1;
-  color: #d8dce0;
+  color: var(--kadr-border-strong);
   cursor: pointer;
   padding: 0 2px;
 }
 .star-picker__star--active {
-  color: #d4a830;
+  color: var(--kadr-warning);
 }
 .star-picker__star:hover,
 .star-picker__star:focus {
-  color: #b48a20;
+  color: var(--kadr-status-warning-text);
   outline: none;
 }
 </style>

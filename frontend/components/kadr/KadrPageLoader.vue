@@ -3,7 +3,7 @@
     <slot />
     <template #overlay>
       <div class="kadr-page-loader text-center" role="status" aria-live="polite">
-        <b-spinner variant="primary" label="Loading"></b-spinner>
+        <kadr-spinner size="md" />
         <p v-if="message" class="mt-2 mb-0 text-muted-kadr">{{ message }}</p>
       </div>
     </template>

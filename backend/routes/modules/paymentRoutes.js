@@ -13,6 +13,7 @@ router.post('/verify', authLimiter, authMiddleware, paymentGatewayController.ver
 
 router.post('/return/payu', paymentGatewayController.payuReturn)
 router.get('/return/payu', paymentGatewayController.payuReturn)
+router.get('/return/cashfree', paymentGatewayController.cashfreeReturn)
 router.post('/webhook/cashfree', paymentGatewayController.cashfreeWebhook)
 router.post('/webhook/phonepe', paymentGatewayController.phonepeWebhook)
 

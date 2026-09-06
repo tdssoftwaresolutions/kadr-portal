@@ -1,0 +1,99 @@
+/* ==========================================================================
+   App-wide mobile hardening (web browsers, all roles).
+   Complements StandardLayout's ≤991px layout rules and responsive.css.
+   Goal: no horizontal page scroll, tappable targets, tables/modals that fit.
+   ========================================================================== */
+
+/* Never let the page scroll sideways on small screens. */
+@media (max-width: 767.98px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Long unbreakable strings (emails, URLs, codes, IDs) shouldn't push width. */
+  .text-break,
+  .kadr-page-header__subtitle,
+  .info-card strong,
+  .stat-value,
+  .schedule-text p,
+  .schedule-text span {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Media should always stay within its container. */
+  img,
+  video,
+  canvas,
+  iframe {
+    max-width: 100%;
+  }
+
+  /* Any wide table degrades to a horizontally scrollable block. */
+  .table-responsive,
+  .kadr-data-table-wrap {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cards and page container get comfortable, edge-safe padding. */
+  .iq-card .iq-card-body,
+  .iq-card > .card-body {
+    padding: 1rem;
+  }
+
+  /* Section/hero cards a touch tighter so content isn't cramped. */
+  .section-card,
+  .hero-card {
+    padding: 1rem;
+  }
+
+  /* Page-header action clusters wrap and can go full width when needed. */
+  .kadr-page-header__actions {
+    width: 100%;
+  }
+
+  /* Bootstrap modals: fit the viewport with a small margin. */
+  .modal-dialog {
+    margin: 0.75rem;
+    max-width: calc(100% - 1.5rem);
+  }
+}
+
+/* Very small phones: stack action rows and make primary CTAs full width so
+   they're easy to tap and never overflow. */
+@media (max-width: 480px) {
+  .signup-form-footer,
+  .auth-btn-row {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .signup-form-footer .footer-right {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .signup-form-footer .btn-primary-cta,
+  .signup-form-footer .btn-ghost,
+  .auth-btn-row .btn-primary-cta,
+  .auth-btn-row .btn-ghost {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Comfortable tap targets for icon/text buttons. */
+  .btn-primary-cta,
+  .btn-ghost,
+  .btn {
+    min-height: 2.75rem;
+  }
+
+  /* Dashboard hero stats already collapse to 1 col via _workspace.scss;
+     keep the profile block from crowding the stats. */
+  .hero-card {
+    flex-direction: column;
+  }
+}

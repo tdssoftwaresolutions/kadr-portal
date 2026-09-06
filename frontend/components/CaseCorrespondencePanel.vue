@@ -141,7 +141,7 @@
       </div>
       <div class="composer-actions">
         <button type="submit" class="btn btn-primary" :disabled="sending || !canSend">
-          <span v-if="sending" class="spinner-border spinner-border-sm me-2" role="status"></span>
+          <kadr-spinner v-if="sending" size="sm" class="me-2" />
           Send
         </button>
       </div>
@@ -278,8 +278,13 @@ export default {
   },
   methods: {
     setMediatorChannel (ch) {
+      if (ch === this.mediatorChannel) return
       this.mediatorChannel = ch
       this.clearReply()
+      // Clear the composer so a draft/attachment typed for one party's thread
+      // can't be accidentally carried into (and sent to) another's.
+      this.draft = ''
+      this.pendingFiles = []
     },
     formatAuthor (msg) {
       if (!msg.author) return 'Unknown'
@@ -406,36 +411,44 @@ export default {
     },
     async onSubmit () {
       if (!this.canSend || this.sending) return
+      // Capture the channel at submit time so an in-flight send can't be
+      // misrouted if the (admin) channel changes mid-request.
+      const channel = this.activeChannel
       this.sending = true
-      const attachments = []
-      for (const f of this.pendingFiles) {
-        const base64 = await this.readFileAsDataUrl(f)
-        attachments.push({
-          fileName: f.name,
-          base64,
-          mimeType: f.type
-        })
-      }
-      const res = await this.$store.dispatch('postCaseCorrespondence', {
-        caseId: this.caseId,
-        channel: this.activeChannel,
-        body: this.draft,
-        parentId: this.replyTo ? this.replyTo.id : null,
-        attachments
-      })
-      this.sending = false
-      if (res.success) {
-        this.draft = ''
-        this.pendingFiles = []
-        this.clearReply()
-        if (res.data.sanitizationNotice) {
-          this.showToast(res.data.sanitizationNotice, 'warn')
-        } else {
-          this.showToast('Message sent.', 'ok')
+      try {
+        const attachments = []
+        for (const f of this.pendingFiles) {
+          const base64 = await this.readFileAsDataUrl(f)
+          attachments.push({
+            fileName: f.name,
+            base64,
+            mimeType: f.type
+          })
         }
-        await this.fetchMessages()
-      } else {
-        this.showToast(res.message || 'Could not send message.', 'err')
+        const res = await this.$store.dispatch('postCaseCorrespondence', {
+          caseId: this.caseId,
+          channel,
+          body: this.draft,
+          parentId: this.replyTo ? this.replyTo.id : null,
+          attachments
+        })
+        if (res.success) {
+          this.draft = ''
+          this.pendingFiles = []
+          this.clearReply()
+          if (res.data.sanitizationNotice) {
+            this.showToast(res.data.sanitizationNotice, 'warn')
+          } else {
+            this.showToast('Message sent.', 'ok')
+          }
+          await this.fetchMessages()
+        } else {
+          this.showToast(res.message || 'Could not send message.', 'err')
+        }
+      } catch (e) {
+        this.showToast(e.message || 'Could not send message. Please try again.', 'err')
+      } finally {
+        this.sending = false
       }
     }
   }
@@ -444,8 +457,8 @@ export default {
 
 <style scoped>
 .case-correspondence {
-  border: 1px solid #e0e7f4;
-  background: linear-gradient(180deg, #fbfcff 0%, #ffffff 48%);
+  border: 1px solid var(--kadr-border-info);
+  background: linear-gradient(180deg, var(--kadr-surface-info) 0%, var(--kadr-bg-surface) 48%);
 }
 
 .case-correspondence--sidebar {
@@ -489,7 +502,7 @@ export default {
 }
 
 .correspondence-head .correspondence-icon {
-  color: #3758d5;
+  color: var(--kadr-primary);
 }
 
 .refresh-chat-btn {
@@ -516,9 +529,9 @@ export default {
   margin: 0.85rem 0 1rem;
   padding: 0.75rem 0.9rem;
   border-radius: 10px;
-  border: 1px solid #c7d7f5;
-  background: #eef3ff;
-  color: #2c3a5e;
+  border: 1px solid var(--kadr-primary-soft-border);
+  background: var(--kadr-primary-soft);
+  color: var(--kadr-text-secondary);
 }
 
 .correspondence-policy p {
@@ -528,7 +541,7 @@ export default {
 }
 
 .policy-icon {
-  color: #3758d5;
+  color: var(--kadr-primary);
   margin-top: 0.15rem;
 }
 
@@ -540,21 +553,21 @@ export default {
 }
 
 .channel-tab {
-  border: 1px solid #d8deef;
-  background: #f8faff;
+  border: 1px solid var(--kadr-border-strong);
+  background: var(--kadr-surface-info);
   border-radius: 999px;
   padding: 0.45rem 1rem;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #4a5472;
+  color: var(--kadr-text-secondary);
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .channel-tab.active {
-  border-color: #3758d5;
-  background: #edf2ff;
-  color: #243a8f;
+  border-color: var(--kadr-primary);
+  background: var(--kadr-primary-soft);
+  color: var(--kadr-primary-hover);
 }
 
 .composer-blocked {
@@ -563,15 +576,15 @@ export default {
   gap: 0.5rem;
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
-  background: #fff8e6;
-  border: 1px solid #f5d48a;
-  color: #6a4a00;
+  background: var(--kadr-status-warning-bg);
+  border: 1px solid var(--kadr-status-warning-bg);
+  color: var(--kadr-status-warning-text);
   font-size: 0.9rem;
   margin-bottom: 0.75rem;
 }
 
 .correspondence-error {
-  color: #b02a37;
+  color: var(--kadr-danger);
   font-size: 0.9rem;
   margin-bottom: 0.5rem;
 }
@@ -580,13 +593,13 @@ export default {
   max-height: 420px;
   overflow-y: auto;
   padding: 0.35rem 0.15rem 0.75rem;
-  border-top: 1px solid #edf0f7;
-  border-bottom: 1px solid #edf0f7;
+  border-top: 1px solid var(--kadr-border-info);
+  border-bottom: 1px solid var(--kadr-border-info);
 }
 
 .messages-loading {
   padding: 1rem;
-  color: #6d7693;
+  color: var(--kadr-text-muted);
   font-size: 0.9rem;
 }
 
@@ -608,14 +621,14 @@ export default {
   max-width: min(92%, 520px);
   border-radius: 12px;
   padding: 0.65rem 0.85rem;
-  background: #f4f6fb;
-  border: 1px solid #e2e8f5;
-  box-shadow: 0 1px 2px rgba(20, 30, 70, 0.04);
+  background: var(--kadr-surface-muted);
+  border: 1px solid var(--kadr-border-info);
+  box-shadow: var(--kadr-shadow-xs);
 }
 
 .msg-own .msg-bubble {
-  background: linear-gradient(135deg, #e8eeff, #dfe8ff);
-  border-color: #c8d4f8;
+  background: linear-gradient(135deg, var(--kadr-primary-soft), var(--kadr-primary-soft));
+  border-color: var(--kadr-primary-soft-border);
 }
 
 .msg-meta {
@@ -623,13 +636,13 @@ export default {
   justify-content: space-between;
   gap: 0.75rem;
   font-size: 0.78rem;
-  color: #5c678a;
+  color: var(--kadr-text-muted);
   margin-bottom: 0.35rem;
 }
 
 .msg-author {
   font-weight: 700;
-  color: #2f3752;
+  color: var(--kadr-text-primary);
 }
 
 .msg-time {
@@ -640,7 +653,7 @@ export default {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #7a849e;
+  color: var(--kadr-text-muted);
   margin: 0 0 0.25rem;
 }
 
@@ -650,7 +663,7 @@ export default {
   word-break: break-word;
   font-size: 0.92rem;
   line-height: 1.5;
-  color: #1f2538;
+  color: var(--kadr-text-primary);
 }
 
 .msg-attachments {
@@ -666,13 +679,13 @@ export default {
 .att-link {
   font-size: 0.86rem;
   font-weight: 600;
-  color: #3758d5;
+  color: var(--kadr-primary);
 }
 
 .msg-flag {
   margin: 0.45rem 0 0;
   font-size: 0.78rem;
-  color: #8a5a00;
+  color: var(--kadr-status-warning-text);
 }
 
 .reply-btn {
@@ -687,10 +700,10 @@ export default {
   gap: 0.5rem;
   margin-top: 0.65rem;
   padding: 0.45rem 0.65rem;
-  background: #f0f4ff;
+  background: var(--kadr-primary-soft);
   border-radius: 8px;
   font-size: 0.88rem;
-  color: #2f4b9c;
+  color: var(--kadr-primary-hover);
 }
 
 .composer {
@@ -699,7 +712,7 @@ export default {
 
 .composer-input {
   width: 100%;
-  border: 1px solid #d3dbef;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 10px;
   padding: 0.65rem 0.75rem;
   font-size: 0.92rem;
@@ -732,11 +745,11 @@ export default {
   gap: 0.4rem;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #3758d5;
-  border: 1px dashed #b8c4e8;
+  color: var(--kadr-primary);
+  border: 1px dashed var(--kadr-primary-soft-border);
   border-radius: 8px;
   padding: 0.4rem 0.75rem;
-  background: #fafbff;
+  background: var(--kadr-surface-info);
 }
 
 .pending-files {
@@ -744,7 +757,7 @@ export default {
   padding: 0.35rem 0 0;
   margin: 0;
   font-size: 0.85rem;
-  color: #4a5472;
+  color: var(--kadr-text-secondary);
 }
 
 .pending-files li {
@@ -758,7 +771,7 @@ export default {
 .btn-remove-file {
   border: none;
   background: transparent;
-  color: #b02a37;
+  color: var(--kadr-danger);
   font-size: 1.1rem;
   line-height: 1;
   cursor: pointer;
@@ -773,7 +786,7 @@ export default {
 .muted-footnote {
   margin-top: 0.75rem;
   font-size: 0.86rem;
-  color: #6d7693;
+  color: var(--kadr-text-muted);
 }
 
 .correspondence-toast {
@@ -784,21 +797,21 @@ export default {
 }
 
 .correspondence-toast.ok {
-  background: #dff7e8;
-  color: #115f31;
-  border: 1px solid #b6e2c6;
+  background: var(--kadr-status-success-bg);
+  color: var(--kadr-status-success-text);
+  border: 1px solid var(--kadr-status-success-bg);
 }
 
 .correspondence-toast.warn {
-  background: #fff8e6;
-  color: #6a4a00;
-  border: 1px solid #f5d48a;
+  background: var(--kadr-status-warning-bg);
+  color: var(--kadr-status-warning-text);
+  border: 1px solid var(--kadr-status-warning-bg);
 }
 
 .correspondence-toast.err {
-  background: #fde2e4;
-  color: #842029;
-  border: 1px solid #f1aeb5;
+  background: var(--kadr-status-danger-bg);
+  color: var(--kadr-status-danger-text);
+  border: 1px solid var(--kadr-status-danger-bg);
 }
 
 .visually-hidden {

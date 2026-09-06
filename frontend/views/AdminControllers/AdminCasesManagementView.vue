@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid>
+  <b-container fluid class="kadr-animate-in">
     <kadr-page-header :title="$t('adminCases.title')" :subtitle="$t('adminCases.subtitle')">
       <template v-if="totalCases >= 0" #actions>
         <small class="text-muted">{{ $t('adminCases.activeCaseCount', { count: totalCases }) }}</small>
@@ -179,6 +179,48 @@
                       {{ selectedCase.user_cases_mediatorTouser ? partyName(selectedCase.user_cases_mediatorTouser) : $t('adminCases.notAssigned') }}
                     </p>
                     <p v-if="selectedCase.user_cases_mediatorTouser" class="party-tile-meta">{{ partyExtraLines(selectedCase.user_cases_mediatorTouser) }}</p>
+                  </div>
+                </b-col>
+              </b-row>
+            </div>
+
+            <div class="detail-section">
+              <h6 class="detail-section-title">{{ $t('adminCases.representatives') }}</h6>
+              <b-row>
+                <b-col md="6" class="mb-2">
+                  <div class="party-tile">
+                    <span class="party-tile-label">{{ $t('adminCases.firstPartyRepresentative') }}</span>
+                    <template v-if="selectedCase.user_cases_first_party_repTouser">
+                      <p class="party-tile-main">
+                        {{ partyName(selectedCase.user_cases_first_party_repTouser) }}
+                        <b-badge :variant="selectedCase.user_cases_first_party_repTouser.active ? 'success' : 'warning'" class="ms-1">
+                          {{ selectedCase.user_cases_first_party_repTouser.active ? $t('adminCases.repActive') : $t('adminCases.repPending') }}
+                        </b-badge>
+                      </p>
+                      <p class="party-tile-meta">{{ partyExtraLines(selectedCase.user_cases_first_party_repTouser) }}</p>
+                    </template>
+                    <p v-else class="party-tile-meta">{{ $t('adminCases.notAdded') }}</p>
+                    <b-button size="sm" variant="outline-primary" class="mt-1" @click="openAddRepresentativeModal(selectedCase, 'first_party')">
+                      {{ selectedCase.user_cases_first_party_repTouser ? $t('adminCases.changeRepresentative') : $t('adminCases.addRepresentative') }}
+                    </b-button>
+                  </div>
+                </b-col>
+                <b-col md="6" class="mb-2">
+                  <div class="party-tile">
+                    <span class="party-tile-label">{{ $t('adminCases.secondPartyRepresentative') }}</span>
+                    <template v-if="selectedCase.user_cases_second_party_repTouser">
+                      <p class="party-tile-main">
+                        {{ partyName(selectedCase.user_cases_second_party_repTouser) }}
+                        <b-badge :variant="selectedCase.user_cases_second_party_repTouser.active ? 'success' : 'warning'" class="ms-1">
+                          {{ selectedCase.user_cases_second_party_repTouser.active ? $t('adminCases.repActive') : $t('adminCases.repPending') }}
+                        </b-badge>
+                      </p>
+                      <p class="party-tile-meta">{{ partyExtraLines(selectedCase.user_cases_second_party_repTouser) }}</p>
+                    </template>
+                    <p v-else class="party-tile-meta">{{ $t('adminCases.notAdded') }}</p>
+                    <b-button size="sm" variant="outline-primary" class="mt-1" @click="openAddRepresentativeModal(selectedCase, 'second_party')">
+                      {{ selectedCase.user_cases_second_party_repTouser ? $t('adminCases.changeRepresentative') : $t('adminCases.addRepresentative') }}
+                    </b-button>
                   </div>
                 </b-col>
               </b-row>
@@ -404,7 +446,7 @@
       <div class="d-flex justify-content-end">
         <b-button variant="secondary" class="me-2" @click="approveTypeModalVisible = false">{{ $t('adminCases.cancel') }}</b-button>
         <b-button variant="success" :disabled="!selectedCaseType || approvingCaseType" @click="confirmApproveCaseType">
-          <span v-if="approvingCaseType" class="spinner-border spinner-border-sm me-1" role="status" />
+          <kadr-spinner v-if="approvingCaseType" size="sm" class="me-1" />
           {{ $t('adminCases.approve') }}
         </b-button>
       </div>
@@ -457,6 +499,36 @@
         </b-button>
       </div>
     </b-modal>
+
+    <b-modal v-model="repModalVisible" :title="repModalTitle" no-footer>
+      <p class="text-muted small mb-3">
+        {{ repForm.side === 'second_party' ? $t('adminCases.repModalHintSecond') : $t('adminCases.repModalHintFirst') }}
+      </p>
+      <div class="mb-3">
+        <label for="rep-name">{{ $t('adminCases.repName') }}</label>
+        <b-form-input id="rep-name" v-model="repForm.representativeName" :placeholder="$t('adminCases.repNamePlaceholder')" />
+      </div>
+      <div class="mb-3">
+        <label for="rep-email">{{ $t('adminCases.repEmail') }} <span class="text-danger">*</span></label>
+        <b-form-input id="rep-email" v-model="repForm.representativeEmail" type="email" :placeholder="$t('adminCases.repEmailPlaceholder')" />
+      </div>
+      <div class="mb-3">
+        <label for="rep-phone">{{ $t('adminCases.repPhone') }}</label>
+        <b-form-input id="rep-phone" v-model="repForm.representativePhone" type="tel" :placeholder="$t('adminCases.repPhonePlaceholder')" />
+      </div>
+      <div class="mb-3" v-if="repHasExisting">
+        <b-form-checkbox v-model="repForm.allowReplace">
+          {{ $t('adminCases.replaceExisting') }}
+        </b-form-checkbox>
+      </div>
+      <div class="d-flex justify-content-end mt-3">
+        <b-button variant="secondary" @click="repModalVisible = false">{{ $t('adminCases.cancel') }}</b-button>
+        <b-button variant="primary" class="ms-2" :disabled="savingRep" @click="confirmAddRepresentative">
+          <kadr-spinner v-if="savingRep" size="sm" class="me-1" />
+          {{ $t('adminCases.saveRepresentative') }}
+        </b-button>
+      </div>
+    </b-modal>
   </b-container>
 </template>
 
@@ -505,7 +577,17 @@ export default {
       selectedMediatorId: null,
       meetingFields: [],
       selectedCaseCommission: 0,
-      detailTab: 0
+      detailTab: 0,
+      repModalVisible: false,
+      savingRep: false,
+      caseForRep: null,
+      repForm: {
+        side: 'first_party',
+        representativeName: '',
+        representativeEmail: '',
+        representativePhone: '',
+        allowReplace: false
+      }
     }
   },
   computed: {
@@ -579,6 +661,22 @@ export default {
       return this.caseForAssign.user_cases_mediatorTouser
         ? this.$t('adminCases.changeMediator')
         : this.$t('adminCases.assignMediator')
+    },
+    repHasExisting () {
+      if (!this.caseForRep) return false
+      return this.repForm.side === 'second_party'
+        ? Boolean(this.caseForRep.user_cases_second_party_repTouser)
+        : Boolean(this.caseForRep.user_cases_first_party_repTouser)
+    },
+    repModalTitle () {
+      if (this.repForm.side === 'second_party') {
+        return this.repHasExisting
+          ? this.$t('adminCases.changeSecondPartyRepresentative')
+          : this.$t('adminCases.addSecondPartyRepresentative')
+      }
+      return this.repHasExisting
+        ? this.$t('adminCases.changeFirstPartyRepresentative')
+        : this.$t('adminCases.addFirstPartyRepresentative')
     }
   },
   methods: {
@@ -602,6 +700,45 @@ export default {
       this.approvingCaseType = false
       if (res.success) {
         this.approveTypeModalVisible = false
+        this.detailModalVisible = false
+        this.fetchCases()
+      }
+    },
+    openAddRepresentativeModal (c, side) {
+      this.caseForRep = c
+      this.repForm = {
+        side: side || 'first_party',
+        representativeName: '',
+        representativeEmail: '',
+        representativePhone: '',
+        allowReplace: false
+      }
+      this.repModalVisible = true
+    },
+    async confirmAddRepresentative () {
+      if (!this.caseForRep) return
+      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+      const email = (this.repForm.representativeEmail || '').trim()
+      if (!email) {
+        this.$store.dispatch('alert/showAlert', { message: this.$t('adminCases.enterRepEmail'), type: 'danger' }, { root: true })
+        return
+      }
+      if (!emailPattern.test(email)) {
+        this.$store.dispatch('alert/showAlert', { message: this.$t('adminCases.invalidRepEmail'), type: 'danger' }, { root: true })
+        return
+      }
+      this.savingRep = true
+      const res = await this.$store.dispatch('addCaseRepresentative', {
+        caseId: this.caseForRep.id,
+        side: this.repForm.side,
+        representativeEmail: email.toLowerCase(),
+        representativeName: (this.repForm.representativeName || '').trim(),
+        representativePhone: (this.repForm.representativePhone || '').trim(),
+        allowReplace: Boolean(this.repForm.allowReplace)
+      })
+      this.savingRep = false
+      if (res.success) {
+        this.repModalVisible = false
         this.detailModalVisible = false
         this.fetchCases()
       }
@@ -762,12 +899,12 @@ export default {
   border-bottom: unset !important;
 }
 .user-card {
-  background-color: #fcfdff;
-  border: 1px solid #dee2e6;
+  background-color: var(--kadr-surface-info);
+  border: 1px solid var(--kadr-border);
 }
 .empty-state .text-muted {
   width: 100%;
-  color: #6c757d !important;
+  color: var(--kadr-text-muted) !important;
 }
 .admin-case-detail {
   font-size: 0.95rem;
@@ -779,7 +916,7 @@ export default {
   gap: 1rem;
   flex-wrap: wrap;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--kadr-border);
 }
 .detail-hero-badges {
   display: flex;
@@ -809,12 +946,12 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #5c6578;
+  color: var(--kadr-text-secondary);
   margin-bottom: 0.65rem;
 }
 .detail-dl dt {
   font-weight: 600;
-  color: #495057;
+  color: var(--kadr-text-secondary);
   font-size: 0.88rem;
 }
 .detail-dl dd {
@@ -826,10 +963,10 @@ export default {
   margin-bottom: 0.35rem;
 }
 .party-tile {
-  border: 1px solid #e6e9f5;
+  border: 1px solid var(--kadr-border-info);
   border-radius: 10px;
   padding: 0.75rem 0.85rem;
-  background: #fcfdff;
+  background: var(--kadr-surface-info);
   height: 100%;
 }
 .party-tile-label {
@@ -838,7 +975,7 @@ export default {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6c757d;
+  color: var(--kadr-text-muted);
   margin-bottom: 0.35rem;
 }
 .party-tile-main {
@@ -848,16 +985,16 @@ export default {
 }
 .party-tile-meta {
   font-size: 0.82rem;
-  color: #5a6272;
+  color: var(--kadr-text-secondary);
   margin: 0;
   line-height: 1.45;
   word-break: break-word;
 }
 .commission-box {
-  border: 1px dashed #c5d4f0;
+  border: 1px dashed var(--kadr-primary-soft-border);
   border-radius: 10px;
   padding: 0.85rem 1rem;
-  background: #f8faff;
+  background: var(--kadr-primary-soft);
 }
 .commission-input {
   max-width: 220px;
@@ -869,21 +1006,21 @@ export default {
 }
 .timeline-list li {
   padding: 0.5rem 0;
-  border-bottom: 1px solid #eef1f8;
+  border-bottom: 1px solid var(--kadr-border-info);
 }
 .timeline-list li:last-child {
   border-bottom: none;
 }
 .timeline-desc {
-  color: #5c6578;
+  color: var(--kadr-text-secondary);
   margin-top: 0.25rem;
 }
 .payments-table thead th {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #6c757d;
-  border-bottom: 2px solid #e9ecef;
+  color: var(--kadr-text-muted);
+  border-bottom: 2px solid var(--kadr-border);
 }
 .payments-table tbody td {
   font-size: 0.88rem;
@@ -892,13 +1029,13 @@ export default {
 .detail-modal-footer {
   margin-top: 1.25rem;
   padding-top: 1rem;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--kadr-border);
 }
 .agreed-terms-box {
-  border: 1px solid #e6e9f5;
+  border: 1px solid var(--kadr-border-info);
   border-radius: 10px;
   padding: 0.85rem;
-  background: #fff;
+  background: var(--kadr-bg-surface);
   max-height: 320px;
   overflow: auto;
 }
@@ -920,9 +1057,9 @@ export default {
   gap: 0.8rem;
 }
 .meeting-card {
-  border: 1px solid #e6e9f5;
+  border: 1px solid var(--kadr-border-info);
   border-radius: 10px;
-  background: #fcfdff;
+  background: var(--kadr-surface-info);
   padding: 0.85rem;
 }
 .meeting-head {
@@ -946,28 +1083,28 @@ export default {
   border: 1px solid transparent;
 }
 .status-upcoming {
-  color: #1d4ed8;
-  background: #e7f0ff;
-  border-color: #bfd6ff;
+  color: var(--kadr-status-info-text);
+  background: var(--kadr-status-info-bg);
+  border-color: var(--kadr-status-info-bg);
 }
 .status-ongoing {
-  color: #036c41;
-  background: #e6f8ef;
-  border-color: #b9ebd2;
+  color: var(--kadr-status-success-text);
+  background: var(--kadr-status-success-bg);
+  border-color: var(--kadr-status-success-bg);
 }
 .status-past {
-  color: #5b6178;
-  background: #eceef4;
-  border-color: #d8dcea;
+  color: var(--kadr-status-secondary-text);
+  background: var(--kadr-status-secondary-bg);
+  border-color: var(--kadr-status-secondary-bg);
 }
 .status-unknown {
-  color: #6b7280;
-  background: #f3f4f6;
-  border-color: #e5e7eb;
+  color: var(--kadr-status-secondary-text);
+  background: var(--kadr-status-secondary-bg);
+  border-color: var(--kadr-status-secondary-bg);
 }
 .feedback-tabs {
-  background: #fff;
-  border: 1px solid #edf1fb;
+  background: var(--kadr-bg-surface);
+  border: 1px solid var(--kadr-border-info);
   border-radius: 8px;
   padding: 0.5rem;
 }
@@ -976,16 +1113,16 @@ export default {
   padding: 0.35rem 0.7rem;
 }
 .feedback-tabs :deep(.nav-pills .nav-link.active) {
-  background-color: #007bff;
+  background-color: var(--kadr-primary);
   color: white;
 }
 .feedback-tabs :deep(.tab-content) {
-  border-top: 1px solid #edf1fb;
+  border-top: 1px solid var(--kadr-border-info);
 }
 .feedback-box {
-  border: 1px dashed #d8ddec;
+  border: 1px dashed var(--kadr-border-strong);
   border-radius: 8px;
-  background: #fff;
+  background: var(--kadr-bg-surface);
   padding: 0.6rem;
 }
 .feedback-box h6 {

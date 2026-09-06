@@ -63,7 +63,7 @@ export default {
   computed: {
     visible () {
       const t = (this.userType || '').toUpperCase()
-      return t === 'CLIENT' || t === 'MEDIATOR'
+      return t === 'CLIENT' || t === 'MEDIATOR' || t === 'REPRESENTATIVE'
     },
     phoneTel () {
       return String(this.phoneDisplay || '').replace(/\s+/g, '')
@@ -165,7 +165,7 @@ export default {
 .kadr-support-fab-value {
   font-size: 0.92rem;
   font-weight: 600;
-  color: #0084ff;
+  color: var(--kadr-primary);
   text-decoration: none;
   word-break: break-word;
 }
@@ -187,7 +187,7 @@ export default {
   height: 56px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #0084ff 0%, #2b4ecf 100%);
+  background: linear-gradient(135deg, var(--kadr-hero-to) 0%, var(--kadr-hero-from) 100%);
   color: #fff;
   font-size: 1.45rem;
   display: flex;

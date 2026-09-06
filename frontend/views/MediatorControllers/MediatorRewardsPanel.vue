@@ -2,25 +2,25 @@
   <div>
     <iq-card class="reward-store-card mb-4">
       <template v-slot:headerTitle>
-        <h4 class="card-title mb-0">Reward Store</h4>
+        <h4 class="card-title mb-0">{{ $t('mediatorTools.rewardsStoreTitle') }}</h4>
       </template>
       <template v-slot:body>
         <div class="reward-balance-banner mb-4">
           <div>
-            <span class="balance-label">Your balance</span>
-            <div class="balance-value">{{ balance.toLocaleString() }} <small>pts</small></div>
+            <span class="balance-label">{{ $t('mediatorTools.rewardsBalanceLabel') }}</span>
+            <div class="balance-value">{{ balance.toLocaleString() }} <small>{{ $t('mediatorTools.rewardsPointsShort') }}</small></div>
           </div>
         </div>
 
         <div class="referral-block mb-4 p-3 border rounded">
-          <h6 class="mb-2">Invite a mediator</h6>
+          <h6 class="mb-2">{{ $t('mediatorTools.referralTitle') }}</h6>
           <p class="small text-muted mb-2">
-            Share your referral code. When they sign up and are approved, you earn referral points.
+            {{ $t('mediatorTools.referralDescription') }}
           </p>
           <div class="d-flex flex-wrap align-items-center">
             <code class="referral-code me-2 mb-2">{{ referralCode || '—' }}</code>
             <b-button size="sm" variant="outline-primary" class="mb-2" @click="copyReferral">
-              {{ copied ? 'Copied' : 'Copy code' }}
+              {{ copied ? $t('mediatorTools.referralCopied') : $t('mediatorTools.referralCopy') }}
             </b-button>
           </div>
         </div>
@@ -29,11 +29,11 @@
 
     <iq-card v-if="earningOptions.length" class="mb-4">
       <template v-slot:headerTitle>
-        <h4 class="card-title mb-0">How to earn points</h4>
+        <h4 class="card-title mb-0">{{ $t('mediatorTools.earnTitle') }}</h4>
       </template>
       <template v-slot:body>
         <p class="small text-muted mb-3">
-          Points are configured by KADR admin. Amounts below reflect current settings. Editing or republishing content does not earn again; deleting content may reverse points already awarded.
+          {{ $t('mediatorTools.earnDescription') }}
         </p>
         <div class="earning-options-list">
           <div v-for="opt in earningOptions" :key="opt.reasonCode" class="earning-option-row">
@@ -47,8 +47,8 @@
       </template>
     </iq-card>
 
-    <h5 class="mb-3">Redeem rewards</h5>
-    <p v-if="loading" class="text-muted">Loading rewards…</p>
+    <h5 class="mb-3">{{ $t('mediatorTools.redeemSectionTitle') }}</h5>
+    <p v-if="loading" class="text-muted">{{ $t('mediatorTools.rewardsLoading') }}</p>
     <div v-else-if="sortedCatalog.length" class="reward-catalog-grid">
       <div
         v-for="item in sortedCatalog"
@@ -59,7 +59,7 @@
         <div class="reward-catalog-card__inner">
           <h6 class="reward-catalog-card__title">{{ item.title }}</h6>
           <p v-if="item.description" class="reward-catalog-card__desc small text-muted">{{ item.description }}</p>
-          <p class="reward-catalog-card__cost mb-2"><strong>{{ item.points_cost.toLocaleString() }}</strong> points</p>
+          <p class="reward-catalog-card__cost mb-2"><strong>{{ item.points_cost.toLocaleString() }}</strong> {{ $t('mediatorTools.rewardsPointsSuffix') }}</p>
           <b-button
             v-if="item.eligible"
             size="sm"
@@ -67,19 +67,19 @@
             :disabled="redeemingId === item.id"
             @click="redeem(item)"
           >
-            Redeem
+            {{ $t('mediatorTools.redeem') }}
           </b-button>
           <div v-if="!item.eligible" class="reward-catalog-card__locked">
-            Need {{ (item.points_cost - balance).toLocaleString() }} more pts to redeem
+            {{ $t('mediatorTools.redeemLocked', { points: (item.points_cost - balance).toLocaleString() }) }}
           </div>
         </div>
       </div>
     </div>
-    <div v-else class="empty-data py-3">No rewards available yet. Check back soon.</div>
+    <div v-else class="empty-data py-3">{{ $t('mediatorTools.rewardsEmpty') }}</div>
 
     <iq-card class="mt-4">
       <template v-slot:headerTitle>
-        <h4 class="card-title mb-0">Points history</h4>
+        <h4 class="card-title mb-0">{{ $t('mediatorTools.historyTitle') }}</h4>
       </template>
       <template v-slot:body>
         <b-table
@@ -96,7 +96,7 @@
             </span>
           </template>
         </b-table>
-        <div v-else class="empty-data py-3">No reward activity yet.</div>
+        <div v-else class="empty-data py-3">{{ $t('mediatorTools.historyEmpty') }}</div>
         <b-pagination
           v-if="total > perPage"
           v-model="page"
@@ -129,15 +129,17 @@ export default {
       referralCode: '',
       earningOptions: [],
       copied: false,
-      redeemingId: null,
-      tableFields: [
-        { key: 'created_at', label: 'Date', formatter: this.formatDate },
-        { key: 'description', label: 'Activity' },
-        { key: 'points', label: 'Points', class: 'text-end' }
-      ]
+      redeemingId: null
     }
   },
   computed: {
+    tableFields () {
+      return [
+        { key: 'created_at', label: this.$t('mediatorTools.historyColDate'), formatter: this.formatDate },
+        { key: 'description', label: this.$t('mediatorTools.historyColActivity') },
+        { key: 'points', label: this.$t('mediatorTools.historyColPoints'), class: 'text-end' }
+      ]
+    },
     sortedCatalog () {
       return [...this.catalog].sort((a, b) => {
         const costA = Number(a.points_cost) || 0
@@ -173,7 +175,7 @@ export default {
     },
     async redeem (item) {
       if (!item.eligible) return
-      if (!window.confirm(`Redeem ${item.points_cost.toLocaleString()} points for "${item.title}"?`)) return
+      if (!window.confirm(this.$t('mediatorTools.redeemConfirm', { points: item.points_cost.toLocaleString(), title: item.title }))) return
       this.redeemingId = item.id
       try {
         const res = await this.$store.dispatch('redeemReward', { catalogItemId: item.id })
@@ -191,7 +193,7 @@ export default {
         this.copied = true
         setTimeout(() => { this.copied = false }, 2000)
       } catch (e) {
-        this.$store.dispatch('alert/showAlert', { message: 'Could not copy. Select and copy the code manually.', type: 'warning' }, { root: true })
+        this.$store.dispatch('alert/showAlert', { message: this.$t('mediatorTools.copyError'), type: 'warning' }, { root: true })
       }
     }
   }
@@ -200,8 +202,8 @@ export default {
 
 <style scoped>
 .reward-balance-banner {
-  background: linear-gradient(135deg, #1a5f9e 0%, #2d8bc9 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--kadr-hero-from) 0%, var(--kadr-hero-to) 100%);
+  color: var(--kadr-text-on-primary);
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
 }
@@ -217,7 +219,7 @@ export default {
 .referral-code {
   font-size: 0.9rem;
   padding: 0.35rem 0.6rem;
-  background: #f4f6f8;
+  background: var(--kadr-surface-muted);
   border-radius: 6px;
   word-break: break-all;
 }
@@ -229,8 +231,8 @@ export default {
 .reward-catalog-card {
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  border: 1px solid var(--kadr-border-info);
+  background: var(--kadr-bg-surface);
 }
 .reward-catalog-card__inner {
   padding: 1rem;
@@ -248,8 +250,8 @@ export default {
 }
 .reward-catalog-card--locked {
   position: relative;
-  border-color: #dee2e6;
-  background: #fafbfc;
+  border-color: var(--kadr-border-strong);
+  background: var(--kadr-surface-muted);
 }
 .reward-catalog-card--locked .reward-catalog-card__inner {
   opacity: 1;
@@ -257,10 +259,10 @@ export default {
 .reward-catalog-card__locked {
   margin-top: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: #fff3cd;
+  background: var(--kadr-status-warning-bg);
   border-radius: 8px;
   font-weight: 600;
-  color: #856404;
+  color: var(--kadr-status-warning-text);
   text-align: center;
   font-size: 0.85rem;
 }
@@ -278,7 +280,7 @@ export default {
   gap: 1rem;
   align-items: flex-start;
   padding: 0.75rem 0;
-  border-bottom: 1px solid #eef2f6;
+  border-bottom: 1px solid var(--kadr-border-info);
 }
 .earning-option-row:last-child {
   border-bottom: none;
@@ -286,7 +288,7 @@ export default {
 .earning-option-row__points {
   min-width: 4rem;
   font-weight: 700;
-  color: #1a5f9e;
+  color: var(--kadr-primary);
   font-size: 1.05rem;
 }
 .earning-option-row__title {

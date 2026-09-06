@@ -7,7 +7,7 @@ export default {
   actions: {
     async getPushPreferences ({ dispatch }) {
       try {
-        const { data } = await apiClient.get(PUSH_PREFERENCES_ENDPOINT)
+        const { data } = await apiClient.get(PUSH_PREFERENCES_ENDPOINT, { meta: { silent: true } })
         return parseApiResponse(data)
       } catch (error) {
         dispatchApiErrorAlert(dispatch, error)

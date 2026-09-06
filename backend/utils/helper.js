@@ -124,7 +124,9 @@ class Helper {
           {
             OR: [
               { first_party: clientId },
-              { second_party: clientId }
+              { second_party: clientId },
+              { first_party_representative: clientId },
+              { second_party_representative: clientId }
             ]
           }
         ],
@@ -145,7 +147,9 @@ class Helper {
           {
             OR: [
               { first_party: clientId },
-              { second_party: clientId }
+              { second_party: clientId },
+              { first_party_representative: clientId },
+              { second_party_representative: clientId }
             ]
           }
         ],
@@ -166,6 +170,8 @@ class Helper {
         caseId: true,
         created_at: true,
         evidence_document_url: true,
+        first_party_representative: true,
+        second_party_representative: true,
         case_statuses: {
           select: {
             id: true,
@@ -204,6 +210,22 @@ class Helper {
             phone_number: true,
             state: true,
             city: true
+          }
+        },
+        // Representative info: name only (per requirement the other party must
+        // not see representative contact details). isRepresentative /
+        // representingSide in the case-progress payload tell the viewer they are
+        // tagged as a representative rather than a party.
+        user_cases_first_party_repTouser: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        user_cases_second_party_repTouser: {
+          select: {
+            id: true,
+            name: true
           }
         },
         events: {
@@ -874,6 +896,8 @@ class Helper {
         mediator: true,
         first_party: true,
         second_party: true,
+        first_party_representative: true,
+        second_party_representative: true,
         created_at: true,
         caseId: true,
         case_type: true,
@@ -913,6 +937,21 @@ class Helper {
           }
         },
         user_cases_mediatorTouser: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        // Mediator (neutral facilitator) may see representative name + email.
+        user_cases_first_party_repTouser: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        user_cases_second_party_repTouser: {
           select: {
             id: true,
             name: true,
@@ -1086,6 +1125,24 @@ class Helper {
                   email: true,
                   phone_number: true
                 }
+              },
+              user_cases_first_party_repTouser: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  phone_number: true,
+                  active: true
+                }
+              },
+              user_cases_second_party_repTouser: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  phone_number: true,
+                  active: true
+                }
               }
             }
           }
@@ -1119,9 +1176,19 @@ class Helper {
             flattenedCase.secondParty = caseItem.user_cases_second_partyTouser
           }
 
+          if (caseItem.user_cases_first_party_repTouser) {
+            flattenedCase.firstPartyRep = caseItem.user_cases_first_party_repTouser
+          }
+
+          if (caseItem.user_cases_second_party_repTouser) {
+            flattenedCase.secondPartyRep = caseItem.user_cases_second_party_repTouser
+          }
+
           // Remove unnecessary nested properties
           delete flattenedCase.user_cases_second_partyTouser
           delete flattenedCase.user_cases_first_partyTouser
+          delete flattenedCase.user_cases_first_party_repTouser
+          delete flattenedCase.user_cases_second_party_repTouser
           return flattenedCase
         })
       }
@@ -1781,6 +1848,8 @@ class Helper {
       mediator: true,
       first_party: true,
       second_party: true,
+      first_party_representative: true,
+      second_party_representative: true,
       case_statuses: {
         select: { id: true, name: true }
       },
@@ -1818,6 +1887,25 @@ class Helper {
           profile_picture_url: true,
           preferred_languages: true,
           preferred_area_of_practice: true
+        }
+      },
+      // Admin case management: full representative detail (name/email/phone/status).
+      user_cases_first_party_repTouser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          active: true
+        }
+      },
+      user_cases_second_party_repTouser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          active: true
         }
       },
       events: {

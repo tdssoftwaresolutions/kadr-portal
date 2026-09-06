@@ -1,0 +1,93 @@
+/* -------------------------------------------------------------------------- */
+/* KadrSpinner — the single, canonical loading indicator for the whole app.    */
+/*                                                                             */
+/* A calm, professional circular ring. It renders in `currentColor`, so it     */
+/* inherits the brand color anywhere (default: --kadr-primary via .kadr-spinner*/
+/* itself). Sizes are token-driven; the full-page variant provides a soft      */
+/* overlay for initial boot / route-level loads.                               */
+/* -------------------------------------------------------------------------- */
+
+.kadr-spinner {
+  display: inline-block;
+  color: var(--kadr-primary, #5a4bd4);
+  vertical-align: middle;
+}
+
+/* The ring itself: a rotating conic/border arc built purely with CSS. Using
+   border technique keeps it crisp at any size and recolorable via currentColor. */
+.kadr-spinner__ring {
+  box-sizing: border-box;
+  display: block;
+  width: var(--kadr-spinner-size, 2.25rem);
+  height: var(--kadr-spinner-size, 2.25rem);
+  border-radius: 50%;
+  border: var(--kadr-spinner-thickness, 3px) solid currentColor;
+  /* Fade three of the four quadrants so the arc reads as a spinning ring. */
+  border-right-color: transparent;
+  border-bottom-color: color-mix(in srgb, currentColor 25%, transparent);
+  border-left-color: color-mix(in srgb, currentColor 55%, transparent);
+  animation: kadr-spin 0.7s linear infinite;
+}
+
+/* Size variants ----------------------------------------------------------- */
+.kadr-spinner--xs .kadr-spinner__ring {
+  --kadr-spinner-size: 1rem;
+  --kadr-spinner-thickness: 2px;
+}
+.kadr-spinner--sm .kadr-spinner__ring {
+  --kadr-spinner-size: 1.25rem;
+  --kadr-spinner-thickness: 2px;
+}
+.kadr-spinner--md .kadr-spinner__ring {
+  --kadr-spinner-size: 2.25rem;
+  --kadr-spinner-thickness: 3px;
+}
+.kadr-spinner--lg .kadr-spinner__ring {
+  --kadr-spinner-size: 3.25rem;
+  --kadr-spinner-thickness: 4px;
+}
+
+/* Inline label next to the ring (e.g. inside buttons or status rows). */
+.kadr-spinner__label {
+  margin-left: 0.5rem;
+  color: var(--kadr-text-secondary, #4a5163);
+  font-size: 0.95em;
+}
+
+/* Full-page / overlay variant --------------------------------------------- */
+.kadr-spinner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--kadr-space-3, 12px);
+  background-color: var(--kadr-bg-page, #f6f7fb);
+}
+
+.kadr-spinner-overlay--transparent {
+  background-color: color-mix(in srgb, var(--kadr-bg-page, #f6f7fb) 78%, transparent);
+  backdrop-filter: blur(1.5px);
+}
+
+.kadr-spinner-overlay__text {
+  margin: 0;
+  color: var(--kadr-text-muted, #737b90);
+  font-size: 0.95rem;
+}
+
+@keyframes kadr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Respect users who prefer reduced motion: slow the ring right down rather
+   than stopping entirely (a static ring still reads as "busy"). */
+@media (prefers-reduced-motion: reduce) {
+  .kadr-spinner__ring {
+    animation-duration: 2.4s;
+  }
+}

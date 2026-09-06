@@ -1,11 +1,21 @@
 const rateLimit = require('express-rate-limit')
+const path = require('path')
+const fs = require('fs')
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, error: 'Too many requests. Please try again later.' }
+
+  handler: (req, res) => {
+    const page = fs.readFileSync(
+      path.join(__dirname, '../../public/website/rate_limit.html'),
+      'utf8'
+    )
+
+    res.status(429).type('html').send(page)
+  }
 })
 
 const authLimiter = rateLimit({

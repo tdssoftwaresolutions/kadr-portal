@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid class="admin-settings-page">
+  <b-container fluid class="admin-settings-page kadr-animate-in">
     <b-row>
       <b-col sm="12" lg="6" class="mb-4">
         <iq-card class="mb-3 admin-settings-compact">
@@ -49,6 +49,8 @@
             </b-form>
           </template>
         </iq-card>
+
+        <admin-coupon-codes-panel class="mt-3" />
       </b-col>
 
       <b-col sm="12" lg="6" class="mb-4">
@@ -72,6 +74,7 @@
 import { sofbox } from '../../config/pluginInit'
 import AdminRewardCatalogPanel from './AdminRewardCatalogPanel.vue'
 import AdminPremiumSettingsPanel from '../../components/admin/AdminPremiumSettingsPanel.vue'
+import AdminCouponCodesPanel from './AdminCouponCodesPanel.vue'
 
 const INVOICE_SETTING_KEYS = new Set([
   'mediator_commission',
@@ -100,7 +103,7 @@ function mapSettingRow (s) {
 
 export default {
   name: 'AdminSettingsView',
-  components: { AdminRewardCatalogPanel, AdminPremiumSettingsPanel },
+  components: { AdminRewardCatalogPanel, AdminPremiumSettingsPanel, AdminCouponCodesPanel },
   data () {
     return {
       settings: []

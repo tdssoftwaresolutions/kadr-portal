@@ -19,7 +19,7 @@ const {
   defaultFullPermissions
 } = require('../utils/adminPermissionHelpers')
 const { runWithNotificationContext } = require('../services/notification/notificationContext')
-const { assertCaseAccessFromRequest, assertNoteOwnership } = require('../services/security/caseAccessService')
+const { assertCaseAccessFromRequest, assertNoteOwnership, caseMembershipOr } = require('../services/security/caseAccessService')
 const { parsePagination, parseDateRange, paginatedResponse } = require('../utils/pagination')
 const { sanitizeRichHtml } = require('../utils/htmlSanitizer')
 
@@ -94,11 +94,7 @@ module.exports = {
           { created_by: user.id },
           {
             cases: {
-              OR: [
-                { first_party: user.id },
-                { second_party: user.id },
-                { mediator: user.id }
-              ]
+              OR: caseMembershipOr(user.id)
             }
           }
         ]
@@ -320,7 +316,8 @@ module.exports = {
           const [notes, casesWithEvents, casesCount, todaysPersonalMeetings, caseEvents] = await Promise.all([
             prisma.notes.findMany({
               where: {
-                user_id: id
+                user_id: id,
+                case_id: null
               },
               select: {
                 id: true,
@@ -435,6 +432,18 @@ module.exports = {
         console.error('Reward on mediator approval:', rewardErr)
       }
     }
+
+    // Lockstep: when a CLIENT is approved (active false -> true), provision +
+    // activate any representatives linked to that client's cases so their
+    // welcomeCredentials email fires alongside the client's.
+    if (isActive && priorUser.active === false && updatedUser.user_type === 'CLIENT') {
+      try {
+        const { activateRepresentativesForClient } = require('../services/case/representativeService')
+        await activateRepresentativesForClient({ clientUserId: userId })
+      } catch (repErr) {
+        console.error('Representative activation on client approval:', repErr)
+      }
+    }
     if (caseId && caseType) {
       const { approveCaseType } = require('../services/case/clientCaseService')
       await approveCaseType({ caseId, caseType })
@@ -454,6 +463,71 @@ module.exports = {
       const { approveCaseType } = require('../services/case/clientCaseService')
       const updated = await approveCaseType({ caseId, caseType })
       success(res, { case: updated }, 'Case type approved. Client can proceed with notice payment.')
+    } catch (error) {
+      next(error)
+    }
+  },
+
+  /**
+   * Admin adds (or replaces) a representative for a party on an existing case.
+   * Runs the same invite -> accept -> map flow as signup: creates/reuses the
+   * REPRESENTATIVE user, links it to the case's party-representative column, and
+   * emails them. If the represented party is already active, the representative
+   * is provisioned + activated immediately; otherwise they activate in lockstep
+   * when the party's account is approved.
+   *
+   * Body: { caseId, side: 'first_party'|'second_party', representativeEmail,
+   *         representativeName?, representativePhone?, allowReplace? }
+   */
+  addCaseRepresentative: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPageAny(req, ['cases', 'users'])
+      const { caseId, side, representativeEmail, representativeName, representativePhone, allowReplace } = req.body
+      if (!caseId || !side || !representativeEmail) {
+        throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+      }
+      const { PARTY_SIDES, attachRepresentativeToCase } = require('../services/case/representativeService')
+      if (side !== PARTY_SIDES.FIRST && side !== PARTY_SIDES.SECOND) {
+        throw createError(errorCodes.INVALID_REQUEST, {
+          message: 'Invalid party side. Expected first_party or second_party.'
+        })
+      }
+
+      const caseRecord = await prisma.cases.findUnique({
+        where: { id: caseId },
+        select: {
+          caseId: true,
+          category: true,
+          first_party: true,
+          second_party: true,
+          user_cases_first_partyTouser: { select: { name: true, active: true } },
+          user_cases_second_partyTouser: { select: { name: true, active: true } }
+        }
+      })
+      if (!caseRecord) throw createError(errorCodes.CASE_NOT_FOUND)
+
+      const party = side === PARTY_SIDES.FIRST
+        ? caseRecord.user_cases_first_partyTouser
+        : caseRecord.user_cases_second_partyTouser
+
+      const result = await attachRepresentativeToCase({
+        caseId,
+        side,
+        representativeEmail,
+        representativeName,
+        representativePhone,
+        caseNumber: caseRecord.caseId,
+        category: caseRecord.category,
+        representedPartyName: party?.name,
+        allowReplace: Boolean(allowReplace),
+        // Activate the rep now only if the party they represent is already active.
+        activateImmediately: party?.active === true
+      })
+
+      success(res, {
+        representative: result ? { id: result.user.id, isNewToPlatform: result.isNewToPlatform } : null
+      }, 'Representative added to the case. They have been notified by email.')
     } catch (error) {
       next(error)
     }
@@ -1150,7 +1224,9 @@ module.exports = {
               id: true,
               mediator: true,
               first_party: true,
-              second_party: true
+              second_party: true,
+              first_party_representative: true,
+              second_party_representative: true
             }
           }
         }
@@ -1168,6 +1244,13 @@ module.exports = {
       const c = event.cases
       const data = {}
 
+      // A representative acts on behalf of the party they represent, so treat them
+      // exactly like that party (first/second) for feedback purposes.
+      const actsAsFirstParty = c.first_party === uid ||
+        (userType === 'REPRESENTATIVE' && c.first_party_representative === uid)
+      const actsAsSecondParty = c.second_party === uid ||
+        (userType === 'REPRESENTATIVE' && c.second_party_representative === uid)
+
       if (userType === 'MEDIATOR' && c.mediator === uid) {
         if (meeting_summary === undefined && mediator_next_steps === undefined) {
           throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
@@ -1179,7 +1262,7 @@ module.exports = {
         if (mergedSummary && String(mergedSummary).trim() && mergedSteps && String(mergedSteps).trim()) {
           data.mediator_feedback_at = new Date()
         }
-      } else if (userType === 'CLIENT' && c.first_party === uid) {
+      } else if (actsAsFirstParty) {
         if (first_party_rating === undefined || first_party_rating === null) {
           throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
         }
@@ -1188,7 +1271,7 @@ module.exports = {
         data.first_party_rating = r
         if (first_party_next_steps !== undefined) data.first_party_next_steps = first_party_next_steps
         data.first_party_feedback_at = new Date()
-      } else if (userType === 'CLIENT' && c.second_party === uid) {
+      } else if (actsAsSecondParty) {
         if (second_party_rating === undefined || second_party_rating === null) {
           throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
         }

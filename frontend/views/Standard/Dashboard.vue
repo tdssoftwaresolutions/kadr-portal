@@ -1,8 +1,10 @@
 <template>
   <div>
-    <div class="dots" v-if="dashboardContent == null"> </div>
+    <div v-if="dashboardContent == null" class="dashboard-loading">
+      <kadr-spinner size="lg" :label="$t('standardPages.loadingDashboard')" />
+    </div>
     <div v-else>
-      <dashboard-client v-if="user.type == 'CLIENT'" :user="user" :content="dashboardContent" @refresh-dashboard="getDashboardContent(true)"/>
+      <dashboard-client v-if="user.type == 'CLIENT' || user.type == 'REPRESENTATIVE'" :user="user" :content="dashboardContent" @refresh-dashboard="getDashboardContent(true)"/>
       <dashboard-mediator v-else-if="user.type == 'MEDIATOR'" :user="user"  :content="dashboardContent" @refresh-dashboard="getDashboardContent(true)"/>
       <dashboard-admin v-else-if="user.type == 'ADMIN'" :user="user"  :content="dashboardContent"/>
     </div>
@@ -53,36 +55,12 @@ export default {
 }
 </script>
 
-<style>
-.dots {
-   width: 56px;
-   height: 26.9px;
-   background: radial-gradient(circle closest-side,#474bff 90%,#0000) 0%   50%,
-          radial-gradient(circle closest-side,#474bff 90%,#0000) 50%  50%,
-          radial-gradient(circle closest-side,#474bff 90%,#0000) 100% 50%;
-   background-size: calc(100%/3) 13.4px;
-   background-repeat: no-repeat;
-   animation: dots-7ar3yq 1s infinite linear;
-   margin-left: auto;
-   margin-top: 20%;
-   margin-right: auto;
-}
-
-@keyframes dots-7ar3yq {
-   20% {
-      background-position: 0%   0%, 50%  50%,100%  50%;
-   }
-
-   40% {
-      background-position: 0% 100%, 50%   0%,100%  50%;
-   }
-
-   60% {
-      background-position: 0%  50%, 50% 100%,100%   0%;
-   }
-
-   80% {
-      background-position: 0%  50%, 50%  50%,100% 100%;
-   }
+<style scoped>
+.dashboard-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
 }
 </style>

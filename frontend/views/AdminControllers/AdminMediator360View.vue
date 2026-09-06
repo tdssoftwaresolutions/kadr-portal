@@ -1,5 +1,5 @@
 <template>
-  <b-container fluid>
+  <b-container fluid class="kadr-animate-in">
     <kadr-page-header :title="$t('adminMediator360.title')" :subtitle="$t('adminMediator360.subtitle')">
       <template #actions>
         <b-button size="sm" variant="outline-secondary" @click="$router.back()">{{ $t('adminMediator360.back') }}</b-button>

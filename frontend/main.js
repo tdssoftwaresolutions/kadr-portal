@@ -9,12 +9,18 @@ import VueCookies from 'vue-cookies'
 import VueSignaturePad from 'vue-signature-pad'
 import datetimePlugin from './plugins/datetime'
 import i18nPlugin from './i18n'
+import KadrSpinner from './components/kadr/KadrSpinner.vue'
 
 async function startApp () {
   const { bootstrapMobileSession, initCapacitorPlugins } = await import('./plugins/capacitor')
   await bootstrapMobileSession()
 
   const store = createStore(router)
+
+  // Let the axios layer drive the global spinner via the loading bridge
+  // (avoids a circular import between apiClient and the store).
+  const { registerLoadingStore } = await import('./utils/loadingBridge')
+  registerLoadingStore(store)
 
   const app = createApp(App)
 
@@ -53,6 +59,9 @@ async function startApp () {
       }
     }
   })
+
+  // The single canonical loading indicator, usable app-wide as <kadr-spinner>.
+  app.component('KadrSpinner', KadrSpinner)
 
   app.use(VueSignaturePad)
   app.use(datetimePlugin)

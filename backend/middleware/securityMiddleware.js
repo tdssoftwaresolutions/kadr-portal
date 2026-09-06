@@ -3,12 +3,16 @@ const helmet = require('helmet')
 function securityMiddleware () {
   const isProduction = process.env.NODE_ENV === 'production'
 
-  // S3 bucket origin used for in-app document/PDF previews rendered in an iframe
-  // (see src/components/DocumentPreview.vue). Built from env so it stays correct
-  // across environments. Falls back to a region-scoped wildcard if unset.
+  // S3 bucket origin used for:
+  //  - in-app document/PDF previews rendered in an iframe (frame-src, see
+  //    src/components/DocumentPreview.vue), and
+  //  - direct browser-to-S3 uploads via presigned PUT URLs (connect-src, see
+  //    frontend/utils/directUpload.js used by the signup forms).
+  // Built from env so it stays correct across environments. Falls back to a
+  // region-scoped wildcard if unset.
   const s3Bucket = process.env.S3_BUCKET_NAME
   const s3Region = process.env.S3_REGION || 'us-east-1'
-  const s3FrameOrigin = s3Bucket
+  const s3Origin = s3Bucket
     ? `https://${s3Bucket}.s3.${s3Region}.amazonaws.com`
     : `https://*.s3.${s3Region}.amazonaws.com`
 
@@ -29,6 +33,11 @@ function securityMiddleware () {
           'https://www.youtube.com',
           'https://www.google.com'
         ],
+        // Helmet's CSP defaults emit `script-src-attr 'none'`, which blocks inline
+        // event handler attributes (e.g. onclick="goToLogin()") on the public
+        // static website even though `scriptSrc` allows 'unsafe-inline'. Allow
+        // inline handlers explicitly so the website nav/CTA buttons work.
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: [
           "'self'",
           "'unsafe-inline'",
@@ -47,13 +56,14 @@ function securityMiddleware () {
           'https://test.payu.in',
           'https://api.phonepe.com',
           'https://api-preprod.phonepe.com',
+          s3Origin, // direct-to-S3 presigned PUT uploads
           process.env.BASE_URL || 'http://localhost:3000'
         ].filter(Boolean),
         frameSrc: [
           "'self'",
           'https://accounts.google.com', // Google Identity Services One Tap iframe
           'https://docs.google.com', // Google Docs viewer (office file previews)
-          s3FrameOrigin, // S3 document/PDF previews
+          s3Origin, // S3 document/PDF previews
           'https://secure.payu.in',
           'https://test.payu.in',
           'https://www.youtube.com',
@@ -64,7 +74,9 @@ function securityMiddleware () {
         formAction: [
           "'self'",
           'https://secure.payu.in',
-          'https://test.payu.in'
+          'https://test.payu.in',
+          'https://sandbox.cashfree.com', // Cashfree sandbox checkout form submission
+          'https://api.cashfree.com' // Cashfree production checkout form submission
         ],
         frameAncestors: ["'self'"],
         upgradeInsecureRequests: isProduction ? [] : null

@@ -3,90 +3,86 @@
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible" :timeout="alert.timeout"></Alert>
 
     <header class="page-header">
-      <h1>Kadr.live</h1>
-      <h2>Case acknowledgment</h2>
-      <p class="subtitle">Review your case details and confirm your participation in the Kadr dispute resolution process.</p>
+      <h1>{{ $t('signaturePages.brand') }}</h1>
+      <h2>{{ $t('signaturePages.ackHeading') }}</h2>
+      <p class="subtitle">{{ $t('signaturePages.ackSubtitle') }}</p>
     </header>
 
     <form v-if="details" @submit.prevent="openPhoneModal" class="form-section">
       <section class="info-card">
-        <h3>Case information</h3>
+        <h3>{{ $t('signaturePages.caseInformation') }}</h3>
         <dl class="detail-list">
           <div>
-            <dt>Case ID</dt>
+            <dt>{{ $t('signaturePages.caseId') }}</dt>
             <dd>{{ details.caseId || '—' }}</dd>
           </div>
           <div v-if="details.caseType">
-            <dt>Case type</dt>
+            <dt>{{ $t('signaturePages.caseType') }}</dt>
             <dd>{{ details.caseType }}</dd>
           </div>
           <div v-if="details.category">
-            <dt>Category</dt>
+            <dt>{{ $t('signaturePages.category') }}</dt>
             <dd>{{ details.category }}</dd>
           </div>
           <div>
-            <dt>Filed on</dt>
+            <dt>{{ $t('signaturePages.filedOn') }}</dt>
             <dd>{{ formatDate(details.filedAt) }}</dd>
           </div>
         </dl>
       </section>
 
       <section class="info-card">
-        <h3>Parties</h3>
+        <h3>{{ $t('signaturePages.parties') }}</h3>
         <dl class="detail-list">
           <div>
-            <dt>First party</dt>
+            <dt>{{ $t('signaturePages.firstParty') }}</dt>
             <dd>
               {{ details.firstPartyName || '—' }}
-              <span v-if="details.isFirstParty" class="you-badge">You</span>
+              <span v-if="details.isFirstParty" class="you-badge">{{ $t('signaturePages.you') }}</span>
             </dd>
           </div>
           <div>
-            <dt>Second party</dt>
+            <dt>{{ $t('signaturePages.secondParty') }}</dt>
             <dd>
               {{ details.secondPartyName || '—' }}
-              <span v-if="!details.isFirstParty" class="you-badge">You</span>
+              <span v-if="!details.isFirstParty" class="you-badge">{{ $t('signaturePages.you') }}</span>
             </dd>
           </div>
         </dl>
       </section>
 
       <section v-if="details.description" class="info-card">
-        <h3>Dispute summary</h3>
+        <h3>{{ $t('signaturePages.disputeSummary') }}</h3>
         <p class="description-text">{{ details.description }}</p>
       </section>
 
       <section class="info-card acknowledgment">
-        <h3>Acknowledgment</h3>
+        <h3>{{ $t('signaturePages.acknowledgment') }}</h3>
         <p>
-          By signing below, I confirm that I am a party to case
-          <strong>{{ details.caseId }}</strong> on <strong>Kadr.live</strong>, that I will participate in good faith
-          in the dispute resolution process (mediation, arbitration, or counselling as assigned), and that I accept
-          the platform’s terms for confidential proceedings.
+          {{ $t('signaturePages.ackBodyOne', { caseId: details.caseId }) }}
         </p>
         <p>
-          Communications and sessions will be coordinated through Kadr.live. If the parties reach a settlement,
-          the agreed terms will be recorded and signed digitally on this platform.
+          {{ $t('signaturePages.ackBodyTwo') }}
         </p>
       </section>
 
       <section class="info-card">
-        <h3>Your signature</h3>
-        <p class="signing-as">Signing as: <strong>{{ details.userName }}</strong></p>
+        <h3>{{ $t('signaturePages.yourSignature') }}</h3>
+        <p class="signing-as">{{ $t('signaturePages.signingAs') }} <strong>{{ details.userName }}</strong></p>
         <div class="signature-type-selector">
           <button
             type="button"
             :class="{ active: signatureType === 'digital' }"
             @click="setSignatureType('digital')"
           >
-            Digital signature
+            {{ $t('signaturePages.digitalSignature') }}
           </button>
           <button
             type="button"
             :class="{ active: signatureType === 'manual' }"
             @click="setSignatureType('manual')"
           >
-            Sign manually
+            {{ $t('signaturePages.signManually') }}
           </button>
         </div>
         <div v-if="signatureType === 'digital'" class="digital-signature-box">
@@ -95,53 +91,53 @@
         <div v-else class="manual-signature">
           <canvas ref="signaturePad" class="signature-canvas"></canvas>
           <button type="button" class="btn-clear" @click="clearSignature">
-            Clear
+            {{ $t('signaturePages.clear') }}
           </button>
         </div>
 
         <div class="phone-row">
-          <label>Registered phone</label>
+          <label>{{ $t('signaturePages.registeredPhone') }}</label>
           <input :value="details.partyPhoneNumber || '—'" disabled />
         </div>
       </section>
 
-      <button type="submit" class="btn-submit">Continue to verify &amp; submit</button>
+      <button type="submit" class="btn-submit">{{ $t('signaturePages.continueToVerifyAck') }}</button>
     </form>
 
     <div v-else-if="submitted" class="empty-state">
-      <h3>Thank you</h3>
-      <p>Your acknowledgment has been recorded. You can close this page.</p>
+      <h3>{{ $t('signaturePages.thankYou') }}</h3>
+      <p>{{ $t('signaturePages.ackRecorded') }}</p>
     </div>
     <div v-else class="empty-state">
-      <p>Loading case details…</p>
+      <p>{{ $t('signaturePages.loadingCase') }}</p>
     </div>
 
-    <b-modal v-model="showPhoneModal" no-footer title="OTP verification" @hidden="resetPhoneModal">
+    <b-modal v-model="showPhoneModal" no-footer :title="$t('signaturePages.otpVerification')" @hidden="resetPhoneModal">
       <div v-if="phoneStep === 1" class="phone-step-card">
-        <h5 class="section-title">Verify your identity</h5>
-        <small class="text-muted">We will send an OTP to your registered mobile number before accepting this acknowledgment.</small>
-        <div class="phone-display">{{ phoneNumber || 'No phone on file' }}</div>
-        <b-button variant="primary" block :disabled="!phoneNumber" @click="sendPhoneOtp">Send OTP</b-button>
+        <h5 class="section-title">{{ $t('signaturePages.verifyIdentity') }}</h5>
+        <small class="text-muted">{{ $t('signaturePages.otpIntroAck') }}</small>
+        <div class="phone-display">{{ phoneNumber || $t('signaturePages.noPhoneOnFile') }}</div>
+        <b-button variant="primary" block :disabled="!phoneNumber" @click="sendPhoneOtp">{{ $t('signaturePages.sendOtp') }}</b-button>
       </div>
       <div v-else-if="phoneStep === 2" class="phone-step-card">
-        <h5 class="section-title">Enter OTP</h5>
-        <small class="text-muted">Enter the 6-digit OTP sent to your registered mobile number.</small>
+        <h5 class="section-title">{{ $t('signaturePages.enterOtp') }}</h5>
+        <small class="text-muted">{{ $t('signaturePages.otpEnterInstruction') }}</small>
         <b-form-group>
           <b-form-input
             v-model="phoneOtp"
             maxlength="6"
-            placeholder="Enter 6-digit OTP"
+            :placeholder="$t('signaturePages.otpPlaceholder')"
             type="text"
             pattern="[0-9]{6}"
             autocomplete="off"
           />
         </b-form-group>
-        <b-button variant="primary" block :disabled="!isPhoneOtpValid" @click="verifyPhoneOtp">Verify OTP</b-button>
+        <b-button variant="primary" block :disabled="!isPhoneOtpValid" @click="verifyPhoneOtp">{{ $t('signaturePages.verifyOtp') }}</b-button>
       </div>
       <div v-else-if="phoneStep === 3" class="phone-step-card">
-        <h5 class="section-title">Verification complete</h5>
-        <small class="text-muted">Your phone number has been verified. You may now submit your acknowledgment.</small>
-        <b-button variant="success" block @click="finalSubmit">Submit acknowledgment</b-button>
+        <h5 class="section-title">{{ $t('signaturePages.verificationComplete') }}</h5>
+        <small class="text-muted">{{ $t('signaturePages.verifiedAck') }}</small>
+        <b-button variant="success" block @click="finalSubmit">{{ $t('signaturePages.submitAcknowledgment') }}</b-button>
       </div>
     </b-modal>
   </div>
@@ -192,7 +188,7 @@ export default {
     async fetchSignatureRequestDetails () {
       const requestId = this.$route.query && this.$route.query.requestId
       if (!requestId) {
-        this.showAlert('Request ID is missing in the URL.', 'danger')
+        this.showAlert(this.$t('signaturePages.requestIdMissing'), 'danger')
         return
       }
       const response = await this.$store.dispatch('getSignatureRequestDetails', { requestId })
@@ -229,11 +225,11 @@ export default {
     },
     openPhoneModal () {
       if (this.signatureType === 'manual' && this.signaturePad && this.signaturePad.isEmpty()) {
-        this.showAlert('Please provide your signature before continuing.', 'danger')
+        this.showAlert(this.$t('signaturePages.provideSignature'), 'danger')
         return
       }
       if (this.signatureType === 'digital' && !this.userInitials) {
-        this.showAlert('Unable to build a digital signature from your name.', 'danger')
+        this.showAlert(this.$t('signaturePages.digitalSignatureFailed'), 'danger')
         return
       }
       this.showPhoneModal = true
@@ -280,7 +276,7 @@ export default {
         signature
       })
       if (response.success) {
-        this.showAlert(response.message || 'Acknowledgment submitted successfully.', 'success')
+        this.showAlert(response.message || this.$t('signaturePages.acknowledgmentSubmitted'), 'success')
         this.details = null
         this.submitted = true
       }
@@ -308,7 +304,7 @@ export default {
   max-width: 760px;
   margin: 0 auto;
   padding: 1.5rem 1.25rem 3rem;
-  color: #374948;
+  color: var(--kadr-text-primary);
 }
 
 .page-header {
@@ -320,7 +316,7 @@ export default {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0 0 0.35rem;
-  color: #0084ff;
+  color: var(--kadr-primary);
 }
 
 .page-header h2 {
@@ -331,7 +327,7 @@ export default {
 
 .subtitle {
   margin: 0;
-  color: #6d7693;
+  color: var(--kadr-text-muted);
   font-size: 0.95rem;
   line-height: 1.45;
 }
@@ -343,18 +339,18 @@ export default {
 }
 
 .info-card {
-  background: #fff;
-  border: 1px solid #e8ebf5;
+  background: var(--kadr-bg-surface);
+  border: 1px solid var(--kadr-border-info);
   border-radius: 12px;
   padding: 1.15rem 1.25rem;
-  box-shadow: 0 4px 14px rgba(35, 55, 110, 0.06);
+  box-shadow: var(--kadr-shadow-sm);
 }
 
 .info-card h3 {
   font-size: 0.95rem;
   font-weight: 700;
   margin: 0 0 0.85rem;
-  color: #374948;
+  color: var(--kadr-text-primary);
 }
 
 .detail-list {
@@ -367,7 +363,7 @@ export default {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #6d7693;
+  color: var(--kadr-text-muted);
   margin-bottom: 0.15rem;
 }
 
@@ -381,8 +377,8 @@ export default {
   margin-left: 0.4rem;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  background: rgba(0, 132, 255, 0.1);
-  color: #0084ff;
+  background: var(--kadr-primary-soft);
+  color: var(--kadr-primary);
   font-size: 0.7rem;
   font-weight: 700;
   vertical-align: middle;
@@ -392,13 +388,13 @@ export default {
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.5;
-  color: #4a5168;
+  color: var(--kadr-text-secondary);
 }
 
 .acknowledgment p {
   margin: 0 0 0.75rem;
   line-height: 1.55;
-  color: #4a5168;
+  color: var(--kadr-text-secondary);
 }
 
 .acknowledgment p:last-child {
@@ -407,7 +403,7 @@ export default {
 
 .signing-as {
   margin: 0 0 0.75rem;
-  color: #6d7693;
+  color: var(--kadr-text-muted);
   font-size: 0.9rem;
 }
 
@@ -420,34 +416,34 @@ export default {
 
 .signature-type-selector button {
   padding: 0.5rem 0.9rem;
-  border: 1px solid #d8deef;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 8px;
-  background: #f8faff;
+  background: var(--kadr-surface-info);
   cursor: pointer;
   font-size: 0.875rem;
-  color: #374948;
+  color: var(--kadr-text-primary);
 }
 
 .signature-type-selector button.active {
-  background: #0084ff;
-  border-color: #0084ff;
-  color: #fff;
+  background: var(--kadr-primary);
+  border-color: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
 }
 
 .digital-signature-box {
-  border: 1px solid #d8deef;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 10px;
   min-height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fafbff;
+  background: var(--kadr-surface-info);
 }
 
 .cursive-signature {
   font-family: 'Segoe Script', 'Brush Script MT', cursive;
   font-size: 1.75rem;
-  color: #0084ff;
+  color: var(--kadr-primary);
 }
 
 .manual-signature {
@@ -457,21 +453,21 @@ export default {
 }
 
 .signature-canvas {
-  border: 1px solid #d8deef;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 10px;
   width: 100%;
   height: 150px;
   cursor: crosshair;
-  background: #fff;
+  background: var(--kadr-bg-surface);
 }
 
 .btn-clear {
   align-self: flex-start;
   padding: 0.4rem 0.85rem;
-  border: 1px solid #d8deef;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 8px;
-  background: #fff;
-  color: #374948;
+  background: var(--kadr-bg-surface);
+  color: var(--kadr-text-primary);
   cursor: pointer;
 }
 
@@ -483,7 +479,7 @@ export default {
   display: block;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #6d7693;
+  color: var(--kadr-text-muted);
   margin-bottom: 0.35rem;
 }
 
@@ -491,9 +487,9 @@ export default {
   width: 100%;
   max-width: 280px;
   padding: 0.55rem 0.75rem;
-  border: 1px solid #d8deef;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 8px;
-  background: #f8faff;
+  background: var(--kadr-surface-info);
 }
 
 .btn-submit {
@@ -501,8 +497,8 @@ export default {
   padding: 0.75rem 1.25rem;
   border: none;
   border-radius: 10px;
-  background: #0084ff;
-  color: #fff;
+  background: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -515,7 +511,7 @@ export default {
 .empty-state {
   text-align: center;
   padding: 2.5rem 1rem;
-  color: #6d7693;
+  color: var(--kadr-text-muted);
 }
 
 .phone-step-card {
@@ -529,16 +525,16 @@ export default {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  color: #333;
+  color: var(--kadr-text-primary);
 }
 
 .phone-display {
   font-size: 1.05rem;
   margin: 1rem 0;
-  color: #555;
+  color: var(--kadr-text-secondary);
   padding: 0.75rem;
-  background: #f8f9fa;
+  background: var(--kadr-surface-muted);
   border-radius: 8px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--kadr-border-strong);
 }
 </style>

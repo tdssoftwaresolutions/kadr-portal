@@ -66,7 +66,7 @@
                 <b-card class="blog-card h-100">
                   <b-card-body class="d-flex flex-column">
                     <div class="mb-3">
-                      <h5 class="card-title text-truncate" @click="onClickBlog(blog)" style="cursor: pointer; color: #007bff;">{{ blog.title }}</h5>
+                      <h5 class="card-title text-truncate" @click="onClickBlog(blog)" style="cursor: pointer; color: var(--kadr-primary);">{{ blog.title }}</h5>
                       <small class="text-muted">{{ formatDateTime(blog.created_at) }}</small>
                     </div>
                     <div class="category-section" v-if="blog.categories && blog.categories.length > 0">
@@ -448,7 +448,7 @@ export default {
         content_css: false,
         height: 800,
         plugins: [
-          'autosave lists link image table media fullscreen color preview',
+          'autosave lists link image table media fullscreen preview',
           'paste charmap hr anchor insertdatetime wordcount'
         ],
         toolbar: [
@@ -613,7 +613,7 @@ ul li span strong {
 
 .card-body {
   padding: 20px;
-  background: #f9f9f9;
+  background: var(--kadr-surface-muted);
 }
 
 button {
@@ -621,7 +621,7 @@ button {
 }
 
 .rich-text-editor {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 4px;
   min-height: 300px; /* Adjust height */
   max-height: 500px; /* Optional: Limit max height */
@@ -633,29 +633,29 @@ button {
   overflow: scroll;
 }
 .form-select {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 4px;
   padding: 8px 12px;
   font-size: 16px;
-  background-color: #ffffff;
-  color: #495057;
+  background-color: var(--kadr-bg-surface);
+  color: var(--kadr-text-secondary);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .form-select:focus {
-  border-color: #80bdff;
+  border-color: var(--kadr-primary);
   outline: none;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  box-shadow: 0 0 0 0.2rem rgba(90, 75, 212, 0.18);
 }
 
 .form-select option {
   font-size: 14px;
-  color: #495057;
+  color: var(--kadr-text-secondary);
 }
 
 /* Optional: Add hover effect */
 .form-select:hover {
-  border-color: #86b7fe;
+  border-color: var(--kadr-primary-soft-border);
 }
 .form-group {
   display: flex;
@@ -698,7 +698,7 @@ button {
   cursor: pointer;
 }
 .list-group-item:hover {
-  background-color: #f1f1f1;
+  background-color: var(--kadr-surface-muted);
 }
 ul.list-group {
   max-width: 100%; /* Prevent it from exceeding the container width */
@@ -709,7 +709,7 @@ ul.list-group {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid #007bff;
+      border: 1px solid var(--kadr-primary);
       border-radius: 20px;
       padding: 0.5rem 1rem;
       margin: 0.5rem;
@@ -718,9 +718,9 @@ ul.list-group {
     }
 
     .option-card.selected {
-      background-color: #007bff;
-      color: #fff;
-      border-color: #0056b3;
+      background-color: var(--kadr-primary);
+      color: var(--kadr-text-on-primary);
+      border-color: var(--kadr-primary-hover);
     }
 
     .option-card.disabled {
@@ -735,12 +735,12 @@ ul.list-group {
     }
 
 .blog-card {
-  border: 1px solid #e1e5e9;
+  border: 1px solid var(--kadr-border);
   border-radius: 8px;
   transition: all 0.3s ease;
   margin-bottom: 1.5rem;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--kadr-bg-surface);
+  box-shadow: var(--kadr-shadow-sm);
   overflow: hidden;
   position: relative;
 }
@@ -752,13 +752,13 @@ ul.list-group {
   left: 0;
   right: 0;
   height: 3px;
-  background: #4a5568;
+  background: var(--kadr-primary);
 }
 
 .blog-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-color: #cbd5e0;
+  box-shadow: var(--kadr-shadow-md);
+  border-color: var(--kadr-primary-soft-border);
 }
 
 .blog-card .card-body {
@@ -769,19 +769,19 @@ ul.list-group {
 .blog-card .card-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1a202c;
+  color: var(--kadr-text-primary);
   margin-bottom: 0.5rem;
   line-height: 1.4;
   transition: color 0.2s ease;
 }
 
 .blog-card .card-title:hover {
-  color: #667eea;
+  color: var(--kadr-primary);
 }
 
 .blog-card .text-muted {
   font-size: 0.875rem;
-  color: #718096;
+  color: var(--kadr-text-muted);
   font-weight: 500;
 }
 
@@ -820,27 +820,27 @@ ul.list-group {
 }
 
 .blog-card .btn-outline-primary {
-  background: #3b82f6;
-  color: white;
-  border: 1px solid #3b82f6;
+  background: var(--kadr-primary);
+  color: var(--kadr-text-on-primary);
+  border: 1px solid var(--kadr-primary);
 }
 
 .blog-card .btn-outline-primary:hover {
-  background: #2563eb;
-  border-color: #2563eb;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  background: var(--kadr-primary-hover);
+  border-color: var(--kadr-primary-hover);
+  box-shadow: var(--kadr-shadow-sm);
 }
 
 .blog-card .btn-outline-danger {
-  background: #dc2626;
-  color: white;
-  border: 1px solid #dc2626;
+  background: var(--kadr-danger);
+  color: var(--kadr-text-on-primary);
+  border: 1px solid var(--kadr-danger);
 }
 
 .blog-card .btn-outline-danger:hover {
-  background: #b91c1c;
-  border-color: #b91c1c;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+  background: var(--kadr-status-danger-text);
+  border-color: var(--kadr-status-danger-text);
+  box-shadow: var(--kadr-shadow-sm);
 }
 
 .status-badge {
@@ -859,14 +859,14 @@ ul.list-group {
 .category-section {
   margin: 1rem 0;
   padding: 0.75rem;
-  background: #f7fafc;
+  background: var(--kadr-surface-muted);
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--kadr-border-info);
 }
 
 .category-badge {
-  background: #4a5568 !important;
-  color: white !important;
+  background: var(--kadr-primary) !important;
+  color: var(--kadr-text-on-primary) !important;
   border: none !important;
   font-weight: 500 !important;
   margin: 0.125rem !important;
@@ -874,43 +874,43 @@ ul.list-group {
 }
 
 .category-badge:hover {
-  background: #2d3748 !important;
+  background: var(--kadr-primary-hover) !important;
   transform: scale(1.05);
 }
 
 .professional-select {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: var(--kadr-text-secondary);
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--kadr-shadow-xs);
   flex: 0 1 auto;
   min-width: 180px;
   width: 180px;
 }
 
 .professional-select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  border-color: var(--kadr-primary);
+  box-shadow: 0 0 0 2px rgba(90, 75, 212, 0.18);
   outline: none;
 }
 
 .professional-select:hover {
-  border-color: #9ca3af;
+  border-color: var(--kadr-border-strong);
 }
 
 .professional-btn {
-  background: #3b82f6;
+  background: var(--kadr-primary);
   border: none;
   border-radius: 6px;
   padding: 0.625rem 1.25rem;
   font-weight: 600;
   font-size: 0.875rem;
-  color: white;
+  color: var(--kadr-text-on-primary);
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--kadr-shadow-xs);
   position: relative;
   overflow: hidden;
 }
@@ -931,8 +931,8 @@ ul.list-group {
 }
 
 .professional-btn:hover {
-  background: #2563eb;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  background: var(--kadr-primary-hover);
+  box-shadow: var(--kadr-shadow-md);
 }
 
 .professional-btn i {
@@ -940,21 +940,21 @@ ul.list-group {
 }
 
 .clear-filters-btn {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--kadr-border-strong);
   border-radius: 6px;
   padding: 0.5rem 1rem;
   font-weight: 500;
   font-size: 0.875rem;
-  color: #6b7280;
-  background: white;
+  color: var(--kadr-text-muted);
+  background: var(--kadr-bg-surface);
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--kadr-shadow-xs);
 }
 
 .clear-filters-btn:hover {
-  border-color: #dc2626;
-  color: #dc2626;
-  background: #fef2f2;
+  border-color: var(--kadr-danger);
+  color: var(--kadr-danger);
+  background: var(--kadr-status-danger-bg);
 }
 
 .clear-filters-btn i {

@@ -1,109 +1,129 @@
 <template>
-  <div>
+  <div class="auth-panel">
     <Alert :message="alert.message" :type="alert.type" v-model="alert.visible"></Alert>
-    <Spinner :isVisible="loading" />
-    <h1 class="mb-0">Sign in</h1>
-    <div class="mt-4">
+
+    <header class="auth-head">
+      <h1 class="auth-title">{{ $t('auth.welcomeBack') }}</h1>
+      <p class="auth-sub">{{ $t('auth.signInSubtitle') }}</p>
+    </header>
+
+    <div class="auth-body">
       <kadr-form-field
-        class="mb-3"
-        :label="AUTH.EMAIL_LABEL"
+        class="auth-field"
+        :label="$t('auth.emailLabel')"
         :error="fieldErrors.email"
         id="signInEmail"
       >
         <template v-slot="{ id, invalid }">
-          <input
-            v-model="emailAddress"
-            type="email"
-            class="form-control mb-0"
-            :class="{ 'is-invalid': invalid }"
-            :id="id"
-            aria-describedby="emailHelp"
-            placeholder="Enter email address"
-            autocomplete="email"
-            @input="fieldErrors.email = ''"
-          >
+          <div class="input-affix">
+            <i class="ri-mail-line input-affix-icon" aria-hidden="true"></i>
+            <input
+              v-model="emailAddress"
+              type="email"
+              class="app-input has-affix"
+              :class="{ 'is-invalid': invalid }"
+              :id="id"
+              aria-describedby="emailHelp"
+              :placeholder="$t('auth.emailPlaceholder')"
+              autocomplete="email"
+              @input="fieldErrors.email = ''"
+            >
+          </div>
         </template>
       </kadr-form-field>
+
       <kadr-form-field
         v-if="showAccountType"
-        class="mb-3"
-        :label="AUTH.ACCOUNT_TYPE_LABEL"
+        class="auth-field"
+        :label="$t('auth.accountTypeLabel')"
         :error="fieldErrors.userType"
-        :hint="AUTH.ACCOUNT_TYPE_HINT"
+        :hint="$t('auth.accountTypeHint')"
         id="signInAccountType"
       >
         <template v-slot="{ id, invalid }">
-          <select
-            v-model="userType"
-            class="form-control mb-0"
-            :class="{ 'is-invalid': invalid }"
-            :id="id"
-            @change="fieldErrors.userType = ''"
-          >
-            <option disabled value="">Select account type</option>
-            <option
-              v-for="option in accountTypeOptions"
-              :key="option.value"
-              :value="option.value"
+          <div class="app-select-wrap">
+            <select
+              v-model="userType"
+              class="app-input app-select"
+              :class="{ 'is-invalid': invalid }"
+              :id="id"
+              @change="fieldErrors.userType = ''"
             >
-              {{ option.label }}
-            </option>
-          </select>
+              <option disabled value="">{{ $t('auth.selectAccountType') }}</option>
+              <option
+                v-for="option in accountTypeOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+            <i class="ri-arrow-down-s-line app-select-caret" aria-hidden="true"></i>
+          </div>
         </template>
       </kadr-form-field>
-      <div class="position-relative mb-3">
-        <a
-          href="#"
-          class="signin-forgot-link"
-          @click.prevent="onClickForgotPassword"
-        >{{ AUTH.FORGOT_PASSWORD }}</a>
-        <kadr-form-field
-          :label="AUTH.PASSWORD_LABEL"
-          :error="fieldErrors.password"
-          id="signInPassword"
-        >
-          <template v-slot="{ id, invalid }">
-            <div class="position-relative">
-              <input
-                v-model="password"
-                :type="showPassword ? 'text' : 'password'"
-                class="form-control mb-0"
-                :class="{ 'is-invalid': invalid }"
-                :id="id"
-                placeholder="Password"
-                autocomplete="current-password"
-                @input="fieldErrors.password = ''"
-                @keyup.enter="onClickLogin"
-              >
-              <button
-                type="button"
-                class="password-toggle-btn"
-                @click="togglePasswordVisibility"
-                :aria-label="showPassword ? 'Hide password' : 'Show password'"
-              >
-                <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
-              </button>
-            </div>
-          </template>
-        </kadr-form-field>
+
+      <button
+        v-if="showAccountType && googleCredential"
+        type="button"
+        class="btn-primary-cta btn-block-cta"
+        :disabled="loading || !userType"
+        @click="onClickGoogleLoginWithType"
+      >
+        {{ $t('auth.continueWithGoogle') }} <i class="ri-arrow-right-line" aria-hidden="true"></i>
+      </button>
+
+      <kadr-form-field
+        class="auth-field"
+        :label="$t('auth.passwordLabel')"
+        :error="fieldErrors.password"
+        id="signInPassword"
+      >
+        <template #default="{ id, invalid }">
+          <div class="input-affix">
+            <i class="ri-lock-2-line input-affix-icon" aria-hidden="true"></i>
+            <input
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              class="app-input has-affix has-suffix"
+              :class="{ 'is-invalid': invalid }"
+              :id="id"
+              :placeholder="$t('auth.passwordPlaceholder')"
+              autocomplete="current-password"
+              @input="fieldErrors.password = ''"
+              @keyup.enter="onClickLogin"
+            >
+            <button
+              type="button"
+              class="input-suffix-btn"
+              @click="togglePasswordVisibility"
+              :aria-label="showPassword ? $t('auth.hidePassword') : $t('auth.showPassword')"
+            >
+              <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+            </button>
+          </div>
+        </template>
+      </kadr-form-field>
+
+      <div class="auth-forgot-row">
+        <a href="#" @click.prevent="onClickForgotPassword">{{ $t('auth.forgotPassword') }}</a>
       </div>
-      <div class="d-inline-block w-100">
-        <button type="button" class="btn btn-primary float-end" @click="onClickLogin">Sign in</button>
-      </div>
-      <div class="google-signin-divider">
-        <span>or</span>
-      </div>
+
+      <button type="button" class="btn-primary-cta btn-block-cta" :disabled="loading" @click="onClickLogin">
+        {{ $t('auth.signIn') }} <i class="ri-arrow-right-line" aria-hidden="true"></i>
+      </button>
+
+      <div class="auth-divider"><span>{{ $t('auth.orDivider') }}</span></div>
+
       <div class="google-signin-wrapper">
         <!-- Google renders its official sign-in button here. One click on it
              opens the account popup directly (no intermediate overlay). -->
         <div ref="googleButton" class="google-btn-host"></div>
-        <!-- Fallback shown only until GIS is ready (or if it fails to load).
-             Disabled because it cannot start the flow on its own — GIS requires
-             a click on its own rendered button above. -->
+        <!-- Fallback shown only until GIS is ready (or if it fails to load). -->
         <button
           v-if="!googleReady"
           type="button"
-          class="btn btn-google-signin"
+          class="btn-google-signin"
           disabled
         >
           <svg class="google-icon" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
@@ -112,40 +132,29 @@
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
           </svg>
-          Loading Google sign-in…
+          {{ $t('auth.googleLoading') }}
         </button>
       </div>
-      <div class="sign-info">
-        <span class="dark-color d-inline-block line-height-2">
-          {{ AUTH.NO_ACCOUNT }}
-          <a href="#" @click.prevent="onClickSignUp">{{ AUTH.CREATE_ACCOUNT }}</a>
-        </span>
+
+      <div class="auth-alt-action">
+        <span>{{ $t('auth.noAccount') }}</span>
+        <a href="#" @click.prevent="onClickSignUp">{{ $t('auth.createAccount') }}</a>
       </div>
     </div>
   </div>
 </template>
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
-import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import KadrFormField from '../../components/kadr/KadrFormField.vue'
-import { AUTH } from '../../constants/messages'
-
-const ACCOUNT_TYPE_LABELS = {
-  CLIENT: 'Client',
-  MEDIATOR: 'Dispute Resolution Expert',
-  ADMIN: 'Admin'
-}
 
 export default {
   name: 'SignIn',
   components: {
     Alert,
-    Spinner,
     KadrFormField
   },
   data () {
     return {
-      AUTH,
       emailAddress: '',
       password: '',
       userType: '',
@@ -168,10 +177,17 @@ export default {
     }
   },
   computed: {
+    accountTypeLabels () {
+      return {
+        CLIENT: this.$t('auth.client'),
+        MEDIATOR: this.$t('auth.expert'),
+        ADMIN: this.$t('auth.admin')
+      }
+    },
     accountTypeOptions () {
       return (this.availableTypes || []).map((value) => ({
         value,
-        label: ACCOUNT_TYPE_LABELS[value] || value
+        label: this.accountTypeLabels[value] || value
       }))
     }
   },
@@ -203,26 +219,27 @@ export default {
       this.fieldErrors = { email: '', password: '', userType: '' }
       let valid = true
       if (this.emailAddress.trim() === '') {
-        this.fieldErrors.email = AUTH.EMAIL_REQUIRED
+        this.fieldErrors.email = this.$t('auth.emailRequired')
         valid = false
       } else {
         const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
         if (!emailPattern.test(this.emailAddress)) {
-          this.fieldErrors.email = AUTH.EMAIL_INVALID
+          this.fieldErrors.email = this.$t('auth.emailInvalid')
           valid = false
         }
       }
       if (this.password.trim() === '') {
-        this.fieldErrors.password = AUTH.PASSWORD_REQUIRED
+        this.fieldErrors.password = this.$t('auth.passwordRequired')
         valid = false
       }
       if (this.showAccountType && !this.userType) {
-        this.fieldErrors.userType = AUTH.ACCOUNT_TYPE_REQUIRED
+        this.fieldErrors.userType = this.$t('auth.accountTypeRequired')
         valid = false
       }
       return valid
     },
     async onClickLogin () {
+      if (this.loading) return
       if (!this.validateFields()) return
 
       // Clear only user-sensitive caches before login; do not wipe the whole store.
@@ -230,19 +247,24 @@ export default {
       this.$store.commit('clearMediatorSubscription')
       this.$store.commit('setUser', null)
 
-      const result = await this.$store.dispatch('login', {
-        username: this.emailAddress,
-        password: this.password,
-        userType: this.userType || undefined
-      })
+      this.loading = true
+      try {
+        const result = await this.$store.dispatch('login', {
+          username: this.emailAddress,
+          password: this.password,
+          userType: this.userType || undefined
+        })
 
-      if (result && result.needsAccountType) {
-        this.showAccountType = true
-        this.availableTypes = result.availableTypes?.length
-          ? result.availableTypes
-          : ['CLIENT', 'MEDIATOR', 'ADMIN']
-        this.fieldErrors.userType = AUTH.ACCOUNT_TYPE_REQUIRED
-        this.showAlert(result.message || AUTH.ACCOUNT_TYPE_REQUIRED, 'warning')
+        if (result && result.needsAccountType) {
+          this.showAccountType = true
+          this.availableTypes = result.availableTypes?.length
+            ? result.availableTypes
+            : ['CLIENT', 'MEDIATOR', 'ADMIN']
+          this.fieldErrors.userType = this.$t('auth.accountTypeRequired')
+          this.showAlert(result.message || this.$t('auth.accountTypeRequired'), 'warning')
+        }
+      } finally {
+        this.loading = false
       }
     },
     onClickSignUp () {
@@ -263,13 +285,13 @@ export default {
 
       script.onload = () => this.initializeGoogle()
       script.onerror = () => {
-        this.showAlert('Could not load Google sign-in. Check your network and try again.', 'danger')
+        this.showAlert(this.$t('auth.googleLoadError'), 'danger')
       }
       document.head.appendChild(script)
     },
     initializeGoogle () {
       if (!process.env.VUE_APP_GOOGLE_CLIENT_ID) {
-        this.showAlert('Google sign-in is not configured (missing client ID).', 'warning')
+        this.showAlert(this.$t('auth.googleNotConfigured'), 'warning')
         return
       }
       window.google.accounts.id.initialize({
@@ -308,7 +330,7 @@ export default {
     },
     async handleGoogleCallback (response) {
       if (!response.credential) {
-        this.showAlert('Google sign-in failed. Please try again.', 'danger')
+        this.showAlert(this.$t('auth.googleFailed'), 'danger')
         return
       }
 
@@ -327,105 +349,30 @@ export default {
         this.availableTypes = result.availableTypes?.length
           ? result.availableTypes
           : ['CLIENT', 'MEDIATOR', 'ADMIN']
-        this.fieldErrors.userType = AUTH.ACCOUNT_TYPE_REQUIRED
-        this.showAlert(result.message || AUTH.ACCOUNT_TYPE_REQUIRED, 'warning')
+        this.fieldErrors.userType = this.$t('auth.accountTypeRequired')
+        this.showAlert(result.message || this.$t('auth.accountTypeRequired'), 'warning')
       }
     },
     async onClickGoogleLoginWithType () {
+      if (this.loading) return
       if (!this.googleCredential || !this.userType) return
-      const result = await this.$store.dispatch('googleLogin', {
-        credential: this.googleCredential,
-        userType: this.userType
-      })
-      if (result && !result.success) {
-        this.showAlert(result.message || 'Login failed', 'danger')
+      this.loading = true
+      try {
+        const result = await this.$store.dispatch('googleLogin', {
+          credential: this.googleCredential,
+          userType: this.userType
+        })
+        if (result && !result.success && !result.needsAccountType) {
+          this.showAlert(result.message || this.$t('auth.googleFailed'), 'danger')
+        }
+      } finally {
+        this.loading = false
       }
     }
   }
 }
 </script>
 <style scoped>
-  .signin-forgot-link {
-    position: absolute;
-    right: 0;
-    top: 0;
-    z-index: 1;
-    font-size: 0.875rem;
-  }
-
-  .password-toggle-btn {
-    position: absolute;
-    right: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    border: 0;
-    background: transparent;
-    color: #6c757d;
-    padding: 0;
-    line-height: 1;
-  }
-
-  .google-signin-divider {
-    text-align: center;
-    margin: 1.25rem 0;
-    position: relative;
-  }
-
-  .google-signin-divider::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background-color: #dee2e6;
-  }
-
-  .google-signin-divider span {
-    background-color: #fff;
-    padding: 0 0.75rem;
-    position: relative;
-    color: #6c757d;
-    font-size: 0.875rem;
-  }
-
-  .google-signin-wrapper {
-    margin-bottom: 1rem;
-  }
-
-  .google-btn-host {
-    display: flex;
-    justify-content: center;
-  }
-
-  .btn-google-signin {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1rem;
-    border: 1px solid #dadce0;
-    border-radius: 4px;
-    background-color: #fff;
-    color: #3c4043;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s, box-shadow 0.2s;
-  }
-
-  .btn-google-signin:hover:not(:disabled) {
-    background-color: #f8f9fa;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  }
-
-  .btn-google-signin:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .google-icon {
-    flex-shrink: 0;
-  }
+@import "../../assets/css/signupForm.css";
+@import "../../assets/css/authShared.css";
 </style>

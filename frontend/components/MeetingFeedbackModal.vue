@@ -46,7 +46,7 @@
     <template #footer>
       <b-button variant="secondary" @click="localVisible = false">Cancel</b-button>
       <b-button variant="primary" :disabled="!canSubmit || submitting" @click="onSubmit">
-        <span v-if="submitting" class="spinner-border spinner-border-sm me-1" role="status" />
+        <kadr-spinner v-if="submitting" size="sm" class="me-1" />
         Save
       </b-button>
     </template>

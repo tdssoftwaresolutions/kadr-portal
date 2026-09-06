@@ -8,6 +8,7 @@ import {
   GET_ADMIN_CASE_META_ENDPOINT,
   POST_ADMIN_ASSIGN_CASE_MEDIATOR_ENDPOINT,
   APPROVE_CASE_TYPE_ENDPOINT,
+  ADD_CASE_REPRESENTATIVE_ENDPOINT,
   GET_SETTINGS_ENDPOINT,
   POST_SETTINGS_ENDPOINT,
   GET_ADMIN_WEBSITE_CONTENT_ENDPOINT,
@@ -26,7 +27,9 @@ import {
   ADMIN_NOTIFICATION_SEND_LOGS,
   ADMIN_NOTIFICATION_PREVIEW_LAYOUT,
   ADMIN_REWARD_CATALOG_ENDPOINT,
-  ADMIN_REWARD_ORDERS_ENDPOINT
+  ADMIN_REWARD_ORDERS_ENDPOINT,
+  ADMIN_COUPONS_ENDPOINT,
+  PUBLIC_COUPON_LOOKUP_ENDPOINT
 } from '../endpoints'
 
 export default {
@@ -148,6 +151,32 @@ export default {
         if (!data.success) throw new Error(data.error?.message || 'Request failed')
         dispatch('alert/showAlert', {
           message: data.message || 'Case type approved. Client can proceed with notice payment.',
+          type: 'success'
+        }, { root: true })
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async addCaseRepresentative ({ dispatch }, { caseId, side, representativeEmail, representativeName, representativePhone, allowReplace }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(ADD_CASE_REPRESENTATIVE_ENDPOINT, {
+          caseId,
+          side,
+          representativeEmail,
+          representativeName,
+          representativePhone,
+          allowReplace
+        })
+        if (!data.success) throw new Error(data.error?.message || 'Request failed')
+        dispatch('alert/showAlert', {
+          message: data.message || 'Representative added to the case.',
           type: 'success'
         }, { root: true })
         return data
@@ -837,6 +866,64 @@ export default {
         return { success: false, error }
       } finally {
         dispatch('spinner/hideSpinner')
+      }
+    },
+
+    // ----- Coupon codes (admin CRUD) -----
+    async getCoupons ({ dispatch }) {
+      try {
+        const { data } = await apiClient.get(ADMIN_COUPONS_ENDPOINT)
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      }
+    },
+
+    async createCoupon ({ dispatch }, payload) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(ADMIN_COUPONS_ENDPOINT, payload)
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        dispatch('alert/showAlert', { message: data.message || 'Coupon created', type: 'success' }, { root: true })
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async deleteCoupon ({ dispatch }, { id }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.delete(`${ADMIN_COUPONS_ENDPOINT}/${id}`)
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        dispatch('alert/showAlert', { message: data.message || 'Coupon deleted', type: 'success' }, { root: true })
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    // ----- Public coupon/referral lookup (unauthenticated signup screen) -----
+    // Intentionally silent: no spinner and no error alert so debounced typing
+    // doesn't flicker the global loader or spam alerts.
+    async lookupSignupCoupon (_ctx, { code }) {
+      try {
+        const { data } = await apiClient.get(`${PUBLIC_COUPON_LOOKUP_ENDPOINT}?code=${encodeURIComponent(code)}`, { meta: { silent: true } })
+        if (!data.success) return { success: false, result: { found: false } }
+        return { success: true, result: data.data?.result || { found: false } }
+      } catch (error) {
+        return { success: false, result: { found: false }, error }
       }
     }
   }

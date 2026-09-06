@@ -193,12 +193,12 @@ export default {
 </script>
 
 <style scoped>
-.invoice-line-card { background: #fafcff; }
+.invoice-line-card { background: var(--kadr-surface-info); }
 .invoice-asset-preview {
   max-height: 48px;
   max-width: 140px;
   object-fit: contain;
-  border: 1px solid #ebedf5;
+  border: 1px solid var(--kadr-border-info);
   border-radius: 6px;
   padding: 4px;
   display: block;

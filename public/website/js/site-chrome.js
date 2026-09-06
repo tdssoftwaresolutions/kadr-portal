@@ -234,7 +234,9 @@
         '<a href="index">Home</a>' +
         '<a href="blog">Blog</a>' +
         '<a href="video-reels">Reels</a>' +
-        '<a href="contact">Contact</a>'
+        '<a href="contact">Contact</a>' +
+        '<a href="privacy_policy">Privacy Policy</a>' +
+        '<a href="terms_of_use_users">Terms of Use</a>'
       return
     }
     host.innerHTML =
@@ -260,12 +262,27 @@
       '</div>' +
       '<div><div class="ft-h copy-en">Account</div><div class="ft-h copy-hi">Account</div>' +
       '<a class="ft-link" href="#" onclick="goToLogin();return false;"><span class="copy-en">Login / Register</span><span class="copy-hi">Login</span></a>' +
+      '<div class="ft-h copy-en" style="margin-top:20px;">Legal</div><div class="ft-h copy-hi" style="margin-top:20px;">Legal</div>' +
+      '<a class="ft-link" href="privacy_policy"><span class="copy-en">Privacy Policy</span><span class="copy-hi">Privacy Policy</span></a>' +
+      '<a class="ft-link" href="terms_of_use_users"><span class="copy-en">Terms for Users</span><span class="copy-hi">Terms for Users</span></a>' +
+      '<a class="ft-link" href="terms_of_use_experts"><span class="copy-en">Terms for Experts</span><span class="copy-hi">Terms for Experts</span></a>' +
+      '<a class="ft-link" href="code_of_conduct"><span class="copy-en">Code of Conduct</span><span class="copy-hi">Code of Conduct</span></a>' +
       '</div>' +
       '</div>' +
       '<div class="ft-bottom">' +
+      '<div>' +
       '<div class="ft-copy">© 2026 KADR.live | All Rights Reserved</div>' +
+      '<div class="ft-legal">' +
+      '<a class="ft-link" href="privacy_policy" style="font-size:11px;margin-bottom:0;">Privacy Policy</a>' +
+      '<a class="ft-link" href="terms_of_use_users" style="font-size:11px;margin-bottom:0;">Terms for Users</a>' +
+      '<a class="ft-link" href="terms_of_use_experts" style="font-size:11px;margin-bottom:0;">Terms for Experts</a>' +
+      '<a class="ft-link" href="code_of_conduct" style="font-size:11px;margin-bottom:0;">Code of Conduct</a>' +
+      '</div>' +
+      '</div>' +
+      '<div>' +
       '<div class="ft-disclaimer copy-en">KADR.live is a technology platform — not a law firm. For legal advice, consult a qualified advocate.</div>' +
       '<div class="ft-disclaimer copy-hi">KADR.live technology platform hai — law firm nahi.</div>' +
+      '</div>' +
       '</div>' +
       '</div>'
   }

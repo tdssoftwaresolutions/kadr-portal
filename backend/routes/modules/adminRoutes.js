@@ -9,6 +9,7 @@ const websiteContactController = require('../../controller/websiteContactControl
 const notificationAdminController = require('../../controller/notificationAdminController')
 const websiteContentController = require('../../controller/websiteContentController')
 const blogController = require('../../controller/blogController')
+const couponController = require('../../controller/couponController')
 const authMiddleware = require('../../middleware/authMiddleware')
 const { requireAdmin } = require('../../middleware/requireRole')
 const { auditMiddleware, AUDIT_ACTIONS } = require('../../services/audit/auditLogService')
@@ -52,6 +53,10 @@ router.post('/admin/mediators/:mediatorId/complete-offboarding', requireAdmin, a
 router.get('/admin/mediators/:mediatorId/360', requireAdmin, mediatorAdminController.getMediator360)
 router.get('/admin/premium-features', requireAdmin, premiumAdminController.listPremiumFeatures)
 router.post('/admin/premium-features', requireAdmin, premiumAdminController.updatePremiumFeature)
+
+router.get('/admin/coupons', requireAdmin, couponController.listCoupons)
+router.post('/admin/coupons', requireAdmin, auditMiddleware(AUDIT_ACTIONS.SETTINGS_CHANGED, { targetType: 'coupon' }), couponController.createCoupon)
+router.delete('/admin/coupons/:id', requireAdmin, auditMiddleware(AUDIT_ACTIONS.SETTINGS_CHANGED, { targetType: 'coupon', getTargetId: (req) => req.params.id }), couponController.deleteCoupon)
 
 router.get('/admin/case-correspondence', requireAdmin, caseCorrespondenceController.listAllChannelsForAdmin)
 router.get('/admin/correspondence/inbox', requireAdmin, caseCorrespondenceController.listInbox)
