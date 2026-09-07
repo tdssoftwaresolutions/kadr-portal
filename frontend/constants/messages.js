@@ -52,7 +52,7 @@ export const ADMIN = {
   INBOX_TITLE: 'Message center',
   INBOX_SUBTITLE: 'Case threads, website leads, and portal support in one place.',
   NOTIFICATIONS_TITLE: 'Notification center',
-  NOTIFICATIONS_SUBTITLE: 'Manage templates and send email, SMS, WhatsApp, and push messages.',
+  NOTIFICATIONS_SUBTITLE: 'Manage templates and send email, WhatsApp, and push messages.',
   INVOICES_TITLE: 'Income & invoices',
   INVOICES_TITLE_ADMIN: 'Payments & invoices',
   INVOICES_SUBTITLE: 'Track earnings, payouts, and private practice billing.'

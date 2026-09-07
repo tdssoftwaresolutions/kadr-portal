@@ -184,6 +184,29 @@ async function safeRegenerateFromDb () {
   }
 }
 
+/**
+ * Rewrite ONLY js/site-config.js from the current settings + env. Cheap enough
+ * to run on every startup so environment-driven config (e.g. the PostHog
+ * browser key) propagates to the static website without a full HTML
+ * regeneration or a content edit. Tolerant of shared-hosting connection limits.
+ */
+async function refreshSiteConfig () {
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const { buildSiteConfigJs } = require('./websiteStaticGenerator')
+    const settings = await prisma.website_settings.findUnique({ where: { id: 'default' } })
+    const configPath = path.join(__dirname, '..', '..', '..', 'public', 'website', 'js', 'site-config.js')
+    await fs.promises.writeFile(configPath, buildSiteConfigJs(settings || {}), 'utf8')
+    return true
+  } catch (err) {
+    if (!isConnectionLimitError(err)) {
+      console.error('[website] site-config refresh failed:', err.message)
+    }
+    return false
+  }
+}
+
 /** Regenerate static HTML after response — avoids nodemon/proxy 502 during file writes. */
 function scheduleRegenerate () {
   setImmediate(() => {
@@ -499,6 +522,7 @@ async function deleteFaqItem (id) {
 
 module.exports = {
   ensureWebsiteDefaults,
+  refreshSiteConfig,
   getAdminContent,
   getPublicFaq,
   regenerateFromDb,

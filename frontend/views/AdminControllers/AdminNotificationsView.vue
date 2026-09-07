@@ -164,8 +164,11 @@
                     <b-button size="sm" variant="primary" @click="saveChannel(ch)">{{ $t('adminNotifications.saveEmailLayout') }}</b-button>
                   </template>
                   <template v-else>
+                    <p v-if="ch.channel === 'WHATSAPP'" class="small text-muted mb-2">
+                      {{ $t('adminNotifications.whatsappConfigHint') }}
+                    </p>
                     <b-form-group :label="$t('adminNotifications.channelConfigJson')" label-size="sm">
-                      <b-form-textarea v-model="ch.configJson" rows="2" size="sm" class="font-monospace small" />
+                      <b-form-textarea v-model="ch.configJson" :rows="ch.channel === 'WHATSAPP' ? 6 : 2" size="sm" class="font-monospace small" />
                     </b-form-group>
                     <b-button size="sm" variant="outline-primary" @click="saveChannel(ch)">{{ $t('adminNotifications.save') }}</b-button>
                   </template>
@@ -328,7 +331,7 @@ import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import BrowserNotifications from '../../components/notifications/BrowserNotifications.vue'
 import { formatDateTime } from '../../utils/dateFormat'
 
-const CHANNELS = ['EMAIL', 'SMS', 'WHATSAPP', 'PUSH']
+const CHANNELS = ['EMAIL', 'WHATSAPP', 'PUSH']
 const AUTO_USER_VARS = new Set(['name', 'email', 'phone_number', 'recipientName'])
 const BUILDER_TEMPLATE_KEYS = new Set(['dailyDigest'])
 const PREVIEW_SAMPLE_DEFAULTS = {

@@ -4,6 +4,7 @@ const { createError } = require('../utils/errors')
 const errorCodes = require('../utils/errors/errorCodes')
 const { extractYoutubeVideoId } = require('../utils/youtube')
 const { awardRewardPoints, revokeContentRewards } = require('../services/reward/rewardService')
+const analytics = require('../utils/analytics')
 
 function assertMediator (req) {
   const role = req.user.type || req.user.user_type
@@ -148,8 +149,15 @@ module.exports = {
         prisma.mediatorVideoReel.count()
       ])
       const hasMore = skip + rows.length < total
+      const formattedReels = rows.map(formatReel)
+      analytics.trackVideoReelsViewed({
+        req,
+        page,
+        count: formattedReels.length,
+        reelIds: formattedReels.map((r) => r.id)
+      })
       success(res, {
-        reels: rows.map(formatReel),
+        reels: formattedReels,
         page,
         limit,
         total,

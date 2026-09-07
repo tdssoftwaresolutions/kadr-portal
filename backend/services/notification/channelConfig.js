@@ -9,8 +9,20 @@ const DEFAULTS = {
       footerHtml: require('../../config/emailConfig').footerHtml
     }
   },
-  SMS: { enabled: true, provider: 'twilio', config: { countryCode: '91' } },
-  WHATSAPP: { enabled: false, provider: 'twilio', config: { countryCode: '91' } },
+  WHATSAPP: {
+    enabled: true,
+    provider: 'meta-cloud',
+    config: {
+      countryCode: '91',
+      // Meta WhatsApp Cloud API business phone number ID (non-secret).
+      // The access token is read from env (WHATSAPP_ACCESS_TOKEN) only.
+      phoneNumberId: '',
+      apiVersion: 'v25.0',
+      // Default approved template used for OTP delivery (authentication category).
+      otpTemplateName: 'kadr_otp',
+      otpTemplateLanguage: 'en_US'
+    }
+  },
   PUSH: { enabled: true, provider: 'web-push', config: {} }
 }
 
@@ -28,7 +40,7 @@ async function getChannelSettings (channel) {
 }
 
 async function listAllChannelSettings () {
-  const channels = ['EMAIL', 'SMS', 'WHATSAPP', 'PUSH']
+  const channels = ['EMAIL', 'WHATSAPP', 'PUSH']
   const rows = await Promise.all(channels.map((c) => getChannelSettings(c)))
   return rows
 }

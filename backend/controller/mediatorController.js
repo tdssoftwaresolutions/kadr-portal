@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid')
 const { resolveReferrerMediatorId, ensureMediatorReferralCode } = require('../utils/referralCode')
 const { normalizeCode: normalizeCouponCode } = require('../services/coupon/couponService')
 const { sanitizeBucketUrl } = require('../utils/uploadService')
+const analytics = require('../utils/analytics')
 
 module.exports = {
   assignMediator: async function (req, res, next) {
@@ -43,6 +44,15 @@ module.exports = {
           user_cases_first_partyTouser: { select: { email: true, name: true } },
           user_cases_second_partyTouser: { select: { email: true, name: true } }
         }
+      })
+
+      analytics.trackCaseStatusChanged({
+        req,
+        actorUserId: req.user?.id,
+        caseRecord: { id: caseId, caseId: caseDetails?.caseId, category: caseDetails?.category },
+        toStatus: CaseTypes.IN_PROGRESS,
+        toSubStatus: CaseSubTypes.MEDIATOR_ASSIGNED,
+        extra: { transition: 'mediator_assigned' }
       })
 
       const {
@@ -108,7 +118,7 @@ Issued by: Kadr.live`
 
       const googleEventResponse = await helper.createGoogleEvent(title, description, start, end, attendees, caseId + '-' + mediatorId, oauth2Client)
 
-      await prisma.events.create({
+      const createdMeeting = await prisma.events.create({
         data: {
           title,
           description,
@@ -120,6 +130,13 @@ Issued by: Kadr.live`
           created_by: mediatorId,
           case_id: caseId
         }
+      })
+
+      analytics.trackMeetingScheduled({
+        req,
+        actorUserId: mediatorId,
+        meeting: createdMeeting,
+        extra: { scheduled_via: 'mediator_assignment' }
       })
 
       success(res, {}, 'Mediator assigned and first meeting initiated successfully')
@@ -278,6 +295,13 @@ Issued by: Kadr.live`
       await helper.sendTemplatedEmail('registrationUnderReview', email, {
         recipientName: name,
         roleLabel: 'Dispute Resolution Expert'
+      })
+
+      analytics.trackRegistration({
+        req,
+        user: { id: mediatorUserId, email, name, user_type: 'MEDIATOR', city, state },
+        selfSignup: true,
+        extra: { referred: Boolean(referredById), has_coupon: Boolean(signupCouponCode) }
       })
 
       success(res, {}, 'User created successfully! Your account is under review, and you\'ll be notified once approved by the Kadr team.')

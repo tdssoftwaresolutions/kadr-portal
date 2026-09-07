@@ -207,7 +207,155 @@
         <iq-card v-if="isAdmin">
           <template v-slot:headerTitle><h4 class="card-title mb-0">{{ $t('mediatorInvoices.clientTransactions') }}</h4></template>
           <template v-slot:body>
-            <b-table :items="transactions" :fields="transactionFields" striped responsive small />
+            <div class="income-stats-grid mb-4">
+              <div class="income-stat-card income-stat-card--private">
+                <span class="income-stat-label">{{ $t('mediatorInvoices.txSummaryReceived') }}</span>
+                <span class="income-stat-value">₹{{ formatMoney(transactionSummary.received) }}</span>
+                <span class="income-stat-sub">{{ $t('mediatorInvoices.txSummarySuccessCount', { count: transactionSummary.successfulCount }) }}</span>
+              </div>
+              <div class="income-stat-card">
+                <span class="income-stat-label">{{ $t('mediatorInvoices.txSummaryTotal') }}</span>
+                <span class="income-stat-value">{{ transactionSummary.count }}</span>
+                <span class="income-stat-sub">{{ $t('mediatorInvoices.txSummaryClients', { count: transactionSummary.uniqueClients }) }}</span>
+              </div>
+              <div v-if="transactionSummary.failedCount" class="income-stat-card income-stat-card--pending">
+                <span class="income-stat-label">{{ $t('mediatorInvoices.txSummaryFailed') }}</span>
+                <span class="income-stat-value">{{ transactionSummary.failedCount }}</span>
+                <span class="income-stat-sub">₹{{ formatMoney(transactionSummary.failedAmount) }}</span>
+              </div>
+            </div>
+
+            <div class="d-none d-lg-block">
+              <b-table
+                :items="transactions"
+                :fields="transactionFields"
+                striped
+                responsive
+                small
+                class="tx-table align-middle"
+              >
+                <template #cell(transaction_date)="row">
+                  <span class="tx-date">{{ $formatDateTime(row.item.transaction_date) }}</span>
+                </template>
+                <template #cell(client)="row">
+                  <div class="tx-client">
+                    <span class="tx-client-name">{{ row.item.clientName }}</span>
+                    <span v-if="row.item.clientEmail" class="tx-client-meta">{{ row.item.clientEmail }}</span>
+                    <span v-if="row.item.clientPhone" class="tx-client-meta">{{ row.item.clientPhone }}</span>
+                  </div>
+                </template>
+                <template #cell(caseId)="row">
+                  <span class="tx-case">{{ $t('mediatorInvoices.caseHash', { id: row.item.caseId }) }}</span>
+                </template>
+                <template #cell(reason)="row">
+                  <span>{{ row.item.reason || $t('mediatorInvoices.dash') }}</span>
+                </template>
+                <template #cell(payment_method)="row">
+                  <b-badge variant="light" class="tx-method-badge">{{ paymentMethodLabel(row.item.payment_method) }}</b-badge>
+                </template>
+                <template #cell(amount)="row">
+                  <span class="tx-amount" :class="{ 'tx-amount--failed': !row.item.isSuccess }">
+                    {{ formatAmount(row.item.amountValue, row.item.currencyCode) }}
+                  </span>
+                </template>
+                <template #cell(status)="row">
+                  <b-badge :variant="row.item.isSuccess ? 'success' : 'danger'">
+                    {{ row.item.isSuccess ? $t('mediatorInvoices.txStatusSuccess') : $t('mediatorInvoices.txStatusFailed') }}
+                  </b-badge>
+                </template>
+                <template #cell(gateway)="row">
+                  <div class="tx-refs">
+                    <button
+                      v-if="row.item.payment_id"
+                      type="button"
+                      class="tx-ref"
+                      :title="$t('mediatorInvoices.txCopyHint')"
+                      @click="copyValue(row.item.payment_id)"
+                    >
+                      <span class="tx-ref-label">{{ $t('mediatorInvoices.txPaymentId') }}</span>
+                      <code class="tx-ref-value">{{ row.item.payment_id }}</code>
+                      <i class="ri-file-copy-line" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      v-if="row.item.reference_id"
+                      type="button"
+                      class="tx-ref"
+                      :title="$t('mediatorInvoices.txCopyHint')"
+                      @click="copyValue(row.item.reference_id)"
+                    >
+                      <span class="tx-ref-label">{{ $t('mediatorInvoices.txReference') }}</span>
+                      <code class="tx-ref-value">{{ row.item.reference_id }}</code>
+                      <i class="ri-file-copy-line" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="tx-ref tx-ref--muted"
+                      :title="$t('mediatorInvoices.txCopyHint')"
+                      @click="copyValue(row.item.transaction_id)"
+                    >
+                      <span class="tx-ref-label">{{ $t('mediatorInvoices.txTransactionId') }}</span>
+                      <code class="tx-ref-value">{{ row.item.transaction_id }}</code>
+                      <i class="ri-file-copy-line" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </template>
+              </b-table>
+            </div>
+
+            <div class="d-lg-none invoice-card-list">
+              <div v-for="tx in transactions" :key="tx.transaction_id" class="invoice-mobile-card tx-mobile-card">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <div class="tx-client-name">{{ tx.clientName }}</div>
+                    <div v-if="tx.clientEmail" class="tx-client-meta">{{ tx.clientEmail }}</div>
+                    <div class="tx-case mt-1">{{ $t('mediatorInvoices.caseHash', { id: tx.caseId }) }}</div>
+                  </div>
+                  <b-badge :variant="tx.isSuccess ? 'success' : 'danger'">
+                    {{ tx.isSuccess ? $t('mediatorInvoices.txStatusSuccess') : $t('mediatorInvoices.txStatusFailed') }}
+                  </b-badge>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="tx-amount" :class="{ 'tx-amount--failed': !tx.isSuccess }">
+                    {{ formatAmount(tx.amountValue, tx.currencyCode) }}
+                  </span>
+                  <b-badge variant="light" class="tx-method-badge">{{ paymentMethodLabel(tx.payment_method) }}</b-badge>
+                </div>
+                <div class="tx-mobile-meta">
+                  <span>{{ $formatDateTime(tx.transaction_date) }}</span>
+                  <span v-if="tx.reason">· {{ tx.reason }}</span>
+                </div>
+                <div class="tx-refs mt-2">
+                  <button
+                    v-if="tx.payment_id"
+                    type="button"
+                    class="tx-ref"
+                    @click="copyValue(tx.payment_id)"
+                  >
+                    <span class="tx-ref-label">{{ $t('mediatorInvoices.txPaymentId') }}</span>
+                    <code class="tx-ref-value">{{ tx.payment_id }}</code>
+                    <i class="ri-file-copy-line" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    v-if="tx.reference_id"
+                    type="button"
+                    class="tx-ref"
+                    @click="copyValue(tx.reference_id)"
+                  >
+                    <span class="tx-ref-label">{{ $t('mediatorInvoices.txReference') }}</span>
+                    <code class="tx-ref-value">{{ tx.reference_id }}</code>
+                    <i class="ri-file-copy-line" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <kadr-empty-state
+              v-if="!transactions.length && !loading"
+              compact
+              icon=""
+              :title="$t('mediatorInvoices.txEmptyTitle')"
+              :description="$t('mediatorInvoices.txEmptyDescription')"
+            />
           </template>
         </iq-card>
       </b-col>
@@ -276,19 +424,35 @@ export default {
     },
     transactionFields () {
       return [
-        { key: 'payment_id', label: this.$t('mediatorInvoices.txPaymentId') },
-        { key: 'transaction_id', label: this.$t('mediatorInvoices.txTransactionId') },
-        { key: 'clientName', label: this.$t('mediatorInvoices.txClient') },
-        { key: 'clientEmail', label: this.$t('mediatorInvoices.txClientEmail') },
+        { key: 'transaction_date', label: this.$t('mediatorInvoices.txDate') },
+        { key: 'client', label: this.$t('mediatorInvoices.txClient') },
         { key: 'caseId', label: this.$t('mediatorInvoices.txCase') },
-        { key: 'amount', label: this.$t('mediatorInvoices.txAmount') },
-        { key: 'currency', label: this.$t('mediatorInvoices.txCurrency') },
         { key: 'reason', label: this.$t('mediatorInvoices.txReason') },
         { key: 'payment_method', label: this.$t('mediatorInvoices.txPaymentMethod') },
-        { key: 'reference_id', label: this.$t('mediatorInvoices.txReference') },
-        { key: 'success', label: this.$t('mediatorInvoices.txSuccess') },
-        { key: 'transaction_date', label: this.$t('mediatorInvoices.txDate') }
+        { key: 'amount', label: this.$t('mediatorInvoices.txAmount'), class: 'text-end' },
+        { key: 'status', label: this.$t('mediatorInvoices.txStatus') },
+        { key: 'gateway', label: this.$t('mediatorInvoices.txGatewayRefs') }
       ]
+    },
+    transactionSummary () {
+      const rows = this.transactions || []
+      const successful = rows.filter(t => t.isSuccess)
+      const failed = rows.filter(t => !t.isSuccess)
+      const uniqueClients = new Set(rows.map(t => t.clientKey).filter(Boolean))
+      const receivedByCurrency = {}
+      successful.forEach(t => {
+        const cur = t.currencyCode || 'INR'
+        receivedByCurrency[cur] = (receivedByCurrency[cur] || 0) + Number(t.amountValue || 0)
+      })
+      return {
+        count: rows.length,
+        successfulCount: successful.length,
+        failedCount: failed.length,
+        uniqueClients: uniqueClients.size,
+        received: Number(this.totalIncome || 0),
+        failedAmount: failed.reduce((sum, t) => sum + Number(t.amountValue || 0), 0),
+        receivedByCurrency
+      }
     },
     mediatorFields () {
       return [
@@ -385,6 +549,36 @@ export default {
     formatDate (v) {
       return this.$formatDate(v)
     },
+    currencySymbol (code) {
+      const map = { INR: '₹', USD: '$', EUR: '€', GBP: '£' }
+      return map[String(code || 'INR').toUpperCase()] || ''
+    },
+    formatAmount (value, currency) {
+      const code = String(currency || 'INR').toUpperCase()
+      const symbol = this.currencySymbol(code)
+      const amount = this.formatMoney(value)
+      return symbol ? `${symbol}${amount}` : `${amount} ${code}`
+    },
+    paymentMethodLabel (method) {
+      if (!method) return this.$t('mediatorInvoices.txMethodUnknown')
+      const key = String(method).toLowerCase()
+      const map = {
+        upi: 'UPI',
+        card: this.$t('mediatorInvoices.txMethodCard'),
+        netbanking: this.$t('mediatorInvoices.txMethodNetbanking'),
+        wallet: this.$t('mediatorInvoices.txMethodWallet'),
+        emi: 'EMI'
+      }
+      return map[key] || method
+    },
+    async copyValue (value) {
+      if (!value) return
+      try {
+        await navigator.clipboard.writeText(String(value))
+      } catch (e) {
+        // Clipboard may be unavailable (permissions / insecure context); ignore silently.
+      }
+    },
     incomeStatusLabel (item) {
       if (item.source === 'PRIVATE') {
         return item.status_label || this.privateStatusLabel(item.status)
@@ -475,10 +669,14 @@ export default {
         this.totalIncome = Number(res.data.totalIncome || 0)
         this.transactions = (res.data.transactions || []).map(t => ({
           ...t,
-          clientName: t.user ? t.user.name : this.$t('mediatorInvoices.dash'),
-          clientEmail: t.user ? t.user.email : this.$t('mediatorInvoices.dash'),
-          caseId: t.cases ? t.cases.caseId : this.$t('mediatorInvoices.dash'),
-          success: t.success ? this.$t('mediatorInvoices.yes') : this.$t('mediatorInvoices.no')
+          clientName: t.user && t.user.name ? t.user.name : this.$t('mediatorInvoices.dash'),
+          clientEmail: t.user && t.user.email ? t.user.email : '',
+          clientPhone: t.user && t.user.phone_number ? t.user.phone_number : '',
+          clientKey: t.user ? (t.user.id || t.user.email) : null,
+          caseId: t.cases && t.cases.caseId ? t.cases.caseId : this.$t('mediatorInvoices.dash'),
+          amountValue: Number(t.amount || 0),
+          currencyCode: (t.currency || 'INR').toUpperCase(),
+          isSuccess: !!t.success
         }))
       }
     },
@@ -579,5 +777,114 @@ export default {
   border: 1px solid var(--kadr-border);
   border-radius: 12px;
   padding: 0.9rem 1rem;
+}
+
+/* Client transactions (admin) */
+.tx-table :deep(td) {
+  vertical-align: middle;
+}
+
+.tx-date {
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: var(--kadr-text-secondary);
+}
+
+.tx-client {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.tx-client-name {
+  font-weight: 600;
+  color: var(--kadr-text-primary);
+}
+
+.tx-client-meta {
+  font-size: 0.75rem;
+  color: var(--kadr-text-secondary);
+}
+
+.tx-case {
+  font-weight: 600;
+  color: var(--kadr-text-primary);
+  white-space: nowrap;
+}
+
+.tx-method-badge {
+  border: 1px solid var(--kadr-border);
+  color: var(--kadr-text-secondary);
+  font-weight: 600;
+}
+
+.tx-amount {
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--kadr-text-primary);
+}
+
+.tx-amount--failed {
+  color: var(--kadr-text-secondary);
+  text-decoration: line-through;
+}
+
+.tx-refs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.tx-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 260px;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--kadr-border);
+  border-radius: 8px;
+  background: var(--kadr-surface-muted);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.tx-ref:hover {
+  border-color: var(--kadr-primary-soft-border);
+  background: var(--kadr-primary-soft);
+}
+
+.tx-ref--muted {
+  opacity: 0.85;
+}
+
+.tx-ref-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--kadr-text-label);
+  white-space: nowrap;
+}
+
+.tx-ref-value {
+  font-size: 0.74rem;
+  color: var(--kadr-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.tx-ref i {
+  font-size: 0.85rem;
+  color: var(--kadr-text-secondary);
+}
+
+.tx-mobile-meta {
+  font-size: 0.75rem;
+  color: var(--kadr-text-secondary);
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
 }
 </style>

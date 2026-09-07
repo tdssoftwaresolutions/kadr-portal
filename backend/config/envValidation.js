@@ -28,7 +28,11 @@ const RECOMMENDED_ENV = [
   'EMAIL_SMTP_HOST',
   'EMAIL_USER',
   'EMAIL_PASSWORD',
-  'ALERT_TECH_TEAM_EMAILS'
+  'ALERT_TECH_TEAM_EMAILS',
+  // Product analytics (PostHog). Optional: when unset, the analytics layer is a
+  // safe no-op. Set it in production to capture registrations, logins, cases,
+  // meetings, payments and errors for leadership dashboards.
+  'POSTHOG_API_KEY'
 ]
 
 function validateEnv ({ exitOnError = true } = {}) {

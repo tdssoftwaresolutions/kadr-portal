@@ -157,7 +157,7 @@ preserved on migration to keep existing data/relationships valid.
   token stored in an **HttpOnly cookie**; mobile clients get the refresh token in
   the response body (detected via `isMobileClientRequest`). Refresh endpoint
   re-issues access tokens after re-checking the DB user is active/not deleted.
-- **OTP**: signature OTP over **SMS**; password-reset OTP over **email**
+- **OTP**: signature OTP over **WhatsApp**; password-reset OTP over **email**
   (`otp_resets` table, 10-min expiry).
 - **Google Calendar connect**: separate OAuth code flow storing tokens in
   `google_connect`.

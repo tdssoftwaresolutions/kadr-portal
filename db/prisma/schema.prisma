@@ -719,6 +719,11 @@ model signature_tracking {
   created_at        DateTime? @default(now()) @db.DateTime(0)
   updated_at        DateTime? @default(now()) @db.DateTime(0)
   case_agreement_id String?   @db.Char(36)
+  // OTP verification link: the otp_resets row issued for this signature request,
+  // and the timestamp at which that OTP was successfully verified server-side.
+  // submit* endpoints require otp_verified_at to be set before accepting.
+  otp_reset_id      String?   @db.Char(36)
+  otp_verified_at   DateTime? @db.DateTime(0)
 
   case_agreement_tracking case_agreement_tracking? @relation(fields: [case_agreement_id], references: [id])
   cases      cases?   @relation(fields:[case_id],references:[id])
@@ -867,7 +872,6 @@ model website_contact_messages {
 
 enum notification_channel {
   EMAIL
-  SMS
   WHATSAPP
   PUSH
 }

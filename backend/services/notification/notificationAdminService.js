@@ -5,7 +5,7 @@ const channelConfig = require('./channelConfig')
 
 const { titleToCamelCase } = require('../../utils/titleToCamelCase')
 
-const CHANNELS = ['EMAIL', 'SMS', 'WHATSAPP', 'PUSH']
+const CHANNELS = ['EMAIL', 'WHATSAPP', 'PUSH']
 
 function mapTemplateRow (row) {
   if (!row) return null

@@ -1,1 +1,1 @@
-window.KADR_SITE_CONFIG={"email":"contact@kadr.live","phone":"","whatsapp":"","addressEn":"Delhi, India","addressHi":"Delhi, India"};
+window.KADR_SITE_CONFIG={"email":"contact@kadr.live","phone":"+91 [Number]","whatsapp":"+91 [Number]","addressEn":"Delhi, India","addressHi":"Delhi, India","posthog":{"enabled":true,"key":"phc_BHxW8FUJuwEY3DAn7ahZZ8zWt9EuaqFBD2Pb9c3QaR8a","apiHost":"https://us.i.posthog.com","assetsHost":"https://us-assets.i.posthog.com"}};

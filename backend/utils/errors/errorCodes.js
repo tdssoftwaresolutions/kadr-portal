@@ -135,6 +135,10 @@ const ERROR_CODES = {
     errorCode: 'E328',
     message: 'Too many incorrect attempts. Please request a new OTP.'
   },
+  OTP_NOT_VERIFIED: {
+    errorCode: 'E329',
+    message: 'Please verify the OTP sent to your WhatsApp before submitting.'
+  },
   REQUIRED_CASE_ID: {
     errorCode: 'E307',
     message: 'Case ID is required'

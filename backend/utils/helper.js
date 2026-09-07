@@ -1472,18 +1472,34 @@ class Helper {
     return jwt.sign({ id: user.id, email: user.email, type: user.user_type ? user.user_type : user.type, name: user.name }, process.env.REFRESH_SECRET_KEY, { expiresIn: '30d' })
   }
 
-  static async sendOtpSMS (otp, toNumber) {
-    try {
-      const notificationService = require('../services/notification/notificationService')
-      await notificationService.send({
-        templateKey: 'identityVerificationOtp',
-        channel: 'SMS',
-        to: toNumber,
-        data: { otp }
-      })
-    } catch (err) {
-      console.error('Error sending SMS:', err.message)
-    }
+  /**
+   * Deliver a one-time password over WhatsApp using the approved authentication
+   * template configured on the WhatsApp channel (config.otpTemplateName /
+   * otpTemplateLanguage). The OTP is passed as the single body parameter and,
+   * for authentication templates, as the copy-code button parameter.
+   *
+   * Throws on failure so callers can surface an accurate error to the user
+   * (the previous SMS helper swallowed errors, which hid non-delivery).
+   * @param {string} otp
+   * @param {string} toNumber recipient phone number
+   */
+  static async sendOtpWhatsApp (otp, toNumber) {
+    const notificationService = require('../services/notification/notificationService')
+    const { getChannelSettings } = require('../services/notification/channelConfig')
+    const settings = await getChannelSettings('WHATSAPP')
+    const cfg = settings.config || {}
+    const name = cfg.otpTemplateName || 'kadr_otp'
+    const languageCode = cfg.otpTemplateLanguage || 'en_US'
+
+    return notificationService.sendWhatsAppTemplate({
+      to: toNumber,
+      name,
+      languageCode,
+      bodyParams: [String(otp)],
+      // Authentication templates deliver the code through a copy-code button.
+      button: { type: 'copy_code', index: 0, params: [String(otp)] },
+      source: 'otp'
+    })
   }
 
   static async createEmail (customerName, content) {

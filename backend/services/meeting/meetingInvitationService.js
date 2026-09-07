@@ -1,6 +1,7 @@
 const prisma = require('../../lib/prisma')
 const helper = require('../../utils/helper')
 const { adminHasPage } = require('../../utils/adminPermissionHelpers')
+const analytics = require('../../utils/analytics')
 
 function escapeHtml (value) {
   return String(value ?? '')
@@ -316,6 +317,12 @@ async function createAndInviteCaseMeeting ({
         created_by: createdBy || null,
         case_id: caseId
       }
+    })
+
+    analytics.trackMeetingScheduled({
+      actorUserId: createdBy || null,
+      meeting: event,
+      extra: { case_ref: caseNumber, scheduled_via: 'kadr_invitation' }
     })
   }
 

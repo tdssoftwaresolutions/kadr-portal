@@ -330,6 +330,9 @@ async function redeemCatalogItem (mediatorId, catalogItemId) {
       }
     })
 
+    // Attach a lightweight snapshot of the redeemed item so callers can report
+    // what was bought (e.g. analytics) without a second query. Non-persisted.
+    order.redeemed_item = { id: item.id, title: item.title, points_cost: item.points_cost }
     return order
   }).then(async (order) => {
     if (order) {

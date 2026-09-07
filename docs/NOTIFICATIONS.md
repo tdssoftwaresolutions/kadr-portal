@@ -27,10 +27,10 @@ All channels use **`services/notification/notificationService.js`** (`send()` an
 │  6. Log to notification_send_logs                                │
 └────────────────────────────┬────────────────────────────────────┘
                              ▼
-        ┌──────────┬──────────┬──────────┬──────────┐
-        │  EMAIL   │   SMS    │ WhatsApp │   PUSH   │
-        │  SMTP    │  Twilio  │  Twilio  │   FCM    │
-        └──────────┴──────────┴──────────┴──────────┘
+        ┌──────────┬─────────────────┬──────────┐
+        │  EMAIL   │    WhatsApp     │   PUSH   │
+        │  SMTP    │  Meta Cloud API │   FCM    │
+        └──────────┴─────────────────┴──────────┘
 ```
 
 ---
@@ -40,7 +40,7 @@ All channels use **`services/notification/notificationService.js`** (`send()` an
 | Table | Purpose |
 |--------|---------|
 | `notification_templates` | Per **template key** + **channel**: subject, greeting, body HTML/text, push title, `active`, `variables` JSON |
-| `notification_channel_settings` | Per channel: **enabled**, **provider**, **config** (email header/footer, SMS country code, etc.) |
+| `notification_channel_settings` | Per channel: **enabled**, **provider**, **config** (email header/footer, WhatsApp phoneNumberId/country code/OTP template, etc.) |
 | `notification_trigger_rules` | Legacy table (unused; triggers are code-only in `registerCodeTriggers.js`) |
 | `notification_send_logs` | Audit trail: template, channel, recipient, sent/failed, error |
 
@@ -63,7 +63,7 @@ Prisma models: `prisma/schema.prisma` (`notification_channel` enum, models above
 - Create/edit by **display name**; **template key** is auto-generated (camelCase, e.g. `welcomeCredentials`).
 - Use `{variable}` placeholders in subject, greeting, and body.
 - **EMAIL:** subject, greeting, body HTML (Edit / Preview tabs).
-- **SMS / WhatsApp / Push:** plain `body_text`; push also has **title**.
+- **WhatsApp / Push:** plain `body_text`; push also has **title**.
 - **`dailyDigest`:** body is built in code (`services/notification/builders/dailyDigestBuilder.js`). The DB row controls subject, greeting, and active flag—not the full HTML body.
 
 #### 2. Send message
@@ -107,8 +107,8 @@ await helper.sendTemplatedEmail('passwordResetOtp', email, {
 
 // Any channel
 await helper.sendNotification({
-  templateKey: 'someSmsTemplate',
-  channel: 'SMS',
+  templateKey: 'someWhatsappTemplate',
+  channel: 'WHATSAPP',
   userId: 42,
   data: { caseId: 'CASE-1001' }
 })
@@ -159,22 +159,30 @@ DB template
 | `services/notification/emailLayoutService.js` | Loads header/footer from DB with config fallback |
 | `services/notification/channels/emailChannel.js` | Orchestrates render + send |
 
-### SMS
+### WhatsApp (the only phone channel)
+
+SMS has been removed. Phone messaging is WhatsApp-only, via the **Meta WhatsApp Cloud API**.
 
 ```
-DB template.body_text
+DB template.body_text (free-form text, 24h window)
   → renderTemplate({vars})
-  → Twilio Messages API
-  → phone normalized with countryCode from channel settings
+  → Meta Cloud API POST /{phoneNumberId}/messages  (type: text)
+
+OR approved template (business-initiated, e.g. OTP)
+  → sendWhatsAppTemplate({ name, bodyParams })
+  → Meta Cloud API POST /{phoneNumberId}/messages  (type: template)
 ```
 
-**Env:** `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SENDER_NUMBER`
+Free-form **text** is only delivered inside the 24-hour customer service window
+(after the user messages the business number). Business-initiated messages (OTP,
+notifications outside the window) must use an **approved template**.
 
-**File:** `services/notification/channels/smsChannel.js`
+**Env (secrets/config):** `WHATSAPP_ACCESS_TOKEN` (secret), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_API_VERSION` (e.g. `v25.0`).
+**Channel config (admin):** `phoneNumberId`, `apiVersion`, `countryCode`, `otpTemplateName`, `otpTemplateLanguage`.
 
-### WhatsApp
-
-Same pattern as SMS via Twilio. Default **disabled** in `channelConfig.js` until you enable it in admin.
+**Reusable helper:** `notificationService.sendWhatsApp({ to, message })` for text,
+or `sendWhatsAppTemplate({ to, name, bodyParams })` for approved templates. Both
+route through the central dispatcher (config-gated + logged).
 
 **File:** `services/notification/channels/whatsappChannel.js`
 
@@ -345,14 +353,13 @@ Or `helper.runWithNotificationContext(context, fn)`.
 | Channel | Admin setup | Infrastructure |
 |---------|-------------|----------------|
 | **EMAIL** | Template row exists and is **active**; optional layout in Channels | SMTP env (`EMAIL_*`), seed/migrate templates |
-| **SMS** | SMS template + channel **enabled** | Twilio credentials |
-| **WhatsApp** | Template + channel **enabled** | Twilio WhatsApp |
+| **WhatsApp** | Template (or approved WhatsApp template) + channel **enabled** | Meta Cloud API env (`WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`) |
 | **Push** | Push template + channel **enabled** | FCM (or platform) env; app registers tokens |
 
 ### Useful commands
 
 ```bash
-# Seed SMS/push templates and channel defaults (see scripts/seedNotificationTemplates.js)
+# Seed WhatsApp/push templates and channel defaults (see scripts/seedNotificationTemplates.js)
 npm run seed:notifications
 
 # Force-update seeds

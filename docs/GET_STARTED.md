@@ -383,7 +383,7 @@ Configure these in `.env` when you need the related features.
 | Payments | `PAYMENT_GATEWAY`, provider keys | Client fees, Mediator Pro |
 | Google Calendar | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Calendar sync |
 | Zoom | `ZOOM_*` | Video meetings |
-| SMS / WhatsApp | `TWILIO_*` | OTP and notifications |
+| WhatsApp | `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_API_VERSION` | OTP and notifications (Meta Cloud API) |
 
 Copy payment keys from `.env.payment.example` into `.env`.
 

@@ -11,6 +11,7 @@ const {
   listRedemptionOrdersAdmin,
   fulfillRedemptionOrder
 } = require('../services/reward/rewardService')
+const analytics = require('../utils/analytics')
 
 module.exports = {
   getMyRewards: async function (req, res, next) {
@@ -30,6 +31,15 @@ module.exports = {
       const { catalogItemId } = req.body
       if (!catalogItemId) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
       const order = await redeemCatalogItem(req.user.id, catalogItemId)
+      analytics.trackRewardRedeemed({
+        req,
+        mediatorId: req.user.id,
+        itemId: order?.redeemed_item?.id || catalogItemId,
+        itemTitle: order?.redeemed_item?.title,
+        pointsSpent: order?.points_spent ?? order?.redeemed_item?.points_cost,
+        status: order?.status,
+        orderId: order?.id
+      })
       const msg = order?.status === 'FULFILLED'
         ? 'Reward redeemed and applied to your account.'
         : 'Your redemption request has been placed. Our team will fulfill it shortly.'

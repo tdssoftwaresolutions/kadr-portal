@@ -22,6 +22,7 @@ const { runWithNotificationContext } = require('../services/notification/notific
 const { assertCaseAccessFromRequest, assertNoteOwnership, caseMembershipOr } = require('../services/security/caseAccessService')
 const { parsePagination, parseDateRange, paginatedResponse } = require('../utils/pagination')
 const { sanitizeRichHtml } = require('../utils/htmlSanitizer')
+const analytics = require('../utils/analytics')
 
 const calendarEventSelect = {
   id: true,
@@ -462,6 +463,15 @@ module.exports = {
       const { caseId, caseType } = req.body
       const { approveCaseType } = require('../services/case/clientCaseService')
       const updated = await approveCaseType({ caseId, caseType })
+      analytics.trackCaseStatusChanged({
+        req,
+        actorUserId: req.user?.id,
+        caseRecord: updated,
+        fromStatus: CaseTypes.NEW,
+        toStatus: updated.status,
+        toSubStatus: updated.sub_status,
+        extra: { transition: 'case_type_approved', case_type: caseType }
+      })
       success(res, { case: updated }, 'Case type approved. Client can proceed with notice payment.')
     } catch (error) {
       next(error)
@@ -631,6 +641,13 @@ module.exports = {
         caseTitle: `${party1} vs ${party2}`,
         signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
         partyRole: 'first party'
+      })
+
+      analytics.trackCaseCreated({
+        req,
+        actorUserId: req.user?.id,
+        caseRecord: newCaseRecord,
+        extra: { origin: 'admin_created' }
       })
 
       success(res, { caseId: kadrCaseId }, 'New case created successfully!')
@@ -1137,6 +1154,10 @@ module.exports = {
           id: true,
           caseId: true,
           mediator: true,
+          status: true,
+          category: true,
+          case_type: true,
+          created_at: true,
           user_cases_first_partyTouser: {
             select: {
               id: true,
@@ -1169,6 +1190,21 @@ module.exports = {
           sub_status: null
         }
       })
+
+      analytics.trackCaseStatusChanged({
+        req,
+        actorUserId: req.user?.id,
+        caseRecord,
+        fromStatus: caseRecord.status,
+        toStatus: resolveStatus
+      })
+      analytics.trackCaseClosed({
+        req,
+        actorUserId: req.user?.id,
+        caseRecord,
+        status: resolveStatus
+      })
+
       const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.user_cases_first_partyTouser.id, null, agreementRecord.id)
 
       await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_first_partyTouser.email, {
@@ -1301,6 +1337,17 @@ module.exports = {
         }
       }
 
+      analytics.trackMeetingFeedback({
+        req,
+        actorUserId: uid,
+        meetingId: event_id,
+        caseId: c.id || event.case_id,
+        rating: data.first_party_rating ?? data.second_party_rating,
+        party: userType === 'MEDIATOR' && c.mediator === uid
+          ? 'mediator'
+          : (actsAsFirstParty ? 'first_party' : (actsAsSecondParty ? 'second_party' : 'unknown'))
+      })
+
       success(res, {}, 'Meeting feedback saved successfully')
     } catch (error) {
       next(error)
@@ -1396,6 +1443,16 @@ module.exports = {
       await recordCaseMilestone(prisma, {
         caseId,
         subStatusId: CaseSubTypes.MEDIATOR_ASSIGNED
+      })
+
+      analytics.trackCaseStatusChanged({
+        req,
+        actorUserId: req.user?.id,
+        caseRecord,
+        fromStatus: caseRecord.status,
+        toStatus: CaseTypes.IN_PROGRESS,
+        toSubStatus: CaseSubTypes.MEDIATOR_ASSIGNED,
+        extra: { transition: 'mediator_assigned' }
       })
 
       const {

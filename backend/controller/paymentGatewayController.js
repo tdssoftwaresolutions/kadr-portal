@@ -10,6 +10,7 @@ const {
 } = require('../services/payment/paymentOrderService')
 const { assertCaseAccessFromRequest, isCaseParty } = require('../services/security/caseAccessService')
 const { getProMonthlyPriceInr } = require('../services/subscription/subscriptionService')
+const analytics = require('../utils/analytics')
 
 function assertPurposeAccess (req, purpose, caseId) {
   if (purpose === PAYMENT_PURPOSES.MEDIATOR_PRO) {
@@ -54,6 +55,17 @@ module.exports = {
         caseId,
         amountOverride: amount,
         metadata: { productInfo: productLabels[purpose] }
+      })
+
+      analytics.trackPaymentInitiated({
+        req,
+        payerUserId: req.user.id,
+        orderId: order.order_id,
+        amount: order.amount,
+        currency: order.currency,
+        gateway,
+        purpose: order.purpose,
+        caseId
       })
 
       success(res, {

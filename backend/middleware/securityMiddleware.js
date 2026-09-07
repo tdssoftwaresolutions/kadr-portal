@@ -1,7 +1,14 @@
 const helmet = require('helmet')
+const { getPosthogBrowserConfig } = require('../config/posthogConfig')
 
 function securityMiddleware () {
   const isProduction = process.env.NODE_ENV === 'production'
+
+  // PostHog Web Analytics (browser SDK) runs on the public website. When a key
+  // is configured, allow the SDK bundle (script-src) and event ingestion
+  // (connect-src) hosts. Empty when analytics are off, so the CSP stays tight.
+  const posthogBrowser = getPosthogBrowserConfig()
+  const posthogOrigins = posthogBrowser.enabled ? posthogBrowser.origins : []
 
   // S3 bucket origin used for:
   //  - in-app document/PDF previews rendered in an iframe (frame-src, see
@@ -31,7 +38,8 @@ function securityMiddleware () {
           'https://test.payu.in',
           'https://api.phonepe.com',
           'https://www.youtube.com',
-          'https://www.google.com'
+          'https://www.google.com',
+          ...posthogOrigins // PostHog browser SDK bundle (assets host)
         ],
         // Helmet's CSP defaults emit `script-src-attr 'none'`, which blocks inline
         // event handler attributes (e.g. onclick="goToLogin()") on the public
@@ -57,7 +65,8 @@ function securityMiddleware () {
           'https://api.phonepe.com',
           'https://api-preprod.phonepe.com',
           s3Origin, // direct-to-S3 presigned PUT uploads
-          process.env.BASE_URL || 'http://localhost:3000'
+          process.env.BASE_URL || 'http://localhost:3000',
+          ...posthogOrigins // PostHog event ingestion + assets
         ].filter(Boolean),
         frameSrc: [
           "'self'",

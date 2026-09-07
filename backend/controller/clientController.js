@@ -6,6 +6,7 @@ const { success } = require('../utils/responses')
 const { CaseTypes } = require('../utils/caseConstants')
 const { v4: uuidv4 } = require('uuid')
 const { sanitizeBucketUrl } = require('../utils/uploadService')
+const analytics = require('../utils/analytics')
 
 const CLIENT_EMAIL_KEY = (email) => ({
   email_user_type: { email, user_type: 'CLIENT' }
@@ -47,15 +48,22 @@ module.exports = {
         userRequestData.is_self_signed_up = true
         userRequestData.active = true
         userRequestData.password_hash = hashPassword
-        await prisma.user.update({
+        const activatedUser = await prisma.user.update({
           where: CLIENT_EMAIL_KEY(email),
-          data: userRequestData
+          data: userRequestData,
+          select: { id: true }
         })
         await helper.sendTemplatedEmail('welcomeCredentials', email, {
           recipientName: name,
           email,
           password: generatedPassword,
           loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
+        })
+        analytics.trackRegistration({
+          req,
+          user: { id: activatedUser.id, email, name, user_type: 'CLIENT', city, state },
+          selfSignup: true,
+          extra: { flow: 'existing_user_activation' }
         })
         success(res, {}, 'You are all set! Please check your email for the next steps.')
       } else {
@@ -145,6 +153,18 @@ module.exports = {
           recipientName: name
         })
 
+        analytics.trackRegistration({
+          req,
+          user: { id: user.id, email, name, user_type: 'CLIENT', city, state },
+          selfSignup: true
+        })
+        analytics.trackCaseCreated({
+          req,
+          actorUserId: user.id,
+          caseRecord: createdCase,
+          extra: { origin: 'client_signup' }
+        })
+
         success(res, {}, 'Your account has been created successfully! Our team will review your details and get back to you shortly.')
       }
     } catch (error) {
@@ -205,6 +225,12 @@ module.exports = {
           recipientName: req.user.name || 'Client'
         })
       } catch (_) { /* non-blocking */ }
+      analytics.trackCaseCreated({
+        req,
+        actorUserId: req.user.id,
+        caseRecord: created,
+        extra: { origin: 'client_additional_case' }
+      })
       success(res, { case: created }, 'Your new case has been submitted. Our team will review and assign a case type shortly.')
     } catch (error) {
       next(error)

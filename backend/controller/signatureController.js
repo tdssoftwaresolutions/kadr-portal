@@ -10,6 +10,23 @@ const { createError } = require('../utils/errors')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { success } = require('../utils/responses')
 const { ensureInvoiceForCase } = require('../services/invoice/invoiceService')
+const analytics = require('../utils/analytics')
+
+// A verified OTP is valid for this long before a submit must re-verify.
+const OTP_VERIFICATION_TTL_MS = 15 * 60 * 1000
+
+/**
+ * Server-side guard: a signature submission is only accepted when a fresh OTP
+ * was verified for this exact signature request. Closes the gap where the
+ * previous flow trusted the frontend to have gated submission behind OTP.
+ * @param {{ otp_verified_at: Date|null }} signatureTracking
+ */
+function assertOtpVerified (signatureTracking) {
+  const verifiedAt = signatureTracking && signatureTracking.otp_verified_at
+  if (!verifiedAt) throw createError(errorCodes.OTP_NOT_VERIFIED)
+  const age = Date.now() - new Date(verifiedAt).getTime()
+  if (age > OTP_VERIFICATION_TTL_MS) throw createError(errorCodes.OTP_NOT_VERIFIED)
+}
 
 module.exports = {
   submitSignature: async function (req, res, next) {
@@ -24,7 +41,8 @@ module.exports = {
           id: true,
           signed: true,
           case_id: true,
-          user_id: true
+          user_id: true,
+          otp_verified_at: true
         }
       })
 
@@ -33,6 +51,7 @@ module.exports = {
         success(res, {}, 'This acknowledgment was already submitted.')
         return
       }
+      assertOtpVerified(signatureTracking)
 
       await prisma.signature_tracking.update({
         where: { id: requestId },
@@ -103,6 +122,14 @@ module.exports = {
             subStatusId: CaseSubTypes.PENDING_NOTICE_PAYMENT
           })
         } catch (_) { /* non-blocking */ }
+        analytics.trackCaseStatusChanged({
+          req,
+          actorUserId: signatureTracking.user_id,
+          caseRecord: { id: caseRecord.id, caseId: caseRecord.caseId, case_type: caseRecord.case_type },
+          toStatus: CaseTypes.IN_PROGRESS,
+          toSubStatus: CaseSubTypes.PENDING_NOTICE_PAYMENT,
+          extra: { transition: 'both_parties_acknowledged' }
+        })
       }
 
       success(res, {}, 'Acknowledgment submitted successfully')
@@ -203,11 +230,13 @@ module.exports = {
           id: true,
           signed: true,
           user_id: true,
-          case_agreement_id: true
+          case_agreement_id: true,
+          otp_verified_at: true
         }
       })
 
       if (!signatureTracking) throw createError(errorCodes.NO_RECORD_FOUND)
+      assertOtpVerified(signatureTracking)
 
       await prisma.signature_tracking.update({
         where: { id: requestId },

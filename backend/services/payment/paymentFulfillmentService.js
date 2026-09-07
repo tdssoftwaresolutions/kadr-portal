@@ -16,6 +16,7 @@ const {
   createAndInviteCaseMeeting
 } = require('../meeting/meetingInvitationService')
 const { copyEmailToRepresentative, PARTY_SIDES } = require('../case/representativeService')
+const analytics = require('../../utils/analytics')
 
 async function fulfillClientCasePayment ({
   caseId,
@@ -40,6 +41,18 @@ async function fulfillClientCasePayment ({
       reference_id: referenceId,
       transaction_date: new Date()
     }
+  })
+
+  // Product analytics: transaction volume/value over time, by gateway/purpose.
+  // Money detail of record stays in the DB (transactions table).
+  analytics.trackPaymentSucceeded({
+    payerUserId: clientId,
+    amount,
+    currency,
+    gateway: paymentMethod,
+    purpose: reason,
+    caseId,
+    transactionId: paymentId
   })
 
   const caseDetails = await prisma.cases.findUnique({
@@ -208,6 +221,22 @@ async function fulfillPaymentOrder (order) {
       source: 'PAYMENT',
       amountInr: Number(order.amount),
       paymentRef: order.gateway_payment_id || order.order_id
+    })
+
+    analytics.trackPaymentSucceeded({
+      payerUserId: order.user_id,
+      amount: order.amount,
+      currency: order.currency || 'INR',
+      gateway: order.gateway,
+      purpose: order.purpose,
+      transactionId: order.gateway_payment_id || order.order_id
+    })
+    analytics.trackSubscriptionActivated({
+      userId: order.user_id,
+      amount: order.amount,
+      currency: order.currency || 'INR',
+      source: 'PAYMENT',
+      durationDays: PRO_DURATION_DAYS
     })
     return
   }

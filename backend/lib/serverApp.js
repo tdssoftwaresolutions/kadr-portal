@@ -16,6 +16,8 @@ const httpsRedirectMiddleware = require('../middleware/httpsRedirectMiddleware')
 const { validateEnv } = require('../config/envValidation')
 const { alertDatabaseFailure } = require('../services/alerting/criticalAlertService')
 const prisma = require('./prisma')
+// Initialize the analytics client at boot (logs enabled/no-op status).
+const { shutdownAnalytics } = require('./posthog')
 
 function isDesktopMode () {
   return process.env.KADR_DESKTOP === '1'
@@ -48,6 +50,19 @@ function createApp (options = {}) {
   const app = express()
   const distPath = resolveDistPath(options.distPath)
   const bodyLimit = process.env.REQUEST_BODY_LIMIT || '4mb'
+
+  // Behind a load balancer / reverse proxy the real client IP arrives in
+  // X-Forwarded-For. Trusting the proxy makes req.ip resolve to the actual
+  // client so rate limiting and analytics GeoIP (login location) are accurate.
+  // Configurable via TRUST_PROXY (e.g. "1", "true", or a subnet); defaults to
+  // trusting the first hop in production.
+  const trustProxy = process.env.TRUST_PROXY
+  if (trustProxy !== undefined && trustProxy !== '') {
+    const numeric = Number(trustProxy)
+    app.set('trust proxy', Number.isFinite(numeric) ? numeric : trustProxy)
+  } else if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1)
+  }
 
   app.use(httpsRedirectMiddleware)
   app.use(securityMiddleware())
@@ -107,6 +122,8 @@ function createApp (options = {}) {
   }
 
   if (serveWebsite) {
+    // Count public-website page views before static files are served.
+    app.use(require('../middleware/websiteAnalyticsMiddleware'))
     app.use(express.static(websitePath))
   }
 
@@ -136,12 +153,15 @@ function runStartupTasks () {
   })
   if (process.env.WEBSITE_CONTENT_SEED_ON_STARTUP !== '0') {
     setTimeout(() => {
-      const { ensureWebsiteDefaults } = require('../services/website/websiteContentService')
+      const { ensureWebsiteDefaults, refreshSiteConfig } = require('../services/website/websiteContentService')
       ensureWebsiteDefaults().catch((err) => {
         if (!String(err?.message || '').includes('max_connections_per_hour')) {
           console.error('[startup] Website content seed failed', err)
         }
       })
+      // Refresh js/site-config.js so env-driven config (e.g. the PostHog browser
+      // key) reaches the static website on boot, even on already-seeded systems.
+      refreshSiteConfig().catch(() => { /* non-blocking, already logged */ })
     }, 3000)
   }
 }
@@ -163,6 +183,13 @@ function startServer (options = {}) {
         console.log(`[shutdown] ${signal} received. Closing server gracefully...`)
         server.close(async () => {
           console.log('[shutdown] HTTP server closed.')
+          try {
+            // Flush any queued analytics events so nothing is lost on restart/deploy.
+            await shutdownAnalytics()
+            console.log('[shutdown] Analytics flushed.')
+          } catch (err) {
+            console.error('[shutdown] Error flushing analytics:', err)
+          }
           try {
             await prisma.$disconnect()
             console.log('[shutdown] Database connection closed.')

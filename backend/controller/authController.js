@@ -12,6 +12,7 @@ const { canLogin } = require('../utils/userAccess')
 const { isMobileClientRequest } = require('../utils/mobileClient')
 const { getRefreshCookieOptions, getRefreshCookieClearOptions } = require('../utils/cookieOptions')
 const { OAuth2Client } = require('google-auth-library')
+const analytics = require('../utils/analytics')
 
 module.exports = {
   login: async function (req, res, next) {
@@ -64,8 +65,17 @@ module.exports = {
         payload.refreshToken = refreshToken
         payload.refreshExpiresIn = Math.floor(refreshMaxAgeMs / 1000)
       }
+      analytics.trackLogin({ req, user, method: analytics.AUTH_METHODS.PASSWORD })
       success(res, payload)
     } catch (error) {
+      // Track failed logins for security/friction analysis (invalid credentials,
+      // inactive/deleted accounts, account-type prompts).
+      analytics.trackLoginFailed({
+        req,
+        emailAttempted: req.body?.username,
+        reason: error?.errorCode || error?.code || 'unknown',
+        method: analytics.AUTH_METHODS.PASSWORD
+      })
       next(error)
     }
   },
@@ -139,8 +149,14 @@ module.exports = {
         responsePayload.refreshToken = refreshToken
         responsePayload.refreshExpiresIn = Math.floor(refreshMaxAgeMs / 1000)
       }
+      analytics.trackLogin({ req, user, method: analytics.AUTH_METHODS.GOOGLE })
       success(res, responsePayload)
     } catch (error) {
+      analytics.trackLoginFailed({
+        req,
+        reason: error?.errorCode || error?.code || 'unknown',
+        method: analytics.AUTH_METHODS.GOOGLE
+      })
       next(error)
     }
   },
@@ -152,6 +168,7 @@ module.exports = {
       const secureFlag = opts.secure ? '; Secure' : ''
       res.setHeader('Set-Cookie', `refresh_token=; Max-Age=0; Path=/; SameSite=${opts.sameSite}${secureFlag}`)
     }
+    analytics.trackLogout({ req, user: req.user })
     success(res, {}, 'Logged out successfully')
   },
   isEmailExist: async function (req, res, next) {
@@ -363,7 +380,16 @@ module.exports = {
         }
       })
 
-      await helper.sendOtpSMS(otp, phoneNumber)
+      // Link this OTP to the signature request and clear any previous
+      // verification, so the submit endpoints can enforce a fresh OTP check.
+      await prisma.signature_tracking.update({
+        where: { id },
+        data: { otp_reset_id: response.id, otp_verified_at: null }
+      })
+
+      // Deliver over WhatsApp. Any delivery failure is surfaced to the caller
+      // (unlike the old SMS helper, which silently swallowed errors).
+      await helper.sendOtpWhatsApp(otp, phoneNumber)
       success(res, {
         requestId: response.id
       }, 'OTP sent successfully')
@@ -406,6 +432,13 @@ module.exports = {
         })
         throw createError(errorCodes.INVALID_OTP)
       }
+
+      // Stamp the linked signature request as OTP-verified so the submit
+      // endpoints can enforce server-side that a fresh OTP was completed.
+      await prisma.signature_tracking.updateMany({
+        where: { otp_reset_id: requestId },
+        data: { otp_verified_at: new Date() }
+      })
 
       await prisma.otp_resets.delete({
         where: {

@@ -4,6 +4,7 @@ const { awardRewardPoints } = require('../services/reward/rewardService')
 const { success, error } = require('../utils/responses')
 const striptags = require('striptags')
 const { assertAdminPage } = require('../utils/adminPermissionHelpers')
+const analytics = require('../utils/analytics')
 
 module.exports = {
   getAdminBlogTaxonomy: async function (req, res, next) {
@@ -242,6 +243,7 @@ module.exports = {
         author_name: b.user ? b.user.name : '',
         created_at: b.created_at
       }))
+      analytics.trackBlogViewed({ req, blog: formattedBlog })
       success(res, { blog: formattedBlog, top3LatestBlog })
     } catch (e) {
       console.error('getBlog', e)

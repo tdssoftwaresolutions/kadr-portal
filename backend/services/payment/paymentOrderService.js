@@ -12,6 +12,7 @@ const {
 const { getProMonthlyPriceInr } = require('../subscription/subscriptionService')
 const { fulfillPaymentOrder } = require('./paymentFulfillmentService')
 const { alertPaymentFailure } = require('../alerting/criticalAlertService')
+const analytics = require('../../utils/analytics')
 
 const dataCrypto = require('../../utils/crypto')
 
@@ -102,13 +103,28 @@ async function markOrderSuccess (order, { gatewayPaymentId, gatewayResponse }) {
 }
 
 async function markOrderFailed (order, gatewayResponse) {
-  return prisma.payment_orders.update({
+  const updated = await prisma.payment_orders.update({
     where: { id: order.id },
     data: {
       status: PAYMENT_STATUS.FAILED,
       gateway_response: encryptGatewayResponse(gatewayResponse)
     }
   })
+
+  // Central failure hook — covers web, mobile, return-url and webhook paths.
+  // No req in this path; payer identity comes from the order.
+  analytics.trackPaymentFailed({
+    payerUserId: order.user_id,
+    orderId: order.order_id,
+    amount: order.amount,
+    currency: order.currency,
+    gateway: order.gateway,
+    purpose: order.purpose,
+    caseId: order.case_id,
+    reason: 'gateway_verification_failed'
+  })
+
+  return updated
 }
 
 async function verifyAndCompleteOrder (orderId, verificationPayload = {}) {

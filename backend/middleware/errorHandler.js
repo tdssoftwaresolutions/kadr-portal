@@ -2,6 +2,7 @@ const path = require('path')
 const { AppError } = require('../utils/errors')
 const { error } = require('../utils/responses')
 const { record500Error } = require('../services/alerting/criticalAlertService')
+const analytics = require('../utils/analytics')
 
 module.exports = (err, req, res, next) => {
   if (!req.path.startsWith('/api')) {
@@ -9,6 +10,16 @@ module.exports = (err, req, res, next) => {
   }
 
   if (err instanceof AppError) {
+    // Track only server-side (5xx) application errors here; 4xx are expected
+    // client/validation errors and would add noise to reliability dashboards.
+    if ((err.statusCode || 0) >= 500) {
+      analytics.trackError({
+        req,
+        error: err,
+        source: analytics.ERROR_SOURCES.APP,
+        statusCode: err.statusCode
+      })
+    }
     return error(res, {
       code: err.errorCode,
       message: err.message,
@@ -24,6 +35,17 @@ module.exports = (err, req, res, next) => {
     requestId: req.requestId,
     userId: req.user?.id,
     error: err
+  })
+
+  // Classify DB errors (Prisma) separately so leadership can see DB-related
+  // failures distinctly from generic application errors.
+  const isPrismaError = typeof err?.code === 'string' && /^P\d{4}$/.test(err.code)
+  analytics.trackError({
+    req,
+    error: err,
+    source: isPrismaError ? analytics.ERROR_SOURCES.DATABASE : analytics.ERROR_SOURCES.UNHANDLED,
+    statusCode: 500,
+    userId: req.user?.id
   })
 
   return error(res, {

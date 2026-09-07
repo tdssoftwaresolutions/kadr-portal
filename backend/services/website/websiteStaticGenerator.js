@@ -162,12 +162,23 @@ function buildFaqHtml (categories) {
 }
 
 function buildSiteConfigJs (settings) {
+  const { getPosthogBrowserConfig } = require('../../config/posthogConfig')
+  const ph = getPosthogBrowserConfig()
   const config = {
     email: settings.email || 'contact@kadr.live',
     phone: settings.phone || '',
     whatsapp: settings.whatsapp || '',
     addressEn: settings.address_en || 'Delhi, India',
-    addressHi: settings.address_hi || settings.address_en || 'Delhi, India'
+    addressHi: settings.address_hi || settings.address_en || 'Delhi, India',
+    // Browser-safe PostHog config for the public website Web Analytics SDK.
+    // `key` is the write-only project ingest key (safe to embed in the browser).
+    // Empty/enabled:false when analytics are not configured — snippet stays inert.
+    posthog: {
+      enabled: ph.enabled,
+      key: ph.key,
+      apiHost: ph.apiHost,
+      assetsHost: ph.assetsHost
+    }
   }
   return `window.KADR_SITE_CONFIG=${JSON.stringify(config)};\n`
 }
