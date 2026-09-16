@@ -30,17 +30,44 @@
       <div v-if="step === 1" class="field-grid">
         <div class="field-item">
           <label for="name" class="field-label">{{ $t('auth.signup.fullName') }} <span class="req">*</span></label>
-          <input type="text" class="app-input capitalize-first-word" :disabled="existingUser" id="name" v-model="formData.name" :placeholder="$t('auth.signup.fullNameHint')" />
+          <input type="text" class="app-input capitalize-first-word" id="name" v-model="formData.name" :placeholder="$t('auth.signup.fullNameHint')" />
         </div>
 
         <div class="field-item">
           <label for="email" class="field-label">{{ $t('auth.signup.emailAddress') }} <span class="req">*</span></label>
-          <input type="email" class="app-input" :disabled="existingUser" id="email" v-model="formData.email" :placeholder="$t('auth.emailPlaceholder')" />
+          <div class="otp-inline-row">
+            <input type="email" class="app-input" :disabled="existingUser" id="email" v-model="formData.email" :placeholder="$t('auth.emailPlaceholder')" />
+            <button
+              v-if="!existingUser && !emailOtpVerified"
+              type="button"
+              class="btn-verify-inline"
+              :disabled="emailOtpSending"
+              @click="sendEmailOtp"
+            >{{ emailOtpSent ? $t('auth.signup.resendOtp') : $t('auth.signup.verify') }}</button>
+            <span v-else-if="emailOtpVerified" class="otp-verified-badge">
+              <i class="ri-checkbox-circle-fill" aria-hidden="true"></i> {{ $t('auth.signup.verified') }}
+            </span>
+          </div>
+          <div v-if="!existingUser && emailOtpSent && !emailOtpVerified" class="otp-verify-row">
+            <input
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              class="app-input otp-code-input"
+              v-model="emailOtpCode"
+              :placeholder="$t('auth.signup.otpPlaceholder')"
+            />
+            <button type="button" class="btn-verify-inline" :disabled="emailOtpVerifying" @click="verifyEmailOtp">
+              {{ $t('auth.signup.confirm') }}
+            </button>
+          </div>
+          <small v-if="!existingUser && !emailOtpVerified" class="field-hint">{{ $t('auth.signup.emailOtpHint') }}</small>
         </div>
 
         <div class="field-item">
           <label for="phone" class="field-label">{{ $t('auth.signup.phoneNumber') }} <span class="req">*</span></label>
-          <input type="tel" class="app-input" :disabled="existingUser" id="phone" v-model="formData.phone" :placeholder="$t('auth.signup.phoneHint')" />
+          <input type="tel" class="app-input" id="phone" v-model="formData.phone" :placeholder="$t('auth.signup.phoneHint')" />
+          <small class="field-hint">{{ $t('auth.signup.phoneHint') }}</small>
         </div>
 
         <div class="field-item">
@@ -92,6 +119,7 @@
               class="upload-thumb"
             />
           </div>
+          <small class="field-hint">{{ $t('auth.signup.profilePictureHint') }}</small>
         </div>
 
         <div v-if="existingUser" class="field-item field-item--full">
@@ -128,29 +156,64 @@
         <div class="field-item">
           <label for="evidence" class="field-label">{{ $t('auth.signup.uploadEvidence') }}</label>
           <div class="upload-row">
-            <input type="file" class="upload-native" id="evidence" @change="onEvidenceChange" />
+            <input type="file" class="upload-native" id="evidence" accept=".pdf,.doc,.docx,image/*" @change="onEvidenceChange" />
             <label for="evidence" class="upload-btn">
               <i class="ri-attachment-2" aria-hidden="true"></i> {{ $t('auth.signup.chooseFile') }}
             </label>
             <span v-if="formData.evidence" class="upload-filename">{{ formData.evidence.name }}</span>
           </div>
+          <small class="field-hint">{{ $t('auth.signup.uploadEvidenceHint') }}</small>
         </div>
       </div>
 
-      <!-- Step 3: opposite party -->
+      <!-- Step 3: opposite party (fresh signup) / representative details (accept-link flow) -->
       <div v-if="step === 3" class="field-grid">
-        <div class="field-item">
-          <label for="oppositeName" class="field-label">{{ $t('auth.signup.oppositeName') }} <span class="req">*</span></label>
-          <input type="text" class="app-input" id="oppositeName" v-model="formData.oppositeName" :placeholder="$t('auth.signup.fullNamePlaceholder')" />
-        </div>
-        <div class="field-item">
-          <label for="oppositeEmail" class="field-label">{{ $t('auth.signup.oppositeEmail') }} <span class="req">*</span></label>
-          <input type="email" class="app-input" id="oppositeEmail" v-model="formData.oppositeEmail" :placeholder="$t('auth.signup.emailPlaceholder')" />
-        </div>
-        <div class="field-item">
-          <label for="oppositePhone" class="field-label">{{ $t('auth.signup.oppositePhone') }} <span class="req">*</span></label>
-          <input type="tel" class="app-input" id="oppositePhone" v-model="formData.oppositePhone" :placeholder="$t('auth.signup.phonePlaceholder')" />
-        </div>
+        <template v-if="!existingUser">
+          <div class="field-item">
+            <label for="oppositeName" class="field-label">{{ $t('auth.signup.oppositeName') }} <span class="req">*</span></label>
+            <input type="text" class="app-input" id="oppositeName" v-model="formData.oppositeName" :placeholder="$t('auth.signup.fullNamePlaceholder')" />
+          </div>
+          <div class="field-item">
+            <label for="oppositeEmail" class="field-label">{{ $t('auth.signup.oppositeEmail') }} <span class="req">*</span></label>
+            <input type="email" class="app-input" id="oppositeEmail" v-model="formData.oppositeEmail" :placeholder="$t('auth.signup.emailPlaceholder')" />
+            <div v-if="formData.oppositeEmail" class="confirm-subfield">
+              <label for="oppositeEmailConfirm" class="field-label field-label--confirm">{{ $t('auth.signup.confirmEmailLabel') }}</label>
+              <input
+                type="email"
+                class="app-input"
+                :class="{ 'is-match': confirmFieldState.email === 'match', 'is-mismatch': confirmFieldState.email === 'mismatch' }"
+                id="oppositeEmailConfirm"
+                v-model="formData.oppositeEmailConfirm"
+                :placeholder="$t('auth.signup.reEnterToConfirm')"
+                @paste.prevent
+              />
+              <small v-if="confirmFieldState.email === 'match'" class="field-hint field-hint--match"><i class="ri-check-line" aria-hidden="true"></i> {{ $t('auth.signup.confirmMatch') }}</small>
+            </div>
+          </div>
+          <div class="field-item">
+            <label for="oppositePhone" class="field-label">{{ $t('auth.signup.oppositePhone') }} <span class="req">*</span></label>
+            <input type="tel" class="app-input" id="oppositePhone" v-model="formData.oppositePhone" :placeholder="$t('auth.signup.phonePlaceholder')" />
+            <small class="field-hint">{{ $t('auth.signup.phoneHint') }}</small>
+            <div v-if="formData.oppositePhone" class="confirm-subfield">
+              <label for="oppositePhoneConfirm" class="field-label field-label--confirm">{{ $t('auth.signup.confirmPhoneLabel') }}</label>
+              <input
+                type="tel"
+                class="app-input"
+                :class="{ 'is-match': confirmFieldState.phone === 'match', 'is-mismatch': confirmFieldState.phone === 'mismatch' }"
+                id="oppositePhoneConfirm"
+                v-model="formData.oppositePhoneConfirm"
+                :placeholder="$t('auth.signup.reEnterToConfirm')"
+                @paste.prevent
+              />
+              <small v-if="confirmFieldState.phone === 'match'" class="field-hint field-hint--match"><i class="ri-check-line" aria-hidden="true"></i> {{ $t('auth.signup.confirmMatch') }}</small>
+            </div>
+          </div>
+          <div class="field-item field-item--full">
+            <p class="rep-section-hint">
+              {{ $t('auth.signup.oppositePartyContactHint') }}
+            </p>
+          </div>
+        </template>
         <div class="field-item field-item--full">
           <p class="rep-section-hint">
             {{ $t('auth.signup.repHint') }}
@@ -161,14 +224,41 @@
           <input type="text" class="app-input" id="representativeName" v-model="formData.representativeName" :placeholder="$t('auth.signup.repNamePlaceholder')" />
         </div>
         <div class="field-item">
-          <label for="representativeEmail" class="field-label">{{ $t('auth.signup.repEmail') }} <span class="req">*</span></label>
+          <label for="representativeEmail" class="field-label">{{ $t('auth.signup.repEmail') }} <span v-if="!existingUser" class="req">*</span></label>
           <input type="email" class="app-input" id="representativeEmail" v-model="formData.representativeEmail" :placeholder="$t('auth.signup.emailPlaceholder')" />
+          <div v-if="formData.representativeEmail" class="confirm-subfield">
+            <label for="representativeEmailConfirm" class="field-label field-label--confirm">{{ $t('auth.signup.confirmEmailLabel') }}</label>
+            <input
+              type="email"
+              class="app-input"
+              :class="{ 'is-match': confirmFieldState.repEmail === 'match', 'is-mismatch': confirmFieldState.repEmail === 'mismatch' }"
+              id="representativeEmailConfirm"
+              v-model="formData.representativeEmailConfirm"
+              :placeholder="$t('auth.signup.reEnterToConfirm')"
+              @paste.prevent
+            />
+            <small v-if="confirmFieldState.repEmail === 'match'" class="field-hint field-hint--match"><i class="ri-check-line" aria-hidden="true"></i> {{ $t('auth.signup.confirmMatch') }}</small>
+          </div>
         </div>
         <div class="field-item">
           <label for="representativePhone" class="field-label">{{ $t('auth.signup.repPhone') }}</label>
           <input type="tel" class="app-input" id="representativePhone" v-model="formData.representativePhone" :placeholder="$t('auth.signup.repPhonePlaceholder')" />
+          <small class="field-hint">{{ $t('auth.signup.phoneHint') }}</small>
+          <div v-if="formData.representativePhone" class="confirm-subfield">
+            <label for="representativePhoneConfirm" class="field-label field-label--confirm">{{ $t('auth.signup.confirmPhoneLabel') }}</label>
+            <input
+              type="tel"
+              class="app-input"
+              :class="{ 'is-match': confirmFieldState.repPhone === 'match', 'is-mismatch': confirmFieldState.repPhone === 'mismatch' }"
+              id="representativePhoneConfirm"
+              v-model="formData.representativePhoneConfirm"
+              :placeholder="$t('auth.signup.reEnterToConfirm')"
+              @paste.prevent
+            />
+            <small v-if="confirmFieldState.repPhone === 'match'" class="field-hint field-hint--match"><i class="ri-check-line" aria-hidden="true"></i> {{ $t('auth.signup.confirmMatch') }}</small>
+          </div>
         </div>
-        <div class="field-item field-item--full">
+        <div v-if="!existingUser" class="field-item field-item--full">
           <label class="consent-box">
             <b-form-checkbox v-model="formData.adultPlatformLiabilityAck">
               {{ $t('auth.signup.adultAck') }}
@@ -201,9 +291,9 @@
           v-else-if="step === 1 && existingUser"
           type="button"
           class="btn-primary-cta"
-          @click="submitClientForm"
+          @click="nextStep(1)"
         >
-          {{ $t('auth.signup.submit') }}
+          {{ $t('auth.signup.continue') }} <i class="ri-arrow-right-line" aria-hidden="true"></i>
         </button>
         <button
           v-else-if="step === 2"
@@ -255,11 +345,15 @@ export default {
         evidenceContent: null,
         oppositeName: '',
         oppositeEmail: '',
+        oppositeEmailConfirm: '',
         preferredLanguage: '',
         oppositePhone: '',
+        oppositePhoneConfirm: '',
         representativeName: '',
         representativeEmail: '',
+        representativeEmailConfirm: '',
         representativePhone: '',
+        representativePhoneConfirm: '',
         adultPlatformLiabilityAck: false,
         profilePicture: null,
         profilePictureContent: null,
@@ -272,11 +366,23 @@ export default {
         type: 'primary'
       },
       existingUser: false,
-      availableLanguges: {}
+      availableLanguges: {},
+      emailOtpSent: false,
+      emailOtpVerified: false,
+      emailOtpVerifiedEmail: '',
+      emailOtpCode: '',
+      emailOtpSending: false,
+      emailOtpVerifying: false
     }
   },
   computed: {
     steps () {
+      if (this.existingUser) {
+        return [
+          { n: 1, label: this.$t('auth.signup.stepProfile') },
+          { n: 3, label: this.$t('auth.signup.stepRepresentative') }
+        ]
+      }
       return [
         { n: 1, label: this.$t('auth.signup.stepProfile') },
         { n: 2, label: this.$t('auth.signup.stepDispute') },
@@ -286,7 +392,33 @@ export default {
     stepSubtitle () {
       if (this.step === 1) return this.$t('auth.signup.profileSubtitle')
       if (this.step === 2) return this.$t('auth.signup.disputeSubtitle')
+      if (this.existingUser) return this.$t('auth.signup.repDetailsSubtitle')
       return this.$t('auth.signup.otherPartySubtitle')
+    },
+    confirmFieldState () {
+      const state = { email: '', phone: '', repEmail: '', repPhone: '' }
+      if (this.formData.oppositeEmailConfirm) {
+        state.email = this.formData.oppositeEmailConfirm === this.formData.oppositeEmail ? 'match' : 'mismatch'
+      }
+      if (this.formData.oppositePhoneConfirm) {
+        state.phone = this.formData.oppositePhoneConfirm === this.formData.oppositePhone ? 'match' : 'mismatch'
+      }
+      if (this.formData.representativeEmailConfirm) {
+        state.repEmail = this.formData.representativeEmailConfirm === this.formData.representativeEmail ? 'match' : 'mismatch'
+      }
+      if (this.formData.representativePhoneConfirm) {
+        state.repPhone = this.formData.representativePhoneConfirm === this.formData.representativePhone ? 'match' : 'mismatch'
+      }
+      return state
+    }
+  },
+  watch: {
+    'formData.email' (newVal) {
+      if (this.emailOtpVerified && newVal !== this.emailOtpVerifiedEmail) {
+        this.emailOtpVerified = false
+        this.emailOtpSent = false
+        this.emailOtpCode = ''
+      }
     }
   },
   mounted () {
@@ -299,6 +431,40 @@ export default {
     }
   },
   methods: {
+    async sendEmailOtp () {
+      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+      if (!emailPattern.test(this.formData.email)) {
+        this.showAlert(this.$t('auth.signup.invalidAccountEmail'), 'danger')
+        return
+      }
+      this.emailOtpSending = true
+      try {
+        const response = await this.$store.dispatch('requestSignupEmailOtp', { email: this.formData.email })
+        if (response.success) {
+          this.emailOtpSent = true
+          this.showAlert(this.$t('auth.signup.emailOtpSent'), 'success')
+        }
+      } finally {
+        this.emailOtpSending = false
+      }
+    },
+    async verifyEmailOtp () {
+      if (!this.emailOtpCode.trim()) {
+        this.showAlert(this.$t('auth.signup.enterOtp'), 'danger')
+        return
+      }
+      this.emailOtpVerifying = true
+      try {
+        const response = await this.$store.dispatch('verifySignupEmailOtp', { email: this.formData.email, otp: this.emailOtpCode })
+        if (response.success) {
+          this.emailOtpVerified = true
+          this.emailOtpVerifiedEmail = this.formData.email
+          this.showAlert(this.$t('auth.signup.emailVerifiedSuccess'), 'success')
+        }
+      } finally {
+        this.emailOtpVerifying = false
+      }
+    },
     onClickProfilePicture (picture) {
       const popupWidth = 400
       const popupHeight = 400
@@ -422,6 +588,10 @@ export default {
           this.showAlert(msg, 'danger')
           return false
         }
+        if (!this.emailOtpVerified || this.emailOtpVerifiedEmail !== this.formData.email) {
+          this.showAlert(this.$t('auth.signup.emailOtpRequired'), 'danger')
+          return false
+        }
       }
       return true
     },
@@ -459,6 +629,13 @@ export default {
       if (currentStep === 1) {
         const isPage1Valid = await this.page1Validation()
         if (!isPage1Valid) return
+        // Existing-user (accept-link) flow has no dispute step — the case
+        // already exists, filed by the first party — so it jumps straight
+        // from profile to the representative-details step.
+        if (this.existingUser) {
+          this.step = 3
+          return
+        }
       } else if (currentStep === 2) {
         const isPage2Valid = await this.page2Validation()
         if (!isPage2Valid) return
@@ -468,6 +645,8 @@ export default {
     prevStep (currentStep) {
       if (currentStep === 1) {
         this.$emit('onBack')
+      } else if (currentStep === 3 && this.existingUser) {
+        this.step = 1
       } else if (currentStep > 0) {
         this.step--
       }
@@ -497,6 +676,10 @@ export default {
           this.showAlert(this.$t('auth.signup.invalidEmail'), 'danger')
           return
         }
+        if (this.formData.oppositeEmailConfirm !== this.formData.oppositeEmail) {
+          this.showAlert(this.$t('auth.signup.emailConfirmMismatch'), 'danger')
+          return
+        }
         if (this.formData.oppositePhone.trim() === '') {
           this.showAlert(this.$t('auth.signup.enterOppositePhone'), 'danger')
           return
@@ -504,6 +687,10 @@ export default {
         const phonePattern = /^(?:\+91|0)?[789]\d{9}$/
         if (!phonePattern.test(this.formData.oppositePhone)) {
           this.showAlert(this.$t('auth.signup.invalidPhone'), 'danger')
+          return
+        }
+        if (this.formData.oppositePhoneConfirm !== this.formData.oppositePhone) {
+          this.showAlert(this.$t('auth.signup.phoneConfirmMismatch'), 'danger')
           return
         }
         if (this.formData.representativeEmail.trim() === '') {
@@ -514,13 +701,48 @@ export default {
           this.showAlert(this.$t('auth.signup.invalidRepEmail'), 'danger')
           return
         }
-        if (this.formData.representativePhone.trim() !== '' && !phonePattern.test(this.formData.representativePhone)) {
-          this.showAlert(this.$t('auth.signup.invalidRepPhone'), 'danger')
+        if (this.formData.representativeEmailConfirm !== this.formData.representativeEmail) {
+          this.showAlert(this.$t('auth.signup.emailConfirmMismatch'), 'danger')
           return
+        }
+        if (this.formData.representativePhone.trim() !== '') {
+          if (!phonePattern.test(this.formData.representativePhone)) {
+            this.showAlert(this.$t('auth.signup.invalidRepPhone'), 'danger')
+            return
+          }
+          if (this.formData.representativePhoneConfirm !== this.formData.representativePhone) {
+            this.showAlert(this.$t('auth.signup.phoneConfirmMismatch'), 'danger')
+            return
+          }
         }
       } else {
         const isValid = await this.page1Validation()
         if (!isValid) return
+        // Representative is optional for the accept-link flow (unlike the
+        // fresh-signup flow where it's required) — only validate format/match
+        // when the second party actually chose to add one.
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+        const phonePattern = /^(?:\+91|0)?[789]\d{9}$/
+        if (this.formData.representativeEmail.trim() !== '') {
+          if (!emailPattern.test(this.formData.representativeEmail)) {
+            this.showAlert(this.$t('auth.signup.invalidRepEmail'), 'danger')
+            return
+          }
+          if (this.formData.representativeEmailConfirm !== this.formData.representativeEmail) {
+            this.showAlert(this.$t('auth.signup.emailConfirmMismatch'), 'danger')
+            return
+          }
+        }
+        if (this.formData.representativePhone.trim() !== '') {
+          if (!phonePattern.test(this.formData.representativePhone)) {
+            this.showAlert(this.$t('auth.signup.invalidRepPhone'), 'danger')
+            return
+          }
+          if (this.formData.representativePhoneConfirm !== this.formData.representativePhone) {
+            this.showAlert(this.$t('auth.signup.phoneConfirmMismatch'), 'danger')
+            return
+          }
+        }
       }
 
       // Hold the global spinner up for the WHOLE submit — both the direct-to-S3
@@ -551,6 +773,8 @@ export default {
         // objects and preview data URL are intentionally excluded.
         const {
           profilePicture, evidence, profilePictureContent, evidenceContent,
+          oppositeEmailConfirm, oppositePhoneConfirm,
+          representativeEmailConfirm, representativePhoneConfirm,
           ...plainFields
         } = this.formData
 

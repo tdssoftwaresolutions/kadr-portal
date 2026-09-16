@@ -7,6 +7,7 @@ import AuthLayout from '../layouts/AuthLayout.vue'
 
 /* Lazy-loaded views */
 const AdminUsersListView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminUsersListView.vue')
+const AdminEmailCorrectionsView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminEmailCorrectionsView.vue')
 const AdminCasesManagementView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminCasesManagementView.vue')
 const GoogleAccountManagement = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/GoogleAccountManagement.vue')
 const AdminBlogTaxonomyView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminBlogTaxonomyView.vue')
@@ -95,6 +96,12 @@ const appChildRoute = (prop) => [
     name: prop + '.users',
     meta: { name: 'Admin Users List', adminPage: 'users' },
     component: AdminUsersListView
+  },
+  {
+    path: 'email-corrections',
+    name: prop + '.email-corrections',
+    meta: { name: 'Email Corrections', adminPage: 'email-corrections' },
+    component: AdminEmailCorrectionsView
   },
   {
     path: 'cases',

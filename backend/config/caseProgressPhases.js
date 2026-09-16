@@ -22,7 +22,7 @@ const PHASE_DEFINITIONS = [
     label: 'Mediation setup',
     icon: 'ri-user-shared-line',
     statusIds: ['in_progress'],
-    subStatusIds: ['pending_mediation_payment', 'mediator_assigned']
+    subStatusIds: ['pending_mediation_payment', 'pending_mediation_payment_second_party', 'mediator_assigned']
   },
   {
     id: 'meetings',
@@ -52,6 +52,7 @@ const SUB_STATUS_LABELS = {
   pending_notice_payment: 'Notice payment',
   notice_sent_to_opposite_party: 'Notice sent to opposite party',
   pending_mediation_payment: 'Mediation fee payment',
+  pending_mediation_payment_second_party: 'Second party mediation fee payment',
   mediator_assigned: 'Mediator assigned',
   meeting_scheduled: 'Meeting scheduled',
   pending_mediation_agreement_sign: 'Agreement signatures'

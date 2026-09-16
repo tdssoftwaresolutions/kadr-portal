@@ -38,7 +38,7 @@ async function resolveRecipient ({ userId, to }) {
   }
 }
 
-async function logSend ({ templateKey, channel, userId, recipient, status, errorMessage, metadata }) {
+async function logSend ({ templateKey, channel, userId, recipient, status, errorMessage, metadata, caseId }) {
   try {
     await prisma.notification_send_logs.create({
       data: {
@@ -48,7 +48,8 @@ async function logSend ({ templateKey, channel, userId, recipient, status, error
         recipient: recipient || null,
         status,
         error_message: errorMessage || null,
-        metadata: metadata || null
+        metadata: metadata || null,
+        case_id: caseId || null
       }
     })
   } catch (e) {
@@ -72,11 +73,13 @@ async function send ({
   channel,
   userId,
   to,
+  cc,
   data = {},
   attachments = [],
   source = 'api',
   ruleKey = null,
-  skipChannelCheck = false
+  skipChannelCheck = false,
+  caseId = null
 }) {
   const normalizedChannel = String(channel || '').toUpperCase()
   const sender = CHANNEL_SENDERS[normalizedChannel]
@@ -122,6 +125,7 @@ async function send ({
       recipientLabel = email
       const result = await emailChannel.send({
         to: email,
+        cc,
         template,
         data: mergedData,
         attachments
@@ -132,7 +136,8 @@ async function send ({
         userId: user?.id || userId,
         recipient: email,
         status: 'sent',
-        metadata: { source, ruleKey, provider: channelSettings.provider }
+        metadata: { source, ruleKey, provider: channelSettings.provider, cc: cc || undefined },
+        caseId
       })
       return { sent: true, channel: normalizedChannel, result }
     }
@@ -153,7 +158,8 @@ async function send ({
         userId: user?.id || userId,
         recipient: phone,
         status: 'sent',
-        metadata: { source, ruleKey, provider: channelSettings.provider }
+        metadata: { source, ruleKey, provider: channelSettings.provider },
+        caseId
       })
       return { sent: true, channel: normalizedChannel, result }
     }
@@ -173,7 +179,8 @@ async function send ({
         userId: uid,
         recipient: uid,
         status: result?.skipped ? 'skipped' : 'sent',
-        metadata: { source, ruleKey, push: result }
+        metadata: { source, ruleKey, push: result },
+        caseId
       })
       return { sent: !result?.skipped, channel: normalizedChannel, result }
     }
@@ -187,7 +194,8 @@ async function send ({
       recipient: recipientLabel,
       status: 'failed',
       errorMessage: err.message,
-      metadata: { source, ruleKey }
+      metadata: { source, ruleKey },
+      caseId
     })
     throw err
   }

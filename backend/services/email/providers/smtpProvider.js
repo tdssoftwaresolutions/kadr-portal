@@ -17,11 +17,12 @@ const getTransporter = () => {
   return cachedTransporter
 }
 
-const send = async ({ to, subject, html, attachments }) => {
+const send = async ({ to, cc, subject, html, attachments }) => {
   const transporter = getTransporter()
   return transporter.sendMail({
     from: emailConfig.from,
     to,
+    ...(cc ? { cc } : {}),
     subject,
     html,
     attachments: attachments || []

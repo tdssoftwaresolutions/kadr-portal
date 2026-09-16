@@ -17,7 +17,9 @@ router.post('/resetPassword', authLimiter, validate(resetPasswordSchema), authCo
 router.post('/confirmPasswordChange', authLimiter, validate(confirmPasswordChangeSchema), authController.confirmPasswordChange)
 router.post('/sendOtp', otpLimiter, authController.sendOtp)
 router.post('/verifyOTP', otpLimiter, authController.verifyOtp)
+router.post('/requestSignupEmailOtp', otpLimiter, authController.requestSignupEmailOtp)
+router.post('/verifySignupEmailOtp', otpLimiter, authController.verifySignupEmailOtp)
 router.get('/isEmailExist', authLimiter, authController.isEmailExist)
 router.get('/getGoogleToken', authMiddleware, authController.getGoogleToken)
-
+router.post('/webhook-test-tracking', authController.webhookTestTracking)
 module.exports = router

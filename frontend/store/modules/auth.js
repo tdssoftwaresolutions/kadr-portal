@@ -15,7 +15,9 @@ import {
   GET_EXISTING_USER_ENDPOINT,
   GOOGLE_TOKEN_ENDPOINT,
   IS_EMAIL_EXIST_ENDPOINT,
-  VERIFY_SIGNATURE_ENDPOINT
+  VERIFY_SIGNATURE_ENDPOINT,
+  REQUEST_SIGNUP_EMAIL_OTP_ENDPOINT,
+  VERIFY_SIGNUP_EMAIL_OTP_ENDPOINT
 } from '../endpoints'
 
 export default {
@@ -301,6 +303,36 @@ export default {
           success: false,
           error
         }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async requestSignupEmailOtp ({ dispatch }, { email }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(REQUEST_SIGNUP_EMAIL_OTP_ENDPOINT, { email })
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async verifySignupEmailOtp ({ dispatch }, { email, otp }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(VERIFY_SIGNUP_EMAIL_OTP_ENDPOINT, { email, otp })
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
       } finally {
         dispatch('spinner/hideSpinner')
       }

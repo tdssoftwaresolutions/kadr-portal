@@ -84,7 +84,7 @@ const buildDailyReminders = async () => {
   const { startUtc: todayStart, endUtc: todayEnd } = getISTDayBounds(0)
   const { startUtc: yesterdayStart, endUtc: yesterdayEnd } = getISTDayBounds(-1)
 
-  const [admins, pendingClientApprovals, pendingMediatorApprovals, pendingPaymentCases, pendingAcceptanceCases, unassignedMediatorCases, todayMeetings, feedbackCandidateMeetings, pendingSignatures] = await Promise.all([
+  const [admins, pendingClientApprovals, pendingMediatorApprovals, pendingPaymentCases, pendingSecondPartyMediationPaymentCases, pendingAcceptanceCases, unassignedMediatorCases, todayMeetings, feedbackCandidateMeetings, pendingSignatures] = await Promise.all([
     prisma.user.findMany({
       where: { user_type: 'ADMIN', active: true },
       select: { id: true, name: true, email: true, user_type: true, active: true }
@@ -109,6 +109,16 @@ const buildDailyReminders = async () => {
     prisma.cases.findMany({
       where: {
         second_party: { not: null },
+        sub_status: CaseSubTypes.PENDING_MEDIATION_PAYMENT_SECOND_PARTY
+      },
+      select: {
+        caseId: true,
+        user_cases_second_partyTouser: { select: { id: true, name: true, email: true, user_type: true, active: true } }
+      }
+    }),
+    prisma.cases.findMany({
+      where: {
+        second_party: { not: null },
         sub_status: CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY
       },
       select: {
@@ -125,7 +135,9 @@ const buildDailyReminders = async () => {
         sub_status: {
           notIn: [
             CaseSubTypes.PENDING_NOTICE_PAYMENT,
-            CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY
+            CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY,
+            CaseSubTypes.PENDING_MEDIATION_PAYMENT,
+            CaseSubTypes.PENDING_MEDIATION_PAYMENT_SECOND_PARTY
           ]
         }
       },
@@ -220,6 +232,12 @@ const buildDailyReminders = async () => {
       ? 'Notice payment pending'
       : 'Mediation payment pending'
     recipient.sections.pendingPayments.push({ caseId: c.caseId, reason })
+  })
+
+  pendingSecondPartyMediationPaymentCases.forEach((c) => {
+    const recipient = getRecipient(recipientMap, c.user_cases_second_partyTouser)
+    if (!recipient) return
+    recipient.sections.pendingPayments.push({ caseId: c.caseId, reason: 'Mediation payment pending (your share)' })
   })
 
   pendingAcceptanceCases.forEach((c) => {

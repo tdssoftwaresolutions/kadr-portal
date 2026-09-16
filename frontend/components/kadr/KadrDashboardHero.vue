@@ -7,7 +7,10 @@
         alt="Profile picture"
       >
       <div class="hero-user-meta">
-        <h3>{{ greeting }}</h3>
+        <div class="hero-name-row">
+          <h3>{{ greeting }}</h3>
+          <span v-if="role" class="hero-role-badge">{{ role }}</span>
+        </div>
         <p v-if="email">{{ email }}</p>
       </div>
     </div>
@@ -44,6 +47,10 @@ export default {
       default: ''
     },
     email: {
+      type: String,
+      default: ''
+    },
+    role: {
       type: String,
       default: ''
     },

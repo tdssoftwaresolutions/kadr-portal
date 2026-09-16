@@ -3,6 +3,8 @@ const generalController = require('../../controller/generalController')
 const websiteContactController = require('../../controller/websiteContactController')
 const pushController = require('../../controller/pushController')
 const authMiddleware = require('../../middleware/authMiddleware')
+const { otpLimiter } = require('../../middleware/rateLimitMiddleware')
+const { auditMiddleware, AUDIT_ACTIONS } = require('../../services/audit/auditLogService')
 
 const router = express.Router()
 
@@ -13,6 +15,14 @@ router.post('/verify-signature', generalController.verifySignature)
 router.get('/getDashboardContent', generalController.getDashboardContent)
 router.post('/updateUserProfile', generalController.updateUserProfile)
 router.post('/deleteMyAccount', generalController.deleteMyAccount)
+router.post('/profile/email/requestChange', otpLimiter, generalController.requestProfileEmailChange)
+router.post('/profile/email/confirmChange', otpLimiter,
+  auditMiddleware(AUDIT_ACTIONS.EMAIL_CHANGED_SELF_SERVICE, {
+    targetType: 'user',
+    getTargetId: (req) => req.user?.id,
+    getDetails: (req) => ({ newEmail: req.body.newEmail })
+  }),
+  generalController.confirmProfileEmailChange)
 
 router.get('/push/vapid-public-key', pushController.vapidPublicKey)
 router.post('/push/register', pushController.register)

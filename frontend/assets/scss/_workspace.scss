@@ -63,11 +63,31 @@
   object-fit: cover;
 }
 
+.hero-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .hero-user-meta h3 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: bold;
   color: var(--kadr-text-on-primary);
+}
+
+.hero-role-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--kadr-radius-pill, 999px);
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: var(--kadr-text-on-primary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .hero-user-meta p {

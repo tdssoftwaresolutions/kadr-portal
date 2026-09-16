@@ -3,6 +3,7 @@
     <kadr-dashboard-hero
       :name="user.name"
       :email="user.email"
+      :role="roleLabel"
       :avatar-url="avatarUrl"
       :stats="heroStats"
     />
@@ -96,6 +97,7 @@ import ClientCases from './ClientCases.vue'
 import KadrDashboardHero from '../../components/kadr/KadrDashboardHero.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
 import { formatTime } from '../../utils/dateFormat'
+import { getRoleLabel } from '../../utils/roleLabels'
 
 const KADR_EVENT_COLOR = 'var(--kadr-event-kadr)'
 
@@ -112,7 +114,14 @@ export default {
   },
   data () {
     return {
-      kadrEventColor: KADR_EVENT_COLOR
+      kadrEventColor: KADR_EVENT_COLOR,
+      paymentAmounts: { noticeInr: 1000, mediationInr: 5000 }
+    }
+  },
+  async created () {
+    const res = await this.$store.dispatch('getPaymentAmounts')
+    if (res.success && res.data) {
+      this.paymentAmounts = { noticeInr: res.data.noticeInr, mediationInr: res.data.mediationInr }
     }
   },
   computed: {
@@ -124,6 +133,9 @@ export default {
     },
     avatarUrl () {
       return (this.content.user && this.content.user.profile_picture_url) || ''
+    },
+    roleLabel () {
+      return getRoleLabel(this.user && this.user.type, this.$t)
     },
     heroStats () {
       return [
@@ -143,30 +155,16 @@ export default {
           ? this.$t('clientDashboard.caseNumber', { id: c.caseId })
           : this.$t('clientDashboard.aCase')
 
-        if (
-          c.case_statuses?.id === 'in_progress' &&
-          c.case_sub_statuses?.id === 'notice_sent_to_opposite_party' &&
-          isSecondParty
-        ) {
-          cards.push({
-            key: `accept-${c.id}`,
-            caseId: c.id,
-            title: this.$t('clientDashboard.acceptMediation'),
-            description: this.$t('clientDashboard.acceptMediationDesc', { caseLabel, amount: 1000 }),
-            buttonText: this.$t('clientDashboard.iAccept'),
-            trigger: 'payment',
-            paymentType: 'notice',
-            variant: 'success'
-          })
-        }
+        // Accepting the mediation notice is free — handled in the case workspace's
+        // progress panel, not a paid dashboard card here.
 
         if (c.case_sub_statuses?.id === 'pending_notice_payment' && isFirstParty) {
           cards.push({
             key: `notice-pay-${c.id}`,
             caseId: c.id,
             title: this.$t('clientDashboard.noticePaymentDue'),
-            description: this.$t('clientDashboard.noticePaymentDesc', { caseLabel, amount: 1000 }),
-            buttonText: this.$t('clientDashboard.payAmount', { amount: 1000 }),
+            description: this.$t('clientDashboard.noticePaymentDesc', { caseLabel, amount: this.paymentAmounts.noticeInr }),
+            buttonText: this.$t('clientDashboard.payAmount', { amount: this.paymentAmounts.noticeInr }),
             trigger: 'payment',
             paymentType: 'notice',
             variant: 'primary'
@@ -178,8 +176,21 @@ export default {
             key: `mediation-pay-${c.id}`,
             caseId: c.id,
             title: this.$t('clientDashboard.mediationFeeDue'),
-            description: this.$t('clientDashboard.mediationFeeDesc', { caseLabel, amount: 5000 }),
-            buttonText: this.$t('clientDashboard.payAmount', { amount: 5000 }),
+            description: this.$t('clientDashboard.mediationFeeDesc', { caseLabel, amount: this.paymentAmounts.mediationInr }),
+            buttonText: this.$t('clientDashboard.payAmount', { amount: this.paymentAmounts.mediationInr }),
+            trigger: 'payment',
+            paymentType: 'mediation',
+            variant: 'warning'
+          })
+        }
+
+        if (c.case_sub_statuses?.id === 'pending_mediation_payment_second_party' && isSecondParty) {
+          cards.push({
+            key: `mediation-pay-second-${c.id}`,
+            caseId: c.id,
+            title: this.$t('clientDashboard.mediationFeeSecondDue'),
+            description: this.$t('clientDashboard.mediationFeeSecondDesc', { caseLabel, amount: this.paymentAmounts.mediationInr }),
+            buttonText: this.$t('clientDashboard.payAmount', { amount: this.paymentAmounts.mediationInr }),
             trigger: 'payment',
             paymentType: 'mediation',
             variant: 'warning'

@@ -3,7 +3,10 @@ import {
   GET_USER_DATA_ENDPOINT,
   UPDATE_USER_PROFILE,
   DELETE_MY_ACCOUNT_ENDPOINT,
-  ADMIN_SET_USER_DELETED_ENDPOINT
+  ADMIN_SET_USER_DELETED_ENDPOINT,
+  ADMIN_UPDATE_USER_PROFILE_ENDPOINT,
+  REQUEST_PROFILE_EMAIL_CHANGE_ENDPOINT,
+  CONFIRM_PROFILE_EMAIL_CHANGE_ENDPOINT
 } from '../endpoints'
 
 export default {
@@ -75,6 +78,52 @@ export default {
       try {
         dispatch('spinner/showSpinner')
         const { data } = await apiClient.post(ADMIN_SET_USER_DELETED_ENDPOINT, { userId, isDeleted })
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        dispatch('alert/showAlert', { message: data.message, type: 'success' }, { root: true })
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async requestProfileEmailChange ({ dispatch }, { newEmail }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(REQUEST_PROFILE_EMAIL_CHANGE_ENDPOINT, { newEmail })
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async confirmProfileEmailChange ({ dispatch }, { newEmail, otp }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(CONFIRM_PROFILE_EMAIL_CHANGE_ENDPOINT, { newEmail, otp })
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async adminUpdateUserProfile ({ dispatch }, payload) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(ADMIN_UPDATE_USER_PROFILE_ENDPOINT, payload)
         if (!data.success) throw new Error(data.error?.message || data.message)
         dispatch('alert/showAlert', { message: data.message, type: 'success' }, { root: true })
         return data

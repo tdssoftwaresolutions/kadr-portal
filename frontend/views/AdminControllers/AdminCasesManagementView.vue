@@ -404,6 +404,35 @@
               </template>
             </div>
           </b-tab>
+
+          <b-tab :title="$t('adminCases.emailHistory')">
+            <div class="detail-section">
+              <p v-if="emailHistoryLoading" class="text-muted small mb-0">{{ $t('adminCases.loadingEmailHistory') }}</p>
+              <template v-else>
+                <p v-if="noticeEmailSentCount > 0" class="small text-muted mb-3">
+                  {{ $t('adminCases.noticeSentCount', { count: noticeEmailSentCount }) }}
+                </p>
+                <div v-if="emailHistory.length" class="email-history-list">
+                  <div v-for="log in emailHistory" :key="log.id" class="email-history-row">
+                    <div>
+                      <strong>{{ formatTemplateKey(log.template_key) }}</strong>
+                      <p class="mb-0 text-muted small">{{ log.recipient }}</p>
+                    </div>
+                    <div class="text-end">
+                      <span class="status-chip" :class="log.status === 'sent' ? 'success' : 'danger'">{{ log.status }}</span>
+                      <p class="mb-0 text-muted small">{{ formatDate(log.created_at) }}</p>
+                    </div>
+                  </div>
+                </div>
+                <kadr-empty-state
+                  v-else
+                  icon="fas fa-envelope"
+                  :title="$t('adminCases.noEmailHistory')"
+                  :description="$t('adminCases.noEmailHistoryDescription')"
+                />
+              </template>
+            </div>
+          </b-tab>
         </b-tabs>
 
         <div class="d-flex justify-content-end detail-modal-footer">
@@ -578,6 +607,9 @@ export default {
       meetingFields: [],
       selectedCaseCommission: 0,
       detailTab: 0,
+      emailHistory: [],
+      emailHistoryLoading: false,
+      emailHistoryFetchedForCaseId: null,
       repModalVisible: false,
       savingRep: false,
       caseForRep: null,
@@ -598,6 +630,9 @@ export default {
     agreementRecord () {
       if (!this.selectedCase) return null
       return this.selectedCase.case_agreement_tracking || null
+    },
+    noticeEmailSentCount () {
+      return this.emailHistory.filter((log) => log.template_key === 'paymentNoticeToSecondParty').length
     },
     isSelectedCaseClosed () {
       if (!this.selectedCase) return false
@@ -677,6 +712,11 @@ export default {
       return this.repHasExisting
         ? this.$t('adminCases.changeFirstPartyRepresentative')
         : this.$t('adminCases.addFirstPartyRepresentative')
+    }
+  },
+  watch: {
+    detailTab (tabIndex) {
+      if (tabIndex === 3) this.fetchEmailHistory()
     }
   },
   methods: {
@@ -786,6 +826,26 @@ export default {
     },
     onDetailModalHidden () {
       this.detailTab = 0
+      this.emailHistory = []
+      this.emailHistoryFetchedForCaseId = null
+    },
+    async fetchEmailHistory () {
+      if (!this.selectedCase) return
+      if (this.emailHistoryFetchedForCaseId === this.selectedCase.id) return
+      this.emailHistoryLoading = true
+      try {
+        const response = await this.$store.dispatch('getCaseEmailHistory', { caseId: this.selectedCase.id })
+        if (response.success) {
+          this.emailHistory = response.data.logs || []
+          this.emailHistoryFetchedForCaseId = this.selectedCase.id
+        }
+      } finally {
+        this.emailHistoryLoading = false
+      }
+    },
+    formatTemplateKey (key) {
+      if (!key) return '—'
+      return key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase())
     },
     statusLabel (c) {
       if (c.case_statuses && c.case_statuses.name) return c.case_statuses.name
@@ -937,6 +997,21 @@ export default {
 }
 .detail-section {
   margin-bottom: 1.35rem;
+}
+.email-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.email-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--kadr-border-info);
+  border-radius: var(--kadr-radius-md);
+  background: var(--kadr-surface-muted);
 }
 .detail-section:last-child {
   margin-bottom: 0;

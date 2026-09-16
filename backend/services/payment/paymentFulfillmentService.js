@@ -16,6 +16,7 @@ const {
   createAndInviteCaseMeeting
 } = require('../meeting/meetingInvitationService')
 const { copyEmailToRepresentative, PARTY_SIDES } = require('../case/representativeService')
+const { sendNoticeEmailsToSecondParty } = require('../case/noticeEmailService')
 const analytics = require('../../utils/analytics')
 
 async function fulfillClientCasePayment ({
@@ -75,27 +76,7 @@ async function fulfillClientCasePayment ({
   if (!caseDetails) return
 
   if (caseDetails.sub_status === CaseSubTypes.PENDING_NOTICE_PAYMENT) {
-    const uniqueSignUpLink = helper.generateUniqueSignUpLink(caseDetails.user_cases_second_partyTouser.id)
-    // Build the evidence row as pre-rendered HTML so the template doesn't need
-    // conditional logic. Empty string when no document was uploaded.
-    const evidenceRowHtml = caseDetails.evidence_document_url
-      ? `<tr>
-          <td style="padding:8px 12px;color:#6b7280;font-size:14px;white-space:nowrap;vertical-align:top;">Evidence document</td>
-          <td style="padding:8px 12px;font-size:14px;vertical-align:top;"><a href="${caseDetails.evidence_document_url}" target="_blank" rel="noopener noreferrer">View document</a></td>
-        </tr>`
-      : ''
-    const noticeToSecondPartyVars = {
-      recipientName: caseDetails.user_cases_second_partyTouser.name,
-      firstPartyName: caseDetails.user_cases_first_partyTouser.name,
-      caseId: caseDetails.caseId,
-      caseType: caseDetails.case_type,
-      category: caseDetails.category,
-      description: caseDetails.description,
-      evidenceRowHtml,
-      registerUrl: uniqueSignUpLink
-    }
-    await helper.sendTemplatedEmail('paymentNoticeToSecondParty', caseDetails.user_cases_second_partyTouser.email, noticeToSecondPartyVars)
-    await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.SECOND, templateKey: 'paymentNoticeToSecondParty', variables: noticeToSecondPartyVars })
+    await sendNoticeEmailsToSecondParty({ caseId, caseDetails })
 
     const paymentInitiatedVars = {
       recipientName: caseDetails.user_cases_first_partyTouser.name,
@@ -103,7 +84,7 @@ async function fulfillClientCasePayment ({
       amount,
       referenceId
     }
-    await helper.sendTemplatedEmail('paymentInitiatedByFirstParty', caseDetails.user_cases_first_partyTouser.email, paymentInitiatedVars)
+    await helper.sendTemplatedEmail('paymentInitiatedByFirstParty', caseDetails.user_cases_first_partyTouser.email, paymentInitiatedVars, [], { caseId })
     await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.FIRST, templateKey: 'paymentInitiatedByFirstParty', variables: paymentInitiatedVars })
     await recordCaseMilestone(prisma, { caseId, subStatusId: CaseSubTypes.PENDING_NOTICE_PAYMENT })
     await updateCaseSubStatus(prisma, caseId, {
@@ -111,23 +92,43 @@ async function fulfillClientCasePayment ({
       sub_status: CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY
     })
     await recordCaseMilestone(prisma, { caseId, subStatusId: CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY })
-  } else if (caseDetails.sub_status === CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY) {
-    await ensureNoticePhaseComplete(prisma, caseId)
-    await updateCaseSubStatus(prisma, caseId, {
-      status: CaseTypes.IN_PROGRESS,
-      sub_status: CaseSubTypes.PENDING_MEDIATION_PAYMENT
-    })
-    await helper.sendTemplatedEmail('mediationAcceptanceFirstParty', caseDetails.user_cases_first_partyTouser.email, {
-      recipientName: caseDetails.user_cases_first_partyTouser.name
-    })
-    await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.FIRST, templateKey: 'mediationAcceptanceFirstParty', variables: { recipientName: caseDetails.user_cases_first_partyTouser.name } })
-    await helper.sendTemplatedEmail('mediationAcceptanceSecondParty', caseDetails.user_cases_second_partyTouser.email, {
-      recipientName: caseDetails.user_cases_second_partyTouser.name
-    })
-    await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.SECOND, templateKey: 'mediationAcceptanceSecondParty', variables: { recipientName: caseDetails.user_cases_second_partyTouser.name } })
   } else if (caseDetails.sub_status === CaseSubTypes.PENDING_MEDIATION_PAYMENT) {
+    // First party's mediation fee. Acceptance itself (NOTICE_SENT_TO_OPPOSITE_PARTY ->
+    // PENDING_MEDIATION_PAYMENT) is now free and handled by generalController.acceptMediationRequest,
+    // so this branch only ever fires for the first party's payment here on.
+    if (clientId !== caseDetails.user_cases_first_partyTouser.id) {
+      console.error('[paymentFulfillment] unexpected payer for PENDING_MEDIATION_PAYMENT', { caseId, clientId })
+      return
+    }
     await ensureNoticePhaseComplete(prisma, caseId)
     await recordCaseMilestone(prisma, { caseId, subStatusId: CaseSubTypes.PENDING_MEDIATION_PAYMENT })
+    await updateCaseSubStatus(prisma, caseId, {
+      status: CaseTypes.IN_PROGRESS,
+      sub_status: CaseSubTypes.PENDING_MEDIATION_PAYMENT_SECOND_PARTY
+    })
+    await recordCaseMilestone(prisma, { caseId, subStatusId: CaseSubTypes.PENDING_MEDIATION_PAYMENT_SECOND_PARTY })
+
+    const firstPartyVars = {
+      recipientName: caseDetails.user_cases_first_partyTouser.name,
+      currency,
+      amount,
+      referenceId
+    }
+    await helper.sendTemplatedEmail('mediationFeeFirstPartyPaidAwaitingSecond', caseDetails.user_cases_first_partyTouser.email, firstPartyVars, [], { caseId })
+    await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.FIRST, templateKey: 'mediationFeeFirstPartyPaidAwaitingSecond', variables: firstPartyVars })
+
+    const secondPartyVars = { recipientName: caseDetails.user_cases_second_partyTouser.name }
+    await helper.sendTemplatedEmail('mediationFeeSecondPartyActionNeeded', caseDetails.user_cases_second_partyTouser.email, secondPartyVars, [], { caseId })
+    await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.SECOND, templateKey: 'mediationFeeSecondPartyActionNeeded', variables: secondPartyVars })
+  } else if (caseDetails.sub_status === CaseSubTypes.PENDING_MEDIATION_PAYMENT_SECOND_PARTY) {
+    // Second party's mediation fee — this is what now triggers mediator assignment
+    // and first-meeting scheduling (previously done immediately after the single,
+    // first-party-only mediation payment).
+    if (clientId !== caseDetails.user_cases_second_partyTouser.id) {
+      console.error('[paymentFulfillment] unexpected payer for PENDING_MEDIATION_PAYMENT_SECOND_PARTY', { caseId, clientId })
+      return
+    }
+    await recordCaseMilestone(prisma, { caseId, subStatusId: CaseSubTypes.PENDING_MEDIATION_PAYMENT_SECOND_PARTY })
 
     const service = new CaseAssignmentService({ prisma })
     const response = await service.assign({
@@ -161,10 +162,11 @@ async function fulfillClientCasePayment ({
       }
     })
 
-    const meetingStart = new Date()
-    meetingStart.setHours(meetingStart.getHours() + 1)
-    const meetingEnd = new Date(meetingStart)
-    meetingEnd.setHours(meetingEnd.getHours() + 1)
+    // Auto-scheduled for a random 30-minute-aligned slot tomorrow, 9 AM-6 PM
+    // IST, rather than a fixed offset from "now" — gives parties/mediator a
+    // reasonable heads-up and lands on a normal working-hours time.
+    const { pickNextDayMeetingSlot } = require('../../utils/datetime')
+    const { start: meetingStart, end: meetingEnd } = pickNextDayMeetingSlot({ durationMinutes: 60 })
     const { title, description } = buildFirstMeetingCopy({
       caseNumber: caseDetails.caseId,
       firstPartyName: caseDetails.user_cases_first_partyTouser.name,

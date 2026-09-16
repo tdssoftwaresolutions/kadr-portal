@@ -230,7 +230,7 @@
     if (minimal) {
       host.className = 'kadr-footer-minimal'
       host.innerHTML =
-        '<span>© 2026 KADR.live</span>' +
+        '<span>© 2026 KADR.live &middot; Kadr.live is a product owned and operated by ADIOSDLC LEGAL TECHNOLOGY SOLUTIONS PRIVATE LIMITED, a company incorporated in India.</span>' +
         '<a href="index">Home</a>' +
         '<a href="blog">Blog</a>' +
         '<a href="video-reels">Reels</a>' +
@@ -272,6 +272,7 @@
       '<div class="ft-bottom">' +
       '<div>' +
       '<div class="ft-copy">© 2026 KADR.live | All Rights Reserved</div>' +
+      '<div class="ft-copy" style="margin-top:4px;">Kadr.live is a product owned and operated by ADIOSDLC LEGAL TECHNOLOGY SOLUTIONS PRIVATE LIMITED, a company incorporated in India.</div>' +
       '<div class="ft-legal">' +
       '<a class="ft-link" href="privacy_policy" style="font-size:11px;margin-bottom:0;">Privacy Policy</a>' +
       '<a class="ft-link" href="terms_of_use_users" style="font-size:11px;margin-bottom:0;">Terms for Users</a>' +

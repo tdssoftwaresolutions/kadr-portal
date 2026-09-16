@@ -22,6 +22,21 @@ module.exports = {
       if (!adultPlatformLiabilityAck) {
         throw createError(errorCodes.INVALID_REQUEST)
       }
+      // Invite-link completions (existingUser: true) skip this — clicking a link
+      // that was emailed to them already proves ownership of that address. Fresh
+      // self-registrations must have verified their own email via OTP first
+      // (see authController.requestSignupEmailOtp/verifySignupEmailOtp).
+      if (existingUser !== true) {
+        const normalizedEmailForOtp = String(email || '').trim().toLowerCase()
+        const verifiedOtp = await prisma.otp_resets.findFirst({
+          where: { email: normalizedEmailForOtp, type: 'SIGNUP_EMAIL_VERIFY' },
+          select: { id: true, verified_at: true, expires_at: true }
+        })
+        if (!verifiedOtp || !verifiedOtp.verified_at || verifiedOtp.expires_at < new Date()) {
+          throw createError(errorCodes.EMAIL_NOT_VERIFIED)
+        }
+        await prisma.otp_resets.delete({ where: { id: verifiedOtp.id } })
+      }
       // Files are uploaded directly to S3 by the browser (presigned URLs), so we
       // normally receive their object URLs. The legacy base64 fields are still
       // accepted as a fallback (e.g. older mobile clients) and uploaded here.
@@ -53,6 +68,35 @@ module.exports = {
           data: userRequestData,
           select: { id: true }
         })
+
+        // Second party's own representative, if they chose to add one on the
+        // accept-link flow (optional, unlike the first party's at case creation).
+        if (representativeEmail) {
+          try {
+            const { attachRepresentativeToCase, PARTY_SIDES } = require('../services/case/representativeService')
+            const existingCase = await prisma.cases.findFirst({
+              where: { second_party: activatedUser.id },
+              orderBy: { id: 'desc' },
+              select: { id: true, caseId: true, category: true }
+            })
+            if (existingCase) {
+              await attachRepresentativeToCase({
+                caseId: existingCase.id,
+                side: PARTY_SIDES.SECOND,
+                representativeEmail,
+                representativeName,
+                representativePhone,
+                caseNumber: existingCase.caseId,
+                category: existingCase.category,
+                representedPartyName: name,
+                activateImmediately: true
+              })
+            }
+          } catch (repErr) {
+            console.error('[signup] second-party representative tagging failed', repErr.message)
+          }
+        }
+
         await helper.sendTemplatedEmail('welcomeCredentials', email, {
           recipientName: name,
           email,
@@ -150,7 +194,8 @@ module.exports = {
         }
 
         await helper.sendTemplatedEmail('registrationUnderReview', email, {
-          recipientName: name
+          recipientName: name,
+          roleLabel: 'Client'
         })
 
         analytics.trackRegistration({
@@ -222,7 +267,8 @@ module.exports = {
       })
       try {
         await helper.sendTemplatedEmail('registrationUnderReview', req.user.email, {
-          recipientName: req.user.name || 'Client'
+          recipientName: req.user.name || 'Client',
+          roleLabel: 'Client'
         })
       } catch (_) { /* non-blocking */ }
       analytics.trackCaseCreated({

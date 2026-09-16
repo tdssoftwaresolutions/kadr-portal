@@ -37,7 +37,8 @@ async function resolveAmount (purpose, amountOverride) {
   if (purpose === PAYMENT_PURPOSES.MEDIATOR_PRO) {
     return amountOverride != null ? Number(amountOverride) : await getProMonthlyPriceInr()
   }
-  if (amountOverride != null) return Number(amountOverride)
+  // CLIENT_NOTICE / CLIENT_MEDIATION are fixed-price — never trust a client-supplied
+  // amount for these, always resolve from server-side config (env-backed).
   const fixed = PURPOSE_AMOUNTS_INR[purpose]
   if (!fixed) throw createError(errorCodes.INVALID_REQUEST, { message: 'Unknown payment purpose' })
   return fixed

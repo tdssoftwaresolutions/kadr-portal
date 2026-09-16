@@ -2,6 +2,7 @@ const { createError } = require('../../utils/errors')
 const errorCodes = require('../../utils/errors/errorCodes')
 const { fetchCaseByCnr, officialEcourtsUrl } = require('./ecourtsIndiaPartnerService')
 const { assertFeature } = require('../subscription/entitlementService')
+const { syncTrackerHearingsToCalendar, removeTrackerCalendarEvents } = require('./courtCaseCalendarSync')
 
 async function requireCourtTracker (mediatorId) {
   await assertFeature(mediatorId, 'court_case_tracker')
@@ -35,18 +36,20 @@ function summaryFromFullCase (full) {
   return {
     case_title: full.caseTitle ? String(full.caseTitle).slice(0, 500) : null,
     court_name: full.courtName ? String(full.courtName).slice(0, 200) : null,
-    case_status: full.caseStatus ? String(full.caseStatus).slice(0, 64) : null
+    case_status: full.caseStatus ? String(full.caseStatus).slice(0, 64) : null,
+    next_hearing_date: full.profile?.nextHearingDate ? String(full.profile.nextHearingDate).slice(0, 32) : null
   }
 }
 
 function summaryFromSnapshot (snap) {
   if (!snap || typeof snap !== 'object') {
-    return { case_title: null, court_name: null, case_status: null }
+    return { case_title: null, court_name: null, case_status: null, next_hearing_date: null }
   }
   return {
     case_title: snap.caseTitle ? String(snap.caseTitle).slice(0, 500) : null,
     court_name: snap.courtName ? String(snap.courtName).slice(0, 200) : null,
-    case_status: snap.caseStatus ? String(snap.caseStatus).slice(0, 64) : null
+    case_status: snap.caseStatus ? String(snap.caseStatus).slice(0, 64) : null,
+    next_hearing_date: snap.profile?.nextHearingDate ? String(snap.profile.nextHearingDate).slice(0, 32) : null
   }
 }
 
@@ -60,6 +63,7 @@ function serializeTracker (row, { includeSnapshot = false } = {}) {
     caseTitle: row.case_title || fromSnap.case_title || null,
     courtName: row.court_name || fromSnap.court_name || null,
     caseStatus: row.case_status || fromSnap.case_status || null,
+    nextHearingDate: row.next_hearing_date || fromSnap.next_hearing_date || null,
     lastFetchedAt: row.last_fetched_at,
     updatedAt: row.updated_at,
     createdAt: row.created_at,
@@ -112,6 +116,8 @@ async function addTracker (prisma, mediatorId, { cnr: rawCnr, label }) {
     }
   })
 
+  await syncTrackerHearingsToCalendar(prisma, row, snapshot)
+
   return serializeTracker(row)
 }
 
@@ -135,6 +141,8 @@ async function refreshTracker (prisma, mediatorId, trackerId) {
       last_fetched_at: now
     }
   })
+
+  await syncTrackerHearingsToCalendar(prisma, updated, snapshot)
 
   return {
     tracker: serializeTracker(updated),
@@ -163,6 +171,7 @@ async function removeTracker (prisma, mediatorId, trackerId) {
   })
   if (!row) throw createError(errorCodes.NOT_FOUND)
   await prisma.mediator_court_case_trackers.delete({ where: { id: trackerId } })
+  await removeTrackerCalendarEvents(prisma, trackerId)
 }
 
 module.exports = {

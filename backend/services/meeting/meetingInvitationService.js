@@ -234,7 +234,7 @@ async function createAndInviteCaseMeeting ({
           ...baseInviteVars,
           ...partyTemplateVars,
           ...firstPartyExtraVars
-        }, attachments)
+        }, attachments, { caseId })
       )
     }
     if (secondParty?.email) {
@@ -244,7 +244,7 @@ async function createAndInviteCaseMeeting ({
           ...baseInviteVars,
           ...partyTemplateVars,
           ...secondPartyExtraVars
-        }, attachments)
+        }, attachments, { caseId })
       )
     }
     // Representatives get the same meeting invite as the party they represent.
@@ -255,7 +255,7 @@ async function createAndInviteCaseMeeting ({
           ...baseInviteVars,
           ...partyTemplateVars,
           ...firstPartyExtraVars
-        }, attachments)
+        }, attachments, { caseId })
       )
     }
     if (secondPartyRep?.email && !secondPartyRep.is_deleted) {
@@ -265,7 +265,7 @@ async function createAndInviteCaseMeeting ({
           ...baseInviteVars,
           ...partyTemplateVars,
           ...secondPartyExtraVars
-        }, attachments)
+        }, attachments, { caseId })
       )
     }
   }
@@ -276,7 +276,7 @@ async function createAndInviteCaseMeeting ({
         recipientName: mediator.name,
         ...baseInviteVars,
         ...mediatorTemplateVars
-      }, attachments)
+      }, attachments, { caseId })
     )
   }
 
@@ -366,26 +366,35 @@ async function emailMediatorCaseAssigned ({
 }
 
 async function emailPartiesMediatorAssigned ({
+  caseId,
+  // Every call site passes [firstParty, secondParty] in this fixed order.
   parties = [],
   mediatorName,
   caseNumber
 }) {
+  const { copyEmailToRepresentative, PARTY_SIDES } = require('../case/representativeService')
+  const sides = [PARTY_SIDES.FIRST, PARTY_SIDES.SECOND]
+
   await Promise.all(
-    parties
-      .filter((p) => p?.email)
-      .map((party) =>
-        helper.sendTemplatedEmail('caseMediatorAssigned', party.email, {
-          recipientName: party.name,
-          caseId: caseNumber,
-          mediatorName: mediatorName || 'your assigned mediator',
-          bodyHtml: `
-            <p>A dispute resolution expert (<strong>${escapeHtml(mediatorName || 'assigned')}</strong>) has been assigned to case <strong>${escapeHtml(caseNumber)}</strong>.</p>
-            <p>You will receive a separate email when a mediation meeting is scheduled.</p>
-          `
-        }).catch((err) => {
-          console.error('[meetingInvitation] party assignment email failed', party.email, err.message)
-        })
-      )
+    parties.map(async (party, index) => {
+      if (!party?.email) return
+      const vars = {
+        recipientName: party.name,
+        caseId: caseNumber,
+        mediatorName: mediatorName || 'your assigned mediator',
+        bodyHtml: `
+          <p>A dispute resolution expert (<strong>${escapeHtml(mediatorName || 'assigned')}</strong>) has been assigned to case <strong>${escapeHtml(caseNumber)}</strong>.</p>
+          <p>You will receive a separate email when a mediation meeting is scheduled.</p>
+        `
+      }
+      await helper.sendTemplatedEmail('caseMediatorAssigned', party.email, vars, [], { caseId }).catch((err) => {
+        console.error('[meetingInvitation] party assignment email failed', party.email, err.message)
+      })
+      const side = sides[index]
+      if (caseId && side) {
+        await copyEmailToRepresentative({ caseId, side, templateKey: 'caseMediatorAssigned', variables: vars })
+      }
+    })
   )
 }
 

@@ -8,71 +8,71 @@ datasource db {
 }
 
 model user {
-  id                             String          @id @default(uuid()) @db.Char(36)
-  name                           String          @db.VarChar(255)
-  email                          String          @db.VarChar(255)
-  phone_number                   String?         @db.VarChar(20)
-  password_hash                  String          @db.VarChar(255)
-  created_at                     DateTime?       @default(now()) @db.Timestamp(0)
-  updated_at                     DateTime?       @default(now()) @db.Timestamp(0)
-  user_type                      user_user_type  @default(CLIENT)
-  active                         Boolean         @default(true)
-  is_deleted                     Boolean         @default(false)
-  reward_points_balance          Int             @default(0)
-  referred_by_id                 String?         @db.Char(36)
-  referral_code                  String?         @unique(map: "uq_user_referral_code") @db.VarChar(100)
-  city                           String?         @db.VarChar(100)
-  state                          String?         @db.VarChar(100)
-  pincode                        String?         @db.Char(6)
-  is_self_signed_up              Boolean         @default(false)
-  llb_college                    String?         @db.VarChar(255)
-  llb_university                 String?         @db.VarChar(255)
-  llb_year                       Int?            @default(0)
-  mediator_course_year           Int?            @default(0)
-  mcpc_certificate_url           String?         @db.VarChar(255)
-  preferred_area_of_practice     String?         @db.LongText
-  selected_hearing_types         String?         @db.LongText
-  bar_enrollment_no              String?         @db.VarChar(255)
-  preferred_languages            String?         @db.LongText
-  llb_certificate_url            String?         @db.VarChar(255)
-  profile_picture_url            String?         @db.VarChar(255)
-  master                         Boolean         @default(false)
-  admin_permissions              Json?
-  blogs                          blogs[]
-  mediator_video_reels           MediatorVideoReel[]
-  cases_cases_first_partyTouser  cases[]         @relation("cases_first_partyTouser")
-  cases_cases_second_partyTouser cases[]         @relation("cases_second_partyTouser")
-  cases_cases_first_party_repTouser  cases[]     @relation("cases_first_party_repTouser")
-  cases_cases_second_party_repTouser cases[]     @relation("cases_second_party_repTouser")
-  cases_cases_mediatorTouser     cases[]         @relation("cases_mediatorTouser")
-  events                         events[]
-  notes                          notes[]
-  notifications                  notifications[]
-  push_devices                   user_push_devices[]
-  notification_preferences       user_notification_preferences?
-  transactions                   transactions[]
-  blog_comments                  blog_comments[]
-  mediator_bank_accounts         mediator_bank_accounts[]
-  mediator_invoices              mediator_invoices[]
-  case_messages                  case_messages[]                 @relation("case_messages_author")
-  website_contact_messages       website_contact_messages[]      @relation("website_contact_message_admin")
-  website_contact_portal_threads website_contact_threads[]       @relation("WebsiteContactPortalUser")
-  admin_inbox_read_states        admin_inbox_read_states[]
-  mediator_reward_transactions   mediator_reward_transactions[] @relation("mediator_reward_transactions")
-  reward_redemption_orders       reward_redemption_orders[]     @relation("reward_redemption_orders")
-  mediator_court_case_trackers   mediator_court_case_trackers[] @relation("mediator_court_case_trackers")
-  mediator_subscriptions         mediator_subscriptions[]       @relation("mediator_subscriptions")
-  mediator_invoice_settings      mediator_invoice_settings?     @relation("mediator_invoice_settings")
-  mediator_private_invoices      mediator_private_invoices[]    @relation("mediator_private_invoices")
-  mediator_offboarding_events    mediator_offboarding_events[]  @relation("mediator_offboarding_events")
-  payment_orders                 payment_orders[]
-  subscription_tier              subscription_tier              @default(FREE)
-  subscription_expires_at        DateTime?                      @db.DateTime(0)
-  timezone                       String?         @db.VarChar(64)
-  locale                         String?         @db.VarChar(32)
-  signup_coupon_code             String?         @db.VarChar(40)
-  referred_by                    user?           @relation("user_referrals", fields: [referred_by_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_user_referred_by")
-  referrals                      user[]          @relation("user_referrals")
+  id                                 String                         @id @default(uuid()) @db.Char(36)
+  name                               String                         @db.VarChar(255)
+  email                              String                         @db.VarChar(255)
+  phone_number                       String?                        @db.VarChar(20)
+  password_hash                      String                         @db.VarChar(255)
+  created_at                         DateTime?                      @default(now()) @db.Timestamp(0)
+  updated_at                         DateTime?                      @default(now()) @db.Timestamp(0)
+  user_type                          user_user_type                 @default(CLIENT)
+  active                             Boolean                        @default(true)
+  is_deleted                         Boolean                        @default(false)
+  reward_points_balance              Int                            @default(0)
+  referred_by_id                     String?                        @db.Char(36)
+  referral_code                      String?                        @unique(map: "uq_user_referral_code") @db.VarChar(100)
+  city                               String?                        @db.VarChar(100)
+  state                              String?                        @db.VarChar(100)
+  pincode                            String?                        @db.Char(6)
+  is_self_signed_up                  Boolean                        @default(false)
+  llb_college                        String?                        @db.VarChar(255)
+  llb_university                     String?                        @db.VarChar(255)
+  llb_year                           Int?                           @default(0)
+  mediator_course_year               Int?                           @default(0)
+  mcpc_certificate_url               String?                        @db.VarChar(255)
+  preferred_area_of_practice         String?                        @db.LongText
+  selected_hearing_types             String?                        @db.LongText
+  bar_enrollment_no                  String?                        @db.VarChar(255)
+  preferred_languages                String?                        @db.LongText
+  llb_certificate_url                String?                        @db.VarChar(255)
+  profile_picture_url                String?                        @db.VarChar(255)
+  master                             Boolean                        @default(false)
+  admin_permissions                  Json?
+  blogs                              blogs[]
+  mediator_video_reels               MediatorVideoReel[]
+  cases_cases_first_partyTouser      cases[]                        @relation("cases_first_partyTouser")
+  cases_cases_second_partyTouser     cases[]                        @relation("cases_second_partyTouser")
+  cases_cases_first_party_repTouser  cases[]                        @relation("cases_first_party_repTouser")
+  cases_cases_second_party_repTouser cases[]                        @relation("cases_second_party_repTouser")
+  cases_cases_mediatorTouser         cases[]                        @relation("cases_mediatorTouser")
+  events                             events[]
+  notes                              notes[]
+  notifications                      notifications[]
+  push_devices                       user_push_devices[]
+  notification_preferences           user_notification_preferences?
+  transactions                       transactions[]
+  blog_comments                      blog_comments[]
+  mediator_bank_accounts             mediator_bank_accounts[]
+  mediator_invoices                  mediator_invoices[]
+  case_messages                      case_messages[]                @relation("case_messages_author")
+  website_contact_messages           website_contact_messages[]     @relation("website_contact_message_admin")
+  website_contact_portal_threads     website_contact_threads[]      @relation("WebsiteContactPortalUser")
+  admin_inbox_read_states            admin_inbox_read_states[]
+  mediator_reward_transactions       mediator_reward_transactions[] @relation("mediator_reward_transactions")
+  reward_redemption_orders           reward_redemption_orders[]     @relation("reward_redemption_orders")
+  mediator_court_case_trackers       mediator_court_case_trackers[] @relation("mediator_court_case_trackers")
+  mediator_subscriptions             mediator_subscriptions[]       @relation("mediator_subscriptions")
+  mediator_invoice_settings          mediator_invoice_settings?     @relation("mediator_invoice_settings")
+  mediator_private_invoices          mediator_private_invoices[]    @relation("mediator_private_invoices")
+  mediator_offboarding_events        mediator_offboarding_events[]  @relation("mediator_offboarding_events")
+  payment_orders                     payment_orders[]
+  subscription_tier                  subscription_tier              @default(FREE)
+  subscription_expires_at            DateTime?                      @db.DateTime(0)
+  timezone                           String?                        @db.VarChar(64)
+  locale                             String?                        @db.VarChar(32)
+  signup_coupon_code                 String?                        @db.VarChar(40)
+  referred_by                        user?                          @relation("user_referrals", fields: [referred_by_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_user_referred_by")
+  referrals                          user[]                         @relation("user_referrals")
 
   @@unique([email, user_type], name: "email_user_type", map: "uq_user_email_type")
   @@index([email], map: "idx_user_email")
@@ -83,34 +83,35 @@ model user {
 }
 
 model coupon_codes {
-  id                    String    @id @default(uuid()) @db.Char(36)
-  code                  String    @unique(map: "uq_coupon_code") @db.VarChar(40)
-  title                 String    @db.VarChar(255)
-  description           String?   @db.Text
-  premium_days          Int       @default(0)
-  usage_limit           Int?
-  redeemed_count        Int       @default(0)
-  active                Boolean   @default(true)
-  created_at            DateTime? @default(now()) @db.Timestamp(0)
-  updated_at            DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  id             String    @id @default(uuid()) @db.Char(36)
+  code           String    @unique(map: "uq_coupon_code") @db.VarChar(40)
+  title          String    @db.VarChar(255)
+  description    String?   @db.Text
+  premium_days   Int       @default(0)
+  usage_limit    Int?
+  redeemed_count Int       @default(0)
+  active         Boolean   @default(true)
+  created_at     DateTime? @default(now()) @db.Timestamp(0)
+  updated_at     DateTime? @default(now()) @updatedAt @db.Timestamp(0)
 
   @@index([active], map: "idx_coupon_active")
 }
 
 model mediator_court_case_trackers {
-  id              String    @id @default(uuid()) @db.Char(36)
-  mediator_id     String    @db.Char(36)
-  cnr             String    @db.VarChar(20)
-  label           String?   @db.VarChar(120)
-  case_number     String?   @db.VarChar(80)
-  case_title      String?   @db.VarChar(500)
-  court_name      String?   @db.VarChar(200)
-  case_status     String?   @db.VarChar(64)
-  case_snapshot   Json?
-  last_fetched_at DateTime? @db.DateTime(0)
-  created_at      DateTime? @default(now()) @db.Timestamp(0)
-  updated_at      DateTime? @default(now()) @updatedAt @db.Timestamp(0)
-  user            user      @relation("mediator_court_case_trackers", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_court_tracker_mediator")
+  id                String    @id @default(uuid()) @db.Char(36)
+  mediator_id       String    @db.Char(36)
+  cnr               String    @db.VarChar(20)
+  label             String?   @db.VarChar(120)
+  case_number       String?   @db.VarChar(80)
+  case_title        String?   @db.VarChar(500)
+  court_name        String?   @db.VarChar(200)
+  case_status       String?   @db.VarChar(64)
+  next_hearing_date String?   @db.VarChar(32)
+  case_snapshot     Json?
+  last_fetched_at   DateTime? @db.DateTime(0)
+  created_at        DateTime? @default(now()) @db.Timestamp(0)
+  updated_at        DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  user              user      @relation("mediator_court_case_trackers", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_court_tracker_mediator")
 
   @@unique([mediator_id, cnr], map: "uq_mediator_court_cnr")
   @@index([mediator_id, updated_at], map: "idx_court_tracker_mediator_updated")
@@ -131,30 +132,30 @@ model mediator_reward_transactions {
 }
 
 model reward_catalog_items {
-  id                  String    @id @default(uuid()) @db.Char(36)
-  title               String    @db.VarChar(255)
-  description         String?   @db.Text
+  id                  String                     @id @default(uuid()) @db.Char(36)
+  title               String                     @db.VarChar(255)
+  description         String?                    @db.Text
   points_cost         Int
-  active              Boolean   @default(true)
-  sort_order          Int       @default(0)
-  fulfillment_type    reward_fulfillment_type @default(MANUAL)
-  fulfillment_rule_id String?   @db.Char(36)
-  created_at          DateTime? @default(now()) @db.Timestamp(0)
-  updated_at          DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  active              Boolean                    @default(true)
+  sort_order          Int                        @default(0)
+  fulfillment_type    reward_fulfillment_type    @default(MANUAL)
+  fulfillment_rule_id String?                    @db.Char(36)
+  created_at          DateTime?                  @default(now()) @db.Timestamp(0)
+  updated_at          DateTime?                  @default(now()) @updatedAt @db.Timestamp(0)
   orders              reward_redemption_orders[]
-  fulfillment_rule    reward_fulfillment_rules? @relation(fields: [fulfillment_rule_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_reward_catalog_rule")
+  fulfillment_rule    reward_fulfillment_rules?  @relation(fields: [fulfillment_rule_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_reward_catalog_rule")
 
   @@index([active, sort_order], map: "idx_reward_catalog_active_sort")
 }
 
 model reward_fulfillment_rules {
-  id          String    @id @default(uuid()) @db.Char(36)
-  name        String    @db.VarChar(255)
-  description String?   @db.Text
-  active      Boolean   @default(true)
-  steps       Json
-  created_at  DateTime? @default(now()) @db.Timestamp(0)
-  updated_at  DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  id            String                 @id @default(uuid()) @db.Char(36)
+  name          String                 @db.VarChar(255)
+  description   String?                @db.Text
+  active        Boolean                @default(true)
+  steps         Json
+  created_at    DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?              @default(now()) @updatedAt @db.Timestamp(0)
   catalog_items reward_catalog_items[]
 }
 
@@ -246,22 +247,22 @@ enum mediator_private_invoice_status {
 }
 
 model mediator_private_invoices {
-  id             String                          @id @default(uuid()) @db.Char(36)
-  mediator_id    String                          @db.Char(36)
-  invoice_number String                          @db.VarChar(80)
-  client_name    String                          @db.VarChar(255)
-  client_email   String?                         @db.VarChar(255)
-  issue_date     DateTime                        @db.Date
-  due_date       DateTime?                       @db.Date
-  status         mediator_private_invoice_status @default(ISSUED)
-  subtotal       Decimal                         @db.Decimal(12, 2)
-  cgst_total     Decimal                         @default(0) @db.Decimal(12, 2)
-  sgst_total     Decimal                         @default(0) @db.Decimal(12, 2)
-  grand_total    Decimal                         @db.Decimal(12, 2)
-  notes          String?                         @db.Text
-  created_at     DateTime?                       @default(now()) @db.Timestamp(0)
-  updated_at     DateTime?                       @default(now()) @updatedAt @db.Timestamp(0)
-  user           user                            @relation("mediator_private_invoices", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_private_invoice_mediator")
+  id             String                           @id @default(uuid()) @db.Char(36)
+  mediator_id    String                           @db.Char(36)
+  invoice_number String                           @db.VarChar(80)
+  client_name    String                           @db.VarChar(255)
+  client_email   String?                          @db.VarChar(255)
+  issue_date     DateTime                         @db.Date
+  due_date       DateTime?                        @db.Date
+  status         mediator_private_invoice_status  @default(ISSUED)
+  subtotal       Decimal                          @db.Decimal(12, 2)
+  cgst_total     Decimal                          @default(0) @db.Decimal(12, 2)
+  sgst_total     Decimal                          @default(0) @db.Decimal(12, 2)
+  grand_total    Decimal                          @db.Decimal(12, 2)
+  notes          String?                          @db.Text
+  created_at     DateTime?                        @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?                        @default(now()) @updatedAt @db.Timestamp(0)
+  user           user                             @relation("mediator_private_invoices", fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_private_invoice_mediator")
   line_items     mediator_private_invoice_lines[]
 
   @@unique([mediator_id, invoice_number], map: "uq_private_invoice_mediator_number")
@@ -309,40 +310,41 @@ model reward_redemption_orders {
 }
 
 model cases {
-  id                            String                   @id @default(uuid()) @db.Char(36)
-  created_at                    DateTime?                @default(now()) @db.Timestamp(0)
-  updated_at                    DateTime?                @default(now()) @db.Timestamp(0)
-  mediator                      String?                  @db.Char(36)
-  first_party                   String?                  @db.Char(36)
-  second_party                  String?                  @db.Char(36)
-  first_party_representative    String?                  @db.Char(36)
-  second_party_representative   String?                  @db.Char(36)
-  caseId                        String?                  @db.Char(50)
-  case_type                     String?                  @db.VarChar(255)
-  mediator_commission           Decimal?                 @db.Decimal(5, 2)
-  status                        String?                  @db.VarChar(255)
-  sub_status                    String?                  @db.VarChar(255)
-  category                      String?                  @db.VarChar(100)
-  description                   String?                  @db.Text
-  evidence_document_url         String?                  @db.VarChar(255)
-  case_agreement                String?                  @db.Char(36)
-  case_history                  case_history[]
-  case_agreement_tracking       case_agreement_tracking? @relation(fields: [case_agreement], references: [id], map: "fk_case_agreement")
-  case_statuses                 case_statuses?           @relation(fields: [status], references: [id], onDelete: Cascade, map: "fk_cases_status")
-  case_sub_statuses             case_sub_statuses?       @relation(fields: [sub_status], references: [id], onDelete: Cascade, map: "fk_cases_sub_status")
-  user_cases_first_partyTouser  user?                    @relation("cases_first_partyTouser", fields: [first_party], references: [id], onUpdate: Restrict, map: "fk_client_1")
-  user_cases_second_partyTouser user?                    @relation("cases_second_partyTouser", fields: [second_party], references: [id], onUpdate: Restrict, map: "fk_client_2")
-  user_cases_first_party_repTouser  user?                @relation("cases_first_party_repTouser", fields: [first_party_representative], references: [id], onUpdate: Restrict, map: "fk_first_party_rep")
-  user_cases_second_party_repTouser user?                @relation("cases_second_party_repTouser", fields: [second_party_representative], references: [id], onUpdate: Restrict, map: "fk_second_party_rep")
-  user_cases_mediatorTouser     user?                    @relation("cases_mediatorTouser", fields: [mediator], references: [id], onUpdate: Restrict, map: "fk_mediator")
-  events                        events[]
-  transactions                  transactions[]
-  mediator_invoices             mediator_invoices[]
+  id                                String                   @id @default(uuid()) @db.Char(36)
+  created_at                        DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at                        DateTime?                @default(now()) @db.Timestamp(0)
+  mediator                          String?                  @db.Char(36)
+  first_party                       String?                  @db.Char(36)
+  second_party                      String?                  @db.Char(36)
+  first_party_representative        String?                  @db.Char(36)
+  second_party_representative       String?                  @db.Char(36)
+  caseId                            String?                  @db.Char(50)
+  case_type                         String?                  @db.VarChar(255)
+  mediator_commission               Decimal?                 @db.Decimal(5, 2)
+  status                            String?                  @db.VarChar(255)
+  sub_status                        String?                  @db.VarChar(255)
+  category                          String?                  @db.VarChar(100)
+  description                       String?                  @db.Text
+  evidence_document_url             String?                  @db.VarChar(255)
+  case_agreement                    String?                  @db.Char(36)
+  case_history                      case_history[]
+  case_agreement_tracking           case_agreement_tracking? @relation(fields: [case_agreement], references: [id], map: "fk_case_agreement")
+  case_statuses                     case_statuses?           @relation(fields: [status], references: [id], onDelete: Cascade, map: "fk_cases_status")
+  case_sub_statuses                 case_sub_statuses?       @relation(fields: [sub_status], references: [id], onDelete: Cascade, map: "fk_cases_sub_status")
+  user_cases_first_partyTouser      user?                    @relation("cases_first_partyTouser", fields: [first_party], references: [id], onUpdate: Restrict, map: "fk_client_1")
+  user_cases_second_partyTouser     user?                    @relation("cases_second_partyTouser", fields: [second_party], references: [id], onUpdate: Restrict, map: "fk_client_2")
+  user_cases_first_party_repTouser  user?                    @relation("cases_first_party_repTouser", fields: [first_party_representative], references: [id], onUpdate: Restrict, map: "fk_first_party_rep")
+  user_cases_second_party_repTouser user?                    @relation("cases_second_party_repTouser", fields: [second_party_representative], references: [id], onUpdate: Restrict, map: "fk_second_party_rep")
+  user_cases_mediatorTouser         user?                    @relation("cases_mediatorTouser", fields: [mediator], references: [id], onUpdate: Restrict, map: "fk_mediator")
+  events                            events[]
+  transactions                      transactions[]
+  mediator_invoices                 mediator_invoices[]
 
   signature_tracking signature_tracking[]
   case_messages      case_messages[]
   payment_orders     payment_orders[]
   notes              notes[]
+
   @@index([mediator], map: "fk_mediator")
   @@index([first_party], map: "fk_first_party")
   @@index([second_party], map: "fk_second_party")
@@ -364,44 +366,44 @@ model admin_settings {
 }
 
 model mediator_bank_accounts {
-  id                String    @id @default(uuid()) @db.Char(36)
-  mediator_id       String    @db.Char(36)
-  bank_name         String    @db.VarChar(255)
-  account_holder    String    @db.VarChar(255)
-  account_number    String    @db.VarChar(50)
-  ifsc_code         String    @db.VarChar(20)
-  branch_name       String?   @db.VarChar(255)
-  upi_id            String?   @db.VarChar(120)
-  created_at        DateTime? @default(now()) @db.Timestamp(0)
-  updated_at        DateTime? @default(now()) @updatedAt @db.Timestamp(0)
-  user              user      @relation(fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_bank_mediator")
+  id             String    @id @default(uuid()) @db.Char(36)
+  mediator_id    String    @db.Char(36)
+  bank_name      String    @db.VarChar(255)
+  account_holder String    @db.VarChar(255)
+  account_number String    @db.VarChar(50)
+  ifsc_code      String    @db.VarChar(20)
+  branch_name    String?   @db.VarChar(255)
+  upi_id         String?   @db.VarChar(120)
+  created_at     DateTime? @default(now()) @db.Timestamp(0)
+  updated_at     DateTime? @default(now()) @updatedAt @db.Timestamp(0)
+  user           user      @relation(fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_bank_mediator")
 
   @@unique([mediator_id], map: "uq_mediator_bank_mediator")
   @@index([mediator_id], map: "idx_mediator_bank_mediator")
 }
 
 model mediator_invoices {
-  id                      String                  @id @default(uuid()) @db.Char(36)
-  case_id                 String                  @db.Char(36)
-  mediator_id             String                  @db.Char(36)
-  invoice_month           DateTime                @db.Date
-  invoice_number          String                  @unique(map: "uq_mediator_invoice_number") @db.VarChar(80)
-  mediation_amount        Decimal                 @db.Decimal(10, 2)
-  commission_percentage   Decimal                 @db.Decimal(5, 2)
-  gst_percentage          Decimal                 @db.Decimal(5, 2)
-  tax_percentage          Decimal                 @db.Decimal(5, 2)
-  commission_amount       Decimal                 @db.Decimal(10, 2)
-  gst_amount              Decimal                 @db.Decimal(10, 2)
-  tax_amount              Decimal                 @db.Decimal(10, 2)
-  net_payable             Decimal                 @db.Decimal(10, 2)
-  status                  mediator_invoices_status @default(PENDING)
-  paid_at                 DateTime?               @db.DateTime(0)
-  paid_by                 String?                 @db.Char(36)
-  notes                   String?                 @db.VarChar(500)
-  created_at              DateTime?               @default(now()) @db.Timestamp(0)
-  updated_at              DateTime?               @default(now()) @updatedAt @db.Timestamp(0)
-  cases                   cases                   @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_invoice_case")
-  user                    user                    @relation(fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_invoice_user")
+  id                    String                   @id @default(uuid()) @db.Char(36)
+  case_id               String                   @db.Char(36)
+  mediator_id           String                   @db.Char(36)
+  invoice_month         DateTime                 @db.Date
+  invoice_number        String                   @unique(map: "uq_mediator_invoice_number") @db.VarChar(80)
+  mediation_amount      Decimal                  @db.Decimal(10, 2)
+  commission_percentage Decimal                  @db.Decimal(5, 2)
+  gst_percentage        Decimal                  @db.Decimal(5, 2)
+  tax_percentage        Decimal                  @db.Decimal(5, 2)
+  commission_amount     Decimal                  @db.Decimal(10, 2)
+  gst_amount            Decimal                  @db.Decimal(10, 2)
+  tax_amount            Decimal                  @db.Decimal(10, 2)
+  net_payable           Decimal                  @db.Decimal(10, 2)
+  status                mediator_invoices_status @default(PENDING)
+  paid_at               DateTime?                @db.DateTime(0)
+  paid_by               String?                  @db.Char(36)
+  notes                 String?                  @db.VarChar(500)
+  created_at            DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?                @default(now()) @updatedAt @db.Timestamp(0)
+  cases                 cases                    @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_invoice_case")
+  user                  user                     @relation(fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_invoice_user")
 
   @@index([case_id], map: "idx_mediator_invoice_case")
   @@index([mediator_id], map: "idx_mediator_invoice_mediator")
@@ -425,6 +427,7 @@ model events {
   google_calendar_link     String?     @db.VarChar(255)
   created_by               String?     @db.Char(36)
   case_id                  String?     @db.Char(36)
+  external_ref             String?     @db.VarChar(191)
   created_at               DateTime?   @default(now()) @db.Timestamp(0)
   updated_at               DateTime?   @default(now()) @db.Timestamp(0)
   meeting_summary          String?     @db.LongText
@@ -442,18 +445,39 @@ model events {
   @@index([case_id], map: "fk_case_id")
   @@index([created_by], map: "fk_created_by")
   @@index([start_datetime], map: "idx_events_start_datetime")
+  @@index([external_ref], map: "idx_events_external_ref")
 }
 
 model otp_resets {
-  otp        String?         @db.VarChar(255)
-  attempts   Int             @default(0)
-  created_at DateTime?       @default(now()) @db.Timestamp(0)
-  expires_at DateTime        @db.Timestamp(0)
-  type       otp_resets_type
-  email      String?         @db.VarChar(255)
-  id         String          @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  otp         String?         @db.VarChar(255)
+  attempts    Int             @default(0)
+  created_at  DateTime?       @default(now()) @db.Timestamp(0)
+  expires_at  DateTime        @db.Timestamp(0)
+  type        otp_resets_type
+  email       String?         @db.VarChar(255)
+  id          String          @id @default(dbgenerated("(uuid())")) @db.Char(36)
+  verified_at DateTime?       @db.Timestamp(0)
 
   @@unique([email, type], name: "unique_email_type", map: "unique_email_type")
+}
+
+model email_correction_requests {
+  id              String    @id @default(uuid()) @db.Char(36)
+  case_id         String    @db.Char(36)
+  requested_by    String    @db.Char(36)
+  party_side      String    @db.VarChar(20)
+  current_email   String    @db.VarChar(255)
+  requested_email String    @db.VarChar(255)
+  reason          String    @db.VarChar(40)
+  reason_detail   String?   @db.Text
+  status          String    @default("pending") @db.VarChar(20)
+  reviewed_by     String?   @db.Char(36)
+  reviewed_at     DateTime? @db.Timestamp(0)
+  admin_note      String?   @db.Text
+  created_at      DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([status], map: "idx_email_correction_requests_status")
+  @@index([case_id], map: "idx_email_correction_requests_case_id")
 }
 
 model available_languages {
@@ -534,8 +558,8 @@ model MediatorVideoReel {
 model blogs {
   id              String            @id @default(uuid()) @db.Char(36)
   title           String            @db.VarChar(255)
-  content         String            @db.Text  
-  url             String?           @unique(map: "url") @db.VarChar(255)  
+  content         String            @db.Text
+  url             String?           @unique(map: "url") @db.VarChar(255)
   author_id       String            @db.Char(36)
   created_at      DateTime?         @default(now()) @db.DateTime(0)
   updated_at      DateTime?         @default(now()) @db.DateTime(0)
@@ -644,20 +668,20 @@ model user_push_devices {
 }
 
 model user_notification_preferences {
-  user_id          String   @id @db.Char(36)
+  user_id           String   @id @db.Char(36)
   // Master switch for browser Web Push. When false, no category push is sent.
-  push_enabled     Boolean  @default(true)
+  push_enabled      Boolean  @default(true)
   // Recipient-facing categories (meetings/cases apply to mediators & clients).
-  meeting_reminders Boolean @default(true)
-  case_updates     Boolean  @default(true)
-  case_assignment  Boolean  @default(true)
+  meeting_reminders Boolean  @default(true)
+  case_updates      Boolean  @default(true)
+  case_assignment   Boolean  @default(true)
   // Admin-facing categories.
-  admin_approvals  Boolean  @default(true)
-  admin_support    Boolean  @default(true)
-  admin_case       Boolean  @default(true)
-  created_at       DateTime @default(now()) @db.DateTime(0)
-  updated_at       DateTime @updatedAt @db.DateTime(0)
-  user             user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_notif_prefs_user")
+  admin_approvals   Boolean  @default(true)
+  admin_support     Boolean  @default(true)
+  admin_case        Boolean  @default(true)
+  created_at        DateTime @default(now()) @db.DateTime(0)
+  updated_at        DateTime @updatedAt @db.DateTime(0)
+  user              user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_notif_prefs_user")
 }
 
 model case_events {
@@ -696,18 +720,18 @@ model case_sub_statuses {
 }
 
 model case_agreement_tracking {
-  id                              String    @unique(map: "unique_id") @default(dbgenerated("(uuid())")) @db.Char(36)
-  agreed_terms                    String?   @db.Text
-  signature_mediator              String?   @db.LongText
-  first_party_signature           String?   @db.LongText
-  second_party_signature          String?   @db.LongText
-  created_at                      DateTime  @default(now()) @db.Timestamp(0)
-  updated_at                      DateTime  @default(now()) @db.Timestamp(0)
-  mediation_agreement_link        String?   @db.Text
-  first_party_signature_datetime  DateTime? @db.DateTime(0)
-  second_party_signature_datetime DateTime? @db.DateTime(0)
+  id                              String               @unique(map: "unique_id") @default(dbgenerated("(uuid())")) @db.Char(36)
+  agreed_terms                    String?              @db.Text
+  signature_mediator              String?              @db.LongText
+  first_party_signature           String?              @db.LongText
+  second_party_signature          String?              @db.LongText
+  created_at                      DateTime             @default(now()) @db.Timestamp(0)
+  updated_at                      DateTime             @default(now()) @db.Timestamp(0)
+  mediation_agreement_link        String?              @db.Text
+  first_party_signature_datetime  DateTime?            @db.DateTime(0)
+  second_party_signature_datetime DateTime?            @db.DateTime(0)
   cases                           cases[]
-  signature_tracking signature_tracking[] 
+  signature_tracking              signature_tracking[]
 }
 
 model signature_tracking {
@@ -726,7 +750,7 @@ model signature_tracking {
   otp_verified_at   DateTime? @db.DateTime(0)
 
   case_agreement_tracking case_agreement_tracking? @relation(fields: [case_agreement_id], references: [id])
-  cases      cases?   @relation(fields:[case_id],references:[id])
+  cases                   cases?                   @relation(fields: [case_id], references: [id])
 
   @@index([case_agreement_id], map: "fk_case_agreement")
   @@index([case_id], map: "fk_signature_case")
@@ -753,6 +777,8 @@ enum blogs_status {
 enum otp_resets_type {
   MEDIATION
   RESET_PASSWORD
+  SIGNUP_EMAIL_VERIFY
+  EMAIL_CHANGE
 }
 
 enum mediator_invoices_status {
@@ -769,20 +795,20 @@ enum case_correspondence_channel {
 }
 
 model case_messages {
-  id                String                     @id @default(uuid()) @db.Char(36)
-  case_id           String                     @db.Char(36)
-  channel           case_correspondence_channel
-  author_id         String                     @db.Char(36)
-  parent_id         String?                    @db.Char(36)
-  body              String                     @db.Text
-  had_pii_removed   Boolean                    @default(false)
-  created_at        DateTime?                  @default(now()) @db.Timestamp(0)
-  updated_at        DateTime?                  @default(now()) @updatedAt @db.Timestamp(0)
-  cases             cases                      @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_case_messages_case")
-  user              user                       @relation("case_messages_author", fields: [author_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_case_messages_author")
-  parent            case_messages?             @relation("case_message_thread", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: Restrict, map: "fk_case_messages_parent")
-  replies           case_messages[]            @relation("case_message_thread")
-  attachments       case_message_attachments[]
+  id              String                      @id @default(uuid()) @db.Char(36)
+  case_id         String                      @db.Char(36)
+  channel         case_correspondence_channel
+  author_id       String                      @db.Char(36)
+  parent_id       String?                     @db.Char(36)
+  body            String                      @db.Text
+  had_pii_removed Boolean                     @default(false)
+  created_at      DateTime?                   @default(now()) @db.Timestamp(0)
+  updated_at      DateTime?                   @default(now()) @updatedAt @db.Timestamp(0)
+  cases           cases                       @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_case_messages_case")
+  user            user                        @relation("case_messages_author", fields: [author_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_case_messages_author")
+  parent          case_messages?              @relation("case_message_thread", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: Restrict, map: "fk_case_messages_parent")
+  replies         case_messages[]             @relation("case_message_thread")
+  attachments     case_message_attachments[]
 
   @@index([case_id, channel, created_at], map: "idx_case_messages_case_channel_created")
   @@index([author_id], map: "idx_case_messages_author")
@@ -807,16 +833,16 @@ enum admin_inbox_thread_kind {
 }
 
 model admin_inbox_read_states {
-  id                String                 @id @default(uuid()) @db.Char(36)
-  admin_id          String                 @db.Char(36)
+  id                String                  @id @default(uuid()) @db.Char(36)
+  admin_id          String                  @db.Char(36)
   thread_kind       admin_inbox_thread_kind
-  case_id           String?                @db.Char(36)
-  logical_channel   String?                @db.VarChar(40)
-  website_thread_id String?                @db.Char(36)
-  last_read_at      DateTime               @db.Timestamp(0)
-  created_at        DateTime?              @default(now()) @db.Timestamp(0)
-  updated_at        DateTime               @default(now()) @updatedAt @db.Timestamp(0)
-  user              user                   @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_admin_inbox_read_user")
+  case_id           String?                 @db.Char(36)
+  logical_channel   String?                 @db.VarChar(40)
+  website_thread_id String?                 @db.Char(36)
+  last_read_at      DateTime                @db.Timestamp(0)
+  created_at        DateTime?               @default(now()) @db.Timestamp(0)
+  updated_at        DateTime                @default(now()) @updatedAt @db.Timestamp(0)
+  user              user                    @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_admin_inbox_read_user")
 
   @@unique([admin_id, thread_kind, case_id, logical_channel, website_thread_id], map: "uq_admin_inbox_read")
   @@index([admin_id], map: "idx_admin_inbox_read_admin")
@@ -839,19 +865,19 @@ enum website_contact_message_author {
 }
 
 model website_contact_threads {
-  id              String                           @id @default(uuid()) @db.Char(36)
-  email           String                           @db.VarChar(255)
-  phone           String?                          @db.VarChar(40)
-  title           String                           @db.VarChar(500)
-  visitor_name    String?                          @db.VarChar(255)
-  thread_origin   website_contact_thread_origin    @default(WEBSITE)
-  portal_user_id  String?                          @db.Char(36)
-  support_topic   String?                          @db.VarChar(40)
-  status          website_contact_thread_status    @default(OPEN)
-  created_at      DateTime?                        @default(now()) @db.Timestamp(0)
-  updated_at      DateTime?                        @default(now()) @updatedAt @db.Timestamp(0)
-  messages        website_contact_messages[]
-  portal_user     user?                            @relation("WebsiteContactPortalUser", fields: [portal_user_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_website_contact_portal_user")
+  id             String                        @id @default(uuid()) @db.Char(36)
+  email          String                        @db.VarChar(255)
+  phone          String?                       @db.VarChar(40)
+  title          String                        @db.VarChar(500)
+  visitor_name   String?                       @db.VarChar(255)
+  thread_origin  website_contact_thread_origin @default(WEBSITE)
+  portal_user_id String?                       @db.Char(36)
+  support_topic  String?                       @db.VarChar(40)
+  status         website_contact_thread_status @default(OPEN)
+  created_at     DateTime?                     @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?                     @default(now()) @updatedAt @db.Timestamp(0)
+  messages       website_contact_messages[]
+  portal_user    user?                         @relation("WebsiteContactPortalUser", fields: [portal_user_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_website_contact_portal_user")
 
   @@index([updated_at], map: "idx_website_contact_threads_updated")
   @@index([portal_user_id], map: "idx_website_contact_portal_user")
@@ -960,10 +986,12 @@ model notification_send_logs {
   status        String               @default("sent") @db.VarChar(32)
   error_message String?              @db.Text
   metadata      Json?
+  case_id       String?              @db.Char(36)
   created_at    DateTime?            @default(now()) @db.Timestamp(0)
 
   @@index([created_at], map: "idx_notification_send_logs_created")
   @@index([template_key, channel], map: "idx_notification_send_logs_template")
+  @@index([case_id], map: "idx_notification_send_logs_case_id")
 }
 
 model website_settings {

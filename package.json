@@ -15,6 +15,7 @@
     "seed:notifications": "node backend/scripts/seedNotificationTemplates.js",
     "seed:notifications:force": "node backend/scripts/seedNotificationTemplates.js -- --force",
     "seed:push-templates": "node backend/scripts/seedPushTemplates.js",
+    "seed:case-split": "node backend/scripts/seedCaseMediationSplit.js",
     "push:test": "node backend/scripts/testPushNotification.js",
     "vapid:generate": "node backend/scripts/generateVapidKeys.js",
     "vapid:generate:force": "node backend/scripts/generateVapidKeys.js -- --force",

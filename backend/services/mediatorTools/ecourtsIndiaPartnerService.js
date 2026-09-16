@@ -90,7 +90,10 @@ function formatPartnerCase (apiBody, cnr) {
     caseStatus: c.caseStatus || null,
     disposalType: c.disposalType || c.disposalTypeRaw || null,
     decisionDate: c.decisionDate || null,
-    purpose: c.purpose || null
+    purpose: c.purpose || null,
+    firstHearingDate: c.firstHearingDate || null,
+    nextHearingDate: c.nextHearingDate || null,
+    lastHearingDate: c.lastHearingDate || null
   }
 
   return {

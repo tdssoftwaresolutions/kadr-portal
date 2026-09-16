@@ -145,6 +145,7 @@ async function reassignCase ({
       isReassignment: true
     }).catch((err) => console.error('[offboarding] mediator email failed', err.message)),
     emailPartiesMediatorAssigned({
+      caseId,
       parties: [
         caseRow.user_cases_first_partyTouser,
         caseRow.user_cases_second_partyTouser

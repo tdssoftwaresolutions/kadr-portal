@@ -24,66 +24,53 @@
             </div>
             <b-tabs card>
               <b-tab :title="$t('adminUsers.clientsTab', { count: activeClientsData.total })" active>
-                <div v-if="activeClientsData.total > 0" class="kadr-data-table-wrap">
-                  <b-table
-                    :items="activeClientsData.users"
-                    :fields="clientFields"
-                    :filter="tableFilter"
-                    :filter-included-fields="['name', 'email']"
-                    hover
-                    small
-                    responsive
-                    striped
-                    show-empty
-                  >
-                    <template #cell(name)="row">
-                      <div class="d-flex align-items-center">
-                        <img
-                          v-if="row.item.profile_image || row.item.profile_picture_url"
-                          :src="row.item.profile_image || row.item.profile_picture_url"
-                          class="rounded-circle me-2"
-                          width="32"
-                          height="32"
-                          alt=""
-                        />
-                        <span>{{ row.item.name || $t('adminUsers.na') }}</span>
-                      </div>
-                    </template>
-                    <template #cell(role)="row">
-                      <b-badge variant="secondary">{{ roleLabel(row.item) }}</b-badge>
-                    </template>
-                    <template #cell(status)="row">
-                      <b-badge :variant="statusVariant(row.item)">{{ statusLabel(row.item) }}</b-badge>
-                    </template>
-                    <template #cell(actions)="row">
-                      <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(row.item)">{{ $t('adminUsers.view') }}</b-button>
-                      <b-button
-                        v-if="!row.item.is_deleted"
-                        size="sm"
-                        class="mb-1"
-                        variant="outline-danger"
-                        @click="deleteUser(row.item)"
-                      >
-                        {{ $t('adminUsers.remove') }}
-                      </b-button>
-                      <b-button
-                        v-else
-                        size="sm"
-                        class="mb-1"
-                        variant="outline-success"
-                        @click="restoreUser(row.item)"
-                      >
-                        {{ $t('adminUsers.restore') }}
-                      </b-button>
-                    </template>
-                    <template #empty>
-                      <kadr-empty-state
-                        :title="$t('adminUsers.noUsers')"
-                        :description="$t('adminUsers.noUsersDescription')"
-                      />
-                    </template>
-                  </b-table>
-                </div>
+                <b-row v-if="filteredClients.length > 0">
+                  <b-col md="6" v-for="user in filteredClients" :key="user.userId" class="mb-3">
+                    <b-card class="h-100 user-card">
+                      <b-card-body class="d-flex flex-column">
+                        <div class="d-flex align-items-center mb-3">
+                          <img
+                            v-if="user.profile_image || user.profile_picture_url"
+                            :src="user.profile_image || user.profile_picture_url"
+                            class="rounded-circle me-3"
+                            width="48"
+                            height="48"
+                            alt=""
+                          />
+                          <div>
+                            <h5 class="mb-1">{{ user.name || $t('adminUsers.na') }}</h5>
+                            <p class="mb-0 text-muted small">{{ user.email || $t('adminUsers.na') }}</p>
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <b-badge variant="secondary" class="me-1">{{ roleLabel(user) }}</b-badge>
+                          <b-badge :variant="statusVariant(user)">{{ statusLabel(user) }}</b-badge>
+                        </div>
+                        <div class="mt-auto d-flex flex-wrap justify-content-end">
+                          <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(user)">{{ $t('adminUsers.view') }}</b-button>
+                          <b-button
+                            v-if="!user.is_deleted"
+                            size="sm"
+                            class="mb-1"
+                            variant="outline-danger"
+                            @click="deleteUser(user)"
+                          >
+                            {{ $t('adminUsers.remove') }}
+                          </b-button>
+                          <b-button
+                            v-else
+                            size="sm"
+                            class="mb-1"
+                            variant="outline-success"
+                            @click="restoreUser(user)"
+                          >
+                            {{ $t('adminUsers.restore') }}
+                          </b-button>
+                        </div>
+                      </b-card-body>
+                    </b-card>
+                  </b-col>
+                </b-row>
                 <kadr-empty-state
                   v-else
                   :title="$t('adminUsers.noUsers')"
@@ -101,67 +88,54 @@
               </b-tab>
 
               <b-tab :title="$t('adminUsers.expertsTab', { count: activeMediatorsData.total })">
-                <div v-if="activeMediatorsData.total > 0" class="kadr-data-table-wrap">
-                  <b-table
-                    :items="activeMediatorsData.users"
-                    :fields="mediatorFields"
-                    :filter="tableFilter"
-                    :filter-included-fields="['name', 'email']"
-                    hover
-                    small
-                    responsive
-                    striped
-                    show-empty
-                  >
-                    <template #cell(name)="row">
-                      <div class="d-flex align-items-center">
-                        <img
-                          v-if="row.item.profile_image || row.item.profile_picture_url"
-                          :src="row.item.profile_image || row.item.profile_picture_url"
-                          class="rounded-circle me-2"
-                          width="32"
-                          height="32"
-                          alt=""
-                        />
-                        <span>{{ row.item.name || $t('adminUsers.na') }}</span>
-                      </div>
-                    </template>
-                    <template #cell(role)="row">
-                      <b-badge variant="info">{{ roleLabel(row.item) }}</b-badge>
-                    </template>
-                    <template #cell(status)="row">
-                      <b-badge :variant="statusVariant(row.item)">{{ statusLabel(row.item) }}</b-badge>
-                    </template>
-                    <template #cell(actions)="row">
-                      <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(row.item)">{{ $t('adminUsers.view') }}</b-button>
-                      <b-button size="sm" class="me-1 mb-1" variant="outline-info" @click="openMediator360(row.item)">360°</b-button>
-                      <b-button
-                        v-if="!row.item.is_deleted"
-                        size="sm"
-                        class="mb-1"
-                        variant="outline-danger"
-                        @click="deleteMediator(row.item)"
-                      >
-                        {{ $t('adminUsers.remove') }}
-                      </b-button>
-                      <b-button
-                        v-else
-                        size="sm"
-                        class="mb-1"
-                        variant="outline-success"
-                        @click="restoreUser(row.item)"
-                      >
-                        {{ $t('adminUsers.restore') }}
-                      </b-button>
-                    </template>
-                    <template #empty>
-                      <kadr-empty-state
-                        :title="$t('adminUsers.noUsers')"
-                        :description="$t('adminUsers.noUsersDescription')"
-                      />
-                    </template>
-                  </b-table>
-                </div>
+                <b-row v-if="filteredMediators.length > 0">
+                  <b-col md="6" v-for="user in filteredMediators" :key="user.userId" class="mb-3">
+                    <b-card class="h-100 user-card">
+                      <b-card-body class="d-flex flex-column">
+                        <div class="d-flex align-items-center mb-3">
+                          <img
+                            v-if="user.profile_image || user.profile_picture_url"
+                            :src="user.profile_image || user.profile_picture_url"
+                            class="rounded-circle me-3"
+                            width="48"
+                            height="48"
+                            alt=""
+                          />
+                          <div>
+                            <h5 class="mb-1">{{ user.name || $t('adminUsers.na') }}</h5>
+                            <p class="mb-0 text-muted small">{{ user.email || $t('adminUsers.na') }}</p>
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <b-badge variant="info" class="me-1">{{ roleLabel(user) }}</b-badge>
+                          <b-badge :variant="statusVariant(user)">{{ statusLabel(user) }}</b-badge>
+                        </div>
+                        <div class="mt-auto d-flex flex-wrap justify-content-end">
+                          <b-button variant="outline-primary" size="sm" class="me-1 mb-1" @click="openModal(user)">{{ $t('adminUsers.view') }}</b-button>
+                          <b-button size="sm" class="me-1 mb-1" variant="outline-info" @click="openMediator360(user)">360°</b-button>
+                          <b-button
+                            v-if="!user.is_deleted"
+                            size="sm"
+                            class="mb-1"
+                            variant="outline-danger"
+                            @click="deleteMediator(user)"
+                          >
+                            {{ $t('adminUsers.remove') }}
+                          </b-button>
+                          <b-button
+                            v-else
+                            size="sm"
+                            class="mb-1"
+                            variant="outline-success"
+                            @click="restoreUser(user)"
+                          >
+                            {{ $t('adminUsers.restore') }}
+                          </b-button>
+                        </div>
+                      </b-card-body>
+                    </b-card>
+                  </b-col>
+                </b-row>
                 <kadr-empty-state
                   v-else
                   :title="$t('adminUsers.noUsers')"
@@ -182,40 +156,138 @@
         </iq-card>
       </b-col>
     </b-row>
-    <b-modal v-model="modalVisible" size="lg" :title="$t('adminUsers.userDetails')" no-footer>
-      <div v-if="selectedUser">
-        <b-row>
-          <b-col :md="selectedUser.profile_image || selectedUser.profile_picture_url ? 9 : 12">
-            <h4>{{ selectedUser.name || $t('adminUsers.na') }}</h4>
-            <p><strong>{{ $t('adminUsers.email') }}:</strong> {{ selectedUser.email || $t('adminUsers.na') }}</p>
-            <div v-for="(value, key) in filteredItem(selectedUser)" :key="key" class="mb-2">
-              <strong v-if="!isURL(value)">{{ formatKey(key) }}:</strong>
-              <span v-if="isURL(value)">
-              </span>
-              <span v-else-if="key === 'preferred_languages' || key === 'preferred_language'">
-                {{ getFullLanguages(value) }}
-              </span>
-              <span v-else-if="isArrayValue(value)">
-                {{ convertToCommaSeparated(value) }}
-              </span>
-              <span v-else>
-                {{ capitalizeWord(value) }}
-              </span>
-            </div>
-            <section v-if="certificateFields.length" >
-              <strong>{{ $t('adminUsers.documents') }}</strong>
-              <div class="docs-grid">
-                  <FilePreview
-                  v-for="(doc, index) in certificateFields"
-                  :key="doc.value"
-                  :url="doc.value"
-                  :name="formatKey(doc.key)"
-                />
+    <b-modal v-model="modalVisible" size="xl" :title="$t('adminUsers.userDetails')" no-footer @hidden="cancelEdit">
+      <div v-if="selectedUser" class="user-modal-layout">
+        <div class="user-modal-main">
+          <kadr-section-card v-if="!editMode" :title="$t('adminUsers.profileSectionTitle')" icon="ri-user-line">
+            <div class="quick-info-grid">
+              <div class="info-card">
+                <label>{{ $t('adminUsers.colName') }}</label>
+                <strong>{{ selectedUser.name || $t('adminUsers.na') }}</strong>
               </div>
-            </section>
-            <template v-if="selectedUser.cases && selectedUser.cases.length > 0">
-              <strong >{{ $t('adminUsers.cases') }}:</strong>
-              <div v-for="(caseItem, index) in selectedUser.cases" :key="index" style="border:1px solid var(--kadr-border);padding:5px;margin:10px 3px;border-radius: 15px;">
+              <div class="info-card">
+                <label>{{ $t('adminUsers.colEmail') }}</label>
+                <strong>{{ selectedUser.email || $t('adminUsers.na') }}</strong>
+              </div>
+              <template v-for="(value, key) in filteredItem(selectedUser)" :key="key">
+                <div v-if="!isURL(value)" class="info-card">
+                  <label>{{ formatKey(key) }}</label>
+                  <strong v-if="key === 'preferred_languages' || key === 'preferred_language'">{{ getFullLanguages(value) }}</strong>
+                  <strong v-else-if="isArrayValue(value)">{{ convertToCommaSeparated(value) }}</strong>
+                  <strong v-else>{{ capitalizeWord(value) }}</strong>
+                </div>
+              </template>
+            </div>
+          </kadr-section-card>
+
+          <kadr-section-card v-else :title="$t('adminUsers.editUserDetails')" icon="ri-edit-line">
+            <b-row>
+              <b-col md="6" class="mb-3">
+                <kadr-form-field :label="$t('adminUsers.colName')" id="editUserName">
+                  <template v-slot="{ id }">
+                    <b-form-input :id="id" v-model="editForm.name" />
+                  </template>
+                </kadr-form-field>
+              </b-col>
+              <b-col md="6" class="mb-3">
+                <kadr-form-field
+                  :label="$t('adminUsers.colEmail')"
+                  id="editUserEmail"
+                  :hint="editErrors.email ? '' : $t('adminUsers.emailChangeWarning')"
+                  :error="editErrors.email"
+                >
+                  <template v-slot="{ id }">
+                    <b-form-input :id="id" v-model="editForm.email" type="email" @input="editErrors.email = ''" />
+                  </template>
+                </kadr-form-field>
+              </b-col>
+              <b-col md="6" class="mb-3">
+                <kadr-form-field
+                  :label="$t('common.phone')"
+                  id="editUserPhone"
+                  :hint="editErrors.phone_number ? '' : $t('profileEdit.phoneHint')"
+                  :error="editErrors.phone_number"
+                >
+                  <template v-slot="{ id }">
+                    <b-form-input :id="id" v-model="editForm.phone_number" maxlength="10" @input="onEditPhoneInput" />
+                  </template>
+                </kadr-form-field>
+              </b-col>
+              <b-col md="6" class="mb-3">
+                <kadr-form-field :label="$t('auth.signup.cityLabel')" id="editUserCity">
+                  <template v-slot="{ id }">
+                    <b-form-input :id="id" v-model="editForm.city" />
+                  </template>
+                </kadr-form-field>
+              </b-col>
+              <b-col md="6" class="mb-3">
+                <kadr-form-field :label="$t('auth.signup.stateLabel')" id="editUserState">
+                  <template v-slot="{ id }">
+                    <b-form-input :id="id" v-model="editForm.state" />
+                  </template>
+                </kadr-form-field>
+              </b-col>
+              <b-col md="6" class="mb-3">
+                <kadr-form-field :label="$t('auth.signup.pincodeLabel')" id="editUserPincode">
+                  <template v-slot="{ id }">
+                    <b-form-input :id="id" v-model="editForm.pincode" maxlength="6" />
+                  </template>
+                </kadr-form-field>
+              </b-col>
+              <template v-if="selectedUser.user_type === 'MEDIATOR'">
+                <b-col md="6" class="mb-3">
+                  <kadr-form-field :label="$t('mediatorSignup.collegeName')" id="editUserLlbCollege">
+                    <template v-slot="{ id }">
+                      <b-form-input :id="id" v-model="editForm.llb_college" />
+                    </template>
+                  </kadr-form-field>
+                </b-col>
+                <b-col md="6" class="mb-3">
+                  <kadr-form-field :label="$t('mediatorSignup.university')" id="editUserLlbUniversity">
+                    <template v-slot="{ id }">
+                      <b-form-input :id="id" v-model="editForm.llb_university" />
+                    </template>
+                  </kadr-form-field>
+                </b-col>
+                <b-col md="6" class="mb-3">
+                  <kadr-form-field :label="$t('adminUsers.llbYear')" id="editUserLlbYear">
+                    <template v-slot="{ id }">
+                      <b-form-input :id="id" v-model="editForm.llb_year" type="number" />
+                    </template>
+                  </kadr-form-field>
+                </b-col>
+                <b-col md="6" class="mb-3">
+                  <kadr-form-field :label="$t('adminUsers.mediatorCourseYear')" id="editUserCourseYear">
+                    <template v-slot="{ id }">
+                      <b-form-input :id="id" v-model="editForm.mediator_course_year" type="number" />
+                    </template>
+                  </kadr-form-field>
+                </b-col>
+                <b-col md="12" class="mb-3">
+                  <kadr-form-field :label="$t('mediatorSignup.barEnrollmentNumber')" id="editUserBarNo">
+                    <template v-slot="{ id }">
+                      <b-form-input :id="id" v-model="editForm.bar_enrollment_no" />
+                    </template>
+                  </kadr-form-field>
+                </b-col>
+              </template>
+            </b-row>
+          </kadr-section-card>
+
+          <kadr-section-card v-if="!editMode && certificateFields.length" :title="$t('adminUsers.documents')" icon="ri-file-list-3-line">
+            <div class="docs-grid">
+              <FilePreview
+                v-for="(doc, index) in certificateFields"
+                :key="doc.value"
+                :url="doc.value"
+                :name="formatKey(doc.key)"
+              />
+            </div>
+          </kadr-section-card>
+
+          <kadr-section-card v-if="!editMode && selectedUser.cases && selectedUser.cases.length > 0" :title="$t('adminUsers.cases')" icon="ri-briefcase-4-line">
+            <div class="admin-case-list">
+              <div v-for="(caseItem, index) in selectedUser.cases" :key="index" class="party-card admin-case-card">
                 <p class="mb-2"><strong>{{ $t('adminUsers.caseId') }}:</strong> {{ caseItem.caseId || $t('adminUsers.na') }}</p>
                 <p class="mb-2"><strong>{{ $t('adminUsers.complaintCategory') }}:</strong> {{ caseItem.category || $t('adminUsers.na') }}</p>
                 <p class="mb-2"><strong>{{ $t('adminUsers.disputeDescription') }}:</strong> {{ caseItem.description || $t('adminUsers.na') }}</p>
@@ -229,9 +301,9 @@
                   <template v-if="caseItem.firstPartyRep">
                     <p class="mb-1 small text-muted">{{ $t('adminUsers.claimantRep') }}</p>
                     <p class="mb-1">{{ caseItem.firstPartyRep.name || $t('adminUsers.na') }}
-                      <b-badge :variant="caseItem.firstPartyRep.active ? 'success' : 'warning'" class="ms-1">
+                      <span class="status-chip" :class="caseItem.firstPartyRep.active ? 'success' : 'warning'">
                         {{ caseItem.firstPartyRep.active ? $t('adminUsers.repActive') : $t('adminUsers.repPending') }}
-                      </b-badge>
+                      </span>
                     </p>
                     <p class="mb-1">{{ caseItem.firstPartyRep.email }}</p>
                     <p v-if="caseItem.firstPartyRep.phone_number" class="mb-2">{{ caseItem.firstPartyRep.phone_number }}</p>
@@ -239,9 +311,9 @@
                   <template v-if="caseItem.secondPartyRep">
                     <p class="mb-1 small text-muted">{{ $t('adminUsers.respondentRep') }}</p>
                     <p class="mb-1">{{ caseItem.secondPartyRep.name || $t('adminUsers.na') }}
-                      <b-badge :variant="caseItem.secondPartyRep.active ? 'success' : 'warning'" class="ms-1">
+                      <span class="status-chip" :class="caseItem.secondPartyRep.active ? 'success' : 'warning'">
                         {{ caseItem.secondPartyRep.active ? $t('adminUsers.repActive') : $t('adminUsers.repPending') }}
-                      </b-badge>
+                      </span>
                     </p>
                     <p class="mb-1">{{ caseItem.secondPartyRep.email }}</p>
                     <p v-if="caseItem.secondPartyRep.phone_number" class="mb-2">{{ caseItem.secondPartyRep.phone_number }}</p>
@@ -257,15 +329,41 @@
                   </div>
                 </div>
               </div>
-            </template>
-          </b-col>
-          <b-col md="3" v-if="selectedUser.profile_image || selectedUser.profile_picture_url">
-            <img :src="selectedUser.profile_image || selectedUser.profile_picture_url" class="img-fluid rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;" alt="Profile" />
-          </b-col>
-        </b-row>
-        <div class="d-flex justify-content-end mt-3">
-          <b-button variant="secondary" @click="modalVisible = false">{{ $t('common.close') }}</b-button>
+            </div>
+          </kadr-section-card>
         </div>
+
+        <div class="user-modal-side">
+          <div class="section-card user-modal-profile-card">
+            <img
+              :src="selectedUser.profile_image || selectedUser.profile_picture_url || defaultAvatar"
+              class="user-modal-avatar"
+              alt="Profile"
+            />
+            <h5 class="user-modal-name">{{ selectedUser.name || $t('adminUsers.na') }}</h5>
+            <p class="user-modal-email">{{ selectedUser.email || $t('adminUsers.na') }}</p>
+            <div class="user-modal-chips">
+              <span class="status-chip secondary">{{ roleLabel(selectedUser) }}</span>
+              <span class="status-chip" :class="statusVariant(selectedUser)">{{ statusLabel(selectedUser) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="selectedUser" class="d-flex justify-content-end mt-3">
+        <template v-if="editMode">
+          <b-button variant="secondary" class="me-2" :disabled="savingEdit" @click="cancelEdit">{{ $t('common.cancel') }}</b-button>
+          <b-button variant="primary" :disabled="savingEdit" @click="saveEdit">{{ $t('common.save') }}</b-button>
+        </template>
+        <template v-else>
+          <b-button
+            v-if="selectedUser.user_type === 'CLIENT' || selectedUser.user_type === 'MEDIATOR'"
+            variant="outline-primary"
+            class="me-2"
+            @click="startEdit"
+          >{{ $t('adminUsers.edit') }}</b-button>
+          <b-button variant="secondary" @click="modalVisible = false">{{ $t('common.close') }}</b-button>
+        </template>
       </div>
     </b-modal>
     <admin-mediator-offboarding-modal
@@ -283,6 +381,13 @@ import FilePreview from '../../components/DocumentPreview.vue'
 import AdminMediatorOffboardingModal from '../../components/admin/AdminMediatorOffboardingModal.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import KadrFormField from '../../components/kadr/KadrFormField.vue'
+import KadrSectionCard from '../../components/kadr/KadrSectionCard.vue'
+import { isValidPhoneNumber, sanitizeDigits } from '../../utils/phoneValidation'
+import defaultAvatar from '../../assets/images/default_avatar.jpeg'
+
+const EDITABLE_USER_FIELDS = ['name', 'email', 'phone_number', 'city', 'state', 'pincode']
+const EDITABLE_MEDIATOR_FIELDS = ['llb_college', 'llb_university', 'llb_year', 'mediator_course_year', 'bar_enrollment_no']
 
 export default {
   name: 'UserList',
@@ -290,7 +395,9 @@ export default {
     FilePreview,
     AdminMediatorOffboardingModal,
     KadrPageHeader,
-    KadrEmptyState
+    KadrEmptyState,
+    KadrFormField,
+    KadrSectionCard
   },
   mounted () {
     sofbox.index()
@@ -299,6 +406,7 @@ export default {
   },
   data () {
     return {
+      defaultAvatar,
       tableFilter: '',
       activeClientsPage: 1,
       activeMediatorsPage: 1,
@@ -309,26 +417,21 @@ export default {
       activeMediatorsData: { users: [], total: 0 },
       modalVisible: false,
       selectedUser: null,
+      editMode: false,
+      editForm: {},
+      editErrors: { email: '', phone_number: '' },
+      savingEdit: false,
       languages: {},
       offboardingVisible: false,
       offboardingMediatorId: ''
     }
   },
   computed: {
-    tableFields () {
-      return [
-        { key: 'name', label: this.$t('adminUsers.colName'), sortable: true },
-        { key: 'email', label: this.$t('adminUsers.colEmail'), sortable: true },
-        { key: 'role', label: this.$t('adminUsers.colRole'), sortable: false },
-        { key: 'status', label: this.$t('adminUsers.colStatus'), sortable: false },
-        { key: 'actions', label: this.$t('adminUsers.colActions'), sortable: false }
-      ]
+    filteredClients () {
+      return this.filterUsers(this.activeClientsData.users)
     },
-    clientFields () {
-      return this.tableFields
-    },
-    mediatorFields () {
-      return this.tableFields
+    filteredMediators () {
+      return this.filterUsers(this.activeMediatorsData.users)
     },
     certificateFields () {
       if (!this.selectedUser) return []
@@ -417,6 +520,14 @@ export default {
       this.activeMediatorsPage = 1
       this.fetchActiveUsers(1)
     },
+    filterUsers (users) {
+      const query = this.tableFilter.trim().toLowerCase()
+      if (!query) return users
+      return users.filter((user) =>
+        (user.name || '').toLowerCase().includes(query) ||
+        (user.email || '').toLowerCase().includes(query)
+      )
+    },
     async deleteUser (user) {
       if (!window.confirm(this.$t('adminUsers.confirmRemove', { name: user.name || user.email }))) return
       const response = await this.$store.dispatch('adminSetUserDeleted', { userId: user.userId, isDeleted: true })
@@ -461,6 +572,56 @@ export default {
       this.selectedUser = user
       this.modalVisible = true
     },
+    startEdit () {
+      const fields = [...EDITABLE_USER_FIELDS, ...(this.selectedUser.user_type === 'MEDIATOR' ? EDITABLE_MEDIATOR_FIELDS : [])]
+      this.editForm = fields.reduce((form, key) => {
+        form[key] = this.selectedUser[key] ?? ''
+        return form
+      }, {})
+      this.editErrors = { email: '', phone_number: '' }
+      this.editMode = true
+    },
+    cancelEdit () {
+      this.editMode = false
+      this.editForm = {}
+      this.editErrors = { email: '', phone_number: '' }
+    },
+    onEditPhoneInput (value) {
+      this.editForm.phone_number = sanitizeDigits(value)
+      this.editErrors.phone_number = ''
+    },
+    updateRowInTables (updatedUser) {
+      const applyTo = (list) => {
+        const idx = (list || []).findIndex((u) => u.userId === updatedUser.userId)
+        if (idx !== -1) list.splice(idx, 1, { ...list[idx], ...updatedUser })
+      }
+      applyTo(this.activeClientsData.users)
+      applyTo(this.activeMediatorsData.users)
+    },
+    async saveEdit () {
+      this.editErrors = { email: '', phone_number: '' }
+      if (!this.editForm.name) {
+        this.$store.dispatch('alert/showAlert', { message: this.$t('adminUsers.editNameRequired'), type: 'danger' })
+        return
+      }
+      if (this.editForm.phone_number && !isValidPhoneNumber(this.editForm.phone_number)) {
+        this.editErrors.phone_number = this.$t('profileEdit.phoneInvalid')
+        return
+      }
+      this.savingEdit = true
+      try {
+        const payload = { userId: this.selectedUser.userId, ...this.editForm }
+        const response = await this.$store.dispatch('adminUpdateUserProfile', payload)
+        if (response.success) {
+          const updated = { ...this.selectedUser, ...response.data.user, userId: this.selectedUser.userId }
+          this.selectedUser = updated
+          this.updateRowInTables(updated)
+          this.editMode = false
+        }
+      } finally {
+        this.savingEdit = false
+      }
+    },
     getLanguageName (code) {
       return this.languages[code] || code
     },
@@ -502,7 +663,87 @@ export default {
   border-bottom: unset !important;
 }
 
+.user-card {
+  background-color: var(--kadr-surface-info);
+  border: 1px solid var(--kadr-border);
+}
+
 .rounded-circle {
   object-fit: cover;
+}
+
+.user-modal-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr;
+  gap: 1rem;
+}
+
+.user-modal-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.user-modal-side {
+  position: sticky;
+  top: 1rem;
+  align-self: flex-start;
+}
+
+.user-modal-profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem 1rem;
+}
+
+.user-modal-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--kadr-border-info);
+  margin-bottom: 0.75rem;
+}
+
+.user-modal-name {
+  margin: 0 0 0.15rem;
+}
+
+.user-modal-email {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--kadr-text-muted);
+  word-break: break-all;
+}
+
+.user-modal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.admin-case-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.admin-case-card {
+  display: block;
+}
+
+@media (max-width: 991px) {
+  .user-modal-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .user-modal-side {
+    position: static;
+  }
 }
 </style>

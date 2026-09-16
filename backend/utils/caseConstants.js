@@ -4,6 +4,7 @@ const CaseSubTypes = Object.freeze({
   NOTICE_SENT_TO_OPPOSITE_PARTY: 'notice_sent_to_opposite_party',
   PENDING_MEDIATION_AGREEMENT_SIGN: 'pending_mediation_agreement_sign',
   PENDING_MEDIATION_PAYMENT: 'pending_mediation_payment',
+  PENDING_MEDIATION_PAYMENT_SECOND_PARTY: 'pending_mediation_payment_second_party',
   PENDING_NOTICE_PAYMENT: 'pending_notice_payment'
 })
 

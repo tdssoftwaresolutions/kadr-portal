@@ -168,7 +168,7 @@ function buildNowCard (caseItem, viewerRole) {
     if (viewerRole === 'second_party') {
       return {
         headline: 'Your response is needed',
-        description: 'Review the mediation notice and accept to join the process (₹1,000 notice fee).',
+        description: 'Review the mediation notice and accept to join the process — no fee to accept.',
         tone: 'action',
         actionKey: 'accept_mediation',
         actionLabel: 'Review & accept',
@@ -205,6 +205,27 @@ function buildNowCard (caseItem, viewerRole) {
       actionKey: null,
       actionLabel: null,
       waitingOn: 'first_party'
+    }
+  }
+
+  if (subStatusId === CaseSubTypes.PENDING_MEDIATION_PAYMENT_SECOND_PARTY) {
+    if (viewerRole === 'second_party') {
+      return {
+        headline: 'Pay your share of the mediation fee',
+        description: 'Pay ₹5,000 to complete mediation setup — a mediator will then be assigned and sessions scheduled.',
+        tone: 'action',
+        actionKey: 'mediation_payment',
+        actionLabel: 'Pay ₹5,000',
+        waitingOn: null
+      }
+    }
+    return {
+      headline: 'Waiting for the opposite party’s mediation fee',
+      description: 'The opposite party must pay their share of the mediation fee before a mediator is assigned.',
+      tone: 'waiting',
+      actionKey: null,
+      actionLabel: null,
+      waitingOn: 'second_party'
     }
   }
 

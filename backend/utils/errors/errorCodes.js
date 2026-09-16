@@ -81,6 +81,10 @@ const ERROR_CODES = {
     errorCode: 'E203',
     message: 'Missing required fields'
   },
+  INVALID_PHONE_FORMAT: {
+    errorCode: 'E204',
+    message: 'Please enter a valid 10-digit phone number.'
+  },
 
   // Custom Errors
   USER_ALREADY_EXISTS: {
@@ -138,6 +142,10 @@ const ERROR_CODES = {
   OTP_NOT_VERIFIED: {
     errorCode: 'E329',
     message: 'Please verify the OTP sent to your WhatsApp before submitting.'
+  },
+  EMAIL_NOT_VERIFIED: {
+    errorCode: 'E330',
+    message: 'Please verify your email address before continuing.'
   },
   REQUIRED_CASE_ID: {
     errorCode: 'E307',

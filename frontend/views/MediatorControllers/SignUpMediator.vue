@@ -33,12 +33,39 @@
 
         <div class="field-item">
           <label for="email" class="field-label">{{ $t('auth.signup.emailAddress') }} <span class="req">*</span></label>
-          <input type="email" class="app-input" id="email" v-model="formData.email" placeholder="you@example.com" />
+          <div class="otp-inline-row">
+            <input type="email" class="app-input" id="email" v-model="formData.email" placeholder="you@example.com" />
+            <button
+              v-if="!emailOtpVerified"
+              type="button"
+              class="btn-verify-inline"
+              :disabled="emailOtpSending"
+              @click="sendEmailOtp"
+            >{{ emailOtpSent ? $t('auth.signup.resendOtp') : $t('auth.signup.verify') }}</button>
+            <span v-else class="otp-verified-badge">
+              <i class="ri-checkbox-circle-fill" aria-hidden="true"></i> {{ $t('auth.signup.verified') }}
+            </span>
+          </div>
+          <div v-if="emailOtpSent && !emailOtpVerified" class="otp-verify-row">
+            <input
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              class="app-input otp-code-input"
+              v-model="emailOtpCode"
+              :placeholder="$t('auth.signup.otpPlaceholder')"
+            />
+            <button type="button" class="btn-verify-inline" :disabled="emailOtpVerifying" @click="verifyEmailOtp">
+              {{ $t('auth.signup.confirm') }}
+            </button>
+          </div>
+          <small v-if="!emailOtpVerified" class="field-hint">{{ $t('auth.signup.emailOtpHint') }}</small>
         </div>
 
         <div class="field-item">
           <label for="phone" class="field-label">{{ $t('auth.signup.phoneNumber') }} <span class="req">*</span></label>
           <input type="tel" class="app-input" id="phone" v-model="formData.phone" :placeholder="$t('auth.signup.phoneHint')" />
+          <small class="field-hint">{{ $t('auth.signup.phoneHint') }}</small>
         </div>
 
         <div class="field-item">
@@ -77,6 +104,7 @@
               class="upload-thumb"
             />
           </div>
+          <small class="field-hint">{{ $t('auth.signup.profilePictureHint') }}</small>
         </div>
 
         <div class="field-item field-item--full">
@@ -118,12 +146,13 @@
         <div class="field-item">
           <label for="llbDegree" class="field-label">{{ $t('mediatorSignup.llbCertificate') }} <span class="req">*</span></label>
           <div class="upload-row">
-            <input type="file" class="upload-native" id="llbDegree" @change="onUploadLLBDegreeCertificate" />
+            <input type="file" class="upload-native" id="llbDegree" accept=".pdf,.doc,.docx,image/*" @change="onUploadLLBDegreeCertificate" />
             <label for="llbDegree" class="upload-btn">
               <i class="ri-attachment-2" aria-hidden="true"></i> {{ $t('auth.signup.chooseFile') }}
             </label>
             <span v-if="formData.llbCertificate" class="upload-filename">{{ formData.llbCertificate.name }}</span>
           </div>
+          <small class="field-hint">{{ $t('mediatorSignup.certificateUploadHint') }}</small>
         </div>
 
         <div class="step-section-title">{{ $t('mediatorSignup.mcpcCourse') }}</div>
@@ -142,12 +171,13 @@
         <div class="field-item">
           <label for="mcpcCertificate" class="field-label">{{ $t('mediatorSignup.mcpcCertificate') }} <span class="req">*</span></label>
           <div class="upload-row">
-            <input type="file" class="upload-native" id="mcpcCertificate" @change="onUploadMCPCCertificate" />
+            <input type="file" class="upload-native" id="mcpcCertificate" accept=".pdf,.doc,.docx,image/*" @change="onUploadMCPCCertificate" />
             <label for="mcpcCertificate" class="upload-btn">
               <i class="ri-attachment-2" aria-hidden="true"></i> {{ $t('auth.signup.chooseFile') }}
             </label>
             <span v-if="formData.mcpcCertificate" class="upload-filename">{{ formData.mcpcCertificate.name }}</span>
           </div>
+          <small class="field-hint">{{ $t('mediatorSignup.certificateUploadHint') }}</small>
         </div>
       </div>
 
@@ -297,7 +327,13 @@ export default {
         'IPR'
       ],
       availableLanguges: {},
-      years: []
+      years: [],
+      emailOtpSent: false,
+      emailOtpVerified: false,
+      emailOtpVerifiedEmail: '',
+      emailOtpCode: '',
+      emailOtpSending: false,
+      emailOtpVerifying: false
     }
   },
   computed: {
@@ -314,11 +350,54 @@ export default {
       return this.$t('mediatorSignup.subtitlePractice')
     }
   },
+  watch: {
+    'formData.email' (newVal) {
+      if (this.emailOtpVerified && newVal !== this.emailOtpVerifiedEmail) {
+        this.emailOtpVerified = false
+        this.emailOtpSent = false
+        this.emailOtpCode = ''
+      }
+    }
+  },
   mounted () {
     this.loadAvailableLanguages()
     this.generateYears()
   },
   methods: {
+    async sendEmailOtp () {
+      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+      if (!emailPattern.test(this.formData.email)) {
+        this.showAlert(this.$t('auth.signup.invalidAccountEmail'), 'danger')
+        return
+      }
+      this.emailOtpSending = true
+      try {
+        const response = await this.$store.dispatch('requestSignupEmailOtp', { email: this.formData.email })
+        if (response.success) {
+          this.emailOtpSent = true
+          this.showAlert(this.$t('auth.signup.emailOtpSent'), 'success')
+        }
+      } finally {
+        this.emailOtpSending = false
+      }
+    },
+    async verifyEmailOtp () {
+      if (!this.emailOtpCode.trim()) {
+        this.showAlert(this.$t('auth.signup.enterOtp'), 'danger')
+        return
+      }
+      this.emailOtpVerifying = true
+      try {
+        const response = await this.$store.dispatch('verifySignupEmailOtp', { email: this.formData.email, otp: this.emailOtpCode })
+        if (response.success) {
+          this.emailOtpVerified = true
+          this.emailOtpVerifiedEmail = this.formData.email
+          this.showAlert(this.$t('auth.signup.emailVerifiedSuccess'), 'success')
+        }
+      } finally {
+        this.emailOtpVerifying = false
+      }
+    },
     onClickProfilePicture (picture) {
       const popupWidth = 400
       const popupHeight = 400
@@ -468,6 +547,10 @@ export default {
             : (response.message || this.$t('mediatorSignup.accountExists'))
           this.showAlert(msg, 'danger')
           return false
+        }
+        if (!this.emailOtpVerified || this.emailOtpVerifiedEmail !== this.formData.email) {
+          this.showAlert(this.$t('auth.signup.emailOtpRequired'), 'danger')
+          return
         }
       } else if (currentStep === 2) {
         if (this.formData.llbCollege.trim() === '') {

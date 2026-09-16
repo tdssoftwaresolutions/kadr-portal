@@ -50,7 +50,10 @@ module.exports = {
 
       if (req.user.type === 'ADMIN') {
         await assertAdminPage(req, 'calendar')
-        const where = { ...dateFilter }
+        // Admins should only ever see official Kadr mediation events — never
+        // a mediator's personal calendar entries (including synced court
+        // hearing dates).
+        const where = { ...dateFilter, type: 'KADR' }
         const [events, total] = await prisma.$transaction([
           prisma.events.findMany({
             where,

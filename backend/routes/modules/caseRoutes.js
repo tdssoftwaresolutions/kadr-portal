@@ -6,8 +6,10 @@ const mediatorController = require('../../controller/mediatorController')
 const caseCorrespondenceController = require('../../controller/caseCorrespondenceController')
 const calendarController = require('../../controller/calendarController')
 const noteController = require('../../controller/noteController')
+const emailCorrectionController = require('../../controller/emailCorrectionController')
 const authMiddleware = require('../../middleware/authMiddleware')
 const { requireAdmin, requireClient } = require('../../middleware/requireRole')
+const { auditMiddleware, AUDIT_ACTIONS } = require('../../services/audit/auditLogService')
 
 const router = express.Router()
 
@@ -20,12 +22,16 @@ router.post('/initiateNewCase', requireClient, clientController.initiateNewCase)
 router.post('/cases/approve-type', requireAdmin, generalController.approveCaseType)
 router.post('/cases/add-representative', requireAdmin, generalController.addCaseRepresentative)
 router.post('/acceptMediationRequest', generalController.acceptMediationRequest)
+router.post('/cases/email-correction-request', requireClient,
+  auditMiddleware(AUDIT_ACTIONS.EMAIL_CORRECTION_REQUESTED, { targetType: 'case', getTargetId: (req) => req.body.caseId }),
+  emailCorrectionController.createRequest)
 router.post('/setClientPayment', paymentController.setClientPayment)
 router.post('/assignMediator', requireAdmin, mediatorController.assignMediator)
 router.post('/assignCaseMediator', requireAdmin, generalController.adminAssignCaseMediator)
 router.get('/getAvailableMediators', requireAdmin, mediatorController.getAvailableMediators)
 router.get('/listAllMediatorsWithCases', requireAdmin, mediatorController.listAllMediatorsWithCases)
 router.get('/activeCases', requireAdmin, generalController.getAdminActiveCases)
+router.get('/activeCases/:caseId/emailHistory', requireAdmin, generalController.getCaseEmailHistory)
 router.get('/caseManagementMeta', requireAdmin, generalController.getAdminCaseManagementMeta)
 
 router.get('/case-correspondence', caseCorrespondenceController.listMessages)

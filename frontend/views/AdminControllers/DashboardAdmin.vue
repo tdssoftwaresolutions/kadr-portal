@@ -3,6 +3,7 @@
     <kadr-dashboard-hero
       :name="user.name"
       :email="user.email"
+      :role="roleLabel"
       :avatar-url="(user && user.photo) || ''"
       :stats="heroStats"
     />
@@ -72,6 +73,7 @@ import ClientCases from '../ClientControllers/ClientCases.vue'
 import KadrDashboardHero from '../../components/kadr/KadrDashboardHero.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
 import { adminUserHasComponent } from '../../utils/adminAccess'
+import { getRoleLabel } from '../../utils/roleLabels'
 const KADR_EVENT_COLOR = 'var(--kadr-event-kadr)'
 
 export default {
@@ -103,6 +105,9 @@ export default {
     },
     showCasesWidget () {
       return adminUserHasComponent(this.user, 'cases')
+    },
+    roleLabel () {
+      return getRoleLabel(this.user && this.user.type, this.$t)
     },
     todaysEvents () {
       return this.content?.todaysEvent || []

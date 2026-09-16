@@ -125,12 +125,29 @@ const TEMPLATES = [
 
   {
     template_key: 'paymentNoticeToSecondParty',
-    name: 'Notice to second party after notice-fee payment',
-    description: 'Sent to the respondent when the claimant pays the notice fee. evidenceRowHtml is pre-rendered by the service — empty string when no document was uploaded.',
+    name: 'Sign-up link for second party (notice response)',
+    description: 'Sent to the respondent right after noticeDetailsToSecondPartyCcFirstParty, containing only the registration/join link. Kept link-only (not CC\'d to the first party) so the first party never sees the second party\'s personal sign-up URL.',
+    subject: 'Get started — respond to your mediation notice',
+    greeting: 'Hello {recipientName},',
+    body_html: `
+      <p>As mentioned in our previous email, here is your link to register on the Kadr portal and respond to the mediation notice filed by <strong>{firstPartyName}</strong> (Case ID: <strong>{caseId}</strong>).</p>
+      <p style="text-align:center;margin:24px 0;">
+        <a href="{registerUrl}" style="background:#3b5bdb;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Accept &amp; respond</a>
+      </p>
+      <p style="font-size:13px;color:#6b7280;">This link is personal to you — please do not share it. If you believe this notice was sent in error, please contact our support team.</p>
+    `,
+    body_text: 'Here is your link to register on the Kadr portal and respond to the mediation notice filed by {firstPartyName} (Case ID: {caseId}): {registerUrl}',
+    variables: ['recipientName', 'firstPartyName', 'caseId', 'registerUrl']
+  },
+
+  {
+    template_key: 'noticeDetailsToSecondPartyCcFirstParty',
+    name: 'Mediation notice details (no sign-up link)',
+    description: 'Sent to the second party with the first party CC\'d, case details only — no sign-up link. A follow-up email (paymentNoticeToSecondParty) carries the second party\'s personal join link (second party only, never CC\'d). evidenceRowHtml is pre-rendered by the service — empty string when no document was uploaded.',
     subject: 'Mediation notice — Case {caseId}',
     greeting: 'Hello {recipientName},',
     body_html: `
-      <p>You have been named as the respondent in a mediation case filed by <strong>{firstPartyName}</strong>.</p>
+      <p>A mediation case has been filed by <strong>{firstPartyName}</strong>, naming <strong>{secondPartyName}</strong> as the respondent.</p>
       <table style="border-collapse:collapse;width:100%;margin:16px 0;">
         <tbody>
           <tr>
@@ -152,14 +169,11 @@ const TEMPLATES = [
           {evidenceRowHtml}
         </tbody>
       </table>
-      <p>To accept or respond to this mediation notice, please register on the Kadr portal:</p>
-      <p style="text-align:center;margin:24px 0;">
-        <a href="{registerUrl}" style="background:#3b5bdb;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Accept &amp; respond</a>
-      </p>
+      <p>A separate email will follow shortly with a link to register on the Kadr portal and get started.</p>
       <p style="font-size:13px;color:#6b7280;">If you believe this notice was sent in error, please contact our support team.</p>
     `,
-    body_text: 'You have been named as the respondent in a mediation case filed by {firstPartyName}. Case ID: {caseId}. Category: {category}. Description: {description}. To respond, visit: {registerUrl}',
-    variables: ['recipientName', 'firstPartyName', 'caseId', 'caseType', 'category', 'description', 'evidenceRowHtml', 'registerUrl']
+    body_text: 'A mediation case has been filed by {firstPartyName}, naming {secondPartyName} as the respondent. Case ID: {caseId}. Category: {category}. Description: {description}. A separate email will follow with a link to register and get started.',
+    variables: ['recipientName', 'firstPartyName', 'secondPartyName', 'caseId', 'caseType', 'category', 'description', 'evidenceRowHtml']
   },
 
   {
@@ -214,6 +228,121 @@ const TEMPLATES = [
     `,
     body_text: 'Thank you for accepting mediation. We will notify you once the claimant pays the mediation fee and a mediator is assigned.',
     variables: ['recipientName']
+  },
+
+  {
+    template_key: 'mediationFeeFirstPartyPaidAwaitingSecond',
+    name: 'Mediation fee received — awaiting second party',
+    description: 'Sent to the first party confirming their mediation fee payment, and that mediator assignment now waits on the second party\'s matching payment.',
+    subject: 'Payment received — awaiting the opposite party\'s mediation fee',
+    greeting: 'Hello {recipientName},',
+    body_html: `
+      <p>We have received your mediation fee payment.</p>
+      <table style="border-collapse:collapse;width:100%;margin:16px 0;">
+        <tbody>
+          <tr>
+            <td style="padding:8px 12px;color:#6b7280;font-size:14px;white-space:nowrap;">Amount</td>
+            <td style="padding:8px 12px;font-size:14px;"><strong>{currency} {amount}</strong></td>
+          </tr>
+          <tr style="background:#f9fafb;">
+            <td style="padding:8px 12px;color:#6b7280;font-size:14px;white-space:nowrap;">Reference</td>
+            <td style="padding:8px 12px;font-size:14px;">{referenceId}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The opposite party must now pay their share of the mediation fee before a mediator can be assigned. We will notify you as soon as that is done.</p>
+    `,
+    body_text: 'Your mediation fee payment of {currency} {amount} has been received (reference: {referenceId}). We are now waiting on the opposite party to pay their share before a mediator is assigned.',
+    variables: ['recipientName', 'currency', 'amount', 'referenceId']
+  },
+
+  {
+    template_key: 'mediationFeeSecondPartyActionNeeded',
+    name: 'Mediation fee due from second party',
+    description: 'Sent to the second party once the first party has paid their mediation fee, prompting the second party to pay their own share.',
+    subject: 'Action needed — pay your mediation fee to continue',
+    greeting: 'Hello {recipientName},',
+    body_html: `
+      <p>The claimant has paid their share of the mediation fee. To proceed, please log in to the Kadr portal and pay your share of the mediation fee.</p>
+      <p>Once your payment is received, a certified mediator will be assigned and the first meeting will be scheduled.</p>
+    `,
+    body_text: 'The claimant has paid their share of the mediation fee. Please log in and pay your share to proceed — a mediator will then be assigned.',
+    variables: ['recipientName']
+  },
+
+  // ── OTP / verification templates ──────────────────────────────────────────
+
+  {
+    template_key: 'passwordResetOtp',
+    name: 'Password reset OTP',
+    description: 'Sent when a user requests a password reset. Referenced by authController.resetPassword but was missing from this seed file — added to fix a broken email send.',
+    subject: 'Your Kadr password reset code',
+    greeting: 'Hello {recipientName},',
+    body_html: `
+      <p>Use the code below to reset your password. This code expires in 10 minutes.</p>
+      <p style="text-align:center;margin:24px 0;font-size:28px;font-weight:700;letter-spacing:6px;">{otp}</p>
+      <p style="font-size:13px;color:#6b7280;">If you didn't request this, you can safely ignore this email.</p>
+    `,
+    body_text: 'Your password reset code is {otp}. This code expires in 10 minutes. If you didn\'t request this, you can ignore this email.',
+    variables: ['recipientName', 'otp']
+  },
+
+  {
+    template_key: 'signupEmailOtp',
+    name: 'Signup email verification OTP',
+    description: 'Sent when someone verifies their own email address during client/mediator signup, before an account exists.',
+    subject: 'Verify your email — Kadr Portal',
+    greeting: 'Hello,',
+    body_html: `
+      <p>Use the code below to verify your email address and continue your Kadr Portal sign up. This code expires in 10 minutes.</p>
+      <p style="text-align:center;margin:24px 0;font-size:28px;font-weight:700;letter-spacing:6px;">{otp}</p>
+      <p style="font-size:13px;color:#6b7280;">If you didn't request this, you can safely ignore this email.</p>
+    `,
+    body_text: 'Your Kadr Portal email verification code is {otp}. This code expires in 10 minutes.',
+    variables: ['otp']
+  },
+
+  {
+    template_key: 'emailChangeOtp',
+    name: 'Profile email change OTP',
+    description: 'Sent to a user\'s NEW email address when they request a self-serve email change from Profile.',
+    subject: 'Verify your new email — Kadr Portal',
+    greeting: 'Hello {recipientName},',
+    body_html: `
+      <p>Use the code below to verify this email address and confirm it as your new login email. This code expires in 10 minutes.</p>
+      <p style="text-align:center;margin:24px 0;font-size:28px;font-weight:700;letter-spacing:6px;">{otp}</p>
+      <p style="font-size:13px;color:#6b7280;">If you didn't request this, you can safely ignore this email — your account email will not change.</p>
+    `,
+    body_text: 'Your Kadr Portal email change verification code is {otp}. This code expires in 10 minutes.',
+    variables: ['recipientName', 'otp']
+  },
+
+  {
+    template_key: 'emailChangedNoticeOldAddress',
+    name: 'Email changed — notice to old address',
+    description: 'Security notice sent to a user\'s OLD email address after a self-serve email change completes.',
+    subject: 'Your Kadr login email was changed',
+    greeting: 'Hello {recipientName},',
+    body_html: `
+      <p>Your Kadr Portal login email was changed from this address to <strong>{newEmail}</strong>.</p>
+      <p style="font-size:13px;color:#6b7280;">If you made this change, no action is needed. If you didn't request this, please contact our support team right away.</p>
+    `,
+    body_text: 'Your Kadr Portal login email was changed from this address to {newEmail}. If you didn\'t request this, please contact support right away.',
+    variables: ['recipientName', 'newEmail']
+  },
+
+  {
+    template_key: 'emailChangedNoticeNewAddress',
+    name: 'Email changed — confirmation to new address',
+    description: 'Confirmation sent to a user\'s NEW email address after a self-serve email change completes.',
+    subject: 'Your Kadr login email is now active',
+    greeting: 'Hello {recipientName},',
+    body_html: `
+      <p>This email address is now your Kadr Portal login email, replacing {oldEmail}.</p>
+      <p>Use this address the next time you sign in.</p>
+    `,
+    body_text: 'This email address is now your Kadr Portal login email, replacing {oldEmail}. Use this address the next time you sign in.',
+    variables: ['recipientName', 'oldEmail']
   }
 
 ]

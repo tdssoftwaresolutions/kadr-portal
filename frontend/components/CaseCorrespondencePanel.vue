@@ -126,12 +126,13 @@
           <input
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.txt"
+            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp"
             :disabled="sending"
             @change="onFiles"
           >
           <span class="file-pick-label"><i class="fas fa-upload" aria-hidden="true"></i> Attach files</span>
         </label>
+        <small class="file-pick-hint">Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF, WEBP.</small>
         <ul v-if="pendingFiles.length" class="pending-files">
           <li v-for="(f, i) in pendingFiles" :key="i">
             {{ f.name }}
@@ -750,6 +751,13 @@ export default {
   border-radius: 8px;
   padding: 0.4rem 0.75rem;
   background: var(--kadr-surface-info);
+}
+
+.file-pick-hint {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--kadr-text-secondary);
 }
 
 .pending-files {

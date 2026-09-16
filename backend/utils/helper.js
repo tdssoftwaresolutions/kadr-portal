@@ -209,7 +209,9 @@ class Helper {
             email: true,
             phone_number: true,
             state: true,
-            city: true
+            city: true,
+            active: true,
+            is_self_signed_up: true
           }
         },
         // Representative info: name only (per requirement the other party must
@@ -1583,14 +1585,16 @@ class Helper {
     return `${origin}/admin/app/support${q ? `?${q}` : ''}`
   }
 
-  static async sendTemplatedEmail (templateName, to, variables = {}, attachments = []) {
+  static async sendTemplatedEmail (templateName, to, variables = {}, attachments = [], { caseId, cc } = {}) {
     const notificationService = require('../services/notification/notificationService')
     return notificationService.send({
       templateKey: templateName,
       channel: 'EMAIL',
       to,
+      cc,
       data: variables,
-      attachments
+      attachments,
+      caseId
     })
   }
 

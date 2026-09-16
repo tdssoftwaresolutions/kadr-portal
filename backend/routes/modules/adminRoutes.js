@@ -10,6 +10,7 @@ const notificationAdminController = require('../../controller/notificationAdminC
 const websiteContentController = require('../../controller/websiteContentController')
 const blogController = require('../../controller/blogController')
 const couponController = require('../../controller/couponController')
+const emailCorrectionController = require('../../controller/emailCorrectionController')
 const authMiddleware = require('../../middleware/authMiddleware')
 const { requireAdmin } = require('../../middleware/requireRole')
 const { auditMiddleware, AUDIT_ACTIONS } = require('../../services/audit/auditLogService')
@@ -23,6 +24,14 @@ router.use(authMiddleware)
 router.get('/getInactiveUsers', requireAdmin, generalController.getInactiveUsers)
 router.post('/updateInactiveUser', requireAdmin, auditMiddleware(AUDIT_ACTIONS.USER_ACTIVATED, { targetType: 'user', getTargetId: (req) => req.body.userId, getDetails: (req) => ({ isActive: req.body.isActive }) }), generalController.updateInactiveUser)
 router.post('/admin/setUserDeleted', requireAdmin, auditMiddleware(AUDIT_ACTIONS.USER_DELETED, { targetType: 'user', getTargetId: (req) => req.body.userId }), generalController.adminSetUserDeleted)
+router.post('/admin/updateUserProfile', requireAdmin, auditMiddleware(AUDIT_ACTIONS.USER_UPDATED, { targetType: 'user', getTargetId: (req) => req.body.userId, getDetails: (req) => ({ fields: Object.keys(req.body).filter((k) => k !== 'userId') }) }), generalController.adminUpdateUserProfile)
+router.get('/admin/emailCorrectionRequests', requireAdmin, emailCorrectionController.listRequests)
+router.post('/admin/emailCorrectionRequests/:id/approve', requireAdmin,
+  auditMiddleware(AUDIT_ACTIONS.EMAIL_CORRECTION_APPROVED, { targetType: 'email_correction_request', getTargetId: (req) => req.params.id }),
+  emailCorrectionController.approveRequest)
+router.post('/admin/emailCorrectionRequests/:id/reject', requireAdmin,
+  auditMiddleware(AUDIT_ACTIONS.EMAIL_CORRECTION_REJECTED, { targetType: 'email_correction_request', getTargetId: (req) => req.params.id }),
+  emailCorrectionController.rejectRequest)
 router.get('/getActiveUsers', requireAdmin, generalController.getActiveUsers)
 router.get('/users', requireAdmin, generalController.getAdminUsers)
 router.post('/users', requireAdmin, auditMiddleware(AUDIT_ACTIONS.USER_CREATED, { targetType: 'admin_user' }), generalController.createAdminUser)

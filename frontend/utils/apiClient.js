@@ -18,6 +18,8 @@ const EXCLUDED_ENDPOINTS = [
   '/newMediatorSignup',
   '/signup/upload-url',
   '/isEmailExist',
+  '/requestSignupEmailOtp',
+  '/verifySignupEmailOtp',
   '/website-contact',
   '/public/coupon-lookup'
 ]

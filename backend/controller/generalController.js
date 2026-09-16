@@ -20,9 +20,13 @@ const {
 } = require('../utils/adminPermissionHelpers')
 const { runWithNotificationContext } = require('../services/notification/notificationContext')
 const { assertCaseAccessFromRequest, assertNoteOwnership, caseMembershipOr } = require('../services/security/caseAccessService')
+const { copyEmailToRepresentative, PARTY_SIDES } = require('../services/case/representativeService')
 const { parsePagination, parseDateRange, paginatedResponse } = require('../utils/pagination')
 const { sanitizeRichHtml } = require('../utils/htmlSanitizer')
 const analytics = require('../utils/analytics')
+const dataCrypto = require('../utils/crypto')
+
+const EMAIL_CHANGE_MAX_OTP_ATTEMPTS = 5
 
 const calendarEventSelect = {
   id: true,
@@ -189,6 +193,108 @@ module.exports = {
         }
       }, 'User profile updated successfully!')
     } catch (error) {
+      next(error)
+    }
+  },
+  // Self-serve email change: verify-then-apply, OTP sent to the NEW address to
+  // prove ownership before the login email actually changes. Uses the same
+  // otp_resets table/pattern as authController.resetPassword, just a different
+  // type ('EMAIL_CHANGE') and scoped to the currently authenticated user.
+  requestProfileEmailChange: async function (req, res, next) {
+    try {
+      const newEmail = String(req.body.newEmail || '').trim().toLowerCase()
+      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+      if (!newEmail || !emailPattern.test(newEmail)) throw createError(errorCodes.INVALID_EMAIL_FORMAT)
+
+      const existing = await prisma.user.findUnique({
+        where: { email_user_type: { email: newEmail, user_type: req.user.type } },
+        select: { id: true, is_deleted: true }
+      })
+      if (existing && existing.is_deleted !== true && existing.id !== req.user.id) {
+        throw createError(errorCodes.USER_ALREADY_EXISTS)
+      }
+
+      const createdAt = new Date()
+      const expiresAt = new Date(createdAt.getTime() + 10 * 60000)
+      const otp = dataCrypto.generateNumericOtp(6)
+      const otpHash = dataCrypto.hashOtp(otp)
+      await prisma.otp_resets.upsert({
+        where: { unique_email_type: { email: newEmail, type: 'EMAIL_CHANGE' } },
+        update: { otp: otpHash, attempts: 0, created_at: createdAt, expires_at: expiresAt },
+        create: { email: newEmail, otp: otpHash, attempts: 0, created_at: createdAt, expires_at: expiresAt, type: 'EMAIL_CHANGE' }
+      })
+      await helper.sendTemplatedEmail('emailChangeOtp', newEmail, {
+        recipientName: req.user.name || 'there',
+        otp
+      })
+      success(res, {}, 'Verification code sent to your new email address')
+    } catch (error) {
+      next(error)
+    }
+  },
+  confirmProfileEmailChange: async function (req, res, next) {
+    try {
+      const newEmail = String(req.body.newEmail || '').trim().toLowerCase()
+      const { otp } = req.body
+      if (!newEmail || !otp) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+
+      const otpReset = await prisma.otp_resets.findFirst({
+        where: { email: newEmail, type: 'EMAIL_CHANGE' },
+        select: { id: true, otp: true, attempts: true, expires_at: true }
+      })
+      if (!otpReset) throw createError(errorCodes.INVALID_REQUEST)
+
+      if (otpReset.expires_at < new Date()) {
+        await prisma.otp_resets.deleteMany({ where: { email: newEmail, type: 'EMAIL_CHANGE' } })
+        throw createError(errorCodes.OTP_EXPIRED)
+      }
+      if ((otpReset.attempts || 0) >= EMAIL_CHANGE_MAX_OTP_ATTEMPTS) {
+        await prisma.otp_resets.deleteMany({ where: { email: newEmail, type: 'EMAIL_CHANGE' } })
+        throw createError(errorCodes.OTP_TOO_MANY_ATTEMPTS)
+      }
+      if (!dataCrypto.compareOtp(otp, otpReset.otp)) {
+        await prisma.otp_resets.update({ where: { id: otpReset.id }, data: { attempts: { increment: 1 } } })
+        throw createError(errorCodes.INVALID_OTP)
+      }
+
+      const current = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { email: true, name: true }
+      })
+      if (!current) throw createError(errorCodes.NOT_FOUND)
+      const oldEmail = current.email
+
+      // Re-check uniqueness at apply time (race defense — another account could
+      // have claimed this email between request and confirm).
+      const stillFree = await prisma.user.findUnique({
+        where: { email_user_type: { email: newEmail, user_type: req.user.type } },
+        select: { id: true, is_deleted: true }
+      })
+      if (stillFree && stillFree.is_deleted !== true && stillFree.id !== req.user.id) {
+        throw createError(errorCodes.USER_ALREADY_EXISTS)
+      }
+
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { email: newEmail }
+      })
+      await prisma.otp_resets.deleteMany({ where: { email: newEmail, type: 'EMAIL_CHANGE' } })
+
+      await helper.sendTemplatedEmail('emailChangedNoticeOldAddress', oldEmail, {
+        recipientName: current.name,
+        newEmail
+      })
+      await helper.sendTemplatedEmail('emailChangedNoticeNewAddress', newEmail, {
+        recipientName: current.name,
+        oldEmail
+      })
+
+      success(res, { email: newEmail }, 'Your email address has been updated')
+    } catch (error) {
+      if (error?.code === 'P2002') {
+        next(createError(errorCodes.USER_ALREADY_EXISTS))
+        return
+      }
       next(error)
     }
   },
@@ -641,7 +747,7 @@ module.exports = {
         caseTitle: `${party1} vs ${party2}`,
         signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
         partyRole: 'first party'
-      })
+      }, [], { caseId: newCaseRecord.id })
 
       analytics.trackCaseCreated({
         req,
@@ -669,11 +775,14 @@ module.exports = {
           phone_number: true,
           name: true,
           user_type: true,
-          active: true,
+          is_self_signed_up: true,
           is_deleted: true
         }
       })
-      if (!user || user.is_deleted || !user.active) throw createError(errorCodes.UNAUTHORIZED)
+      // Invited parties are always created with active: false and only self-sign-up
+      // once, via this exact link — so gate on is_self_signed_up (replay-safe) rather
+      // than active (which would always be false here and reject every legitimate use).
+      if (!user || user.is_deleted || user.is_self_signed_up) throw createError(errorCodes.UNAUTHORIZED)
       success(res, { ...user })
     } catch (error) {
       next(error)
@@ -854,15 +963,22 @@ module.exports = {
       const { caseId } = req.body
       const { id } = req.user
       const caseRecord = await prisma.cases.findUnique({
-        where: { id: caseId }, select: { second_party: true, first_party: true }
+        where: { id: caseId },
+        select: {
+          second_party: true,
+          first_party: true,
+          user_cases_first_partyTouser: { select: { name: true, email: true } },
+          user_cases_second_partyTouser: { select: { name: true, email: true } }
+        }
       })
-      if (caseRecord.second_party !== id) {
+      if (!caseRecord || caseRecord.second_party !== id) {
         throw createError(errorCodes.UNAUTHORIZED)
       }
 
       const {
         ensureNoticePhaseComplete,
-        updateCaseSubStatus
+        updateCaseSubStatus,
+        recordCaseMilestone
       } = require('../services/case/caseMilestoneService')
 
       await ensureNoticePhaseComplete(prisma, caseId)
@@ -871,6 +987,15 @@ module.exports = {
         status: CaseTypes.IN_PROGRESS,
         sub_status: CaseSubTypes.PENDING_MEDIATION_PAYMENT
       })
+      await recordCaseMilestone(prisma, { caseId, subStatusId: CaseSubTypes.PENDING_MEDIATION_PAYMENT })
+
+      const firstPartyVars = { recipientName: caseRecord.user_cases_first_partyTouser.name }
+      await helper.sendTemplatedEmail('mediationAcceptanceFirstParty', caseRecord.user_cases_first_partyTouser.email, firstPartyVars, [], { caseId })
+      await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.FIRST, templateKey: 'mediationAcceptanceFirstParty', variables: firstPartyVars })
+
+      const secondPartyVars = { recipientName: caseRecord.user_cases_second_partyTouser.name }
+      await helper.sendTemplatedEmail('mediationAcceptanceSecondParty', caseRecord.user_cases_second_partyTouser.email, secondPartyVars, [], { caseId })
+      await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.SECOND, templateKey: 'mediationAcceptanceSecondParty', variables: secondPartyVars })
 
       success(res, {}, 'Mediation request accepted successfully!')
     } catch (error) {
@@ -1056,6 +1181,86 @@ module.exports = {
       next(error)
     }
   },
+  // Lets an admin (with the 'users' page permission) correct a CLIENT/MEDIATOR/
+  // REPRESENTATIVE user's own profile data (typos, wrong email/phone at signup,
+  // etc). ADMIN accounts are explicitly excluded — those go through
+  // updateAdminUser, which is master-admin-only.
+  adminUpdateUserProfile: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'users')
+
+      const { userId, ...fields } = req.body
+      if (!userId) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+
+      const target = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, user_type: true }
+      })
+      if (!target) throw createError(errorCodes.NOT_FOUND)
+      if (target.user_type === 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+
+      const STRING_FIELDS = ['name', 'email', 'phone_number', 'city', 'state', 'pincode', 'timezone', 'locale', 'llb_college', 'llb_university', 'bar_enrollment_no']
+      const INT_FIELDS = ['llb_year', 'mediator_course_year']
+
+      const data = {}
+      for (const key of STRING_FIELDS) {
+        if (fields[key] === undefined) continue
+        const value = String(fields[key] ?? '').trim()
+        data[key] = value === '' ? null : value
+      }
+      for (const key of INT_FIELDS) {
+        if (fields[key] === undefined) continue
+        const num = Number(fields[key])
+        data[key] = Number.isFinite(num) ? num : null
+      }
+      if (!Object.keys(data).length) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+
+      if (data.name !== undefined && !data.name) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+
+      if (data.email !== undefined) {
+        if (!data.email) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+        data.email = data.email.toLowerCase()
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+        if (!emailPattern.test(data.email)) throw createError(errorCodes.INVALID_EMAIL_FORMAT)
+      }
+
+      if (data.phone_number) {
+        const phonePattern = /^(?:\+91|0)?[789]\d{9}$/
+        if (!phonePattern.test(data.phone_number)) throw createError(errorCodes.INVALID_PHONE_FORMAT)
+      }
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone_number: true,
+          user_type: true,
+          city: true,
+          state: true,
+          pincode: true,
+          timezone: true,
+          locale: true,
+          llb_college: true,
+          llb_university: true,
+          llb_year: true,
+          mediator_course_year: true,
+          bar_enrollment_no: true
+        }
+      })
+
+      success(res, { user: updated }, 'User details updated successfully')
+    } catch (error) {
+      if (error?.code === 'P2002') {
+        next(createError(errorCodes.USER_ALREADY_EXISTS))
+        return
+      }
+      next(error)
+    }
+  },
   setAdminActiveStatus: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
@@ -1207,12 +1412,14 @@ module.exports = {
 
       const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.user_cases_first_partyTouser.id, null, agreementRecord.id)
 
-      await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_first_partyTouser.email, {
+      const firstPartyAgreementVars = {
         recipientName: caseRecord.user_cases_first_partyTouser.name,
         caseId: caseRecord.caseId,
         signUrl: `${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}`,
         partyRole: 'first party'
-      })
+      }
+      await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_first_partyTouser.email, firstPartyAgreementVars, [], { caseId })
+      await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.FIRST, templateKey: 'finalAgreementSignatureRequest', variables: firstPartyAgreementVars })
 
       if (caseRecord.mediator) {
         try {
@@ -1391,6 +1598,29 @@ module.exports = {
       next(error)
     }
   },
+  getCaseEmailHistory: async function (req, res, next) {
+    try {
+      if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
+      await assertAdminPage(req, 'cases')
+      const { caseId } = req.params
+      if (!caseId) throw createError(errorCodes.REQUIRED_CASE_ID)
+
+      const logs = await prisma.notification_send_logs.findMany({
+        where: { case_id: caseId, channel: 'EMAIL' },
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          template_key: true,
+          recipient: true,
+          status: true,
+          created_at: true
+        }
+      })
+      success(res, { logs })
+    } catch (error) {
+      next(error)
+    }
+  },
   adminAssignCaseMediator: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
@@ -1470,6 +1700,7 @@ module.exports = {
           secondPartyName: caseRecord.user_cases_second_partyTouser?.name
         }).catch((err) => console.error('[assignMediator] mediator email failed', err.message)),
         emailPartiesMediatorAssigned({
+          caseId,
           parties: [
             caseRecord.user_cases_first_partyTouser,
             caseRecord.user_cases_second_partyTouser

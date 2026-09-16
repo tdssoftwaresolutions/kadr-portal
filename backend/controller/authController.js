@@ -254,6 +254,66 @@ module.exports = {
       next(error)
     }
   },
+
+  webhookTestTracking: async function (req, res, next) {
+    try {
+      console.log('Postmark webhook received:')
+      console.log(JSON.stringify(req.body, null, 2))
+      const event = req.body
+
+      // Important fields
+      const {
+        RecordType,
+        MessageID,
+        Recipient,
+        MessageStream
+      } = event
+
+      console.log({
+        RecordType,
+        MessageID,
+        Recipient,
+        MessageStream
+      })
+
+      // Handle different events
+      switch (RecordType) {
+        case 'Delivery':
+          console.log('Email delivered:', Recipient)
+          break
+
+        case 'Bounce':
+          console.log('Email bounced:', Recipient)
+          console.log('Reason:', event.Description)
+          break
+
+        case 'Open':
+          console.log('Email opened:', Recipient)
+          break
+
+        case 'Click':
+          console.log('Email clicked:', Recipient)
+          break
+
+        case 'SpamComplaint':
+          console.log('Spam complaint:', Recipient)
+          break
+
+        case 'SubscriptionChange':
+          console.log('Subscription changed:', Recipient)
+          break
+
+        default:
+          console.log('Unknown Postmark event:', RecordType)
+      }
+
+      // VERY IMPORTANT
+      res.sendStatus(200)
+    } catch (error) {
+      console.error('Postmark webhook error:', error)
+      res.sendStatus(500)
+    }
+  },
   getGoogleToken: async function (req, res, next) {
     try {
       if (req.user.type !== 'ADMIN') throw createError(errorCodes.FORBIDDEN)
@@ -578,6 +638,71 @@ module.exports = {
         recipientName: users[0].name
       })
       success(res, {}, 'Password reset successfully!')
+    } catch (error) {
+      next(error)
+    }
+  },
+  // Own-email verification at signup. The email may not belong to any account
+  // yet, so this is not tied to a user row — just proves inbox ownership before
+  // the signup form is allowed to submit. verified_at is set (not deleted) on
+  // success so the signup wizard can finish its remaining steps before the
+  // verification is actually consumed at final submission.
+  requestSignupEmailOtp: async function (req, res, next) {
+    try {
+      const email = String(req.body.email || '').trim().toLowerCase()
+      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+      if (!email || !emailPattern.test(email)) throw createError(errorCodes.INVALID_EMAIL_FORMAT)
+
+      const createdAt = new Date()
+      const expiresAt = new Date(createdAt.getTime() + 10 * 60000)
+      const otp = dataCrypto.generateNumericOtp(6)
+      const otpHash = dataCrypto.hashOtp(otp)
+      await prisma.otp_resets.upsert({
+        where: { unique_email_type: { email, type: 'SIGNUP_EMAIL_VERIFY' } },
+        update: { otp: otpHash, attempts: 0, created_at: createdAt, expires_at: expiresAt, verified_at: null },
+        create: { email, otp: otpHash, attempts: 0, created_at: createdAt, expires_at: expiresAt, type: 'SIGNUP_EMAIL_VERIFY' }
+      })
+      await helper.sendTemplatedEmail('signupEmailOtp', email, { otp })
+      success(res, {}, 'Verification code sent')
+    } catch (error) {
+      next(error)
+    }
+  },
+  verifySignupEmailOtp: async function (req, res, next) {
+    try {
+      const email = String(req.body.email || '').trim().toLowerCase()
+      const { otp } = req.body
+      if (!email || !otp) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
+
+      const otpReset = await prisma.otp_resets.findFirst({
+        where: { email, type: 'SIGNUP_EMAIL_VERIFY' },
+        select: { id: true, otp: true, attempts: true, expires_at: true }
+      })
+      if (!otpReset) throw createError(errorCodes.INVALID_REQUEST)
+
+      if (otpReset.expires_at < new Date()) {
+        await prisma.otp_resets.deleteMany({ where: { email, type: 'SIGNUP_EMAIL_VERIFY' } })
+        throw createError(errorCodes.OTP_EXPIRED)
+      }
+      if ((otpReset.attempts || 0) >= MAX_OTP_ATTEMPTS) {
+        await prisma.otp_resets.deleteMany({ where: { email, type: 'SIGNUP_EMAIL_VERIFY' } })
+        throw createError(errorCodes.OTP_TOO_MANY_ATTEMPTS)
+      }
+      if (!dataCrypto.compareOtp(otp, otpReset.otp)) {
+        await prisma.otp_resets.update({
+          where: { id: otpReset.id },
+          data: { attempts: { increment: 1 } }
+        })
+        throw createError(errorCodes.INVALID_OTP)
+      }
+
+      const verifiedAt = new Date()
+      const extendedExpiry = new Date(verifiedAt.getTime() + 20 * 60000)
+      await prisma.otp_resets.update({
+        where: { id: otpReset.id },
+        data: { verified_at: verifiedAt, expires_at: extendedExpiry, attempts: 0 }
+      })
+      success(res, {}, 'Email verified successfully')
     } catch (error) {
       next(error)
     }

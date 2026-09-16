@@ -18,6 +18,7 @@ import {
   ADMIN_USERS_ENDPOINT,
   ADMIN_USERS_ACTIVE_ENDPOINT,
   ADMIN_MEDIATOR_OFFBOARDING_PREVIEW,
+  ADMIN_EMAIL_CORRECTION_REQUESTS_ENDPOINT,
   ADMIN_PREMIUM_FEATURES,
   ADMIN_REWARD_FULFILLMENT_RULES,
   ADMIN_NOTIFICATION_TEMPLATES,
@@ -102,6 +103,21 @@ export default {
         if (secondPartyId) params.set('secondPartyId', secondPartyId)
         if (status) params.set('status', status)
         const { data } = await apiClient.get(`${GET_ADMIN_ACTIVE_CASES_ENDPOINT}?${params.toString()}`)
+        if (!data.success) throw new Error(data.error?.message || 'Request failed')
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async getCaseEmailHistory ({ dispatch }, { caseId }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.get(`${GET_ADMIN_ACTIVE_CASES_ENDPOINT}/${caseId}/emailHistory`)
         if (!data.success) throw new Error(data.error?.message || 'Request failed')
         return data
       } catch (error) {
@@ -924,6 +940,55 @@ export default {
         return { success: true, result: data.data?.result || { found: false } }
       } catch (error) {
         return { success: false, result: { found: false }, error }
+      }
+    },
+
+    async getEmailCorrectionRequests ({ dispatch }, { page = 1, perPage = 20, status } = {}) {
+      try {
+        dispatch('spinner/showSpinner')
+        const params = new URLSearchParams({ page, perPage })
+        if (status) params.set('status', status)
+        const { data } = await apiClient.get(`${ADMIN_EMAIL_CORRECTION_REQUESTS_ENDPOINT}?${params.toString()}`)
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async approveEmailCorrectionRequest ({ dispatch }, { id }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(`${ADMIN_EMAIL_CORRECTION_REQUESTS_ENDPOINT}/${id}/approve`)
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        dispatch('alert/showAlert', { message: data.message || 'Approved', type: 'success' }, { root: true })
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async rejectEmailCorrectionRequest ({ dispatch }, { id, adminNote }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(`${ADMIN_EMAIL_CORRECTION_REQUESTS_ENDPOINT}/${id}/reject`, { adminNote })
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        dispatch('alert/showAlert', { message: data.message || 'Rejected', type: 'success' }, { root: true })
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
+      } finally {
+        dispatch('spinner/hideSpinner')
       }
     }
   }

@@ -32,7 +32,11 @@ const clientSignupSchema = z.object({
   city: z.string().max(100).optional().or(z.literal('')),
   state: z.string().max(100).optional().or(z.literal('')),
   pincode: z.string().max(6).optional().or(z.literal('')),
-  representativeEmail: z.string().email('Please enter a valid representative email address.'),
+  // Required for the fresh-signup flow (enforced client-side in
+  // SignUpClient.vue's page3/submit validation) but optional for the
+  // existing-user accept-link flow, where the second party may not have a
+  // representative — hence optional here rather than required.
+  representativeEmail: z.string().email('Please enter a valid representative email address.').optional().or(z.literal('')),
   representativeName: z.string().max(255).optional().or(z.literal('')),
   representativePhone: z.string()
     .min(10, 'Representative phone number must be at least 10 digits.')

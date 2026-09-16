@@ -3,6 +3,14 @@
     <header class="case-details-panel__header">
       <h2 class="case-details-panel__title">{{ displayTitle }}</h2>
       <div class="case-details-panel__meta">
+        <div class="meta-item meta-item--highlight">
+          <span class="meta-label"><i class="ri-calendar-event-line" /> Next Hearing</span>
+          <span class="meta-value meta-value--highlight">{{ formatDisplayDate(profile.nextHearingDate) }}</span>
+        </div>
+        <div v-if="profile.caseStatus" class="meta-item">
+          <span class="meta-label"><i class="ri-flag-line" /> Case Status</span>
+          <span class="meta-value">{{ profile.caseStatus }}</span>
+        </div>
         <div v-if="profile.courtName" class="meta-item">
           <span class="meta-label"><i class="ri-building-2-line" /> Court</span>
           <span class="meta-value">{{ profile.courtName }}</span>
@@ -30,6 +38,26 @@
         <div v-if="profile.caseCategory" class="meta-item meta-item--wide">
           <span class="meta-label">Case Category</span>
           <span class="meta-value">{{ profile.caseCategory }}</span>
+        </div>
+        <div v-if="profile.firstHearingDate" class="meta-item">
+          <span class="meta-label"><i class="ri-calendar-check-line" /> First Hearing</span>
+          <span class="meta-value">{{ formatDisplayDate(profile.firstHearingDate) }}</span>
+        </div>
+        <div v-if="profile.lastHearingDate" class="meta-item">
+          <span class="meta-label"><i class="ri-calendar-close-line" /> Last Hearing</span>
+          <span class="meta-value">{{ formatDisplayDate(profile.lastHearingDate) }}</span>
+        </div>
+        <div v-if="profile.purpose" class="meta-item">
+          <span class="meta-label">Purpose</span>
+          <span class="meta-value">{{ profile.purpose }}</span>
+        </div>
+        <div v-if="profile.disposalType" class="meta-item">
+          <span class="meta-label">Disposal Type</span>
+          <span class="meta-value">{{ profile.disposalType }}</span>
+        </div>
+        <div v-if="profile.decisionDate" class="meta-item">
+          <span class="meta-label">Decision Date</span>
+          <span class="meta-value">{{ formatDisplayDate(profile.decisionDate) }}</span>
         </div>
       </div>
       <a
@@ -197,7 +225,11 @@ export default {
         caseCategory: null,
         caseStatus: this.details.caseStatus,
         disposalType: this.fieldFromDetails('Disposal type'),
-        decisionDate: this.fieldFromDetails('Decision date')
+        decisionDate: this.fieldFromDetails('Decision date'),
+        purpose: this.fieldFromDetails('Purpose'),
+        firstHearingDate: this.fieldFromDetails('First hearing'),
+        nextHearingDate: this.fieldFromDetails('Next hearing'),
+        lastHearingDate: this.fieldFromDetails('Last hearing')
       }
     },
     parties () {
@@ -350,6 +382,19 @@ export default {
 
 .meta-item--wide {
   grid-column: 1 / -1;
+}
+
+.meta-item--highlight {
+  background: var(--kadr-primary-soft);
+  border: 1px solid var(--kadr-primary-soft-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+}
+
+.meta-value--highlight {
+  font-weight: 700;
+  color: var(--kadr-primary);
+  font-size: 0.95rem;
 }
 
 .meta-label {

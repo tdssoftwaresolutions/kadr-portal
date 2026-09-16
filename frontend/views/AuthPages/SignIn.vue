@@ -12,6 +12,7 @@
         class="auth-field"
         :label="$t('auth.emailLabel')"
         :error="fieldErrors.email"
+        :hint="$t('auth.signInEmailHint')"
         id="signInEmail"
       >
         <template v-slot="{ id, invalid }">
@@ -77,6 +78,7 @@
         class="auth-field"
         :label="$t('auth.passwordLabel')"
         :error="fieldErrors.password"
+        :hint="$t('auth.signInPasswordHint')"
         id="signInPassword"
       >
         <template #default="{ id, invalid }">
@@ -181,7 +183,8 @@ export default {
       return {
         CLIENT: this.$t('auth.client'),
         MEDIATOR: this.$t('auth.expert'),
-        ADMIN: this.$t('auth.admin')
+        ADMIN: this.$t('auth.admin'),
+        REPRESENTATIVE: this.$t('auth.representative')
       }
     },
     accountTypeOptions () {

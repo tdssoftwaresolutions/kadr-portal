@@ -3,7 +3,7 @@ const { renderEmailLayout } = require('../../email/emailLayoutRenderer')
 const { renderTemplate } = require('../templateRenderer')
 const { getEmailLayout } = require('../emailLayoutService')
 
-async function send ({ to, template, data, attachments = [] }) {
+async function send ({ to, cc, template, data, attachments = [] }) {
   const subject = renderTemplate(template.subject || 'Notification from Kadr.live', data)
   const greeting = renderTemplate(
     template.greeting || (data.recipientName ? `Hi ${data.recipientName},` : 'Hello,'),
@@ -15,6 +15,7 @@ async function send ({ to, template, data, attachments = [] }) {
 
   return provider.send({
     to,
+    cc,
     subject,
     html,
     attachments: attachments || []

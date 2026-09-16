@@ -329,7 +329,7 @@ async function copyEmailToRepresentative ({ caseId, side, templateKey, variables
     await helper.sendTemplatedEmail(templateKey, rep.email, {
       ...variables,
       recipientName: rep.name || 'Representative'
-    }, attachments)
+    }, attachments, { caseId })
   } catch (err) {
     console.error('[representative] copy email failed', err.message)
   }

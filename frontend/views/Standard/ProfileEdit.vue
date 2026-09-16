@@ -72,16 +72,30 @@
                       </kadr-form-field>
                     </div>
                     <div class="col-sm-6 mb-3">
-                      <kadr-form-field :label="$t('profileEdit.email')" id="email" :hint="$t('profileEdit.emailHint')">
+                      <kadr-form-field :label="$t('profileEdit.email')" id="email">
                         <template v-slot="{ id }">
                           <b-form-input :id="id" :value="user.email" readonly />
                         </template>
                       </kadr-form-field>
+                      <button type="button" class="btn btn-link p-0 small mt-1" @click="showChangeEmailModal = true">
+                        {{ $t('profileEdit.changeEmail') }}
+                      </button>
                     </div>
                     <div class="col-sm-6 mb-3">
-                      <kadr-form-field :label="$t('profileEdit.phoneNumber')" id="phone">
+                      <kadr-form-field
+                        :label="$t('profileEdit.phoneNumber')"
+                        id="phone"
+                        :hint="$t('profileEdit.phoneHint')"
+                        :error="phoneError"
+                      >
                         <template v-slot="{ id }">
-                          <b-form-input :id="id" v-model="form.phone_number" />
+                          <b-form-input
+                            :id="id"
+                            v-model="form.phone_number"
+                            maxlength="10"
+                            inputmode="numeric"
+                            @input="onPhoneInput"
+                          />
                         </template>
                       </kadr-form-field>
                     </div>
@@ -213,6 +227,11 @@
       :subtitle="$t('profileEdit.checkoutSubtitle')"
       @close="showProPayment = false"
     />
+    <ChangeEmailModal
+      :visible="showChangeEmailModal"
+      @close="showChangeEmailModal = false"
+      @updated="onEmailChanged"
+    />
   </b-container>
 </template>
 <script>
@@ -220,6 +239,7 @@ import { sofbox } from '../../config/pluginInit'
 import profile from '../../assets/images/default_avatar.jpeg'
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import PaymentCheckout from '../../components/payment/PaymentCheckout.vue'
+import ChangeEmailModal from '../../components/ChangeEmailModal.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrFormField from '../../components/kadr/KadrFormField.vue'
 import {
@@ -230,6 +250,7 @@ import {
   applyServerPreferences
 } from '../../utils/timezone'
 import { validatePasswordStrength } from '../../utils/passwordValidation'
+import { isValidPhoneNumber, sanitizeDigits } from '../../utils/phoneValidation'
 
 const allowedTypes = [
   'image/jpeg',
@@ -244,11 +265,13 @@ export default {
     Alert,
     PaymentCheckout,
     KadrPageHeader,
-    KadrFormField
+    KadrFormField,
+    ChangeEmailModal
   },
   data () {
     return {
       showPassword: false,
+      showChangeEmailModal: false,
       defaultProfileImage: profile,
       activeTab: 'personal',
       form: {
@@ -277,6 +300,7 @@ export default {
         timeout: 5000,
         type: 'primary'
       },
+      phoneError: '',
       deleteConfirm: false,
       rewardBalance: 0,
       subscription: { tier: 'FREE', expiresAt: null, monthlyPriceInr: 1000, features: [] },
@@ -404,7 +428,20 @@ export default {
         visible: true
       }
     },
+    onPhoneInput (value) {
+      this.form.phone_number = sanitizeDigits(value)
+      this.phoneError = ''
+    },
+    onEmailChanged (newEmail) {
+      this.user = { ...this.user, email: newEmail }
+      this.showAlert(this.$t('profileEdit.emailChanged'), 'success')
+    },
     async onSave () {
+      if (this.form.phone_number && !isValidPhoneNumber(this.form.phone_number)) {
+        this.phoneError = this.$t('profileEdit.phoneInvalid')
+        return
+      }
+      this.phoneError = ''
       const response = await this.updateUserProfile({
         name: this.form.name,
         phone_number: this.form.phone_number,

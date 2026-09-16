@@ -38,9 +38,10 @@
       <div class="mb-3">
         <label for="new-case-evidence">Upload Evidence</label>
         <div class="file-upload">
-          <input id="new-case-evidence" type="file" class="form-control-file" @change="onEvidenceChange" />
+          <input id="new-case-evidence" type="file" class="form-control-file" accept=".pdf,.doc,.docx,image/*" @change="onEvidenceChange" />
           <span v-if="form.evidence" class="file-name ms-2">{{ form.evidence.name }}</span>
         </div>
+        <small class="form-text text-muted">Supported formats: PDF, DOC, DOCX, JPG, PNG.</small>
       </div>
       <div class="d-flex justify-content-end">
         <b-button variant="secondary" class="me-2" @click="$emit('close')">Cancel</b-button>

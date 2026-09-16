@@ -14,7 +14,8 @@ const ALL_ADMIN_PAGES = [
   'settings',
   'notifications',
   'website-content',
-  'admins'
+  'admins',
+  'email-corrections'
 ]
 
 const ALL_ADMIN_COMPONENTS = ['stats', 'schedule', 'approvals', 'cases']

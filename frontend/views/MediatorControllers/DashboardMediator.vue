@@ -5,6 +5,7 @@
     <kadr-dashboard-hero
       :name="user.name"
       :email="user.email"
+      :role="roleLabel"
       :avatar-url="avatarUrl"
       :stats="heroStats"
     />
@@ -117,6 +118,7 @@ import MediatorCourtCaseTracker from '../../components/mediator/MediatorCourtCas
 import MediatorLegalFeedPanel from '../../components/mediator/MediatorLegalFeedPanel.vue'
 import KadrDashboardHero from '../../components/kadr/KadrDashboardHero.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import { getRoleLabel } from '../../utils/roleLabels'
 const PERSONAL_EVENT_COLOR = 'var(--kadr-event-personal)'
 const KADR_EVENT_COLOR = 'var(--kadr-event-kadr)'
 
@@ -149,6 +151,9 @@ export default {
     },
     avatarUrl () {
       return (this.content.user && this.content.user.profile_picture_url) || ''
+    },
+    roleLabel () {
+      return getRoleLabel(this.user && this.user.type, this.$t)
     },
     heroStats () {
       return [

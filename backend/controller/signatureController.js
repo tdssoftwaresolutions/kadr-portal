@@ -10,6 +10,7 @@ const { createError } = require('../utils/errors')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { success } = require('../utils/responses')
 const { ensureInvoiceForCase } = require('../services/invoice/invoiceService')
+const { copyEmailToRepresentative, PARTY_SIDES } = require('../services/case/representativeService')
 const analytics = require('../utils/analytics')
 
 // A verified OTP is valid for this long before a submit must re-verify.
@@ -97,13 +98,15 @@ module.exports = {
           caseRecord.id,
           null
         )
-        await helper.sendTemplatedEmail('signatureVerificationRequest', caseRecord.user_cases_second_partyTouser.email, {
+        const secondPartySignVars = {
           recipientName: caseRecord.user_cases_second_partyTouser.name,
           caseId: caseRecord.caseId,
           caseTitle: `${caseRecord.user_cases_first_partyTouser.name} vs ${caseRecord.user_cases_second_partyTouser.name}`,
           signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
           partyRole: 'second party'
-        })
+        }
+        await helper.sendTemplatedEmail('signatureVerificationRequest', caseRecord.user_cases_second_partyTouser.email, secondPartySignVars, [], { caseId: caseRecord.id })
+        await copyEmailToRepresentative({ caseId: caseRecord.id, side: PARTY_SIDES.SECOND, templateKey: 'signatureVerificationRequest', variables: secondPartySignVars })
       } else if (isSecondParty) {
         // Both parties have acknowledged — enter standard Kadr payment pipeline
         await prisma.cases.update({
@@ -296,12 +299,14 @@ module.exports = {
       if (sendRequestToSecondParty === true) {
         const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.user_cases_second_partyTouser.id, null, signatureTracking.case_agreement_id)
 
-        await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_second_partyTouser.email, {
+        const secondPartyAgreementVars = {
           recipientName: caseRecord.user_cases_second_partyTouser.name,
           caseId: caseRecord.caseId,
           signUrl: `${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}`,
           partyRole: 'second party'
-        })
+        }
+        await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_second_partyTouser.email, secondPartyAgreementVars, [], { caseId: caseRecord.id })
+        await copyEmailToRepresentative({ caseId: caseRecord.id, side: PARTY_SIDES.SECOND, templateKey: 'finalAgreementSignatureRequest', variables: secondPartyAgreementVars })
       }
 
       if (generateAgeement === true) {
@@ -357,21 +362,27 @@ module.exports = {
         updateData.mediation_agreement_link = await helper.deployToS3Bucket(pdfBase64, `case-agreement-${uuidv4()}`)
         fs.unlinkSync(tempPdfPath)
 
-        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_second_partyTouser.email, {
+        const secondPartyAgreementAvailableVars = {
           recipientName: caseRecord.user_cases_second_partyTouser.name,
           caseId: caseRecord.caseId,
           agreementUrl: updateData.mediation_agreement_link
-        })
-        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_first_partyTouser.email, {
+        }
+        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_second_partyTouser.email, secondPartyAgreementAvailableVars, [], { caseId: caseRecord.id })
+        await copyEmailToRepresentative({ caseId: caseRecord.id, side: PARTY_SIDES.SECOND, templateKey: 'signedAgreementAvailable', variables: secondPartyAgreementAvailableVars })
+
+        const firstPartyAgreementAvailableVars = {
           recipientName: caseRecord.user_cases_first_partyTouser.name,
           caseId: caseRecord.caseId,
           agreementUrl: updateData.mediation_agreement_link
-        })
+        }
+        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_first_partyTouser.email, firstPartyAgreementAvailableVars, [], { caseId: caseRecord.id })
+        await copyEmailToRepresentative({ caseId: caseRecord.id, side: PARTY_SIDES.FIRST, templateKey: 'signedAgreementAvailable', variables: firstPartyAgreementAvailableVars })
+
         await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_mediatorTouser.email, {
           recipientName: caseRecord.user_cases_mediatorTouser.name,
           caseId: caseRecord.caseId,
           agreementUrl: updateData.mediation_agreement_link
-        })
+        }, [], { caseId: caseRecord.id })
 
         await ensureInvoiceForCase(caseRecord.id)
       }

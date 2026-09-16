@@ -2,7 +2,8 @@ const { success } = require('../utils/responses')
 const { createError } = require('../utils/errors')
 const errorCodes = require('../utils/errors/errorCodes')
 const { getPublicPaymentConfig, getPortalBaseUrl } = require('../services/payment/paymentConfig')
-const { PAYMENT_PURPOSES } = require('../services/payment/paymentConstants')
+const { PAYMENT_PURPOSES, PURPOSE_AMOUNTS_INR } = require('../services/payment/paymentConstants')
+const { CaseSubTypes } = require('../utils/caseConstants')
 const {
   createPaymentOrder,
   verifyAndCompleteOrder,
@@ -21,6 +22,19 @@ function assertPurposeAccess (req, purpose, caseId) {
   return assertCaseAccessFromRequest(req, caseId).then((caseRow) => {
     if (req.user.type === 'CLIENT' && !isCaseParty(caseRow, req.user.id)) {
       throw createError(errorCodes.FORBIDDEN)
+    }
+    if (req.user.type === 'CLIENT') {
+      const isFirst = caseRow.first_party === req.user.id
+      const isSecond = caseRow.second_party === req.user.id
+      const dueNow =
+        (purpose === PAYMENT_PURPOSES.CLIENT_NOTICE &&
+          isFirst && caseRow.sub_status === CaseSubTypes.PENDING_NOTICE_PAYMENT) ||
+        (purpose === PAYMENT_PURPOSES.CLIENT_MEDIATION &&
+          ((isFirst && caseRow.sub_status === CaseSubTypes.PENDING_MEDIATION_PAYMENT) ||
+            (isSecond && caseRow.sub_status === CaseSubTypes.PENDING_MEDIATION_PAYMENT_SECOND_PARTY)))
+      if (!dueNow) {
+        throw createError(errorCodes.INVALID_REQUEST, { message: 'Payment is not currently due for this case.' })
+      }
     }
     return caseRow
   })
@@ -194,8 +208,8 @@ module.exports = {
     try {
       const proPrice = await getProMonthlyPriceInr()
       success(res, {
-        noticeInr: 1000,
-        mediationInr: 5000,
+        noticeInr: PURPOSE_AMOUNTS_INR[PAYMENT_PURPOSES.CLIENT_NOTICE],
+        mediationInr: PURPOSE_AMOUNTS_INR[PAYMENT_PURPOSES.CLIENT_MEDIATION],
         proMonthlyInr: proPrice
       })
     } catch (error) {

@@ -13,7 +13,8 @@ async function loadCaseAccess (caseId) {
       second_party: true,
       mediator: true,
       first_party_representative: true,
-      second_party_representative: true
+      second_party_representative: true,
+      sub_status: true
     }
   })
 }

@@ -70,6 +70,18 @@
         "icon": "ri-group-line"
       },
       {
+        "title": "Email Corrections",
+        "i18nKey": "nav.emailCorrections",
+        "name": "app.email-corrections",
+        "is_heading": false,
+        "is_active": false,
+        "adminPage": "email-corrections",
+        "link": { "name": "app.email-corrections" },
+        "class_name": "",
+        "is_icon_class": true,
+        "icon": "ri-mail-check-line"
+      },
+      {
         "title": "Blog taxonomy",
         "i18nKey": "nav.blogTaxonomy",
         "name": "app.blog-taxonomy",

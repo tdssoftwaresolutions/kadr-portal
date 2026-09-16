@@ -123,6 +123,25 @@
               <p><span>{{ $t('clientCases.emailLabel') }}</span>{{ selectedCase.user_cases_second_partyTouser?.email || '-' }}</p>
               <p><span>{{ $t('clientCases.phoneLabel') }}</span>{{ selectedCase.user_cases_second_partyTouser?.phone_number || '-' }}</p>
               <p v-if="selectedCase.user_cases_second_party_repTouser?.name"><span>{{ $t('clientCases.representativeLabel') }}</span>{{ selectedCase.user_cases_second_party_repTouser.name }}</p>
+              <p v-if="canRequestEmailCorrection">
+                <a href="#" class="need-help-link" @click.prevent="showEmailCorrectionForm = !showEmailCorrectionForm">
+                  {{ $t('clientCases.needHelpWrongEmail') }}
+                </a>
+              </p>
+              <div v-if="canRequestEmailCorrection && showEmailCorrectionForm" class="email-correction-form">
+                <label class="ec-label">{{ $t('clientCases.correctEmailLabel') }}</label>
+                <input type="email" class="ec-input" v-model="emailCorrectionForm.requestedEmail" :placeholder="$t('clientCases.correctEmailPlaceholder')" />
+                <label class="ec-label">{{ $t('clientCases.reasonLabel') }}</label>
+                <select class="ec-input" v-model="emailCorrectionForm.reason">
+                  <option value="typo">{{ $t('clientCases.reasonTypo') }}</option>
+                  <option value="wrong_person">{{ $t('clientCases.reasonWrongPerson') }}</option>
+                  <option value="other">{{ $t('clientCases.reasonOther') }}</option>
+                </select>
+                <textarea class="ec-input ec-textarea" v-model="emailCorrectionForm.reasonDetail" :placeholder="$t('clientCases.reasonDetailPlaceholder')"></textarea>
+                <button type="button" class="ec-submit-btn" :disabled="submittingEmailCorrection" @click="submitEmailCorrectionRequest">
+                  {{ $t('clientCases.submitCorrectionRequest') }}
+                </button>
+              </div>
             </article>
           </div>
         </section>
@@ -364,6 +383,7 @@ export default {
       paymentType: '',
       paymentPurpose: 'CLIENT_NOTICE',
       paymentAmountInr: 1000,
+      paymentAmounts: { noticeInr: 1000, mediationInr: 5000 },
       paymentTitle: 'Complete payment',
       paymentSubtitle: '',
       isAcceptingMediation: false,
@@ -375,6 +395,13 @@ export default {
       },
       feedbackSubmitting: false,
       showInitiateCaseModal: false,
+      showEmailCorrectionForm: false,
+      submittingEmailCorrection: false,
+      emailCorrectionForm: {
+        requestedEmail: '',
+        reason: 'typo',
+        reasonDetail: ''
+      },
       alert: {
         visible: false,
         message: '',
@@ -432,34 +459,27 @@ export default {
       if (status.includes('progress')) return 'warning'
       return 'secondary'
     },
+    canRequestEmailCorrection () {
+      const isFirstParty = this.userid === this.selectedCase.user_cases_first_partyTouser?.id
+      return isFirstParty &&
+        this.selectedCase.case_sub_statuses?.id === 'notice_sent_to_opposite_party' &&
+        !this.selectedCase.user_cases_second_partyTouser?.is_self_signed_up
+    },
     actionCards () {
       if (this.isPastView) return []
       const actions = []
       const isSecondParty = this.userid === this.selectedCase.user_cases_second_partyTouser?.id
       const isFirstParty = this.userid === this.selectedCase.user_cases_first_partyTouser?.id
 
-      if (
-        this.selectedCase.case_statuses?.id === 'in_progress' &&
-        this.selectedCase.case_sub_statuses?.id === 'notice_sent_to_opposite_party' &&
-        isSecondParty
-      ) {
-        actions.push({
-          key: 'accept',
-          title: this.$t('clientCases.acceptMediationTitle'),
-          description: this.$t('clientCases.acceptMediationDesc', { amount: '1,000' }),
-          buttonText: this.$t('clientCases.acceptAndPay', { amount: '1,000' }),
-          loading: false,
-          action: () => this.initiatePayment('notice', this.selectedCase.user_cases_second_partyTouser.id),
-          variant: 'success'
-        })
-      }
+      // Accepting the mediation notice is free — handled via CaseProgressPanel's
+      // "accept_mediation" action (see handleProgressAction), not a paid card here.
 
       if (this.selectedCase.case_sub_statuses?.id === 'pending_notice_payment' && isFirstParty) {
         actions.push({
           key: 'notice-payment',
           title: this.$t('clientCases.noticePaymentTitle'),
-          description: this.$t('clientCases.noticePaymentDesc', { amount: '1000' }),
-          buttonText: this.$t('clientCases.payAmount', { amount: '1000' }),
+          description: this.$t('clientCases.noticePaymentDesc', { amount: this.paymentAmounts.noticeInr }),
+          buttonText: this.$t('clientCases.payAmount', { amount: this.paymentAmounts.noticeInr }),
           loading: false,
           action: () => this.initiatePayment('notice', this.selectedCase.user_cases_first_partyTouser.id),
           variant: 'primary'
@@ -470,10 +490,22 @@ export default {
         actions.push({
           key: 'mediation-payment',
           title: this.$t('clientCases.mediationFeeTitle'),
-          description: this.$t('clientCases.mediationFeeDesc', { amount: '5000' }),
-          buttonText: this.$t('clientCases.payAmount', { amount: '5000' }),
+          description: this.$t('clientCases.mediationFeeDesc', { amount: this.paymentAmounts.mediationInr }),
+          buttonText: this.$t('clientCases.payAmount', { amount: this.paymentAmounts.mediationInr }),
           loading: false,
           action: () => this.initiatePayment('mediation', this.selectedCase.user_cases_first_partyTouser.id),
+          variant: 'warning'
+        })
+      }
+
+      if (this.selectedCase.case_sub_statuses?.id === 'pending_mediation_payment_second_party' && isSecondParty) {
+        actions.push({
+          key: 'mediation-payment-second',
+          title: this.$t('clientCases.mediationFeeSecondTitle'),
+          description: this.$t('clientCases.mediationFeeSecondDesc', { amount: this.paymentAmounts.mediationInr }),
+          buttonText: this.$t('clientCases.payAmount', { amount: this.paymentAmounts.mediationInr }),
+          loading: false,
+          action: () => this.initiatePayment('mediation', this.selectedCase.user_cases_second_partyTouser.id),
           variant: 'warning'
         })
       }
@@ -526,10 +558,14 @@ export default {
       return docs
     }
   },
-  mounted () {
+  async mounted () {
     sofbox.index()
     this.paymentTitle = this.$t('clientCases.completePayment')
     this.selectedCase = this.myCases[0] || {}
+    const res = await this.$store.dispatch('getPaymentAmounts')
+    if (res.success && res.data) {
+      this.paymentAmounts = { noticeInr: res.data.noticeInr, mediationInr: res.data.mediationInr }
+    }
   },
   watch: {
     myCases: {
@@ -621,7 +657,7 @@ export default {
         this.acceptMediationRequest()
         return
       }
-      if (actionKey === 'mediation_payment' && isFirstParty) {
+      if (actionKey === 'mediation_payment' && (isFirstParty || isSecondParty)) {
         this.initiatePayment('mediation')
         return
       }
@@ -657,16 +693,39 @@ export default {
         this.isAcceptingMediation = false
       }
     },
+    async submitEmailCorrectionRequest () {
+      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+      if (!emailPattern.test(this.emailCorrectionForm.requestedEmail)) {
+        this.showAlert(this.$t('clientCases.invalidCorrectEmail'), 'danger')
+        return
+      }
+      this.submittingEmailCorrection = true
+      try {
+        const res = await this.$store.dispatch('createEmailCorrectionRequest', {
+          caseId: this.selectedCase.id,
+          requestedEmail: this.emailCorrectionForm.requestedEmail,
+          reason: this.emailCorrectionForm.reason,
+          reasonDetail: this.emailCorrectionForm.reasonDetail
+        })
+        if (res.success) {
+          this.showAlert(res.message || this.$t('clientCases.correctionRequestSubmitted'), 'success')
+          this.showEmailCorrectionForm = false
+          this.emailCorrectionForm = { requestedEmail: '', reason: 'typo', reasonDetail: '' }
+        }
+      } finally {
+        this.submittingEmailCorrection = false
+      }
+    },
     initiatePayment (type) {
       this.paymentType = type
       if (type === 'notice') {
         this.paymentPurpose = 'CLIENT_NOTICE'
-        this.paymentAmountInr = 1000
+        this.paymentAmountInr = this.paymentAmounts.noticeInr
         this.paymentTitle = this.$t('clientCases.payNoticeFee')
         this.paymentSubtitle = this.$t('clientCases.payNoticeFeeSubtitle')
       } else {
         this.paymentPurpose = 'CLIENT_MEDIATION'
-        this.paymentAmountInr = 5000
+        this.paymentAmountInr = this.paymentAmounts.mediationInr
         this.paymentTitle = this.$t('clientCases.payMediationFee')
         this.paymentSubtitle = this.$t('clientCases.payMediationFeeSubtitle')
       }
@@ -848,6 +907,64 @@ export default {
 
 .party-card.empty p {
   justify-content: flex-start;
+}
+
+.need-help-link {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--kadr-primary);
+  text-decoration: underline;
+}
+
+.email-correction-form {
+  margin-top: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--kadr-border-info);
+  border-radius: var(--kadr-radius-md);
+  background: var(--kadr-surface-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ec-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--kadr-text-muted);
+  margin: 0;
+}
+
+.ec-input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--kadr-border);
+  border-radius: var(--kadr-radius-sm);
+  background: var(--kadr-bg-surface);
+  color: var(--kadr-text-primary);
+}
+
+.ec-textarea {
+  min-height: 3.5rem;
+  resize: vertical;
+}
+
+.ec-submit-btn {
+  align-self: flex-end;
+  padding: 0.45rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--kadr-text-on-primary);
+  background: var(--kadr-primary);
+  border: none;
+  border-radius: var(--kadr-radius-sm);
+  cursor: pointer;
+}
+
+.ec-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .meeting-list {

@@ -74,6 +74,7 @@ module.exports = {
           category: caseDetails.category
         }).catch((err) => console.error('[assignMediator] mediator email failed', err.message)),
         emailPartiesMediatorAssigned({
+          caseId,
           parties: [
             caseDetails.user_cases_first_partyTouser,
             caseDetails.user_cases_second_partyTouser
@@ -215,6 +216,19 @@ Issued by: Kadr.live`
       } = req.body.userDetails || req.body
       // Web forms send `phone`; the mobile app sends `phone_number`.
       const phoneValue = phone || phoneNumber
+
+      // Mediator signup has no invite-link path — every submission is a fresh
+      // self-registration, so email OTP verification is unconditional here (see
+      // authController.requestSignupEmailOtp/verifySignupEmailOtp).
+      const normalizedEmailForOtp = String(email || '').trim().toLowerCase()
+      const verifiedOtp = await prisma.otp_resets.findFirst({
+        where: { email: normalizedEmailForOtp, type: 'SIGNUP_EMAIL_VERIFY' },
+        select: { id: true, verified_at: true, expires_at: true }
+      })
+      if (!verifiedOtp || !verifiedOtp.verified_at || verifiedOtp.expires_at < new Date()) {
+        throw createError(errorCodes.EMAIL_NOT_VERIFIED)
+      }
+      await prisma.otp_resets.delete({ where: { id: verifiedOtp.id } })
 
       // Files are uploaded directly to S3 by the browser (presigned URLs), so we
       // normally receive their object URLs. The legacy base64 fields are still

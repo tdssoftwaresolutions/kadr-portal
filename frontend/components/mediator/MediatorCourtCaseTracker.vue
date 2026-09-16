@@ -60,6 +60,10 @@
                 <p v-if="item.courtName" class="case-line case-line--court mb-0">
                   in {{ item.courtName }}
                 </p>
+                <p class="case-line case-line--next-hearing mb-0">
+                  <i class="ri-calendar-event-line" aria-hidden="true"></i>
+                  Next hearing: <strong>{{ item.nextHearingDate || '—' }}</strong>
+                </p>
                 <p v-if="item.caseStatus || item.label" class="case-line case-line--status mb-0">
                   <span v-if="item.caseStatus" class="status-badge">{{ item.caseStatus }}</span>
                   <span v-if="item.label" class="tracker-label">{{ item.label }}</span>
@@ -184,6 +188,7 @@ export default {
         caseTitle: row.caseTitle || row.case_title || null,
         courtName: row.courtName || row.court_name || null,
         caseStatus: row.caseStatus || row.case_status || null,
+        nextHearingDate: row.nextHearingDate || row.next_hearing_date || null,
         lastFetchedAt: row.lastFetchedAt || row.last_fetched_at,
         updatedAt: row.updatedAt || row.updated_at,
         hasSnapshot: row.hasSnapshot === true
@@ -372,6 +377,15 @@ export default {
 
 .case-line--court {
   font-style: italic;
+}
+
+.case-line--next-hearing {
+  color: var(--kadr-primary);
+  margin-top: 0.15rem;
+}
+
+.case-line--next-hearing i {
+  margin-right: 0.2rem;
 }
 
 .status-badge {

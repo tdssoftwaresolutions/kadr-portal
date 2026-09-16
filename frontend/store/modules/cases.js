@@ -5,7 +5,8 @@ import {
   SUBMIT_EVENT_FEEDBACK_ENDPOINT,
   GET_PAST_MEDIATIONS_ENDPOINT,
   SET_CLIENT_PAYMENT_ENDPOINT,
-  INITIATE_NEW_CASE_ENDPOINT
+  INITIATE_NEW_CASE_ENDPOINT,
+  CREATE_EMAIL_CORRECTION_REQUEST_ENDPOINT
 } from '../endpoints'
 
 export default {
@@ -44,6 +45,21 @@ export default {
           success: false,
           error
         }
+      } finally {
+        dispatch('spinner/hideSpinner')
+      }
+    },
+
+    async createEmailCorrectionRequest ({ dispatch }, { caseId, requestedEmail, reason, reasonDetail }) {
+      try {
+        dispatch('spinner/showSpinner')
+        const { data } = await apiClient.post(CREATE_EMAIL_CORRECTION_REQUEST_ENDPOINT, { caseId, requestedEmail, reason, reasonDetail })
+        if (!data.success) throw new Error(data.error?.message || data.message)
+        return data
+      } catch (error) {
+        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
+        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
+        return { success: false, error }
       } finally {
         dispatch('spinner/hideSpinner')
       }
