@@ -44,7 +44,7 @@
               </div>
 
               <b-alert v-if="!hasPrivateInvoices" model-value variant="light" class="small border mb-3">
-                <router-link :to="{ name: 'app.edit' }">{{ $t('mediatorInvoices.upgradeLink') }}</router-link> {{ $t('mediatorInvoices.upgradePrompt') }}
+                <router-link :to="{ name: 'user.edit' }">{{ $t('mediatorInvoices.upgradeLink') }}</router-link> {{ $t('mediatorInvoices.upgradePrompt') }}
               </b-alert>
 
               <mediator-private-invoice-section
