@@ -2,8 +2,12 @@
   <b-container fluid class="past-mediations-page">
     <kadr-page-header :title="$t('standardPages.pastTitle')" :subtitle="$t('standardPages.pastSubtitle')" />
 
+    <div v-if="loading" class="past-mediations-loading">
+      <kadr-spinner size="lg" />
+    </div>
+
     <my-cases
-      v-if="isMediator"
+      v-else-if="isMediator"
       :cases="pastCases"
       :user-id="user.id"
       :user-name="user.name"
@@ -45,6 +49,7 @@ export default {
   },
   data () {
     return {
+      loading: true,
       pastCases: {
         casesWithEvents: [],
         total: 0,
@@ -70,10 +75,18 @@ export default {
   },
   methods: {
     async loadPastMediations () {
-      if (!this.user?.id) return
-      const response = await this.$store.dispatch('getPastMediations', { page: 1 })
-      if (!response.success) return
-      this.pastCases = response.data || this.pastCases
+      if (!this.user?.id) {
+        this.loading = false
+        return
+      }
+      this.loading = true
+      try {
+        const response = await this.$store.dispatch('getPastMediations', { page: 1 })
+        if (!response.success) return
+        this.pastCases = response.data || this.pastCases
+      } finally {
+        this.loading = false
+      }
     }
   }
 }
@@ -82,5 +95,12 @@ export default {
 <style scoped>
 .past-mediations-page {
   background: var(--kadr-bg-page);
+}
+
+.past-mediations-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
 }
 </style>

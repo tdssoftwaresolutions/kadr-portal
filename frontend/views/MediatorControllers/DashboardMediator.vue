@@ -101,11 +101,10 @@
     </div>
 
     <div
-      class="workspace-grid workspace-grid--tools"
-      :class="{ 'workspace-grid--tools-single': !hasCourtCaseTracker }"
+      v-if="hasCourtCaseTracker"
+      class="workspace-grid workspace-grid--tools workspace-grid--tools-single"
     >
-      <mediator-court-case-tracker v-if="hasCourtCaseTracker" />
-      <mediator-legal-feed-panel />
+      <mediator-court-case-tracker />
     </div>
 
     <my-cases :cases="content.myCases" :user-name="user.name" :user-id="user.id" @refresh-dashboard="$emit('refresh-dashboard')"></my-cases>
@@ -115,7 +114,6 @@
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import MyCases from './MyCases.vue'
 import MediatorCourtCaseTracker from '../../components/mediator/MediatorCourtCaseTracker.vue'
-import MediatorLegalFeedPanel from '../../components/mediator/MediatorLegalFeedPanel.vue'
 import KadrDashboardHero from '../../components/kadr/KadrDashboardHero.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
 import { getRoleLabel } from '../../utils/roleLabels'
@@ -132,7 +130,6 @@ export default {
     Alert,
     MyCases,
     MediatorCourtCaseTracker,
-    MediatorLegalFeedPanel,
     KadrDashboardHero,
     KadrEmptyState
   },

@@ -138,7 +138,6 @@ async function startApiServer () {
 
   apiServer = result.server
   process.env.BASE_URL = `http://127.0.0.1:${result.port}`
-  process.env.PORTAL_APP_URL = process.env.BASE_URL
 
   await waitForHealth(result.port)
   return result.port

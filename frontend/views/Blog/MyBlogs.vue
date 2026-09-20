@@ -357,14 +357,22 @@ export default {
         this.paginatedData = this.blogsCache[this.currentPage]
         return
       }
-      const response = await this.$store.dispatch('getMyBlogs', {
-        page: this.currentPage
-      })
-      if (response.success) {
-        this.blogsCache[this.currentPage] = response.data
-        this.paginatedData = response.data
+      this.loading = true
+      try {
+        // The blog list and the category/tag reference data are independent
+        // — fetching them sequentially added a full extra round trip to
+        // every page load and every post-save refresh.
+        const [response] = await Promise.all([
+          this.$store.dispatch('getMyBlogs', { page: this.currentPage }),
+          this.fetchBlogAssets()
+        ])
+        if (response.success) {
+          this.blogsCache[this.currentPage] = response.data
+          this.paginatedData = response.data
+        }
+      } finally {
+        this.loading = false
       }
-      await this.fetchBlogAssets()
     },
     async fetchBlogAssets () {
       const response = await this.$store.dispatch('getBlogAssets')

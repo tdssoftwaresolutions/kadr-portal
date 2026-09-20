@@ -325,10 +325,15 @@ export default {
     }
   },
   async created () {
-    await this.initUserData()
+    // isMediator reads the already-logged-in session's user type (set at
+    // login), not anything initUserData() fetches — so the mediator-only
+    // calls don't actually need to wait for it. They used to run only after
+    // initUserData() fully resolved, adding an unnecessary extra round trip.
+    const tasks = [this.initUserData()]
     if (this.isMediator) {
-      await Promise.all([this.loadRewardBalance(), this.loadSubscription()])
+      tasks.push(this.loadRewardBalance(), this.loadSubscription())
     }
+    await Promise.all(tasks)
   },
   mounted () {
     sofbox.index()

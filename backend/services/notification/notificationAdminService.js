@@ -66,18 +66,23 @@ async function upsertTemplate (payload) {
     active: active !== false
   }
 
+  const { invalidateTemplateCache } = require('./templateRepository')
+
   if (id) {
-    return mapTemplateRow(await prisma.notification_templates.update({
-      where: { id },
-      data
-    }))
+    const updated = await prisma.notification_templates.update({ where: { id }, data })
+    invalidateTemplateCache(updated.template_key, updated.channel)
+    return mapTemplateRow(updated)
   }
 
-  return mapTemplateRow(await prisma.notification_templates.create({ data }))
+  const created = await prisma.notification_templates.create({ data })
+  invalidateTemplateCache(created.template_key, created.channel)
+  return mapTemplateRow(created)
 }
 
 async function deleteTemplate (id) {
-  await prisma.notification_templates.delete({ where: { id } })
+  const { invalidateTemplateCache } = require('./templateRepository')
+  const deleted = await prisma.notification_templates.delete({ where: { id } })
+  invalidateTemplateCache(deleted.template_key, deleted.channel)
   return { deleted: true }
 }
 

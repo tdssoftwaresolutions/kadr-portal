@@ -5,7 +5,6 @@ import {
   GET_MY_REWARDS_ENDPOINT,
   REDEEM_REWARD_ENDPOINT,
   MEDIATOR_SUBSCRIPTION_ENDPOINT,
-  MEDIATOR_LEGAL_FEEDS_ENDPOINT,
   MEDIATOR_COURT_CASES_ENDPOINT,
   MEDIATOR_PRIVATE_INVOICE_SETTINGS,
   MEDIATOR_PRIVATE_INVOICE_UPLOAD,
@@ -62,18 +61,6 @@ export default {
 
     async getMySubscription (context) {
       return context.dispatch('loadMediatorSubscription')
-    },
-
-    async getMediatorLegalFeeds ({ dispatch }, { feed = 'judgments', limit = 12 } = {}) {
-      try {
-        const { data } = await apiClient.get(
-            `${MEDIATOR_LEGAL_FEEDS_ENDPOINT}?feed=${encodeURIComponent(feed)}&limit=${encodeURIComponent(limit)}`
-        )
-        return parseApiResponse(data)
-      } catch (error) {
-        dispatchApiErrorAlert(dispatch, error)
-        return { success: false, error }
-      }
     },
 
     async getMediatorCourtCaseTrackers ({ dispatch }) {

@@ -669,15 +669,15 @@ module.exports = {
         throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
       }
 
-      async function createUser (email, name, phone) {
+      async function createUser (tx, email, name, phone) {
         const normalizedEmail = String(email).trim().toLowerCase()
-        const existing = await prisma.user.findUnique({
+        const existing = await tx.user.findUnique({
           where: { email_user_type: { email: normalizedEmail, user_type: 'CLIENT' } },
           select: { id: true, is_deleted: true }
         })
         if (existing && !existing.is_deleted) return existing.id
         if (existing?.is_deleted) {
-          await prisma.user.update({
+          await tx.user.update({
             where: { id: existing.id },
             data: {
               name,
@@ -689,7 +689,7 @@ module.exports = {
           })
           return existing.id
         }
-        const user = await prisma.user.create({
+        const user = await tx.user.create({
           data: {
             name,
             email: normalizedEmail,
@@ -704,42 +704,60 @@ module.exports = {
         return user.id
       }
 
-      const firstPartyId = await createUser(party1Email, party1, plaintiffPhone)
-      const secondPartyId = await createUser(party2Email, party2, respondentPhone)
-
+      // Uploads S3, not DB — done before the transaction so the transaction
+      // (and its row locks) stays short and DB-only.
       let uploadedDocumentResponse = null
       if (document) {
         uploadedDocumentResponse = await helper.deployToS3Bucket(document, `case-reference-document-${uuidv4()}`)
       }
 
-      const tracker = await prisma.caseIdTracker.findFirst()
-      const newCaseId = tracker ? tracker.lastCaseId + 1 : 1
       const settingsRows = await getOrCreateSettings()
       const settingsMap = settingsToMap(settingsRows)
       const defaultCommission = Number(settingsMap.mediator_commission || 5)
-      const kadrCaseId = `KDR-${newCaseId}`
 
-      const newCaseRecord = await prisma.cases.create({
-        data: {
-          first_party: firstPartyId,
-          second_party: secondPartyId,
-          evidence_document_url: uploadedDocumentResponse || '',
-          description: description || natureOfSuit || 'Case referred for dispute resolution on Kadr.live',
-          category: category || natureOfSuit || 'Other',
-          case_type: caseType || 'Mediation',
-          status: CaseTypes.NEW,
-          caseId: kadrCaseId,
-          mediator_commission: defaultCommission
-        }
-      })
+      // Everything that writes to the DB for this case happens atomically —
+      // a failure partway through (e.g. the case insert) previously could
+      // leave orphaned client-user records or an incremented case-id counter
+      // with no matching case. The counter increment is also now a single
+      // atomic UPDATE (lastCaseId: {increment: 1}) instead of a
+      // find-then-upsert read/write pair, which was a real race: two
+      // concurrent case creations could previously read the same
+      // lastCaseId and both produce case "KDR-N".
+      const { newCaseRecord, newSignatureRecord, kadrCaseId } = await prisma.$transaction(async (tx) => {
+        const [firstPartyId, secondPartyId] = await Promise.all([
+          createUser(tx, party1Email, party1, plaintiffPhone),
+          createUser(tx, party2Email, party2, respondentPhone)
+        ])
 
-      await prisma.caseIdTracker.upsert({
-        where: { id: 1 },
-        update: { lastCaseId: newCaseId },
-        create: { lastCaseId: newCaseId }
-      })
+        await tx.caseIdTracker.upsert({
+          where: { id: 1 },
+          update: {},
+          create: { id: 1, lastCaseId: 0 }
+        })
+        const updatedTracker = await tx.caseIdTracker.update({
+          where: { id: 1 },
+          data: { lastCaseId: { increment: 1 } }
+        })
+        const kadrCaseId = `KDR-${updatedTracker.lastCaseId}`
 
-      const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, firstPartyId, newCaseRecord.id, null)
+        const newCaseRecord = await tx.cases.create({
+          data: {
+            first_party: firstPartyId,
+            second_party: secondPartyId,
+            evidence_document_url: uploadedDocumentResponse || '',
+            description: description || natureOfSuit || 'Case referred for dispute resolution on Kadr.live',
+            category: category || natureOfSuit || 'Other',
+            case_type: caseType || 'Mediation',
+            status: CaseTypes.NEW,
+            caseId: kadrCaseId,
+            mediator_commission: defaultCommission
+          }
+        })
+
+        const newSignatureRecord = await helper.createSignatureTrackingRecord(tx, firstPartyId, newCaseRecord.id, null)
+
+        return { newCaseRecord, newSignatureRecord, kadrCaseId }
+      }, { timeout: 10000 })
 
       await helper.sendTemplatedEmail('signatureVerificationRequest', party1Email, {
         recipientName: party1,
@@ -989,13 +1007,20 @@ module.exports = {
       })
       await recordCaseMilestone(prisma, { caseId, subStatusId: CaseSubTypes.PENDING_MEDIATION_PAYMENT })
 
+      // Fire-and-forget: the HTTP response doesn't need to wait on 4
+      // sequential SMTP round trips + DB log writes. Errors are still
+      // caught and logged so a failed send never becomes an unhandled
+      // rejection, it just no longer adds its latency to this request.
       const firstPartyVars = { recipientName: caseRecord.user_cases_first_partyTouser.name }
-      await helper.sendTemplatedEmail('mediationAcceptanceFirstParty', caseRecord.user_cases_first_partyTouser.email, firstPartyVars, [], { caseId })
-      await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.FIRST, templateKey: 'mediationAcceptanceFirstParty', variables: firstPartyVars })
-
       const secondPartyVars = { recipientName: caseRecord.user_cases_second_partyTouser.name }
-      await helper.sendTemplatedEmail('mediationAcceptanceSecondParty', caseRecord.user_cases_second_partyTouser.email, secondPartyVars, [], { caseId })
-      await copyEmailToRepresentative({ caseId, side: PARTY_SIDES.SECOND, templateKey: 'mediationAcceptanceSecondParty', variables: secondPartyVars })
+      Promise.all([
+        helper.sendTemplatedEmail('mediationAcceptanceFirstParty', caseRecord.user_cases_first_partyTouser.email, firstPartyVars, [], { caseId }),
+        copyEmailToRepresentative({ caseId, side: PARTY_SIDES.FIRST, templateKey: 'mediationAcceptanceFirstParty', variables: firstPartyVars }),
+        helper.sendTemplatedEmail('mediationAcceptanceSecondParty', caseRecord.user_cases_second_partyTouser.email, secondPartyVars, [], { caseId }),
+        copyEmailToRepresentative({ caseId, side: PARTY_SIDES.SECOND, templateKey: 'mediationAcceptanceSecondParty', variables: secondPartyVars })
+      ]).catch((err) => {
+        console.error('[acceptMediationRequest] notification failed', err.message)
+      })
 
       success(res, {}, 'Mediation request accepted successfully!')
     } catch (error) {

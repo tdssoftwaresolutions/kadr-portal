@@ -12,6 +12,7 @@ require('dotenv').config()
 
 const prisma = require('../lib/prisma')
 const helper = require('../utils/helper')
+const { getPortalUrl } = require('../config/appUrls')
 
 async function main () {
   const email = process.argv[2] || process.env.ADMIN_EMAIL
@@ -60,7 +61,7 @@ async function main () {
   console.log(`  Email: ${admin.email}`)
   console.log(`  Name:  ${admin.name}`)
   console.log(`  ID:    ${admin.id}`)
-  console.log(`Sign in at ${process.env.PORTAL_APP_URL || process.env.BASE_URL || 'http://localhost:3000'}/auth/sign-in`)
+  console.log(`Sign in at ${getPortalUrl()}/auth/sign-in`)
 }
 
 main()

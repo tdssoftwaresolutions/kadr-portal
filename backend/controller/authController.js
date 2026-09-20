@@ -450,9 +450,20 @@ module.exports = {
       // Deliver over WhatsApp. Any delivery failure is surfaced to the caller
       // (unlike the old SMS helper, which silently swallowed errors).
       await helper.sendOtpWhatsApp(otp, phoneNumber)
-      success(res, {
-        requestId: response.id
-      }, 'OTP sent successfully')
+
+      const responseData = { requestId: response.id }
+      // TEMPORARY, for testing before WhatsApp is configured: when the
+      // WhatsApp channel is off, sendOtpWhatsApp can't actually deliver the
+      // code anywhere, so surface it directly in the response instead of
+      // leaving the tester with no way to see it. Remove this block (and the
+      // getChannelSettings import above if unused elsewhere) once the
+      // WhatsApp channel is enabled in notification_channel_settings.
+      const { getChannelSettings } = require('../services/notification/channelConfig')
+      const whatsappSettings = await getChannelSettings('WHATSAPP')
+      if (!whatsappSettings.enabled) {
+        responseData.otp = otp
+      }
+      success(res, responseData, 'OTP sent successfully')
     } catch (error) {
       next(error)
     }

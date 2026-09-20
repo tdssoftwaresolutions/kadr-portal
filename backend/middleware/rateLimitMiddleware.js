@@ -2,6 +2,14 @@ const rateLimit = require('express-rate-limit')
 const path = require('path')
 const fs = require('fs')
 
+// Read once at module load instead of on every 429 response — the old code
+// did a blocking fs.readFileSync per rate-limited request, exactly when the
+// limiter (and the event loop) is busiest.
+const rateLimitPage = fs.readFileSync(
+  path.join(__dirname, '../../public/website/rate_limit.html'),
+  'utf8'
+)
+
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
@@ -9,12 +17,7 @@ const globalLimiter = rateLimit({
   legacyHeaders: false,
 
   handler: (req, res) => {
-    const page = fs.readFileSync(
-      path.join(__dirname, '../../public/website/rate_limit.html'),
-      'utf8'
-    )
-
-    res.status(429).type('html').send(page)
+    res.status(429).type('html').send(rateLimitPage)
   }
 })
 

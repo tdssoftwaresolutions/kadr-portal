@@ -6,8 +6,7 @@ Set **one** active gateway via `PAYMENT_GATEWAY`. All three adapters are built i
 # Active gateway: payu | cashfree | phonepe
 PAYMENT_GATEWAY=payu
 
-BASE_URL=https://api.kadr.live          # API server (webhooks & PayU return)
-PORTAL_APP_URL=https://kadr.live/admin  # Vue app base (redirect after payment)
+BASE_URL=https://kadr.live  # public root; API webhooks and the admin portal (BASE_URL/admin) both derive from this
 ```
 
 ## PayU (test)

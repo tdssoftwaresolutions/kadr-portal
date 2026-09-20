@@ -38,7 +38,6 @@ services:
       PORT: 3000
       DATABASE_URL: ${DATABASE_URL:-mysql://kadr:kadr@db:3306/kadr_portal}
       BASE_URL: ${BASE_URL:-http://localhost:3000}
-      PORTAL_APP_URL: ${PORTAL_APP_URL:-http://localhost:3000/admin}
       SECRET_KEY: ${SECRET_KEY:-change-me-docker-dev-secret-key-min-32-chars}
       REFRESH_SECRET_KEY: ${REFRESH_SECRET_KEY:-change-me-docker-refresh-secret-min-32-chars}
       SIGN_SECRET_KEY: ${SIGN_SECRET_KEY:-change-me-docker-sign-secret-min-32-chars}

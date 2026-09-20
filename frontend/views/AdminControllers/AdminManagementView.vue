@@ -40,7 +40,10 @@
               </b-col>
             </b-row>
 
-            <b-table :items="admins" :fields="fields" small responsive>
+            <div v-if="loading" class="admin-management-loading">
+              <kadr-spinner size="lg" />
+            </div>
+            <b-table v-else :items="admins" :fields="fields" small responsive>
               <template #cell(master)="row">
                 <b-form-checkbox
                   :model-value="row.item.master"
@@ -114,6 +117,7 @@ export default {
   },
   data () {
     return {
+      loading: true,
       admins: [],
       newAdmin: {
         name: '',
@@ -148,7 +152,12 @@ export default {
   },
   mounted () {
     sofbox.index()
-    this.fetchAdmins()
+    // Only the very first load shows the full-page spinner — fetchAdmins is
+    // reused after create/edit actions too, where hiding the table again
+    // would be jarring, not helpful.
+    this.fetchAdmins().finally(() => {
+      this.loading = false
+    })
   },
   methods: {
     onNewMasterToggle () {
@@ -266,6 +275,12 @@ export default {
 </script>
 
 <style scoped>
+.admin-management-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30vh;
+}
 .perm-section-title {
   font-weight: 600;
   margin-bottom: 0.35rem;

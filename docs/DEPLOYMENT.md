@@ -59,7 +59,6 @@ Endpoints when running:
 | `JPA_DDL_AUTO` | Hibernate ddl-auto; default `none` (Flyway owns schema). Set `validate` for drift checks | no |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google login/calendar | when enabled |
 | `PAYMENT_GATEWAY` | active gateway: `payu`/`cashfree`/`phonepe` | when payments enabled |
-| `PORTAL_APP_URL` | portal base URL for payment return redirects | when payments enabled |
 | `PAYU_MERCHANT_KEY` / `PAYU_MERCHANT_SALT` / `PAYU_ENV` | PayU credentials | when PayU active |
 | `CASHFREE_CLIENT_ID` / `CASHFREE_CLIENT_SECRET` / `CASHFREE_ENV` | Cashfree creds | when Cashfree active |
 | `PHONEPE_MERCHANT_ID` / `PHONEPE_SALT_KEY` / `PHONEPE_SALT_INDEX` / `PHONEPE_ENV` | PhonePe creds | when PhonePe active |

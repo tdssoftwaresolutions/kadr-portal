@@ -2,7 +2,6 @@ const prisma = require('../lib/prisma.js')
 const { createError } = require('../utils/errors')
 const errorCodes = require('../utils/errors/errorCodes')
 const { success } = require('../utils/responses')
-const { listFeeds, fetchFeedItems } = require('../services/mediatorTools/legalFeedService')
 const {
   listTrackers,
   addTracker,
@@ -16,27 +15,6 @@ function assertMediator (req) {
 }
 
 module.exports = {
-  getLegalFeeds: async function (req, res, next) {
-    try {
-      assertMediator(req)
-      const feedId = req.query.feed || undefined
-      const limit = Math.min(30, Math.max(1, parseInt(req.query.limit, 10) || 12))
-      const payload = await fetchFeedItems(feedId, limit)
-      success(res, payload)
-    } catch (error) {
-      next(error)
-    }
-  },
-
-  listLegalFeedCatalog: async function (req, res, next) {
-    try {
-      assertMediator(req)
-      success(res, { feeds: listFeeds() })
-    } catch (error) {
-      next(error)
-    }
-  },
-
   listCourtCaseTrackers: async function (req, res, next) {
     try {
       assertMediator(req)

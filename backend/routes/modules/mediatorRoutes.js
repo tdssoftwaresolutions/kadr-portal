@@ -17,8 +17,6 @@ router.use(authMiddleware)
 
 router.get('/mediator/rewards', requireMediator, rewardController.getMyRewards)
 router.post('/mediator/redeem-reward', requireMediator, rewardController.redeemReward)
-router.get('/mediator/legal-feeds/catalog', requireMediator, mediatorToolsController.listLegalFeedCatalog)
-router.get('/mediator/legal-feeds', requireMediator, mediatorToolsController.getLegalFeeds)
 router.get('/mediator/court-cases', requireMediator, mediatorToolsController.listCourtCaseTrackers)
 router.get('/mediator/court-cases/:id/details', requireMediator, mediatorToolsController.getCourtCaseTrackerDetails)
 router.post('/mediator/court-cases', requireMediator, mediatorToolsController.addCourtCaseTracker)

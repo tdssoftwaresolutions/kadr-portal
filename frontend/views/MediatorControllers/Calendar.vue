@@ -466,41 +466,51 @@ export default {
       }
     },
     async initCalendar (skipCache) {
-      const response = await this.$store.dispatch('getCalendarInit', { skipCache })
-      if (response.success) {
-        this.events = []
-        for (let i = 0; i < response.data.events.length; i++) {
-          const event = response.data.events[i]
-          this.events.push({
-            id: event.id,
-            title: event.title,
-            start: event.start_datetime,
-            end: event.end_datetime,
-            color: event.type === 'KADR' ? this.kadrEventColor : this.personalEventColor,
-            extendedProps: {
-              description: event.description || this.$t('mediatorCalendar.noDescription'),
-              meetingLink: event.meeting_link,
-              caseId: event.cases ? event.cases.id : null,
-              caseNumber: event.cases ? event.cases.caseId : null,
-              type: event.type,
-              first_party: event.cases ? event.cases.first_party : null,
-              second_party: event.cases ? event.cases.second_party : null,
-              mediator: event.cases ? event.cases.mediator : null,
-              meeting_summary: event.meeting_summary,
-              mediator_next_steps: event.mediator_next_steps,
-              first_party_next_steps: event.first_party_next_steps,
-              second_party_next_steps: event.second_party_next_steps,
-              first_party_rating: event.first_party_rating,
-              second_party_rating: event.second_party_rating
-            }
-          })
+      this.loading = true
+      try {
+        // getCalendarInit (the calendar's own events) and getDashboardContent
+        // (only needed for the "book appointment" case picker) are
+        // independent — fetching them sequentially was adding a full extra
+        // round trip to every calendar page load for no reason.
+        const needsDashboardContent = this.dashboardContent == null
+        const [response, dashboardResponse] = await Promise.all([
+          this.$store.dispatch('getCalendarInit', { skipCache }),
+          needsDashboardContent ? this.$store.dispatch('getDashboardContent') : Promise.resolve(null)
+        ])
+        if (dashboardResponse && dashboardResponse.success) {
+          this.dashboardContent = JSON.parse(JSON.stringify(dashboardResponse.data.dashboardContent))
         }
-        if (this.dashboardContent == null) {
-          const response = await this.$store.dispatch('getDashboardContent')
-          if (response.success) {
-            this.dashboardContent = JSON.parse(JSON.stringify(response.data.dashboardContent))
+        if (response.success) {
+          this.events = []
+          for (let i = 0; i < response.data.events.length; i++) {
+            const event = response.data.events[i]
+            this.events.push({
+              id: event.id,
+              title: event.title,
+              start: event.start_datetime,
+              end: event.end_datetime,
+              color: event.type === 'KADR' ? this.kadrEventColor : this.personalEventColor,
+              extendedProps: {
+                description: event.description || this.$t('mediatorCalendar.noDescription'),
+                meetingLink: event.meeting_link,
+                caseId: event.cases ? event.cases.id : null,
+                caseNumber: event.cases ? event.cases.caseId : null,
+                type: event.type,
+                first_party: event.cases ? event.cases.first_party : null,
+                second_party: event.cases ? event.cases.second_party : null,
+                mediator: event.cases ? event.cases.mediator : null,
+                meeting_summary: event.meeting_summary,
+                mediator_next_steps: event.mediator_next_steps,
+                first_party_next_steps: event.first_party_next_steps,
+                second_party_next_steps: event.second_party_next_steps,
+                first_party_rating: event.first_party_rating,
+                second_party_rating: event.second_party_rating
+              }
+            })
           }
         }
+      } finally {
+        this.loading = false
       }
     },
     formatTime (dateString) {

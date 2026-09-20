@@ -353,6 +353,10 @@ model cases {
   @@index([status], map: "fk_cases_status")
   @@index([sub_status], map: "fk_cases_sub_status")
   @@index([mediator, status], map: "idx_cases_mediator_status")
+  @@index([first_party, status], map: "idx_cases_first_party_status")
+  @@index([second_party, status], map: "idx_cases_second_party_status")
+  @@index([first_party_representative, status], map: "idx_cases_first_party_rep_status")
+  @@index([second_party_representative, status], map: "idx_cases_second_party_rep_status")
   @@index([case_agreement], map: "fk_case_agreement")
 }
 
@@ -446,6 +450,7 @@ model events {
   @@index([created_by], map: "fk_created_by")
   @@index([start_datetime], map: "idx_events_start_datetime")
   @@index([external_ref], map: "idx_events_external_ref")
+  @@index([type, start_datetime], map: "idx_events_type_start_datetime")
 }
 
 model otp_resets {

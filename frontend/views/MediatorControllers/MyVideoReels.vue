@@ -13,7 +13,10 @@
       </template>
       <template v-slot:body>
         <b-col md="12">
-          <b-row v-if="paginatedData.reels && paginatedData.reels.length > 0">
+          <div v-if="loading" class="reels-loading">
+            <kadr-spinner size="lg" />
+          </div>
+          <b-row v-else-if="paginatedData.reels && paginatedData.reels.length > 0">
             <b-col md="4" v-for="reel in paginatedData.reels" :key="reel.id" class="mb-3">
               <b-card class="reel-card h-100">
                 <b-card-body class="d-flex flex-column">
@@ -146,6 +149,7 @@ export default {
   },
   data () {
     return {
+      loading: true,
       page: 'HOME',
       currentPage: 1,
       perPage: 10,
@@ -209,7 +213,10 @@ export default {
         this.paginatedData = this.reelsCache[this.currentPage]
         return
       }
-      const response = await this.$store.dispatch('getMyVideoReels', { page: this.currentPage })
+      this.loading = true
+      const response = await this.$store.dispatch('getMyVideoReels', { page: this.currentPage }).finally(() => {
+        this.loading = false
+      })
       if (response.success) {
         this.reelsCache[this.currentPage] = response.data
         this.paginatedData = {
@@ -292,6 +299,12 @@ export default {
 </script>
 
 <style scoped>
+.reels-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30vh;
+}
 .reel-card {
   border: 1px solid var(--kadr-border);
   border-radius: 8px;

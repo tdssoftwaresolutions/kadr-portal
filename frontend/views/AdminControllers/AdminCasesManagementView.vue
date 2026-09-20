@@ -44,7 +44,10 @@
               </b-col>
             </b-row>
 
-            <b-row v-if="cases.length > 0">
+            <div v-if="loading" class="admin-cases-loading">
+              <kadr-spinner size="lg" />
+            </div>
+            <b-row v-else-if="cases.length > 0">
               <b-col md="6" v-for="c in cases" :key="c.id" class="mb-3">
                 <b-card class="h-100 user-card">
                   <b-card-body class="d-flex flex-column">
@@ -578,11 +581,16 @@ export default {
   },
   mounted () {
     sofbox.index()
-    this.loadMeta()
-    this.fetchCases()
+    // Only the very first load shows the full-page spinner — fetchCases is
+    // reused for pagination/filter-change/post-action refresh too, where
+    // hiding the whole case grid again would be jarring, not helpful.
+    Promise.all([this.loadMeta(), this.fetchCases()]).finally(() => {
+      this.loading = false
+    })
   },
   data () {
     return {
+      loading: true,
       meta: null,
       cases: [],
       totalCases: 0,
@@ -954,6 +962,12 @@ export default {
 </script>
 
 <style scoped>
+.admin-cases-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+}
 :deep(.card-header) {
   background-color: unset !important;
   border-bottom: unset !important;

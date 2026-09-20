@@ -4,6 +4,7 @@
  */
 const tableMap = require('../../config/notificationTableMap')
 const { getNotificationContext } = require('./notificationContext')
+const codeTriggerRegistry = require('./codeTriggerRegistry')
 
 const WRITE_ACTIONS = new Set(['create', 'update', 'upsert'])
 const SKIP_MODELS = new Set([
@@ -108,8 +109,12 @@ function applyNotificationMiddleware (prisma) {
     // trigger evaluation.
     const capturedContext = getNotificationContext() || {}
 
+    // fetchPreviousRow only matters to registered code-trigger handlers (this
+    // middleware only ever runs code triggers — skipDatabaseRules: true below).
+    // Most mapped tables have no handler at all, so the pre-write read is
+    // otherwise pure waste; skip it entirely when nothing would consume it.
     let previous = null
-    if (params.action === 'update' || params.action === 'upsert') {
+    if ((params.action === 'update' || params.action === 'upsert') && codeTriggerRegistry.hasHandlersForTable(meta.tableName)) {
       applying = true
       try {
         previous = await fetchPreviousRow(prisma, params)

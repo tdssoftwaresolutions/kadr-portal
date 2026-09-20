@@ -59,11 +59,12 @@ module.exports = {
     // Never emit eval-based bundles in production. Vue CLI defaults to a
     // `source-map` devtool for production, but forcing it guarantees the built
     // app.js contains no eval()/new Function(), so it satisfies the strict CSP
-    // (no 'unsafe-eval'). Development keeps fast eval-based source maps.
+    // (no 'unsafe-eval'). Development keeps Vue CLI's own fast eval-based
+    // devtool — this branch used to be a dead no-op that forced source-map
+    // unconditionally, so dev builds paid the slower devtool for no reason.
     if (process.env.NODE_ENV === 'production') {
-
+      config.devtool = 'source-map'
     }
-    config.devtool = 'source-map'
 
     config.plugins.push({
       apply: (compiler) => {
@@ -88,6 +89,14 @@ module.exports = {
       // Pure Vue 3 (migration complete; @vue/compat removed).
       'vue$': 'vue/dist/vue.runtime.esm-bundler.js',
       'jquery': 'jquery/src/jquery.js'
+    }
+
+    // ANALYZE=1 npm run build:analyze — opens an interactive treemap of what's
+    // actually in each bundle, so a bundle-size regression can be diagnosed
+    // without manually grepping dist/js/*.js.
+    if (process.env.ANALYZE === '1') {
+      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
+      config.plugins.push(new BundleAnalyzerPlugin())
     }
   }
 }

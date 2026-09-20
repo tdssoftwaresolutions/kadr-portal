@@ -1,4 +1,5 @@
 const { PAYMENT_GATEWAYS } = require('./paymentConstants')
+const { getBaseUrl, getPortalUrl } = require('../../config/appUrls')
 
 function getActiveGateway () {
   const gateway = String(process.env.PAYMENT_GATEWAY || 'payu').toLowerCase()
@@ -9,11 +10,11 @@ function getActiveGateway () {
 }
 
 function getPortalBaseUrl () {
-  return (process.env.PORTAL_APP_URL || process.env.BASE_URL || 'http://localhost:8080/admin').replace(/\/$/, '')
+  return getPortalUrl('http://localhost:8080')
 }
 
 function getApiBaseUrl () {
-  return (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '')
+  return getBaseUrl('http://localhost:3000')
 }
 
 function getPayuConfig () {

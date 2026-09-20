@@ -8,100 +8,104 @@
       <p class="subtitle">{{ $t('signaturePages.ackSubtitle') }}</p>
     </header>
 
-    <form v-if="details" @submit.prevent="openPhoneModal" class="form-section">
-      <section class="info-card">
-        <h3>{{ $t('signaturePages.caseInformation') }}</h3>
-        <dl class="detail-list">
-          <div>
-            <dt>{{ $t('signaturePages.caseId') }}</dt>
-            <dd>{{ details.caseId || '—' }}</dd>
-          </div>
-          <div v-if="details.caseType">
-            <dt>{{ $t('signaturePages.caseType') }}</dt>
-            <dd>{{ details.caseType }}</dd>
-          </div>
-          <div v-if="details.category">
-            <dt>{{ $t('signaturePages.category') }}</dt>
-            <dd>{{ details.category }}</dd>
-          </div>
-          <div>
-            <dt>{{ $t('signaturePages.filedOn') }}</dt>
-            <dd>{{ formatDate(details.filedAt) }}</dd>
-          </div>
-        </dl>
-      </section>
+    <form v-if="details" @submit.prevent="openPhoneModal" class="agreement-layout">
+      <div class="agreement-main">
+        <section class="info-card">
+          <h3>{{ $t('signaturePages.caseInformation') }}</h3>
+          <dl class="detail-list">
+            <div>
+              <dt>{{ $t('signaturePages.caseId') }}</dt>
+              <dd>{{ details.caseId || '—' }}</dd>
+            </div>
+            <div v-if="details.caseType">
+              <dt>{{ $t('signaturePages.caseType') }}</dt>
+              <dd>{{ details.caseType }}</dd>
+            </div>
+            <div v-if="details.category">
+              <dt>{{ $t('signaturePages.category') }}</dt>
+              <dd>{{ details.category }}</dd>
+            </div>
+            <div>
+              <dt>{{ $t('signaturePages.filedOn') }}</dt>
+              <dd>{{ formatDate(details.filedAt) }}</dd>
+            </div>
+          </dl>
+        </section>
 
-      <section class="info-card">
-        <h3>{{ $t('signaturePages.parties') }}</h3>
-        <dl class="detail-list">
-          <div>
-            <dt>{{ $t('signaturePages.firstParty') }}</dt>
-            <dd>
-              {{ details.firstPartyName || '—' }}
-              <span v-if="details.isFirstParty" class="you-badge">{{ $t('signaturePages.you') }}</span>
-            </dd>
+        <section class="info-card">
+          <h3>{{ $t('signaturePages.parties') }}</h3>
+          <dl class="detail-list">
+            <div>
+              <dt>{{ $t('signaturePages.firstParty') }}</dt>
+              <dd>
+                {{ details.firstPartyName || '—' }}
+                <span v-if="details.isFirstParty" class="you-badge">{{ $t('signaturePages.you') }}</span>
+              </dd>
+            </div>
+            <div>
+              <dt>{{ $t('signaturePages.secondParty') }}</dt>
+              <dd>
+                {{ details.secondPartyName || '—' }}
+                <span v-if="!details.isFirstParty" class="you-badge">{{ $t('signaturePages.you') }}</span>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section v-if="details.description" class="info-card">
+          <h3>{{ $t('signaturePages.disputeSummary') }}</h3>
+          <p class="description-text">{{ details.description }}</p>
+        </section>
+
+        <section class="info-card acknowledgment">
+          <h3>{{ $t('signaturePages.acknowledgment') }}</h3>
+          <p>
+            {{ $t('signaturePages.ackBodyOne', { caseId: details.caseId }) }}
+          </p>
+          <p>
+            {{ $t('signaturePages.ackBodyTwo') }}
+          </p>
+        </section>
+      </div>
+
+      <aside class="agreement-sidebar">
+        <section class="info-card signature-card">
+          <h3>{{ $t('signaturePages.yourSignature') }}</h3>
+          <p class="signing-as">{{ $t('signaturePages.signingAs') }} <strong>{{ details.userName }}</strong></p>
+          <div class="signature-type-selector">
+            <button
+              type="button"
+              :class="{ active: signatureType === 'digital' }"
+              @click="setSignatureType('digital')"
+            >
+              {{ $t('signaturePages.digitalSignature') }}
+            </button>
+            <button
+              type="button"
+              :class="{ active: signatureType === 'manual' }"
+              @click="setSignatureType('manual')"
+            >
+              {{ $t('signaturePages.signManually') }}
+            </button>
           </div>
-          <div>
-            <dt>{{ $t('signaturePages.secondParty') }}</dt>
-            <dd>
-              {{ details.secondPartyName || '—' }}
-              <span v-if="!details.isFirstParty" class="you-badge">{{ $t('signaturePages.you') }}</span>
-            </dd>
+          <div v-if="signatureType === 'digital'" class="digital-signature-box">
+            <span class="cursive-signature">{{ userInitials }}</span>
           </div>
-        </dl>
-      </section>
+          <div v-else class="manual-signature">
+            <canvas ref="signaturePad" class="signature-canvas"></canvas>
+            <button type="button" class="btn-clear" @click="clearSignature">
+              {{ $t('signaturePages.clear') }}
+            </button>
+          </div>
 
-      <section v-if="details.description" class="info-card">
-        <h3>{{ $t('signaturePages.disputeSummary') }}</h3>
-        <p class="description-text">{{ details.description }}</p>
-      </section>
+          <div class="phone-row">
+            <label>{{ $t('signaturePages.registeredPhone') }}</label>
+            <input :value="details.partyPhoneNumber || '—'" disabled />
+          </div>
 
-      <section class="info-card acknowledgment">
-        <h3>{{ $t('signaturePages.acknowledgment') }}</h3>
-        <p>
-          {{ $t('signaturePages.ackBodyOne', { caseId: details.caseId }) }}
-        </p>
-        <p>
-          {{ $t('signaturePages.ackBodyTwo') }}
-        </p>
-      </section>
-
-      <section class="info-card">
-        <h3>{{ $t('signaturePages.yourSignature') }}</h3>
-        <p class="signing-as">{{ $t('signaturePages.signingAs') }} <strong>{{ details.userName }}</strong></p>
-        <div class="signature-type-selector">
-          <button
-            type="button"
-            :class="{ active: signatureType === 'digital' }"
-            @click="setSignatureType('digital')"
-          >
-            {{ $t('signaturePages.digitalSignature') }}
-          </button>
-          <button
-            type="button"
-            :class="{ active: signatureType === 'manual' }"
-            @click="setSignatureType('manual')"
-          >
-            {{ $t('signaturePages.signManually') }}
-          </button>
-        </div>
-        <div v-if="signatureType === 'digital'" class="digital-signature-box">
-          <span class="cursive-signature">{{ userInitials }}</span>
-        </div>
-        <div v-else class="manual-signature">
-          <canvas ref="signaturePad" class="signature-canvas"></canvas>
-          <button type="button" class="btn-clear" @click="clearSignature">
-            {{ $t('signaturePages.clear') }}
-          </button>
-        </div>
-
-        <div class="phone-row">
-          <label>{{ $t('signaturePages.registeredPhone') }}</label>
-          <input :value="details.partyPhoneNumber || '—'" disabled />
-        </div>
-      </section>
-
-      <button type="submit" class="btn-submit">{{ $t('signaturePages.continueToVerifyAck') }}</button>
+          <button type="submit" class="btn-submit">{{ $t('signaturePages.continueToVerifyAck') }}</button>
+        </section>
+      </aside>
     </form>
 
     <div v-else-if="submitted" class="empty-state">
@@ -122,6 +126,11 @@
       <div v-else-if="phoneStep === 2" class="phone-step-card">
         <h5 class="section-title">{{ $t('signaturePages.enterOtp') }}</h5>
         <small class="text-muted">{{ $t('signaturePages.otpEnterInstruction') }}</small>
+        <div v-if="devOtp" class="dev-otp-banner">
+          <strong>{{ $t('signaturePages.testModeLabel') }}</strong>
+          <p>{{ $t('signaturePages.testModeOtpHint') }}</p>
+          <span class="dev-otp-code">{{ devOtp }}</span>
+        </div>
         <b-form-group>
           <b-form-input
             v-model="phoneOtp"
@@ -147,6 +156,7 @@
 import SignaturePad from 'signature_pad'
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import { getEffectiveLocale, getEffectiveTimezone } from '../../utils/timezone'
+import { sofbox } from '../../config/pluginInit'
 
 export default {
   name: 'Signature',
@@ -167,7 +177,10 @@ export default {
       phoneStep: 1,
       phoneNumber: '',
       phoneOtp: '',
-      otpRequestId: null
+      otpRequestId: null,
+      // TEMPORARY: only ever set while the WhatsApp channel is disabled —
+      // see authController.sendOtp. Remove once WhatsApp is live.
+      devOtp: null
     }
   },
   computed: {
@@ -243,6 +256,7 @@ export default {
       })
       if (response.success) {
         this.otpRequestId = response.data.requestId
+        this.devOtp = response.data.otp || null
         this.phoneStep = 2
         this.phoneOtp = ''
         this.showAlert(response.message, 'success')
@@ -263,6 +277,7 @@ export default {
       this.phoneStep = 1
       this.phoneNumber = ''
       this.phoneOtp = ''
+      this.devOtp = null
     },
     async submitFormReal () {
       let signature = ''
@@ -294,6 +309,9 @@ export default {
     }
   },
   mounted () {
+    // Standalone route (no layout wrapper) — house convention for every
+    // URL-addressable page, so a reload/direct-link open behaves correctly.
+    sofbox.index()
     this.fetchSignatureRequestDetails()
   }
 }
@@ -301,7 +319,7 @@ export default {
 
 <style scoped>
 .form-container {
-  max-width: 760px;
+  max-width: 1040px;
   margin: 0 auto;
   padding: 1.5rem 1.25rem 3rem;
   color: var(--kadr-text-primary);
@@ -332,10 +350,35 @@ export default {
   line-height: 1.45;
 }
 
-.form-section {
+/* Two-column page layout: readable case info on the left, the signing
+   action sticky on the right. Collapses to one column below 900px,
+   matching the breakpoint style used in signupForm.css. */
+.agreement-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.agreement-main {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-width: 0;
+}
+
+.agreement-sidebar {
+  position: sticky;
+  top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .agreement-layout {
+    grid-template-columns: 1fr;
+  }
+  .agreement-sidebar {
+    position: static;
+  }
 }
 
 .info-card {
@@ -353,10 +396,23 @@ export default {
   color: var(--kadr-text-primary);
 }
 
+/* Label/value pairs in two columns (same pattern as .field-grid in
+   signupForm.css) — collapses to one column on narrow screens. */
 .detail-list {
   margin: 0;
   display: grid;
-  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.5rem;
+}
+
+.detail-list .detail-item--full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 575.98px) {
+  .detail-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .detail-list dt {
@@ -493,7 +549,8 @@ export default {
 }
 
 .btn-submit {
-  margin-top: 0.5rem;
+  width: 100%;
+  margin-top: 1rem;
   padding: 0.75rem 1.25rem;
   border: none;
   border-radius: 10px;
@@ -536,5 +593,37 @@ export default {
   background: var(--kadr-surface-muted);
   border-radius: 8px;
   border: 1px solid var(--kadr-border-strong);
+}
+
+/* TEMPORARY: only shown while WhatsApp delivery is disabled — see devOtp. */
+.dev-otp-banner {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--kadr-status-warning-bg);
+  color: var(--kadr-status-warning-text);
+  border: 1px dashed var(--kadr-warning);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.dev-otp-banner strong {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+
+.dev-otp-banner p {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.dev-otp-code {
+  display: inline-block;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--kadr-text-primary);
 }
 </style>

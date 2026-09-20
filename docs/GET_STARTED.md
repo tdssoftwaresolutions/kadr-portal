@@ -32,7 +32,6 @@ Edit `.env` and at minimum confirm these values:
 
 ```bash
 BASE_URL=http://localhost:3000
-PORTAL_APP_URL=http://localhost:3000/admin
 COOKIE_SECURE=0          # required for HTTP localhost login
 DATABASE_URL=mysql://kadr:kadr@db:3306/kadr_portal
 ```
@@ -188,8 +187,6 @@ The Vue app embeds `BASE_URL` at **build time**, so you must rebuild after chang
 ```bash
 # .env
 BASE_URL=https://abc123.ngrok-free.app
-PORTAL_APP_URL=https://abc123.ngrok-free.app/admin
-PUBLIC_WEBSITE_URL=https://abc123.ngrok-free.app
 COOKIE_SECURE=1
 ```
 
@@ -268,8 +265,6 @@ Set production values:
 
 ```bash
 BASE_URL=https://yourdomain.com
-PORTAL_APP_URL=https://yourdomain.com/admin
-PUBLIC_WEBSITE_URL=https://yourdomain.com
 COOKIE_SECURE=1
 
 SECRET_KEY=<openssl rand -hex 32>
@@ -404,8 +399,7 @@ Copy payment keys from `.env.payment.example` into `.env`.
 
 | Variable | Description |
 |----------|-------------|
-| `BASE_URL` | Public API/site root (used in emails, webhooks, builds) |
-| `PORTAL_APP_URL` | Vue admin base URL, e.g. `https://domain.com/admin` |
+| `BASE_URL` | Public API/site root (used in emails, webhooks, builds). The admin portal is served at `BASE_URL/admin`. |
 
 ### Docker-specific
 

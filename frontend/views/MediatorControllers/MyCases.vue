@@ -357,31 +357,9 @@
       @ok="submitMeeting"
       scrollable
     >
-      <div class="data-row">
-        <div class="col-12">
-          <div class="data-title">{{ $t('mediatorCases.meetingTitleLabel') }}</div>
-          <b-form-input
-            id="title"
-            type="text"
-            v-model="meetingForm.title"
-            required
-            class="form-control"
-          />
-        </div>
-      </div>
-      <div class="data-row">
-        <div class="col-12">
-          <div class="data-title">{{ $t('mediatorCases.meetingDescriptionLabel') }}</div>
-          <b-form-textarea
-            id="textarea"
-            v-model="meetingForm.description"
-            :placeholder="$t('mediatorCases.meetingDescriptionPlaceholder')"
-            rows="3"
-            class="form-control"
-            max-rows="6"
-          ></b-form-textarea>
-        </div>
-      </div>
+      <!-- Title/description are auto-generated from the case (openMeetingModal /
+           getDefaultMeetingDescription) — the case is already known here, so
+           unlike the general Calendar view, this only needs a date/time. -->
       <div class="data-row">
         <div class="col-12">
             <div class="data-title">{{ $t('mediatorCases.meetingDateTimeLabel') }}</div>

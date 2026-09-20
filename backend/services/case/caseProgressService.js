@@ -260,8 +260,11 @@ function buildNowCard (caseItem, viewerRole) {
         ? `"${nextMeeting.title || 'Session'}" — ${formatDisplayDate(nextMeeting.start_datetime)}`
         : 'Sessions are being scheduled. See Meetings for details.',
       tone: 'info',
-      actionKey: nextMeeting?.meeting_link ? 'join_meeting' : null,
-      actionLabel: nextMeeting?.meeting_link ? 'Join meeting' : null,
+      // Not set to 'join_meeting' — meetingLink below already renders its
+      // own "Join meeting" link (CaseProgressPanel.vue); setting actionKey
+      // too rendered a second, redundant button for the identical URL.
+      actionKey: null,
+      actionLabel: null,
       waitingOn: null,
       meetingLink: nextMeeting?.meeting_link || null
     }

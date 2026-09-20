@@ -6,6 +6,7 @@ const { createError } = require('../utils/errors')
 const { success } = require('../utils/responses')
 const { assertAdminPage, adminHasPage } = require('../utils/adminPermissionHelpers')
 const inboxReadState = require('../utils/adminInboxReadState')
+const { getBaseUrl } = require('../config/appUrls')
 
 const MAX_TITLE = 500
 const MAX_BODY = 8000
@@ -485,7 +486,7 @@ module.exports = {
         })
       ])
 
-      const customerSiteUrl = String(process.env.PUBLIC_WEBSITE_URL || process.env.BASE_URL || '').replace(/\/$/, '')
+      const customerSiteUrl = getBaseUrl('')
       const portalUrl = helper.portalSupportUrl({ threadId })
       const recipientName =
         thread.thread_origin === 'PORTAL'

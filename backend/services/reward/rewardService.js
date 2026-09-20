@@ -56,7 +56,15 @@ function toInt (value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback
 }
 
+// Default rows rarely change; ensureRewardSettings is called recursively
+// (getPointsForReason -> ensureRewardSettings, and listRewardEarningOptions
+// calls getPointsForReason once per guide entry), so without this guard a
+// single "open rewards page" request could cost dozens of sequential
+// upserts. Same pattern as entitlementService.ensurePremiumFeatureCatalog.
+let rewardSettingsEnsured = false
+
 async function ensureRewardSettings () {
+  if (rewardSettingsEnsured) return
   for (const row of REWARD_SETTING_DEFAULTS) {
     await prisma.admin_settings.upsert({
       where: { key: row.key },
@@ -64,6 +72,7 @@ async function ensureRewardSettings () {
       create: row
     })
   }
+  rewardSettingsEnsured = true
 }
 
 async function getPointsForReason (reasonCode) {

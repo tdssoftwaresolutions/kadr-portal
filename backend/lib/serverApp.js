@@ -113,9 +113,23 @@ function createApp (options = {}) {
   const websitePath = resolveWebsitePath(options.websitePath)
 
   if (serveAdmin) {
-    app.use('/admin', express.static(distPath, { index: false }))
+    app.use('/admin', express.static(distPath, {
+      index: false,
+      // Webpack build output is content-hashed (chunk-vendors.<hash>.js etc.),
+      // so it's safe to cache those forever — except index.html itself, which
+      // must always be revalidated so a deploy's new hashed asset references
+      // actually get picked up by returning visitors.
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache')
+        } else {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+        }
+      }
+    }))
     app.get(/^\/admin(\/.*)?$/, (req, res, next) => {
       if (req.method !== 'GET') return next()
+      res.setHeader('Cache-Control', 'no-cache')
       res.sendFile(path.join(distPath, 'index.html'), (err) => {
         if (err) next(err)
       })
@@ -125,7 +139,18 @@ function createApp (options = {}) {
   if (serveWebsite) {
     // Count public-website page views before static files are served.
     app.use(require('../middleware/websiteAnalyticsMiddleware'))
-    app.use(express.static(websitePath))
+    app.use(express.static(websitePath, {
+      // Marketing-site filenames are NOT content-hashed (privacy_policy.html,
+      // site-chrome.js, ...), so a long cache would delay picking up edits —
+      // short cache on HTML, a more moderate one on everything else.
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache')
+        } else {
+          res.setHeader('Cache-Control', 'public, max-age=3600')
+        }
+      }
+    }))
   }
 
   app.use((req, res, next) => {

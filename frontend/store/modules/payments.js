@@ -7,7 +7,26 @@ import {
   PAYMENT_AMOUNTS_ENDPOINT
 } from '../endpoints'
 
-let cachedAmounts = null
+// Caches the in-flight *promise*, not just the resolved value. DashboardClient
+// and ClientCases both fetch this independently on mount, and both can fire
+// before the first request resolves — a plain "if (cachedAmounts) skip"
+// check doesn't catch that window, so both used to race and issue two
+// identical GET requests. Every concurrent caller now awaits the same
+// promise instead.
+let cachedAmountsPromise = null
+
+async function fetchPaymentAmounts (dispatch) {
+  try {
+    const { data } = await apiClient.get(PAYMENT_AMOUNTS_ENDPOINT)
+    const result = parseApiResponse(data)
+    if (!result.success) cachedAmountsPromise = null
+    return result
+  } catch (error) {
+    cachedAmountsPromise = null
+    dispatchApiErrorAlert(dispatch, error)
+    return { success: false, error }
+  }
+}
 
 export default {
   namespaced: false,
@@ -25,16 +44,10 @@ export default {
     // Fixed-price purposes (CLIENT_NOTICE / CLIENT_MEDIATION) are env-configured
     // server-side — fetch once and cache for the session rather than hardcoding.
     async getPaymentAmounts ({ dispatch }) {
-      if (cachedAmounts) return { success: true, data: cachedAmounts }
-      try {
-        const { data } = await apiClient.get(PAYMENT_AMOUNTS_ENDPOINT)
-        const result = parseApiResponse(data)
-        if (result.success) cachedAmounts = result.data
-        return result
-      } catch (error) {
-        dispatchApiErrorAlert(dispatch, error)
-        return { success: false, error }
+      if (!cachedAmountsPromise) {
+        cachedAmountsPromise = fetchPaymentAmounts(dispatch)
       }
+      return cachedAmountsPromise
     },
 
     async initiatePayment ({ dispatch, commit }, { purpose, caseId, amount }) {

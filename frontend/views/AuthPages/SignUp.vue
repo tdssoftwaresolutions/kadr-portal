@@ -62,6 +62,7 @@
 <script>
 import SignUpClient from '../ClientControllers/SignUpClient.vue'
 import SignUpMediator from '../MediatorControllers/SignUpMediator.vue'
+import { sofbox } from '../../config/pluginInit'
 
 export default {
   name: 'SignUp',
@@ -77,6 +78,12 @@ export default {
     }
   },
   async mounted () {
+    // House convention for every route page. AuthLayout also calls this
+    // itself (it owns the shared loader/carousel markup), but this page
+    // gets its own call too per the house rule for URL-addressable pages —
+    // especially relevant here since this page is often reached via a
+    // direct email link (?id=...), not client-side navigation.
+    sofbox.index()
     this.loadStates()
     const queryParams = new URLSearchParams(window.location.search)
     const requestId = queryParams.get('id')

@@ -44,6 +44,11 @@ async function runForContext (ctx) {
   return specs
 }
 
+/** Does this table have any registered code-trigger handler at all? */
+function hasHandlersForTable (tableName) {
+  return tableHandlers.has(String(tableName || '').trim())
+}
+
 function listRegisteredCodeTriggers () {
   const tables = [...tableHandlers.keys()].map((table_name) => ({
     type: 'table',
@@ -61,5 +66,6 @@ module.exports = {
   registerTableTrigger,
   registerRuleTrigger,
   runForContext,
+  hasHandlersForTable,
   listRegisteredCodeTriggers
 }

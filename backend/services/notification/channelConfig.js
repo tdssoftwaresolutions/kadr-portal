@@ -1,5 +1,13 @@
 const prisma = require('../../lib/prisma.js')
 
+// Channel settings change rarely (admin-edited) but getChannelSettings is
+// called on every single notification send — twice per email, once directly
+// and once inside getEmailLayout(). A short TTL cache removes that DB round
+// trip from the hot path; saveChannelSettings invalidates immediately below
+// so admin edits still take effect right away.
+const CACHE_TTL_MS = 60 * 1000
+const cache = new Map()
+
 const DEFAULTS = {
   EMAIL: {
     enabled: true,
@@ -27,16 +35,19 @@ const DEFAULTS = {
 }
 
 async function getChannelSettings (channel) {
+  const cached = cache.get(channel)
+  if (cached && Date.now() - cached.loadedAt < CACHE_TTL_MS) {
+    return cached.value
+  }
+
   const row = await prisma.notification_channel_settings.findUnique({
     where: { channel }
   })
-  if (!row) return { ...DEFAULTS[channel], channel }
-  return {
-    channel,
-    enabled: row.enabled,
-    provider: row.provider,
-    config: row.config || {}
-  }
+  const value = !row
+    ? { ...DEFAULTS[channel], channel }
+    : { channel, enabled: row.enabled, provider: row.provider, config: row.config || {} }
+  cache.set(channel, { value, loadedAt: Date.now() })
+  return value
 }
 
 async function listAllChannelSettings () {
@@ -46,7 +57,7 @@ async function listAllChannelSettings () {
 }
 
 async function saveChannelSettings ({ channel, enabled, provider, config }) {
-  return prisma.notification_channel_settings.upsert({
+  const result = await prisma.notification_channel_settings.upsert({
     where: { channel },
     create: {
       channel,
@@ -60,6 +71,8 @@ async function saveChannelSettings ({ channel, enabled, provider, config }) {
       config: config || {}
     }
   })
+  cache.delete(channel)
+  return result
 }
 
 module.exports = {

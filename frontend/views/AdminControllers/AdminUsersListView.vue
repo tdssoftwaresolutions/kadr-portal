@@ -22,7 +22,10 @@
                 </b-form-checkbox>
               </div>
             </div>
-            <b-tabs card>
+            <div v-if="loading" class="admin-users-loading">
+              <kadr-spinner size="lg" />
+            </div>
+            <b-tabs v-else card>
               <b-tab :title="$t('adminUsers.clientsTab', { count: activeClientsData.total })" active>
                 <b-row v-if="filteredClients.length > 0">
                   <b-col md="6" v-for="user in filteredClients" :key="user.userId" class="mb-3">
@@ -401,11 +404,16 @@ export default {
   },
   mounted () {
     sofbox.index()
-    this.fetchActiveUsers(1)
-    this.fetchLanguages()
+    // Only the very first load shows the full-page spinner — fetchActiveUsers
+    // is reused for pagination/filter-toggle/post-edit refresh too, where
+    // hiding the whole tabs UI again would be jarring, not helpful.
+    Promise.all([this.fetchActiveUsers(1), this.fetchLanguages()]).finally(() => {
+      this.loading = false
+    })
   },
   data () {
     return {
+      loading: true,
       defaultAvatar,
       tableFilter: '',
       activeClientsPage: 1,
@@ -651,6 +659,12 @@ export default {
 }
 </script>
 <style scoped>
+.admin-users-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+}
 .docs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

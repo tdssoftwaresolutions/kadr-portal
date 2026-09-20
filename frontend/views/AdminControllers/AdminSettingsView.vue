@@ -10,7 +10,10 @@
             <p class="text-muted compact-hint">
               {{ $t('adminSettings.invoiceHint') }}
             </p>
-            <b-form @submit.prevent="saveInvoiceSettings">
+            <div v-if="loading" class="admin-settings-loading">
+              <kadr-spinner />
+            </div>
+            <b-form v-else @submit.prevent="saveInvoiceSettings">
               <b-table :items="invoiceSettings" :fields="fields" small responsive class="compact-table">
                 <template #cell(label)="row">
                   <span class="compact-label">{{ row.item.label }}</span>
@@ -34,7 +37,10 @@
             <p class="text-muted compact-hint">
               {{ $t('adminSettings.rewardHint') }}
             </p>
-            <b-form @submit.prevent="saveRewardSettings">
+            <div v-if="loading" class="admin-settings-loading">
+              <kadr-spinner />
+            </div>
+            <b-form v-else @submit.prevent="saveRewardSettings">
               <b-table :items="rewardSettings" :fields="fields" small responsive class="compact-table">
                 <template #cell(label)="row">
                   <span class="compact-label">{{ row.item.label }}</span>
@@ -106,6 +112,7 @@ export default {
   components: { AdminRewardCatalogPanel, AdminPremiumSettingsPanel, AdminCouponCodesPanel },
   data () {
     return {
+      loading: true,
       settings: []
     }
   },
@@ -129,9 +136,14 @@ export default {
   },
   methods: {
     async load () {
-      const res = await this.$store.dispatch('getAdminSettings')
-      if (res.success && res.data && Array.isArray(res.data.settings)) {
-        this.settings = res.data.settings.map(mapSettingRow)
+      this.loading = true
+      try {
+        const res = await this.$store.dispatch('getAdminSettings')
+        if (res.success && res.data && Array.isArray(res.data.settings)) {
+          this.settings = res.data.settings.map(mapSettingRow)
+        }
+      } finally {
+        this.loading = false
       }
     },
     async saveInvoiceSettings () {
@@ -168,6 +180,12 @@ export default {
 <style scoped>
 .admin-settings-page {
   max-width: 1400px;
+}
+.admin-settings-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 12vh;
 }
 .compact-hint {
   font-size: 0.85rem;

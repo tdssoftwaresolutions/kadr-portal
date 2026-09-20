@@ -2,7 +2,10 @@
   <b-container fluid class="admin-notifications-page kadr-animate-in">
     <kadr-page-header :title="$t('adminNotifications.title')" :subtitle="$t('adminNotifications.subtitle')" />
 
-    <b-tabs :index="activeTab" content-class="mt-3" @update:index="activeTab = $event">
+    <div v-if="loading" class="admin-notifications-loading">
+      <kadr-spinner size="lg" />
+    </div>
+    <b-tabs v-else :index="activeTab" content-class="mt-3" @update:index="activeTab = $event">
       <b-tab :title="$t('adminNotifications.tabBrowser')">
         <b-row>
           <b-col lg="6">
@@ -386,6 +389,7 @@ export default {
   },
   data () {
     return {
+      loading: true,
       activeTab: 0,
       filterChannel: '',
       templates: [],
@@ -531,12 +535,17 @@ export default {
   },
   methods: {
     async loadAll () {
-      await Promise.all([
-        this.loadTemplates(),
-        this.loadChannelSettings(),
-        this.loadLogs()
-      ])
-      this.debouncedUserSearch()
+      this.loading = true
+      try {
+        await Promise.all([
+          this.loadTemplates(),
+          this.loadChannelSettings(),
+          this.loadLogs()
+        ])
+        this.debouncedUserSearch()
+      } finally {
+        this.loading = false
+      }
     },
     async loadTemplates () {
       const res = await this.$store.dispatch('getNotificationTemplates', {})
@@ -865,6 +874,12 @@ export default {
 </script>
 
 <style scoped>
+.admin-notifications-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+}
 .admin-notifications-page code {
   font-size: 0.85em;
 }

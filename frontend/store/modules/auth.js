@@ -41,7 +41,11 @@ export default {
           accessToken: data.data.accessToken,
           refreshToken: data.data.refreshToken
         })
-        this.$router.push({ name: 'dashboard.home' })
+        // Await the navigation itself (not just fire it) so callers don't
+        // clear their "logging in" state — and re-enable the login button —
+        // before the redirect has actually committed. That gap was what let
+        // a second click fire a duplicate login request.
+        await this.$router.push({ name: 'dashboard.home' }).catch(() => {})
         return data
       } catch (error) {
         const errPayload = error.response?.data?.error
@@ -99,7 +103,11 @@ export default {
           accessToken: data.data.accessToken,
           refreshToken: data.data.refreshToken
         })
-        this.$router.push({ name: 'dashboard.home' })
+        // Await the navigation itself (not just fire it) so callers don't
+        // clear their "logging in" state — and re-enable the login button —
+        // before the redirect has actually committed. That gap was what let
+        // a second click fire a duplicate login request.
+        await this.$router.push({ name: 'dashboard.home' }).catch(() => {})
         return data
       } catch (error) {
         const errPayload = error.response?.data?.error

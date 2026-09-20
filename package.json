@@ -8,6 +8,7 @@
     "serve-client": "vue-cli-service serve --port 8081",
     "serve-server": "node backend/server.js",
     "build": "vue-cli-service build",
+    "build:analyze": "ANALYZE=1 vue-cli-service build",
     "watch": "vue-cli-service build --watch",
     "start": "nodemon backend/server.js",
     "prisma:pull": "npx prisma db pull && npx prisma generate",
@@ -16,6 +17,7 @@
     "seed:notifications:force": "node backend/scripts/seedNotificationTemplates.js -- --force",
     "seed:push-templates": "node backend/scripts/seedPushTemplates.js",
     "seed:case-split": "node backend/scripts/seedCaseMediationSplit.js",
+    "seed:reference-data": "node backend/scripts/seedReferenceData.js",
     "push:test": "node backend/scripts/testPushNotification.js",
     "vapid:generate": "node backend/scripts/generateVapidKeys.js",
     "vapid:generate:force": "node backend/scripts/generateVapidKeys.js -- --force",
@@ -103,7 +105,6 @@
     "puppeteer": "^24.43.1",
     "ramda": "^0.27.0",
     "register-service-worker": "^1.6.2",
-    "rss-parser": "^3.13.0",
     "sanitize-html": "^2.17.6",
     "signature_pad": "^5.0.4",
     "smooth-scrollbar": "^8.5.1",
@@ -151,7 +152,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3",
     "vue-loader": "^17.4.2",
-    "wait-on": "^8.0.5"
+    "wait-on": "^8.0.5",
+    "webpack-bundle-analyzer": "^4.10.2"
   },
   "build": {
     "extends": "platforms/desktop/electron-builder.yml"

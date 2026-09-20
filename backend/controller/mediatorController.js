@@ -145,62 +145,19 @@ Issued by: Kadr.live`
       next(error)
     }
   },
+  // NOTE: this filtered by cases.mediation_date_time and
+  // user.working_day_of_week — neither field exists in schema.prisma (no
+  // day-of-week mediator-availability feature was ever added to the
+  // schema), so this has been guaranteed to throw a Prisma validation error
+  // for every caller. It also has zero frontend call sites — dead/orphaned
+  // code, not something in active use. Left as an explicit, clear error
+  // instead of reconstructing unrequested availability-matching logic.
   getAvailableMediators: async function (req, res, next) {
     try {
       const { caseId } = req.query
-
       if (!caseId) throw createError(errorCodes.MISSING_REQUIRED_DETAIL)
-
-      const caseRecord = await prisma.cases.findUnique({
-        where: { id: caseId },
-        select: {
-          mediation_date_time: true,
-          user_cases_mediatorTouser: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone_number: true
-            }
-          }
-        }
-      })
-
-      if (!caseRecord || !caseRecord.mediation_date_time) throw createError(errorCodes.NO_RECORD_FOUND)
-
-      const mediationDate = new Date(caseRecord.mediation_date_time)
-      const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-      const mediationDay = daysOfWeek[mediationDate.getDay()]
-
-      const mediators = await prisma.user.findMany({
-        where: {
-          user_type: 'MEDIATOR',
-          working_day_of_week: {
-            equals: mediationDay
-          }
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone_number: true,
-          cases_cases_mediatorTouser: {
-            select: {
-              id: true,
-              caseId: true,
-              case_type: true,
-              category: true,
-              status: true
-            }
-          }
-        }
-      })
-
-      if (mediators.length === 0) throw createError(errorCodes.NO_RECORD_FOUND)
-
-      success(res, {
-        mediators,
-        assignedMediator: caseRecord.user_cases_mediatorTouser || null
+      throw createError(errorCodes.INVALID_REQUEST, {
+        message: 'Day-of-week mediator availability matching is not implemented.'
       })
     } catch (error) {
       next(error)
@@ -337,13 +294,17 @@ Issued by: Kadr.live`
   listAllMediatorsWithCases: async function (req, res, next) {
     try {
       const mediators = await prisma.user.findMany({
-        where: { user_type: 'MEDIATOR' },
+        where: { user_type: 'MEDIATOR', active: true, is_deleted: false },
         select: {
           id: true,
           name: true,
           phone_number: true,
           email: true,
           cases_cases_mediatorTouser: {
+            orderBy: { created_at: 'desc' },
+            // Unbounded before — a mediator's entire case history (however
+            // large) was pulled on every load of this admin endpoint.
+            take: 50,
             select: {
               id: true,
               caseId: true,

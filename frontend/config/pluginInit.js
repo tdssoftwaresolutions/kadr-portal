@@ -1,18 +1,24 @@
-import Scrollbar from 'smooth-scrollbar'
-
+// jQuery itself stays eager — ripple/sidebar-toggle/fullscreen/loader below
+// all call $(...) directly and run on every authenticated page via
+// StandardLayout, so scoping it further would need rewriting those to
+// vanilla DOM APIs (out of scope here). owl.carousel and smooth-scrollbar
+// are only ever used by owlCarousel()/SmoothScrollbar() below, which already
+// gate on the target element existing — loading them dynamically, only when
+// that element is actually present, keeps two real dependencies (a carousel
+// library and a scrollbar library) out of the bundle every page pays for
+// today regardless of whether it has a carousel or a custom scrollbar.
 const $ = require('jquery')
 
 if (typeof window !== 'undefined') {
   window.$ = $
   window.jQuery = $
-  require('owl.carousel/dist/owl.carousel')
 }
 
 export const sofbox = {
-  index () {
+  async index () {
     this.loaderInit()
-    this.owlCarousel()
-    this.SmoothScrollbar()
+    await this.owlCarousel()
+    await this.SmoothScrollbar()
   },
   mainIndex () {
     this.wrapperMenuToggle()
@@ -137,9 +143,11 @@ export const sofbox = {
     return found
   },
 
-  owlCarousel () {
+  async owlCarousel () {
     const elementExist = this.checkElement('class', 'owl-carousel')
     if (elementExist) {
+      // Side-effect module — attaches $.fn.owlCarousel once loaded.
+      await import(/* webpackChunkName: "owl-carousel" */ 'owl.carousel/dist/owl.carousel')
       // eslint-disable-next-line no-undef
       $('.owl-carousel').each(function () {
         // eslint-disable-next-line no-undef
@@ -180,12 +188,15 @@ export const sofbox = {
     }
   },
 
-  SmoothScrollbar () {
+  async SmoothScrollbar () {
     const elementExistMain = this.checkElement('id', 'sidebar-scrollbar')
+    const elementExistRight = this.checkElement('id', 'right-sidebar-scrollbar')
+    if (!elementExistMain && !elementExistRight) return
+
+    const { default: Scrollbar } = await import(/* webpackChunkName: "smooth-scrollbar" */ 'smooth-scrollbar')
     if (elementExistMain && !document.body.classList.contains('compact-sidebar')) {
       Scrollbar.init(document.querySelector('#sidebar-scrollbar'))
     }
-    const elementExistRight = this.checkElement('id', 'right-sidebar-scrollbar')
     if (elementExistRight) {
       Scrollbar.init(document.querySelector('#right-sidebar-scrollbar'))
     }

@@ -18,7 +18,14 @@ function toMoney (value) {
   return Number(toNumber(value).toFixed(2))
 }
 
-async function getOrCreateSettings () {
+// Default rows rarely change and this is called from 7+ places (including the
+// payment webhook), so the upsert loop only needs to run once per process —
+// same pattern as entitlementService.ensurePremiumFeatureCatalog. The
+// findMany below still runs every call since settings can be edited live.
+let defaultSettingsEnsured = false
+
+async function ensureDefaultSettings () {
+  if (defaultSettingsEnsured) return
   for (const row of DEFAULT_SETTINGS) {
     await prisma.admin_settings.upsert({
       where: { key: row.key },
@@ -26,6 +33,11 @@ async function getOrCreateSettings () {
       create: row
     })
   }
+  defaultSettingsEnsured = true
+}
+
+async function getOrCreateSettings () {
+  await ensureDefaultSettings()
   return prisma.admin_settings.findMany({ orderBy: { label: 'asc' } })
 }
 

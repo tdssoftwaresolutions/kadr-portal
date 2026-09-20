@@ -9,12 +9,37 @@ const fs = require('fs')
 const axios = require('axios')
 const EmailService = require('../services/email/emailService')
 const dataCrypto = require('./crypto')
+const { getPortalUrl } = require('../config/appUrls')
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
   `${process.env.BASE_URL}/api/googleCallback`
 )
+
+// Zoom's account_credentials grant tokens last ~1hr; without this cache,
+// scheduleMeeting() paid for a fresh OAuth round trip on every single call.
+let zoomTokenCache = { accessToken: null, expiresAt: 0 }
+
+async function getZoomAccessToken () {
+  if (zoomTokenCache.accessToken && Date.now() < zoomTokenCache.expiresAt) {
+    return zoomTokenCache.accessToken
+  }
+  const clientId = process.env.ZOOM_CLIENT_ID
+  const clientSecret = process.env.ZOOM_CLIENT_SECRET
+  const accountId = process.env.ZOOM_ACCOUNT_ID
+  const tokenUrl = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${accountId}`
+  const response = await axios.post(
+    tokenUrl, '',
+    { headers: { Authorization: `Basic ${Buffer.from(clientId + ':' + clientSecret).toString('base64')}`, 'Content-Type': 'application/x-www-form-urlencoded' } }
+  )
+  const accessToken = response.data.access_token
+  const expiresInMs = (Number(response.data.expires_in) || 3600) * 1000
+  // Refresh 5 minutes before actual expiry so a slow request never uses a
+  // token that expires mid-flight.
+  zoomTokenCache = { accessToken, expiresAt: Date.now() + expiresInMs - 5 * 60 * 1000 }
+  return accessToken
+}
 
 class Helper {
   static getActiveCaseStatuses () {
@@ -39,7 +64,7 @@ class Helper {
 
   static generateUniqueSignUpLink (userId) {
     const token = jwt.sign({ id: userId }, process.env.SECRET_KEY, { expiresIn: '30d' })
-    return `${process.env.BASE_URL}/admin/auth/sign-up?id=${token}`
+    return `${getPortalUrl()}/auth/sign-up?id=${token}`
   }
 
   static async getMediatorCasesCount (prisma, mediatorId, statuses = Helper.getActiveCaseStatuses()) {
@@ -234,6 +259,11 @@ class Helper {
           orderBy: {
             start_datetime: 'desc'
           },
+          // A case with a long history could otherwise return every event
+          // ever created (each carrying several large-text fields) on every
+          // list-page load. 20 is generous enough that getEventsForToday()
+          // below still sees today's event in virtually all real cases.
+          take: 20,
           select: {
             id: true,
             title: true,
@@ -257,6 +287,7 @@ class Helper {
           orderBy: {
             created_at: 'desc'
           },
+          take: 20,
           select: {
             id: true,
             case_event_id: true,
@@ -964,6 +995,9 @@ class Helper {
           orderBy: {
             start_datetime: 'desc'
           },
+          // Same reasoning as getClientCases above — bound the per-case
+          // payload for cases with a long event/meeting history.
+          take: 20,
           select: {
             id: true,
             title: true,
@@ -987,6 +1021,7 @@ class Helper {
           orderBy: {
             created_at: 'desc'
           },
+          take: 20,
           select: {
             id: true,
             case_event_id: true,
@@ -1220,15 +1255,7 @@ class Helper {
 
   static async scheduleMeeting (title, description, startDateTime, attendees) {
     try {
-      const clientId = process.env.ZOOM_CLIENT_ID
-      const clientSecret = process.env.ZOOM_CLIENT_SECRET
-      const accountId = process.env.ZOOM_ACCOUNT_ID
-      const tokenUrl = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${accountId}`
-      const response = await axios.post(
-        tokenUrl, '',
-        { headers: { 'Authorization': `Basic ${Buffer.from(clientId + ':' + clientSecret).toString('base64')}`, 'Content-Type': 'application/x-www-form-urlencoded' } }
-      )
-      const accessToken = response.data.access_token
+      const accessToken = await getZoomAccessToken()
       const meetingData = {
         topic: title,
         type: 2,
@@ -1417,18 +1444,8 @@ class Helper {
 
     try {
       const tokenUser = await this.verifyToken(tokenWithoutBearer)
-      const prisma = require('../lib/prisma.js')
-      const dbUser = await prisma.user.findUnique({
-        where: { id: tokenUser.id },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          user_type: true,
-          active: true,
-          is_deleted: true
-        }
-      })
+      const { getCachedAuthUser } = require('./authUserCache')
+      const dbUser = await getCachedAuthUser(tokenUser.id)
       if (!dbUser || dbUser.is_deleted === true) {
         return { status: 401, message: errorCodes.USER_ACCOUNT_DELETED }
       }
@@ -1562,7 +1579,7 @@ class Helper {
   }
 
   static portalMessageCenterUrl ({ caseId, channel, leadId } = {}) {
-    const origin = String(process.env.PORTAL_APP_URL || process.env.BASE_URL || '').replace(/\/$/, '')
+    const origin = getPortalUrl()
     if (!origin) return ''
     const qs = new URLSearchParams()
     if (caseId && channel) {
@@ -1572,17 +1589,17 @@ class Helper {
       qs.set('lead', leadId)
     }
     const q = qs.toString()
-    return `${origin}/admin/app/messages${q ? `?${q}` : ''}`
+    return `${origin}/app/messages${q ? `?${q}` : ''}`
   }
 
   /** Logged-in user general support screen (mediator/client). */
   static portalSupportUrl ({ threadId } = {}) {
-    const origin = String(process.env.PORTAL_APP_URL || process.env.BASE_URL || '').replace(/\/$/, '')
+    const origin = getPortalUrl()
     if (!origin) return ''
     const qs = new URLSearchParams()
     if (threadId) qs.set('thread', String(threadId))
     const q = qs.toString()
-    return `${origin}/admin/app/support${q ? `?${q}` : ''}`
+    return `${origin}/app/support${q ? `?${q}` : ''}`
   }
 
   static async sendTemplatedEmail (templateName, to, variables = {}, attachments = [], { caseId, cc } = {}) {

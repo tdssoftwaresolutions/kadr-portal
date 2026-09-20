@@ -73,6 +73,7 @@
 <script>
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import { sofbox } from '../../config/pluginInit'
 
 export default {
   name: 'AdminEmailCorrectionsView',
@@ -100,6 +101,10 @@ export default {
     }
   },
   mounted () {
+    // Route page (StandardLayout child) — without this, a direct reload or
+    // fresh-tab open of this URL leaves StandardLayout's boot #loading
+    // overlay stuck forever, since nothing else ever fades it out.
+    sofbox.index()
     this.fetchRequests(1)
   },
   methods: {

@@ -14,7 +14,10 @@
       />
       <div id="content-page" class="content-page">
         <push-notification-banner v-if="user" />
-        <router-view v-if="user != null" v-slot="{ Component }">
+        <div v-if="user == null" class="standard-layout-loading">
+          <kadr-spinner overlay size="lg" />
+        </div>
+        <router-view v-else v-slot="{ Component }">
           <transition name="kadr-page" mode="out-in">
             <component :is="Component" :user="user" />
           </transition>
@@ -166,8 +169,18 @@ export default {
     const { hasStoredSession } = await import('../utils/tokenStorage')
     const sessionOk = await hasStoredSession()
     if (!sessionOk) {
-      this.$router.push({ path: '/auth/sign-in' })
+      this.$router.push({ path: '/auth/sign-in' }).catch(() => {})
     } else {
+      // Prefetch dashboard content in parallel with getUserData, not after
+      // it — login always redirects to dashboard.home, so this turns what
+      // was a sequential login -> getUserData -> getDashboardContent chain
+      // (3 round trips back to back) into 2 concurrent requests here plus
+      // the login POST that already happened. Dashboard.vue's own
+      // mount-time fetch reuses this in-flight request (see
+      // store/modules/dashboard.js) instead of firing a second one.
+      if (this.$route.name === 'dashboard.home') {
+        this.$store.dispatch('getDashboardContent')
+      }
       const response = await this.$store.dispatch('getUserData')
       if (response.success) this.validateData(response.data)
     }
@@ -187,7 +200,7 @@ export default {
           filterAdminSidebarItems(this.sidebar, this.user)
         )
         if (!nextName || nextName === to.name) return
-        this.$router.replace({ name: nextName })
+        this.$router.replace({ name: nextName }).catch(() => {})
       }
       if (this.user && this.user.type === 'MEDIATOR') {
         this.enforceMediatorRouteAccess(to)
@@ -280,7 +293,7 @@ export default {
 
       if (!verifyResponse.success) {
         this.user = null
-        this.$router.push({ path: '/auth/sign-in' })
+        this.$router.push({ path: '/auth/sign-in' }).catch(() => {})
         return
       }
 
@@ -302,27 +315,27 @@ export default {
       if (!this.user || this.user.type !== 'MEDIATOR' || !route) return
       if (mediatorCanAccessRoute(this.$store.state.mediatorFeatures, route)) return
       if (route.name === 'dashboard.home') return
-      this.$router.replace({ name: 'dashboard.home' })
+      this.$router.replace({ name: 'dashboard.home' }).catch(() => {})
     },
     enforceAdminRouteAccess () {
       if (!this.user || this.user.type !== 'ADMIN' || !this.$route) return
       if (!adminCanAccessRoute(this.user, this.$route)) {
         const nextName = firstAllowedAdminRouteFromFilteredSidebar(this.user, this.sidebar)
         if (!nextName || nextName === this.$route.name) return
-        this.$router.replace({ name: nextName })
+        this.$router.replace({ name: nextName }).catch(() => {})
       }
     },
     handleComplete () {},
     onClickEditProfile () {
       this.isMobileNavOpen = false
-      this.$router.push({ path: '/user/profile-edit' })
+      this.$router.push({ path: '/user/profile-edit' }).catch(() => {})
     },
     async onClickSignOut () {
       const response = await this.$store.dispatch('logout')
       if (!response.errorCode) {
         this.$store.commit('clearMediatorSubscription')
         this.isMobileNavOpen = false
-        this.$router.push({ path: '/auth/sign-in' })
+        this.$router.push({ path: '/auth/sign-in' }).catch(() => {})
       }
     },
     toggleLocale () {
@@ -368,6 +381,13 @@ export default {
 </script>
 <style>
   @import url("../assets/css/custom.css");
+
+  .standard-layout-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+  }
 
   body.compact-sidebar {
     overflow-x: hidden;

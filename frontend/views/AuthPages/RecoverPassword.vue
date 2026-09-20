@@ -119,6 +119,7 @@
 </template>
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
+import { sofbox } from '../../config/pluginInit'
 
 export default {
   name: 'RecoverPassword',
@@ -126,6 +127,10 @@ export default {
     Alert
   },
   mounted () {
+    // House convention for every route page (AuthLayout also calls this
+    // itself for the shared loader/carousel, but this page gets its own
+    // call too per the house rule).
+    sofbox.index()
   },
   data () {
     return {

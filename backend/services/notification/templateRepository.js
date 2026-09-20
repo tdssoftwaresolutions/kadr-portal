@@ -2,8 +2,24 @@ const prisma = require('../../lib/prisma')
 const { extractVariables } = require('./templateRenderer')
 const { hasBuilder, runBuilder } = require('./templateBuilders')
 
+// Templates change rarely (admin-edited) but resolveTemplate is hit on every
+// single notification send. notificationAdminService invalidates this on
+// edit/delete so admin changes still take effect immediately.
+const CACHE_TTL_MS = 60 * 1000
+const cache = new Map()
+
+function cacheKey (templateKey, channel) {
+  return `${templateKey}:${channel}`
+}
+
 async function getDbTemplate (templateKey, channel) {
-  return prisma.notification_templates.findUnique({
+  const key = cacheKey(templateKey, channel)
+  const cached = cache.get(key)
+  if (cached && Date.now() - cached.loadedAt < CACHE_TTL_MS) {
+    return cached.row
+  }
+
+  const row = await prisma.notification_templates.findUnique({
     where: {
       template_key_channel: {
         template_key: templateKey,
@@ -11,6 +27,13 @@ async function getDbTemplate (templateKey, channel) {
       }
     }
   })
+  cache.set(key, { row, loadedAt: Date.now() })
+  return row
+}
+
+/** Call after any admin create/update/delete on notification_templates. */
+function invalidateTemplateCache (templateKey, channel) {
+  cache.delete(cacheKey(templateKey, channel))
 }
 
 /**
@@ -63,5 +86,6 @@ module.exports = {
   getDbTemplate,
   resolveTemplate,
   describeTemplateVariables,
-  hasBuilder
+  hasBuilder,
+  invalidateTemplateCache
 }

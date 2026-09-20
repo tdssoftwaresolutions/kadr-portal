@@ -52,13 +52,17 @@
   box-shadow: var(--kadr-shadow-md, 0 6px 18px rgba(31, 36, 50, 0.1));
 }
 
-/* Router-view transition (used by <transition name="kadr-page">). */
+/* Router-view transition (used by <transition name="kadr-page" mode="out-in">).
+   mode="out-in" means the incoming view isn't even mounted — so its own
+   data fetch can't start — until the leave transition fully finishes.
+   Kept deliberately short (not reusing the shared --kadr-duration* tokens,
+   which drive other UI animations) so this doesn't stack a fixed delay on
+   top of every navigation's actual data-loading time. */
 .kadr-page-enter-active {
-  transition: opacity var(--kadr-duration, 0.22s) var(--kadr-ease-out, ease),
-    transform var(--kadr-duration, 0.22s) var(--kadr-ease-out, ease);
+  transition: opacity 0.12s ease-out, transform 0.12s ease-out;
 }
 .kadr-page-leave-active {
-  transition: opacity var(--kadr-duration-fast, 0.15s) var(--kadr-ease, ease);
+  transition: opacity 0.08s ease;
 }
 .kadr-page-enter-from {
   opacity: 0;

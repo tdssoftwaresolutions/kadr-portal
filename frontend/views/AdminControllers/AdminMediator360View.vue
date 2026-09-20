@@ -112,6 +112,7 @@ import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrPageLoader from '../../components/kadr/KadrPageLoader.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
+import { sofbox } from '../../config/pluginInit'
 
 export default {
   name: 'AdminMediator360View',
@@ -184,6 +185,9 @@ export default {
     }
   },
   mounted () {
+    // StandardLayout child route — fades the shared boot #loading overlay
+    // on a direct reload/fresh-tab open of this URL.
+    sofbox.index()
     this.load()
   },
   methods: {

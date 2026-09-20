@@ -13,7 +13,10 @@
         </b-button>
       </template>
     </kadr-page-header>
-    <b-row>
+    <div v-if="loading && !invoices.length && !incomeItems.length" class="invoices-loading">
+      <kadr-spinner size="lg" />
+    </div>
+    <b-row v-else>
       <b-col sm="12">
         <iq-card>
           <template v-slot:body>
@@ -527,9 +530,16 @@ export default {
     }
     this.hasPrivateInvoices = this.$store.getters.mediatorHasFeature('enhanced_invoices')
     if (this.isAdmin) {
-      this.loadMeta()
-      this.loadInvoices()
-      this.loadTransactions()
+      // loadInvoices() already triggers loadTransactions() itself at the end
+      // (same as the filter-apply path does) — calling it again on mount
+      // fired getTransactions twice on every admin page load. loading was
+      // previously never set true for this path, so the tables showed their
+      // "no data yet" empty state (misleading — implies there's nothing,
+      // not that it hasn't loaded) instead of a loading indicator.
+      this.loading = true
+      Promise.all([this.loadMeta(), this.loadInvoices()]).finally(() => {
+        this.loading = false
+      })
     } else {
       this.loadIncome()
       this.loadBankDetails()
@@ -716,6 +726,13 @@ export default {
 </script>
 
 <style scoped>
+.invoices-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+}
+
 .income-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

@@ -148,6 +148,7 @@
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import KadrFormField from '../../components/kadr/KadrFormField.vue'
+import { sofbox } from '../../config/pluginInit'
 
 export default {
   name: 'SignIn',
@@ -195,9 +196,13 @@ export default {
     }
   },
   async mounted () {
+    // House convention for every route page. AuthLayout also calls this
+    // itself (it owns the shared loader/carousel markup), but this page
+    // gets its own call too per the house rule for URL-addressable pages.
+    sofbox.index()
     const { hasStoredSession } = await import('../../utils/tokenStorage')
     if (await hasStoredSession()) {
-      this.$router.push({ name: 'dashboard.home' })
+      this.$router.push({ name: 'dashboard.home' }).catch(() => {})
     }
     this.loadGoogleIdentityServices()
   },
@@ -271,10 +276,10 @@ export default {
       }
     },
     onClickSignUp () {
-      this.$router.push({ path: '/auth/sign-up' })
+      this.$router.push({ path: '/auth/sign-up' }).catch(() => {})
     },
     onClickForgotPassword () {
-      this.$router.push({ path: '/auth/password-reset' })
+      this.$router.push({ path: '/auth/password-reset' }).catch(() => {})
     },
     loadGoogleIdentityServices () {
       if (window.google && window.google.accounts) {

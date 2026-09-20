@@ -1,6 +1,35 @@
 import { createApp } from 'vue'
-import { createBootstrap } from 'bootstrap-vue-next'
-import * as BootstrapVueNextComponents from 'bootstrap-vue-next'
+import {
+  createBootstrap,
+  BAlert,
+  BBadge,
+  BBreadcrumb,
+  BButton,
+  BCard,
+  BCardBody,
+  BCol,
+  BCollapse,
+  BContainer,
+  BDropdown,
+  BDropdownItem,
+  BForm,
+  BFormCheckbox,
+  BFormCheckboxGroup,
+  BFormGroup,
+  BFormInput,
+  BFormRadioGroup,
+  BFormSelect,
+  BFormSelectOption,
+  BFormTextarea,
+  BModal,
+  BNavbarToggle,
+  BOverlay,
+  BPagination,
+  BRow,
+  BTab,
+  BTable,
+  BTabs
+} from 'bootstrap-vue-next'
 import './plugins/bootstrap-vue'
 import App from './App.vue'
 import router from './router'
@@ -28,36 +57,47 @@ async function startApp () {
   app.use(store)
   app.use(createBootstrap())
 
-  // Globally register every BootstrapVueNext component (names start with "B", e.g.
-  // BButton) so existing kebab-case tags (<b-button>, <b-table>, …) resolve without
-  // per-file imports across the 75 files that use them. Vue maps PascalCase
-  // registrations to kebab-case tags automatically. Directives (vB*) are handled
-  // separately where needed.
-  Object.keys(BootstrapVueNextComponents).forEach((name) => {
-    if (/^B[A-Z]/.test(name)) {
-      const comp = BootstrapVueNextComponents[name]
-      if (comp && (typeof comp === 'object' || typeof comp === 'function')) {
-        app.component(name, comp)
-      }
-    }
-  })
-
-  // Globally register BootstrapVueNext directives so template directives like
-  // v-b-toggle, v-b-tooltip, v-b-modal, v-b-popover resolve. Exports are named
-  // in the form `vBToggle` -> registered as directive `b-toggle` (usable as
-  // `v-b-toggle`). Without this, those directives silently fail to resolve.
-  Object.keys(BootstrapVueNextComponents).forEach((name) => {
-    if (/^vB[A-Z]/.test(name)) {
-      const directive = BootstrapVueNextComponents[name]
-      if (directive && (typeof directive === 'object' || typeof directive === 'function')) {
-        // vBToggle -> 'b-toggle'
-        const directiveName = name
-          .slice(1)
-          .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-          .toLowerCase()
-        app.directive(directiveName, directive)
-      }
-    }
+  // Register only the BootstrapVueNext components actually used anywhere in
+  // the app (kebab-case tags like <b-button>, <b-table> resolve from their
+  // PascalCase registration automatically). Previously this looped over
+  // every export the library has — including dozens never used — via
+  // `import * as BootstrapVueNextComponents`, which also defeats webpack's
+  // tree-shaking for the whole library since every export is referenced
+  // dynamically. Named imports above let the unused ones be dropped from
+  // the bundle entirely. No v-b-* directives (v-b-toggle etc.) are used
+  // anywhere in the app, so there's nothing to register there.
+  const bootstrapComponents = {
+    BAlert,
+    BBadge,
+    BBreadcrumb,
+    BButton,
+    BCard,
+    BCardBody,
+    BCol,
+    BCollapse,
+    BContainer,
+    BDropdown,
+    BDropdownItem,
+    BForm,
+    BFormCheckbox,
+    BFormCheckboxGroup,
+    BFormGroup,
+    BFormInput,
+    BFormRadioGroup,
+    BFormSelect,
+    BFormSelectOption,
+    BFormTextarea,
+    BModal,
+    BNavbarToggle,
+    BOverlay,
+    BPagination,
+    BRow,
+    BTab,
+    BTable,
+    BTabs
+  }
+  Object.entries(bootstrapComponents).forEach(([name, comp]) => {
+    app.component(name, comp)
   })
 
   // The single canonical loading indicator, usable app-wide as <kadr-spinner>.

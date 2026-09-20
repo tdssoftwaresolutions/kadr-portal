@@ -8,7 +8,10 @@
           </template>
           <template v-slot:body>
             <p class="text-muted mb-3">{{ $t('adminCalendar.subtitle') }}</p>
-            <FullCalendar :calendarEvents="events" :eventClick="openDetailsModal" :read-only="true" />
+            <div v-if="loading" class="admin-calendar-loading">
+              <kadr-spinner size="lg" />
+            </div>
+            <FullCalendar v-else :calendarEvents="events" :eventClick="openDetailsModal" :read-only="true" />
           </template>
         </iq-card>
       </b-col>
@@ -68,6 +71,7 @@ export default {
   name: 'AdminCalendar',
   data () {
     return {
+      loading: true,
       showDetailsModal: false,
       selectedAppointment: null,
       events: []
@@ -79,7 +83,10 @@ export default {
   },
   methods: {
     async initCalendar () {
-      const response = await this.$store.dispatch('getCalendarInit', { skipCache: true })
+      this.loading = true
+      const response = await this.$store.dispatch('getCalendarInit', { skipCache: true }).finally(() => {
+        this.loading = false
+      })
       this.events = []
       if (!response.success) return
       for (let i = 0; i < response.data.events.length; i++) {
@@ -121,6 +128,12 @@ export default {
 </script>
 
 <style scoped>
+.admin-calendar-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+}
 .data-row {
   display: flex;
   justify-content: space-between;
