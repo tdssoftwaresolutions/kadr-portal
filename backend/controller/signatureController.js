@@ -1,16 +1,14 @@
 const prisma = require('../lib/prisma.js')
 const helper = require('../utils/helper')
-const puppeteer = require('puppeteer')
-const path = require('path')
-const fs = require('fs')
+const { renderPdfFromHtml } = require('../utils/pdfFromHtml')
 const errorCodes = require('../utils/errors/errorCodes')
 const { v4: uuidv4 } = require('uuid')
-const os = require('os')
 const { createError } = require('../utils/errors')
 const { CaseSubTypes, CaseTypes } = require('../utils/caseConstants')
 const { success } = require('../utils/responses')
 const { ensureInvoiceForCase } = require('../services/invoice/invoiceService')
 const { copyEmailToRepresentative, PARTY_SIDES } = require('../services/case/representativeService')
+const { alertAgreementGenerationFailure } = require('../services/alerting/criticalAlertService')
 const analytics = require('../utils/analytics')
 
 // A verified OTP is valid for this long before a submit must re-verify.
@@ -256,6 +254,8 @@ module.exports = {
             caseId: true,
             created_at: true,
             case_agreement: true,
+            case_type: true,
+            category: true,
             user_cases_mediatorTouser: {
               select: {
                 name: true,
@@ -280,6 +280,8 @@ module.exports = {
         })
       }
 
+      if (!caseRecord) throw createError(errorCodes.NO_RECORD_FOUND)
+
       let sendRequestToSecondParty = false
       let generateAgeement = false
 
@@ -296,6 +298,13 @@ module.exports = {
         sendRequestToSecondParty = false
       } else { throw createError(errorCodes.NO_RECORD_FOUND) }
 
+      // Persist this party's signature immediately — it must never be lost even
+      // if the follow-up notification/PDF-generation steps below fail.
+      await prisma.case_agreement_tracking.update({
+        where: { id: signatureTracking.case_agreement_id },
+        data: updateData
+      })
+
       if (sendRequestToSecondParty === true) {
         const newSignatureRecord = await helper.createSignatureTrackingRecord(prisma, caseRecord.user_cases_second_partyTouser.id, null, signatureTracking.case_agreement_id)
 
@@ -310,87 +319,79 @@ module.exports = {
       }
 
       if (generateAgeement === true) {
-        const agreement = await prisma.case_agreement_tracking.findUnique({
-          where: { id: signatureTracking.case_agreement_id },
-          select: {
-            id: true,
-            created_at: true,
-            agreed_terms: true,
-            first_party_signature: true,
-            second_party_signature: true,
-            signature_mediator: true,
-            first_party_signature_datetime: true,
-            second_party_signature_datetime: true
+        // This party's signature is already saved above. Everything from here
+        // (PDF generation, upload, notifications, invoicing) is best-effort:
+        // if it fails, log/alert and still confirm the signature to the user
+        // rather than leaving them looking at an error after a successful OTP.
+        try {
+          const agreement = await prisma.case_agreement_tracking.findUnique({
+            where: { id: signatureTracking.case_agreement_id },
+            select: {
+              id: true,
+              created_at: true,
+              agreed_terms: true,
+              first_party_signature: true,
+              second_party_signature: true,
+              signature_mediator: true,
+              first_party_signature_datetime: true,
+              second_party_signature_datetime: true
+            }
+          })
+
+          const mediationData = {
+            caseId: caseRecord.caseId,
+            agreementId: agreement?.id || signatureTracking.case_agreement_id,
+            mediationCompletionDate: agreement?.created_at || null,
+            caseType: caseRecord.case_type || null,
+            category: caseRecord.category || null,
+            mediatorName: caseRecord.user_cases_mediatorTouser?.name || null,
+            mutualAgreement: agreement?.agreed_terms || null,
+            firstPartyName: caseRecord.user_cases_first_partyTouser?.name || '',
+            secondPartyName: caseRecord.user_cases_second_partyTouser?.name || '',
+            firstPartySignatureImage: agreement?.first_party_signature || '',
+            secondPartySignatureImage: agreement?.second_party_signature || '',
+            firstPartySignatureDateTime: agreement?.first_party_signature_datetime || '',
+            secondPartySignatureDateTime: agreement?.second_party_signature_datetime || ''
           }
-        })
 
-        const mediationData = {
-          caseId: caseRecord.caseId,
-          mediationCompletionDate: agreement?.created_at || null,
-          mediatorName: caseRecord.user_cases_mediatorTouser?.name || null,
-          mutualAgreement: agreement?.agreed_terms || null,
-          firstPartyName: caseRecord.user_cases_first_partyTouser?.name || '',
-          secondPartyName: caseRecord.user_cases_second_partyTouser?.name || '',
-          firstPartySignatureImage: agreement?.first_party_signature || '',
-          secondPartySignatureImage: agreement?.second_party_signature || updateData.second_party_signature || '',
-          firstPartySignatureDateTime: agreement?.first_party_signature_datetime || '',
-          secondPartySignatureDateTime: agreement?.second_party_signature_datetime || updateData.second_party_signature_datetime || '',
-          mediatorSignatureImage: agreement?.signature_mediator || '',
-          judgeName: ''
+          const html = helper.generateMediationHTML(mediationData)
+          const pdfBuffer = await renderPdfFromHtml(html)
+          const pdfBase64 = pdfBuffer.toString('base64')
+          const agreementLink = await helper.deployToS3Bucket(pdfBase64, `case-agreement-${uuidv4()}`)
+
+          await prisma.case_agreement_tracking.update({
+            where: { id: signatureTracking.case_agreement_id },
+            data: { mediation_agreement_link: agreementLink }
+          })
+
+          const secondPartyAgreementAvailableVars = {
+            recipientName: caseRecord.user_cases_second_partyTouser.name,
+            caseId: caseRecord.caseId,
+            agreementUrl: agreementLink
+          }
+          await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_second_partyTouser.email, secondPartyAgreementAvailableVars, [], { caseId: caseRecord.id })
+          await copyEmailToRepresentative({ caseId: caseRecord.id, side: PARTY_SIDES.SECOND, templateKey: 'signedAgreementAvailable', variables: secondPartyAgreementAvailableVars })
+
+          const firstPartyAgreementAvailableVars = {
+            recipientName: caseRecord.user_cases_first_partyTouser.name,
+            caseId: caseRecord.caseId,
+            agreementUrl: agreementLink
+          }
+          await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_first_partyTouser.email, firstPartyAgreementAvailableVars, [], { caseId: caseRecord.id })
+          await copyEmailToRepresentative({ caseId: caseRecord.id, side: PARTY_SIDES.FIRST, templateKey: 'signedAgreementAvailable', variables: firstPartyAgreementAvailableVars })
+
+          await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_mediatorTouser.email, {
+            recipientName: caseRecord.user_cases_mediatorTouser.name,
+            caseId: caseRecord.caseId,
+            agreementUrl: agreementLink
+          }, [], { caseId: caseRecord.id })
+
+          await ensureInvoiceForCase(caseRecord.id)
+        } catch (agreementError) {
+          console.error('[submitAgreementSignature] Failed to generate/deliver mediation agreement PDF:', agreementError)
+          alertAgreementGenerationFailure({ caseId: caseRecord.caseId, agreementId: signatureTracking.case_agreement_id, error: agreementError })
         }
-
-        const html = helper.generateMediationHTML(mediationData)
-
-        const tempDir = os.tmpdir()
-        const tempPdfPath = path.join(tempDir, `mediation_document_${uuidv4()}.pdf`)
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox']
-        })
-        const page = await browser.newPage()
-        await page.setContent(html, { waitUntil: 'networkidle0' })
-        await page.pdf({
-          path: tempPdfPath,
-          format: 'A4',
-          printBackground: true,
-          margin: { top: '5mm', bottom: '5mm' }
-        })
-        await browser.close()
-
-        const pdfBuffer = fs.readFileSync(tempPdfPath)
-        const pdfBase64 = pdfBuffer.toString('base64')
-        updateData.mediation_agreement_link = await helper.deployToS3Bucket(pdfBase64, `case-agreement-${uuidv4()}`)
-        fs.unlinkSync(tempPdfPath)
-
-        const secondPartyAgreementAvailableVars = {
-          recipientName: caseRecord.user_cases_second_partyTouser.name,
-          caseId: caseRecord.caseId,
-          agreementUrl: updateData.mediation_agreement_link
-        }
-        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_second_partyTouser.email, secondPartyAgreementAvailableVars, [], { caseId: caseRecord.id })
-        await copyEmailToRepresentative({ caseId: caseRecord.id, side: PARTY_SIDES.SECOND, templateKey: 'signedAgreementAvailable', variables: secondPartyAgreementAvailableVars })
-
-        const firstPartyAgreementAvailableVars = {
-          recipientName: caseRecord.user_cases_first_partyTouser.name,
-          caseId: caseRecord.caseId,
-          agreementUrl: updateData.mediation_agreement_link
-        }
-        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_first_partyTouser.email, firstPartyAgreementAvailableVars, [], { caseId: caseRecord.id })
-        await copyEmailToRepresentative({ caseId: caseRecord.id, side: PARTY_SIDES.FIRST, templateKey: 'signedAgreementAvailable', variables: firstPartyAgreementAvailableVars })
-
-        await helper.sendTemplatedEmail('signedAgreementAvailable', caseRecord.user_cases_mediatorTouser.email, {
-          recipientName: caseRecord.user_cases_mediatorTouser.name,
-          caseId: caseRecord.caseId,
-          agreementUrl: updateData.mediation_agreement_link
-        }, [], { caseId: caseRecord.id })
-
-        await ensureInvoiceForCase(caseRecord.id)
       }
-
-      await prisma.case_agreement_tracking.update({
-        where: { id: signatureTracking.case_agreement_id },
-        data: updateData
-      })
 
       success(res, {}, 'Signature submitted successfully!')
     } catch (error) {

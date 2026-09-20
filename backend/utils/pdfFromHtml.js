@@ -11,7 +11,12 @@ async function getBrowser () {
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
       launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
     }
-    browserPromise = puppeteer.launch(launchOptions)
+    // If launch fails, don't cache the rejection — the next call should retry
+    // rather than fail forever until the process is restarted.
+    browserPromise = puppeteer.launch(launchOptions).catch((error) => {
+      browserPromise = null
+      throw error
+    })
   }
   return browserPromise
 }

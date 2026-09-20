@@ -94,3 +94,4 @@ open "release/mac-arm64/Kadr Portal.app"
 - [Implementation status](docs/IMPLEMENTATION_STATUS.md)
 - [App review / roadmap](docs/APP_REVIEW.md)
 - [Payment gateways](docs/PAYMENTS.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md) — known deployment issues (e.g. Puppeteer/Chrome on bare-metal EC2)

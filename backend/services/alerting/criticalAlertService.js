@@ -24,7 +24,8 @@ const ALERT_CATEGORIES = {
   DATABASE_FAILURE: 'DATABASE_FAILURE',
   SCHEDULER_FAILURE: 'SCHEDULER_FAILURE',
   SERVER_ERROR_SPIKE: 'SERVER_ERROR_SPIKE',
-  STARTUP_FAILURE: 'STARTUP_FAILURE'
+  STARTUP_FAILURE: 'STARTUP_FAILURE',
+  AGREEMENT_GENERATION_FAILURE: 'AGREEMENT_GENERATION_FAILURE'
 }
 
 // Throttle: track last alert time per category to avoid flooding
@@ -192,6 +193,14 @@ function alertStartupFailure (error) {
   })
 }
 
+function alertAgreementGenerationFailure ({ caseId, agreementId, error }) {
+  sendAlert({
+    category: ALERT_CATEGORIES.AGREEMENT_GENERATION_FAILURE,
+    subject: `Mediation Agreement PDF Failed: ${caseId || agreementId}`,
+    details: `Case: ${caseId || 'unknown'}\nAgreement: ${agreementId || 'unknown'}\nError: ${formatError(error)}`
+  })
+}
+
 /**
  * Track 500 errors; trigger alert if threshold exceeded in window.
  */
@@ -229,5 +238,6 @@ module.exports = {
   alertDatabaseFailure,
   alertSchedulerFailure,
   alertStartupFailure,
+  alertAgreementGenerationFailure,
   record500Error
 }

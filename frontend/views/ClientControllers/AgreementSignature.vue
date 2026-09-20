@@ -139,6 +139,10 @@
       <h3>{{ $t('signaturePages.thankYou') }}</h3>
       <p>{{ $t('signaturePages.agreementRecorded') }}</p>
     </div>
+    <div v-else-if="loadError" class="empty-state">
+      <h3>{{ loadError.title }}</h3>
+      <p>{{ loadError.message }}</p>
+    </div>
     <div v-else class="empty-state">
       <p>{{ $t('signaturePages.loadingAgreement') }}</p>
     </div>
@@ -148,7 +152,7 @@
         <h5 class="section-title">{{ $t('signaturePages.verifyIdentity') }}</h5>
         <small class="text-muted">{{ $t('signaturePages.otpIntroAgreement') }}</small>
         <div class="phone-display">{{ phoneNumber || $t('signaturePages.noPhoneOnFile') }}</div>
-        <b-button variant="primary" block :disabled="!phoneNumber" @click="sendPhoneOtp">{{ $t('signaturePages.sendOtp') }}</b-button>
+        <b-button variant="primary" class="w-100" :disabled="!phoneNumber" @click="sendPhoneOtp">{{ $t('signaturePages.sendOtp') }}</b-button>
       </div>
       <div v-else-if="phoneStep === 2" class="phone-step-card">
         <h5 class="section-title">{{ $t('signaturePages.enterOtp') }}</h5>
@@ -168,12 +172,12 @@
             autocomplete="off"
           />
         </b-form-group>
-        <b-button variant="primary" block :disabled="!isPhoneOtpValid" @click="verifyPhoneOtp">{{ $t('signaturePages.verifyOtp') }}</b-button>
+        <b-button variant="primary" class="w-100" :disabled="!isPhoneOtpValid" @click="verifyPhoneOtp">{{ $t('signaturePages.verifyOtp') }}</b-button>
       </div>
       <div v-else-if="phoneStep === 3" class="phone-step-card">
         <h5 class="section-title">{{ $t('signaturePages.verificationComplete') }}</h5>
-        <small class="text-muted">{{ $t('signaturePages.verifiedAgreement') }}</small>
-        <b-button variant="success" block @click="finalSubmit">{{ $t('signaturePages.submitSignature') }}</b-button>
+        <small class="text-muted otp-verified-text">{{ $t('signaturePages.verifiedAgreement') }}</small>
+        <b-button variant="success" class="w-100" @click="finalSubmit">{{ $t('signaturePages.submitSignature') }}</b-button>
       </div>
     </b-modal>
   </div>
@@ -194,6 +198,7 @@ export default {
       signaturePad: null,
       details: null,
       submitted: false,
+      loadError: null,
       alert: {
         visible: false,
         message: '',
@@ -236,12 +241,25 @@ export default {
     async fetchAgreementDetails () {
       const requestId = this.$route.query && this.$route.query.requestId
       if (!requestId) {
-        this.showAlert(this.$t('signaturePages.requestIdMissing'), 'danger')
+        this.loadError = {
+          title: this.$t('signaturePages.requestInvalidTitle'),
+          message: this.$t('signaturePages.requestInvalidBody')
+        }
         return
       }
       const response = await this.$store.dispatch('getAgreementDetailsForSignature', { requestId })
       if (response.success) {
         this.details = response.data
+      } else if (response.status === 404) {
+        this.loadError = {
+          title: this.$t('signaturePages.requestInvalidTitle'),
+          message: this.$t('signaturePages.requestInvalidBody')
+        }
+      } else {
+        this.loadError = {
+          title: this.$t('signaturePages.requestLoadErrorTitle'),
+          message: this.$t('signaturePages.requestLoadErrorBody')
+        }
       }
     },
     showAlert (message, type) {
@@ -659,6 +677,11 @@ export default {
   background: var(--kadr-surface-muted);
   border-radius: 8px;
   border: 1px solid var(--kadr-border-strong);
+}
+
+.otp-verified-text {
+  display: block;
+  margin: 0.5rem 0 1.25rem;
 }
 
 /* TEMPORARY: only shown while WhatsApp delivery is disabled — see devOtp. */

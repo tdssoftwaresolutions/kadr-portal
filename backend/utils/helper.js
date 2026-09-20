@@ -1675,9 +1675,11 @@ class Helper {
   static renderSignature (signature, altText) {
     if (signature?.startsWith('data:')) {
       return `<img src="${signature}" alt="${altText}" />`
-    } else {
-      return `<div style="margin-top:40px;border-bottom:1px solid #000;display:inline-block;padding:4px 20px">${signature}</div>`
     }
+    if (!signature) return ''
+    // Typed initials (digital signature) — styled to match the cursive
+    // signature preview shown to the signer on the web signing page.
+    return `<span style="font-family:'Segoe Script','Brush Script MT',cursive;font-size:22px;color:#5a4bd4;">${signature}</span>`
   }
 
   static formatMeetingRangeIST (startDatetime, endDatetime, timeZone) {
@@ -1725,7 +1727,10 @@ class Helper {
   static generateMediationHTML (data) {
     const {
       caseId,
+      agreementId,
       mediationCompletionDate,
+      caseType,
+      category,
       firstPartyName,
       secondPartyName,
       mediatorName,
@@ -1734,8 +1739,7 @@ class Helper {
       secondPartySignatureImage,
       firstPartySignatureDateTime,
       secondPartySignatureDateTime,
-      mediatorSignatureImage,
-      judgeName
+      mediatorSignatureImage
     } = data
 
     // Format mediationCompletionDate as DD.MM.YYYY
@@ -1750,96 +1754,312 @@ class Helper {
 
     const formattedFirstSignatureDateTime = this.formatDateTimeToIST(firstPartySignatureDateTime)
     const formattedSecondSignatureDateTime = this.formatDateTimeToIST(secondPartySignatureDateTime)
+    const generatedOn = this.formatDateTimeToIST(new Date())
+    const documentRef = agreementId || caseId || ''
+    const natureOfDispute = category || caseType || null
+    const mediatorLabel = mediatorName || 'the appointed mediator'
 
     return `
+    <!DOCTYPE html>
     <html>
-       <head>
-       <title> Mediaton ${firstPartyName} vs ${secondPartyName}</title> 
+      <head>
+        <meta charset="utf-8" />
+        <title>Mediation Settlement Agreement — ${firstPartyName} vs ${secondPartyName}</title>
         <style>
+          * { box-sizing: border-box; }
+
           body {
-            padding: 20px;
+            font-family: Georgia, 'Times New Roman', serif;
+            color: #1f2430;
+            font-size: 13px;
+            line-height: 1.6;
+            padding: 0 8px;
           }
-  
-          hr {
-            margin: 20px 0;
-            border: none;
-            border-top: 2px solid #aaa;
+
+          .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 3px solid #5a4bd4;
+            padding-bottom: 14px;
+            margin-bottom: 22px;
           }
-  
+
+          .brand {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: #5a4bd4;
+            letter-spacing: 0.5px;
+          }
+
+          .brand-tagline {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10.5px;
+            color: #666;
+            margin-top: 2px;
+          }
+
+          .doc-meta {
+            text-align: right;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            color: #666;
+            line-height: 1.5;
+          }
+
+          .doc-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 4px;
+          }
+
+          .doc-subtitle {
+            text-align: center;
+            font-size: 11.5px;
+            color: #555;
+            margin: 0 0 24px;
+          }
+
+          .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 22px;
+            font-size: 12px;
+          }
+
+          .ref-table td {
+            padding: 6px 10px;
+            border: 1px solid #d9d9e3;
+            vertical-align: top;
+          }
+
+          .ref-table td.label {
+            width: 24%;
+            font-weight: 700;
+            background: #f6f5fc;
+            color: #403a66;
+          }
+
+          h2.section-title {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #5a4bd4;
+            border-bottom: 1px solid #e1defa;
+            padding-bottom: 6px;
+            margin: 26px 0 12px;
+          }
+
+          .parties-grid {
+            display: flex;
+            gap: 16px;
+          }
+
+          .party-card {
+            flex: 1;
+            border: 1px solid #e2e2ea;
+            border-radius: 6px;
+            padding: 10px 14px;
+            background: #fafafe;
+          }
+
+          .party-card .party-role {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #8a86a8;
+            margin-bottom: 2px;
+          }
+
+          .party-card .party-name {
+            font-size: 14px;
+            font-weight: 700;
+          }
+
+          p.body-text {
+            margin: 0 0 12px;
+            text-align: justify;
+          }
+
+          .terms-box {
+            border: 1px solid #e2e2ea;
+            border-left: 4px solid #5a4bd4;
+            background: #fafafe;
+            padding: 14px 16px;
+            border-radius: 4px;
+            overflow-wrap: anywhere;
+          }
+
+          .declaration p {
+            margin: 0 0 10px;
+            text-align: justify;
+          }
+
           .signature-block {
-            margin-top: 30px;
+            margin-top: 20px;
+            page-break-inside: avoid;
           }
-  
+
           .signature-row {
             display: flex;
             justify-content: space-between;
-            margin-top: 20px;
+            gap: 24px;
+            margin-top: 10px;
           }
-  
+
           .signature-col {
             width: 50%;
             text-align: center;
           }
-  
+
           .signature-col img {
+            max-height: 70px;
             max-width: 100%;
-            height: auto;
-            border-bottom: 1px solid #000;
+          }
+
+          .signature-line {
+            border-bottom: 1px solid #333;
+            min-height: 48px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 4px;
+          }
+
+          .signature-name {
+            font-weight: 700;
+            margin-top: 8px;
+          }
+
+          .signature-caption {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10.5px;
+            color: #666;
+            margin-top: 2px;
+          }
+
+          .footer {
+            margin-top: 40px;
+            padding-top: 12px;
+            border-top: 1px solid #e2e2ea;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9.5px;
+            color: #8a8a8a;
+            text-align: center;
+            line-height: 1.6;
           }
         </style>
       </head>
       <body>
-        <div>
-          <h3 style="text-align:center;width:100%;text-decoration:underline">IN THE DELHI MEDIATION CENTRE, ROHINI DISTRICT COURTS, DELHI</h3>
-
-          <p style="text-decoration:underline"><strong>In the matter of:</p>
-          <p><strong>Ct. Cases No.:</strong> ${caseId} </p>
-          <p><strong>Case Title:</strong> ${firstPartyName} Vs. ${secondPartyName}</p>
-          <p style="text-decoration:underline"><strong>Complaint Case:</strong> U/s. 138 N.I. Act</p>
-          <p  style="text-decoration:underline><strong>Case received from the Court of:</strong></p>
-          <p> ${judgeName}, North District, Rohini Courts, Delhi</p>
-
-          <h3 style="text-align:center;text-decoration:underline;width:100%">Settlement / Agreement</h3>
-
-          ${formattedCompletionDate}
-          <p><strong>Present:</strong></p>
-          <ul>
-            <li>${firstPartyName}</li>
-            <li>${secondPartyName}</li>
-          </ul>
-
-          <p>The present case has been received from the court of ${judgeName}, North District, Rohini Courts, Delhi and assigned to me for mediation.</p>
-
-          ${mutualAgreement}
-
-          <p>The parties have entered into the present scttlement/agreement without any prcssure, coercion, fear or undue influence from any side. Thepartics shall remain bound by the terms of present settlement, and that the parties shall co-operate for performance of the same.</p>
-
-          <div class="section signature-block">
-            <div class="signature-row">
-              <div class="signature-col">
-                <p><strong>${firstPartyName}</strong></p>
-                ${this.renderSignature(firstPartySignatureImage, 'First Party Signature')}
-                <p>${formattedFirstSignatureDateTime}</p>
-              </div>
-              <div class="signature-col">
-                <p><strong>${secondPartyName}</strong></p>
-                ${this.renderSignature(secondPartySignatureImage, 'Second Party Signature')}
-                <p>${formattedSecondSignatureDateTime}</p>
-              </div>
-              </div>
+        <div class="doc-header">
+          <div>
+            <div class="brand">Kadr.live</div>
+            <div class="brand-tagline">Online Mediation Platform</div>
           </div>
-          <div class="section signature-block">
-            <div class="signature-row">
-              <div class="signature-col">
-                <p><strong>${mediatorName}</strong></p>
-                ${this.renderSignature(mediatorSignatureImage, 'Mediator Signature')}
-              </div>
-              <div class="signature-col">
-              </div>
+          <div class="doc-meta">
+            Generated on: ${generatedOn}<br />
+            Document Ref: ${documentRef}
+          </div>
+        </div>
+
+        <p class="doc-title">Mediation Settlement Agreement</p>
+        <p class="doc-subtitle">Executed through the Kadr.live Online Mediation Platform</p>
+
+        <table class="ref-table">
+          <tr>
+            <td class="label">Case ID</td>
+            <td>${caseId || '—'}</td>
+            <td class="label">Date of Settlement</td>
+            <td>${formattedCompletionDate || '—'}</td>
+          </tr>
+          <tr>
+            <td class="label">Nature of Dispute</td>
+            <td>${natureOfDispute || '—'}</td>
+            <td class="label">Mediator</td>
+            <td>${mediatorName || '—'}</td>
+          </tr>
+        </table>
+
+        <h2 class="section-title">Parties to the Agreement</h2>
+        <div class="parties-grid">
+          <div class="party-card">
+            <div class="party-role">First Party</div>
+            <div class="party-name">${firstPartyName}</div>
+          </div>
+          <div class="party-card">
+            <div class="party-role">Second Party</div>
+            <div class="party-name">${secondPartyName}</div>
+          </div>
+        </div>
+
+        <h2 class="section-title">Background</h2>
+        <p class="body-text">
+          This Mediation Settlement Agreement ("Agreement") records the terms of settlement voluntarily reached
+          between ${firstPartyName} and ${secondPartyName} ("the Parties") in relation to the dispute referenced
+          above under Case ID ${caseId || '—'}, through mediation conducted online on the Kadr.live platform under
+          the guidance of ${mediatorLabel}. Having participated in structured, confidential mediation session(s)
+          facilitated through Kadr.live, the Parties confirm that they have arrived at a full and final resolution
+          of the above dispute on the terms recorded below.
+        </p>
+
+        <h2 class="section-title">Terms of Settlement</h2>
+        <div class="terms-box">${mutualAgreement || '<p><em>No terms were recorded for this settlement.</em></p>'}</div>
+
+        <h2 class="section-title">Declaration</h2>
+        <div class="declaration">
+          <p>
+            The Parties hereby declare and confirm that they have entered into this Agreement voluntarily and out
+            of their own free will, without any coercion, threat, undue influence, misrepresentation or fraud from
+            any side, and that they fully understand the contents, meaning and consequences of this Agreement.
+          </p>
+          <p>
+            The Parties further undertake to abide by and faithfully perform the terms of this settlement in good
+            faith, and agree that this Agreement shall be binding on them and, where applicable, on their legal
+            heirs, representatives and assigns.
+          </p>
+          <p>
+            This Agreement has been digitally executed by the Parties and the Mediator on the Kadr.live platform.
+            The signatures and the corresponding date and time recorded below constitute valid and binding
+            execution of this Agreement by the respective signatories.
+          </p>
+        </div>
+
+        <div class="signature-block">
+          <h2 class="section-title">Signatures</h2>
+          <div class="signature-row">
+            <div class="signature-col">
+              <div class="signature-line">${this.renderSignature(firstPartySignatureImage, 'First Party Signature')}</div>
+              <div class="signature-name">${firstPartyName}</div>
+              <div class="signature-caption">First Party — Signed on ${formattedFirstSignatureDateTime || '—'}</div>
+            </div>
+            <div class="signature-col">
+              <div class="signature-line">${this.renderSignature(secondPartySignatureImage, 'Second Party Signature')}</div>
+              <div class="signature-name">${secondPartyName}</div>
+              <div class="signature-caption">Second Party — Signed on ${formattedSecondSignatureDateTime || '—'}</div>
             </div>
           </div>
+          <div class="signature-row">
+            <div class="signature-col">
+              <div class="signature-line">${this.renderSignature(mediatorSignatureImage, 'Mediator Signature')}</div>
+              <div class="signature-name">${mediatorName || '—'}</div>
+              <div class="signature-caption">Mediator, Kadr.live</div>
+            </div>
+            <div class="signature-col"></div>
+          </div>
+        </div>
 
-          <p>The contents of the settlement have been explained to the parties in Hindi and they have understood the same and have admitted the same to be correct. The setlement proceedings be sent to the Ld. Referral Court.</p>
+        <div class="footer">
+          This is a digitally generated Mediation Settlement Agreement issued by Kadr.live
+          (https://kadr.live), an online mediation platform.<br />
+          For queries regarding the authenticity of this document, please contact Kadr.live support quoting
+          Case ID ${caseId || '—'} and Document Ref ${documentRef}.<br />
+          Generated on ${generatedOn}
         </div>
       </body>
     </html>

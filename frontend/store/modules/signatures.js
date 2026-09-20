@@ -9,6 +9,9 @@ import {
 export default {
   namespaced: false,
   actions: {
+    // No toast here on failure (unlike the other actions below) — the request
+    // is invalid/expired/already-signed often enough that the caller
+    // (AgreementSignature.vue) shows a dedicated inline state instead.
     async getAgreementDetailsForSignature ({ commit, dispatch }, { requestId }) {
       try {
         dispatch('spinner/showSpinner')
@@ -16,10 +19,9 @@ export default {
         if (!data.success) throw new Error(data.error.message)
         return data
       } catch (error) {
-        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
-        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
         return {
           success: false,
+          status: error.response?.status || null,
           error
         }
       } finally {
@@ -63,6 +65,8 @@ export default {
       }
     },
 
+    // No toast here on failure — see getAgreementDetailsForSignature above;
+    // Signature.vue shows a dedicated inline state instead.
     async getSignatureRequestDetails ({ commit, dispatch }, { requestId }) {
       try {
         dispatch('spinner/showSpinner')
@@ -70,10 +74,9 @@ export default {
         if (!data.success) throw new Error(data.error.message)
         return data
       } catch (error) {
-        const msg = error.response?.data?.error?.message || error.message || 'Something went wrong'
-        dispatch('alert/showAlert', { message: msg, type: 'danger' }, { root: true })
         return {
           success: false,
+          status: error.response?.status || null,
           error
         }
       } finally {
