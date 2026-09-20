@@ -1724,6 +1724,163 @@ class Helper {
     ].join('\r\n')
   }
 
+  // Shared look for Kadr.live-branded legal/financial documents (mediation
+  // agreements, invoices, …) so they read as one consistent document family.
+  static documentBrandStyles () {
+    return `
+      * { box-sizing: border-box; }
+
+      body {
+        font-family: Georgia, 'Times New Roman', serif;
+        color: #1f2430;
+        font-size: 13px;
+        line-height: 1.6;
+        padding: 0 8px;
+      }
+
+      .doc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        border-bottom: 3px solid #5a4bd4;
+        padding-bottom: 14px;
+        margin-bottom: 22px;
+      }
+
+      .brand {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: #5a4bd4;
+        letter-spacing: 0.5px;
+      }
+
+      .brand-tagline {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 10.5px;
+        color: #666;
+        margin-top: 2px;
+      }
+
+      .doc-meta {
+        text-align: right;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 10px;
+        color: #666;
+        line-height: 1.5;
+      }
+
+      .doc-title {
+        text-align: center;
+        font-size: 18px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 4px;
+      }
+
+      .doc-subtitle {
+        text-align: center;
+        font-size: 11.5px;
+        color: #555;
+        margin: 0 0 24px;
+      }
+
+      .ref-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 22px;
+        font-size: 12px;
+      }
+
+      .ref-table td {
+        padding: 6px 10px;
+        border: 1px solid #d9d9e3;
+        vertical-align: top;
+      }
+
+      .ref-table td.label {
+        width: 24%;
+        font-weight: 700;
+        background: #f6f5fc;
+        color: #403a66;
+      }
+
+      h2.section-title {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: #5a4bd4;
+        border-bottom: 1px solid #e1defa;
+        padding-bottom: 6px;
+        margin: 26px 0 12px;
+      }
+
+      .parties-grid {
+        display: flex;
+        gap: 16px;
+      }
+
+      .party-card {
+        flex: 1;
+        border: 1px solid #e2e2ea;
+        border-radius: 6px;
+        padding: 10px 14px;
+        background: #fafafe;
+      }
+
+      .party-card .party-role {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: #8a86a8;
+        margin-bottom: 2px;
+      }
+
+      .party-card .party-name {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      p.body-text {
+        margin: 0 0 12px;
+        text-align: justify;
+      }
+
+      .footer {
+        margin-top: 40px;
+        padding-top: 12px;
+        border-top: 1px solid #e2e2ea;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 9.5px;
+        color: #8a8a8a;
+        text-align: center;
+        line-height: 1.6;
+      }
+    `
+  }
+
+  static documentBrandHeader ({ generatedOn, documentRef }) {
+    return `
+      <div class="doc-header">
+        <div>
+          <div class="brand">Kadr.live</div>
+          <div class="brand-tagline">Online Mediation Platform</div>
+        </div>
+        <div class="doc-meta">
+          Generated on: ${generatedOn}<br />
+          Document Ref: ${documentRef}
+        </div>
+      </div>
+    `
+  }
+
+  static documentBrandFooter (lines) {
+    return `<div class="footer">${lines.join('<br />')}</div>`
+  }
+
   static generateMediationHTML (data) {
     const {
       caseId,
@@ -1766,126 +1923,7 @@ class Helper {
         <meta charset="utf-8" />
         <title>Mediation Settlement Agreement — ${firstPartyName} vs ${secondPartyName}</title>
         <style>
-          * { box-sizing: border-box; }
-
-          body {
-            font-family: Georgia, 'Times New Roman', serif;
-            color: #1f2430;
-            font-size: 13px;
-            line-height: 1.6;
-            padding: 0 8px;
-          }
-
-          .doc-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            border-bottom: 3px solid #5a4bd4;
-            padding-bottom: 14px;
-            margin-bottom: 22px;
-          }
-
-          .brand {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 22px;
-            font-weight: 700;
-            color: #5a4bd4;
-            letter-spacing: 0.5px;
-          }
-
-          .brand-tagline {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 10.5px;
-            color: #666;
-            margin-top: 2px;
-          }
-
-          .doc-meta {
-            text-align: right;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 10px;
-            color: #666;
-            line-height: 1.5;
-          }
-
-          .doc-title {
-            text-align: center;
-            font-size: 18px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 0 0 4px;
-          }
-
-          .doc-subtitle {
-            text-align: center;
-            font-size: 11.5px;
-            color: #555;
-            margin: 0 0 24px;
-          }
-
-          .ref-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 22px;
-            font-size: 12px;
-          }
-
-          .ref-table td {
-            padding: 6px 10px;
-            border: 1px solid #d9d9e3;
-            vertical-align: top;
-          }
-
-          .ref-table td.label {
-            width: 24%;
-            font-weight: 700;
-            background: #f6f5fc;
-            color: #403a66;
-          }
-
-          h2.section-title {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            color: #5a4bd4;
-            border-bottom: 1px solid #e1defa;
-            padding-bottom: 6px;
-            margin: 26px 0 12px;
-          }
-
-          .parties-grid {
-            display: flex;
-            gap: 16px;
-          }
-
-          .party-card {
-            flex: 1;
-            border: 1px solid #e2e2ea;
-            border-radius: 6px;
-            padding: 10px 14px;
-            background: #fafafe;
-          }
-
-          .party-card .party-role {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            color: #8a86a8;
-            margin-bottom: 2px;
-          }
-
-          .party-card .party-name {
-            font-size: 14px;
-            font-weight: 700;
-          }
-
-          p.body-text {
-            margin: 0 0 12px;
-            text-align: justify;
-          }
+          ${this.documentBrandStyles()}
 
           .terms-box {
             border: 1px solid #e2e2ea;
@@ -1943,30 +1981,10 @@ class Helper {
             color: #666;
             margin-top: 2px;
           }
-
-          .footer {
-            margin-top: 40px;
-            padding-top: 12px;
-            border-top: 1px solid #e2e2ea;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 9.5px;
-            color: #8a8a8a;
-            text-align: center;
-            line-height: 1.6;
-          }
         </style>
       </head>
       <body>
-        <div class="doc-header">
-          <div>
-            <div class="brand">Kadr.live</div>
-            <div class="brand-tagline">Online Mediation Platform</div>
-          </div>
-          <div class="doc-meta">
-            Generated on: ${generatedOn}<br />
-            Document Ref: ${documentRef}
-          </div>
-        </div>
+        ${this.documentBrandHeader({ generatedOn, documentRef })}
 
         <p class="doc-title">Mediation Settlement Agreement</p>
         <p class="doc-subtitle">Executed through the Kadr.live Online Mediation Platform</p>
@@ -2054,13 +2072,203 @@ class Helper {
           </div>
         </div>
 
-        <div class="footer">
-          This is a digitally generated Mediation Settlement Agreement issued by Kadr.live
-          (https://kadr.live), an online mediation platform.<br />
-          For queries regarding the authenticity of this document, please contact Kadr.live support quoting
-          Case ID ${caseId || '—'} and Document Ref ${documentRef}.<br />
-          Generated on ${generatedOn}
+        ${this.documentBrandFooter([
+          'This is a digitally generated Mediation Settlement Agreement issued by Kadr.live (https://kadr.live), an online mediation platform.',
+          `For queries regarding the authenticity of this document, please contact Kadr.live support quoting Case ID ${caseId || '—'} and Document Ref ${documentRef}.`,
+          `Generated on ${generatedOn}`
+        ])}
+      </body>
+    </html>
+    `
+  }
+
+  static generateInvoiceHTML (data) {
+    const {
+      invoiceNumber,
+      invoiceMonth,
+      caseId,
+      status,
+      paidAt,
+      mediatorName,
+      mediatorEmail,
+      mediationAmount,
+      commissionPercentage,
+      commissionAmount,
+      gstPercentage,
+      gstAmount,
+      taxPercentage,
+      taxAmount,
+      netPayable,
+      bankAccount
+    } = data
+
+    const formatMoney = (v) => Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const formatMonth = (v) => {
+      if (!v) return '—'
+      const d = new Date(v)
+      if (Number.isNaN(d.getTime())) return '—'
+      return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', timeZone: 'Asia/Kolkata' })
+    }
+
+    const generatedOn = this.formatDateTimeToIST(new Date())
+    const isPaid = String(status).toUpperCase() === 'PAID'
+    const statusLabel = isPaid ? 'Paid' : 'Pending'
+    const paidOnLabel = isPaid ? this.formatDateTimeToIST(paidAt) : '—'
+
+    return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Invoice ${invoiceNumber} — Kadr.live</title>
+        <style>
+          ${this.documentBrandStyles()}
+
+          .status-pill {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+          }
+
+          .status-pill--paid {
+            background: #e3f6ec;
+            color: #1f8a4c;
+          }
+
+          .status-pill--pending {
+            background: #fff4e0;
+            color: #a5680a;
+          }
+
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            font-size: 12.5px;
+          }
+
+          .items-table th,
+          .items-table td {
+            padding: 8px 10px;
+            border: 1px solid #d9d9e3;
+          }
+
+          .items-table th {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            text-align: left;
+            background: #f6f5fc;
+            color: #403a66;
+          }
+
+          .items-table td.amount,
+          .items-table th.amount {
+            text-align: right;
+            white-space: nowrap;
+          }
+
+          .items-table tr.total td {
+            font-weight: 700;
+            background: #f6f5fc;
+            border-top: 2px solid #5a4bd4;
+          }
+        </style>
+      </head>
+      <body>
+        ${this.documentBrandHeader({ generatedOn, documentRef: invoiceNumber })}
+
+        <p class="doc-title">Mediator Revenue Invoice</p>
+        <p class="doc-subtitle">Issued by Kadr.live — Online Mediation Platform</p>
+
+        <table class="ref-table">
+          <tr>
+            <td class="label">Invoice #</td>
+            <td>${invoiceNumber || '—'}</td>
+            <td class="label">Invoice Month</td>
+            <td>${formatMonth(invoiceMonth)}</td>
+          </tr>
+          <tr>
+            <td class="label">Case ID</td>
+            <td>${caseId || '—'}</td>
+            <td class="label">Status</td>
+            <td>
+              <span class="status-pill ${isPaid ? 'status-pill--paid' : 'status-pill--pending'}">${statusLabel}</span>
+              ${isPaid ? ` — paid on ${paidOnLabel}` : ''}
+            </td>
+          </tr>
+        </table>
+
+        <h2 class="section-title">Billed To</h2>
+        <div class="party-card">
+          <div class="party-role">Mediator</div>
+          <div class="party-name">${mediatorName || '—'}</div>
+          ${mediatorEmail ? `<div>${mediatorEmail}</div>` : ''}
         </div>
+
+        <h2 class="section-title">Invoice Details</h2>
+        <table class="items-table">
+          <tr>
+            <th>Description</th>
+            <th class="amount">Amount (INR)</th>
+          </tr>
+          <tr>
+            <td>Mediation amount</td>
+            <td class="amount">${formatMoney(mediationAmount)}</td>
+          </tr>
+          <tr>
+            <td>Mediator revenue share (${formatMoney(commissionPercentage)}% of mediation amount)</td>
+            <td class="amount">${formatMoney(commissionAmount)}</td>
+          </tr>
+          <tr>
+            <td>GST (${formatMoney(gstPercentage)}%)</td>
+            <td class="amount">-${formatMoney(gstAmount)}</td>
+          </tr>
+          <tr>
+            <td>Tax (${formatMoney(taxPercentage)}%)</td>
+            <td class="amount">-${formatMoney(taxAmount)}</td>
+          </tr>
+          <tr class="total">
+            <td>Net payable</td>
+            <td class="amount">₹${formatMoney(netPayable)}</td>
+          </tr>
+        </table>
+
+        <h2 class="section-title">Payout Bank Details</h2>
+        ${bankAccount
+          ? `<table class="ref-table">
+              <tr>
+                <td class="label">Bank name</td>
+                <td>${bankAccount.bank_name || '—'}</td>
+                <td class="label">Account holder</td>
+                <td>${bankAccount.account_holder || '—'}</td>
+              </tr>
+              <tr>
+                <td class="label">Account number</td>
+                <td>${bankAccount.account_number || '—'}</td>
+                <td class="label">IFSC code</td>
+                <td>${bankAccount.ifsc_code || '—'}</td>
+              </tr>
+              ${(bankAccount.branch_name || bankAccount.upi_id)
+                ? `<tr>
+                    <td class="label">Branch</td>
+                    <td>${bankAccount.branch_name || '—'}</td>
+                    <td class="label">UPI ID</td>
+                    <td>${bankAccount.upi_id || '—'}</td>
+                  </tr>`
+                : ''}
+            </table>`
+          : '<p class="body-text">No payout bank details were on file at the time this invoice was generated.</p>'}
+
+        ${this.documentBrandFooter([
+          'This is a digitally generated invoice issued by Kadr.live (https://kadr.live), an online mediation platform.',
+          `For queries regarding the authenticity of this document, please contact Kadr.live support quoting Invoice # ${invoiceNumber || '—'}.`,
+          `Generated on ${generatedOn}`
+        ])}
       </body>
     </html>
     `

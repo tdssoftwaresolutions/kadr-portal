@@ -46,7 +46,16 @@ function decryptBankAccount (row) {
   const out = { ...row }
   for (const field of BANK_ENCRYPTED_FIELDS) {
     if (out[field] !== undefined && out[field] !== null) {
-      out[field] = dataCrypto.decrypt(out[field])
+      try {
+        out[field] = dataCrypto.decrypt(out[field])
+      } catch (error) {
+        // Rows saved before the account_number/ifsc_code columns were widened
+        // (they were too short for the encrypted format and got silently
+        // truncated by MySQL) can never authenticate again — surface as
+        // missing rather than 500ing, so the mediator is prompted to re-save.
+        console.error(`[financeController] Failed to decrypt ${field} on mediator_bank_accounts ${row.id}:`, error.message)
+        out[field] = null
+      }
     }
   }
   return out
@@ -326,25 +335,24 @@ module.exports = {
       const bankAccount = decryptBankAccount(await prisma.mediator_bank_accounts.findUnique({
         where: { mediator_id: invoice.mediator_id }
       }))
-      const html = `
-        <div style="font-family: Arial, sans-serif; padding: 24px; color: #222;">
-          <h2 style="margin:0;">kADR.live</h2>
-          <h3 style="margin-top: 6px;">Invoice</h3>
-          <p><strong>Invoice #:</strong> ${invoice.invoice_number}</p>
-          <p><strong>Mediator:</strong> ${invoice.user.name}</p>
-          <p><strong>Case:</strong> ${invoice.cases.caseId || ''}</p>
-          <table style="width:100%; border-collapse: collapse; margin-top: 12px;">
-            <tr><th style="text-align:left; border:1px solid #ddd; padding:8px;">Item</th><th style="text-align:right; border:1px solid #ddd; padding:8px;">Amount (INR)</th></tr>
-            <tr><td style="border:1px solid #ddd; padding:8px;">Mediation amount</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">${invoice.mediation_amount}</td></tr>
-            <tr><td style="border:1px solid #ddd; padding:8px;">Mediator revenue share (${invoice.commission_percentage}% of mediation amount)</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">${invoice.commission_amount}</td></tr>
-            <tr><td style="border:1px solid #ddd; padding:8px;">GST (${invoice.gst_percentage}%)</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">-${invoice.gst_amount}</td></tr>
-            <tr><td style="border:1px solid #ddd; padding:8px;">Tax (${invoice.tax_percentage}%)</td><td style="border:1px solid #ddd; padding:8px; text-align:right;">-${invoice.tax_amount}</td></tr>
-            <tr><td style="border:1px solid #ddd; padding:8px;"><strong>Net payable</strong></td><td style="border:1px solid #ddd; padding:8px; text-align:right;"><strong>${invoice.net_payable}</strong></td></tr>
-          </table>
-          <h4 style="margin-top:16px;">Bank details</h4>
-          <p style="margin: 0;">${bankAccount ? `${bankAccount.bank_name} | ${bankAccount.account_holder} | ${bankAccount.account_number} | ${bankAccount.ifsc_code}` : 'Not provided'}</p>
-        </div>
-      `
+      const html = helper.generateInvoiceHTML({
+        invoiceNumber: invoice.invoice_number,
+        invoiceMonth: invoice.invoice_month,
+        caseId: invoice.cases.caseId,
+        status: invoice.status,
+        paidAt: invoice.paid_at,
+        mediatorName: invoice.user.name,
+        mediatorEmail: invoice.user.email,
+        mediationAmount: invoice.mediation_amount,
+        commissionPercentage: invoice.commission_percentage,
+        commissionAmount: invoice.commission_amount,
+        gstPercentage: invoice.gst_percentage,
+        gstAmount: invoice.gst_amount,
+        taxPercentage: invoice.tax_percentage,
+        taxAmount: invoice.tax_amount,
+        netPayable: invoice.net_payable,
+        bankAccount
+      })
       const buffer = await renderPdfFromHtml(html)
       const filename = `${invoice.invoice_number || 'invoice'}.pdf`.replace(/[^\w.-]+/g, '_')
       sendPdfResponse(res, buffer, filename)

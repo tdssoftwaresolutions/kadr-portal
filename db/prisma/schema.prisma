@@ -374,10 +374,15 @@ model mediator_bank_accounts {
   mediator_id    String    @db.Char(36)
   bank_name      String    @db.VarChar(255)
   account_holder String    @db.VarChar(255)
-  account_number String    @db.VarChar(50)
-  ifsc_code      String    @db.VarChar(20)
+  // account_number/ifsc_code/upi_id are encrypted at rest (see
+  // backend/utils/crypto.js) as "enc:v1:<iv>:<tag>:<ciphertext>" — ~49 chars
+  // of fixed overhead before the ciphertext itself, so these must be sized
+  // well beyond the plaintext length or the value silently truncates on
+  // write and fails GCM auth-tag verification on every future read.
+  account_number String    @db.VarChar(150)
+  ifsc_code      String    @db.VarChar(100)
   branch_name    String?   @db.VarChar(255)
-  upi_id         String?   @db.VarChar(120)
+  upi_id         String?   @db.VarChar(180)
   created_at     DateTime? @default(now()) @db.Timestamp(0)
   updated_at     DateTime? @default(now()) @updatedAt @db.Timestamp(0)
   user           user      @relation(fields: [mediator_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_mediator_bank_mediator")

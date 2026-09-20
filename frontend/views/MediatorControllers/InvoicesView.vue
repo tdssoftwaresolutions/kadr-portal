@@ -22,6 +22,10 @@
           <template v-slot:body>
             <!-- Mediator: income 360 -->
             <template v-if="!isAdmin">
+              <b-alert v-if="!hasPrivateInvoices" model-value variant="light" class="small border mb-3">
+                <router-link :to="{ name: 'user.edit' }">{{ $t('mediatorInvoices.upgradeLink') }}</router-link> {{ $t('mediatorInvoices.upgradePrompt') }}
+              </b-alert>
+
               <div class="income-stats-grid mb-4">
                 <div class="income-stat-card">
                   <span class="income-stat-label">{{ $t('mediatorInvoices.totalIncome') }}</span>
@@ -42,10 +46,6 @@
                   <span class="income-stat-sub">{{ $t('mediatorInvoices.privatePaidOpen', { paid: formatMoney(summary.private.paid), open: formatMoney(summary.private.pending) }) }}</span>
                 </div>
               </div>
-
-              <b-alert v-if="!hasPrivateInvoices" model-value variant="light" class="small border mb-3">
-                <router-link :to="{ name: 'user.edit' }">{{ $t('mediatorInvoices.upgradeLink') }}</router-link> {{ $t('mediatorInvoices.upgradePrompt') }}
-              </b-alert>
 
               <mediator-private-invoice-section
                 v-if="hasPrivateInvoices"
