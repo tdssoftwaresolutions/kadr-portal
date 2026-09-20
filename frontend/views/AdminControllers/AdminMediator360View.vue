@@ -93,6 +93,9 @@
                   </b-table>
                 </div>
               </b-tab>
+              <b-tab :title="$t('adminMediator360.bankDetails')">
+                <kadr-bank-details :bank-account="data.bankAccount" />
+              </b-tab>
             </b-tabs>
           </template>
           <kadr-empty-state
@@ -111,6 +114,7 @@
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
 import KadrPageLoader from '../../components/kadr/KadrPageLoader.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
+import KadrBankDetails from '../../components/kadr/KadrBankDetails.vue'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
 import { sofbox } from '../../config/pluginInit'
 
@@ -119,7 +123,8 @@ export default {
   components: {
     KadrPageHeader,
     KadrPageLoader,
-    KadrEmptyState
+    KadrEmptyState,
+    KadrBankDetails
   },
   data () {
     return {
@@ -174,6 +179,7 @@ export default {
     summaryStats () {
       if (!this.data) return []
       return [
+        { label: this.$t('adminMediator360.totalIncomeFromKadr'), value: `₹${this.formatMoney(this.data.totalIncomeFromKadr)}` },
         { label: this.$t('adminMediator360.cases'), value: (this.data.cases || []).length },
         { label: this.$t('adminMediator360.kadrInvoices'), value: (this.data.kadrInvoices || []).length },
         { label: this.$t('adminMediator360.pendingPayouts'), value: (this.data.pendingPayouts || []).length },
@@ -191,6 +197,9 @@ export default {
     this.load()
   },
   methods: {
+    formatMoney (v) {
+      return Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    },
     async load () {
       const id = this.$route.params.mediatorId
       if (!id) return
@@ -226,6 +235,7 @@ export default {
   font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .mediator-360-stat__label {

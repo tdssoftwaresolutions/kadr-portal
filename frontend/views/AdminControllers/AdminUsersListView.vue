@@ -703,6 +703,10 @@ export default {
   position: sticky;
   top: 1rem;
   align-self: flex-start;
+  /* Grid items default to min-width: auto, which lets long unbroken content
+     (e.g. an email) force this track wider than its 0.7fr share — pushing
+     the card outside the intended layout. Matches .user-modal-main above. */
+  min-width: 0;
 }
 
 .user-modal-profile-card {
@@ -711,6 +715,8 @@ export default {
   align-items: center;
   text-align: center;
   padding: 1.25rem 1rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .user-modal-avatar {
@@ -731,6 +737,8 @@ export default {
   font-size: 0.85rem;
   color: var(--kadr-text-muted);
   word-break: break-all;
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
 .user-modal-chips {

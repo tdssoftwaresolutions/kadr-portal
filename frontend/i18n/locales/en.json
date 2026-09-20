@@ -524,7 +524,9 @@
     "colSource": "Source",
     "colValidThrough": "Valid through",
     "colCnr": "CNR",
-    "colLabel": "Label"
+    "colLabel": "Label",
+    "totalIncomeFromKadr": "Total income from Kadr",
+    "bankDetails": "Bank details"
   },
   "adminManagement": {
     "title": "Admin Profile Management",
@@ -1583,6 +1585,12 @@
     "upiId": "UPI ID",
     "saveBankDetails": "Save bank details",
     "notAvailable": "Not available",
+    "viewBankDetails": "View bank details",
+    "bankDetailsTitle": "Bank details",
+    "noBankOnFile": "No bank details on file for this mediator.",
+    "bankDetailsCorrupted": "Some fields (account number/IFSC) couldn't be read from an older record and are hidden below. Please ask the mediator to re-enter and save their bank details.",
+    "copy": "Copy",
+    "copied": "Copied",
     "yes": "Yes",
     "no": "No",
     "noInvoicesTitle": "No invoices in this period",

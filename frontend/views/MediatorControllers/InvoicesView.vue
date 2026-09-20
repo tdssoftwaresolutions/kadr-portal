@@ -188,7 +188,12 @@
                   <b-badge :variant="row.item.status === 'PAID' ? 'success' : 'warning'">{{ row.item.status }}</b-badge>
                 </template>
                 <template #cell(bank)="row">
-                  <span v-if="row.item.bank_details">{{ formatBank(row.item.bank_details) }}</span>
+                  <div v-if="row.item.bank_details" class="bank-cell">
+                    <span class="bank-cell__masked">{{ formatBank(row.item.bank_details) }}</span>
+                    <button type="button" class="bank-cell__view" @click="viewBankDetails(row.item)">
+                      <i class="ri-eye-line" aria-hidden="true"></i> {{ $t('mediatorInvoices.viewBankDetails') }}
+                    </button>
+                  </div>
                   <span v-else class="text-muted">{{ $t('mediatorInvoices.notAvailable') }}</span>
                 </template>
                 <template #cell(actions)="row">
@@ -384,6 +389,14 @@
         </iq-card>
       </b-col>
     </b-row>
+
+    <b-modal v-model="bankModal.visible" :title="$t('mediatorInvoices.bankDetailsTitle')" scrollable>
+      <p v-if="bankModal.mediatorName" class="small text-muted mb-3">{{ bankModal.mediatorName }}</p>
+      <kadr-bank-details :bank-account="bankModal.bankAccount" :loading="bankModal.loading" />
+      <template #footer>
+        <b-button variant="secondary" @click="bankModal.visible = false">{{ $t('common.close') }}</b-button>
+      </template>
+    </b-modal>
   </b-container>
 </template>
 
@@ -392,6 +405,7 @@ import { sofbox } from '../../config/pluginInit'
 import MediatorPrivateInvoiceSection from '../../components/mediator/MediatorPrivateInvoiceSection.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
 import KadrPageHeader from '../../components/kadr/KadrPageHeader.vue'
+import KadrBankDetails from '../../components/kadr/KadrBankDetails.vue'
 
 const EMPTY_SUMMARY = () => ({
   kadr: { total: 0, paid: 0, pending: 0 },
@@ -405,10 +419,11 @@ const EMPTY_SUMMARY = () => ({
 
 export default {
   name: 'InvoicesView',
-  components: { MediatorPrivateInvoiceSection, KadrEmptyState, KadrPageHeader },
+  components: { MediatorPrivateInvoiceSection, KadrEmptyState, KadrPageHeader, KadrBankDetails },
   data () {
     return {
       loading: false,
+      bankModal: { visible: false, loading: false, mediatorName: '', bankAccount: null },
       invoices: [],
       incomeItems: [],
       summary: EMPTY_SUMMARY(),
@@ -700,6 +715,17 @@ export default {
         invoiceNumber: invoice.invoice_number
       })
     },
+    async viewBankDetails (invoice) {
+      this.bankModal = {
+        visible: true,
+        loading: true,
+        mediatorName: (invoice.user && invoice.user.name) || '',
+        bankAccount: null
+      }
+      const res = await this.$store.dispatch('getMediatorBankAccount', { mediatorId: invoice.mediator_id })
+      this.bankModal.bankAccount = (res.success && res.data && res.data.bankAccount) || null
+      this.bankModal.loading = false
+    },
     async loadBankDetails () {
       const res = await this.$store.dispatch('getMediatorBankAccount')
       if (res.success && res.data.bankAccount) {
@@ -794,6 +820,35 @@ export default {
   border: 1px solid var(--kadr-border);
   border-radius: 12px;
   padding: 0.9rem 1rem;
+}
+
+.bank-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.bank-cell__masked {
+  font-size: 0.8rem;
+  color: var(--kadr-text-secondary);
+}
+
+.bank-cell__view {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--kadr-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bank-cell__view:hover {
+  text-decoration: underline;
 }
 
 /* Client transactions (admin) */

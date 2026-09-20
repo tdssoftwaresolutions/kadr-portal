@@ -524,7 +524,9 @@
     "colSource": "स्रोत",
     "colValidThrough": "वैध अवधि",
     "colCnr": "CNR",
-    "colLabel": "लेबल"
+    "colLabel": "लेबल",
+    "totalIncomeFromKadr": "Kadr से कुल आय",
+    "bankDetails": "बैंक विवरण"
   },
   "adminManagement": {
     "title": "प्रशासक प्रोफ़ाइल प्रबंधन",
@@ -1583,6 +1585,12 @@
     "upiId": "UPI आईडी",
     "saveBankDetails": "बैंक विवरण सहेजें",
     "notAvailable": "उपलब्ध नहीं",
+    "viewBankDetails": "बैंक विवरण देखें",
+    "bankDetailsTitle": "बैंक विवरण",
+    "noBankOnFile": "इस मध्यस्थ के लिए कोई बैंक विवरण दर्ज नहीं है।",
+    "bankDetailsCorrupted": "कुछ फ़ील्ड (खाता संख्या/IFSC) एक पुराने रिकॉर्ड से पढ़े नहीं जा सके और नीचे छिपाए गए हैं। कृपया मध्यस्थ से अपने बैंक विवरण फिर से दर्ज करके सहेजने के लिए कहें।",
+    "copy": "कॉपी करें",
+    "copied": "कॉपी हो गया",
     "yes": "हाँ",
     "no": "नहीं",
     "noInvoicesTitle": "इस अवधि में कोई चालान नहीं",

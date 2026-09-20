@@ -8,6 +8,7 @@ const { renderPdfFromHtml, sendPdfResponse } = require('../utils/pdfFromHtml')
 const { parsePagination, paginatedResponse } = require('../utils/pagination')
 const { assertAdminPage } = require('../utils/adminPermissionHelpers')
 const { getMediatorIncomeOverview } = require('../services/invoice/mediatorIncomeService')
+const { encryptBankFields, decryptBankAccount } = require('../utils/bankAccountCrypto')
 
 const {
   toNumber,
@@ -24,41 +25,6 @@ function buildDateRange (range) {
   if (range === 'LAST_3_MONTHS') return { gte: new Date(now.getFullYear(), now.getMonth() - 2, 1), lt: end }
   if (range === 'LAST_6_MONTHS') return { gte: new Date(now.getFullYear(), now.getMonth() - 5, 1), lt: end }
   return null
-}
-
-// Fields on mediator_bank_accounts that are encrypted at rest (P0 financial data).
-const BANK_ENCRYPTED_FIELDS = ['account_holder', 'account_number', 'ifsc_code', 'upi_id']
-
-// Encrypt sensitive bank fields before persisting. Mutates a shallow copy.
-function encryptBankFields (data) {
-  const out = { ...data }
-  for (const field of BANK_ENCRYPTED_FIELDS) {
-    if (out[field] !== undefined && out[field] !== null && out[field] !== '') {
-      out[field] = dataCrypto.encrypt(String(out[field]))
-    }
-  }
-  return out
-}
-
-// Decrypt sensitive bank fields after reading. Tolerates legacy plaintext rows.
-function decryptBankAccount (row) {
-  if (!row) return row
-  const out = { ...row }
-  for (const field of BANK_ENCRYPTED_FIELDS) {
-    if (out[field] !== undefined && out[field] !== null) {
-      try {
-        out[field] = dataCrypto.decrypt(out[field])
-      } catch (error) {
-        // Rows saved before the account_number/ifsc_code columns were widened
-        // (they were too short for the encrypted format and got silently
-        // truncated by MySQL) can never authenticate again — surface as
-        // missing rather than 500ing, so the mediator is prompted to re-save.
-        console.error(`[financeController] Failed to decrypt ${field} on mediator_bank_accounts ${row.id}:`, error.message)
-        out[field] = null
-      }
-    }
-  }
-  return out
 }
 
 module.exports = {

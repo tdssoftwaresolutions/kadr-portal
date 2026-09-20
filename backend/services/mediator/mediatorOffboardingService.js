@@ -7,6 +7,7 @@ const helper = require('../../utils/helper')
 const { createError } = require('../../utils/errors')
 const errorCodes = require('../../utils/errors/errorCodes')
 const { adminHasPage } = require('../../utils/adminPermissionHelpers')
+const { decryptBankAccount } = require('../../utils/bankAccountCrypto')
 
 const ACTIVE_STATUSES = [CaseTypes.NEW, CaseTypes.IN_PROGRESS]
 
@@ -339,7 +340,7 @@ async function getMediator360 (mediatorId, { page = 1, perPage = 20 } = {}) {
 
   const skip = (Math.max(1, page) - 1) * perPage
 
-  const [cases, casesTotal, kadrInvoices, privateInvoices, rewardOrders, subscriptions, trackers] =
+  const [cases, casesTotal, kadrInvoices, privateInvoices, rewardOrders, subscriptions, trackers, bankAccount, incomeAgg] =
     await Promise.all([
       prisma.cases.findMany({
         where: { mediator: mediatorId },
@@ -382,6 +383,13 @@ async function getMediator360 (mediatorId, { page = 1, perPage = 20 } = {}) {
         where: { mediator_id: mediatorId },
         orderBy: { updated_at: 'desc' },
         take: 30
+      }),
+      prisma.mediator_bank_accounts.findUnique({ where: { mediator_id: mediatorId } }),
+      // Sum across ALL invoices (not just the 50 most recent shown in the tab),
+      // pending + paid, per the admin 360 stat requirement.
+      prisma.mediator_invoices.aggregate({
+        where: { mediator_id: mediatorId },
+        _sum: { net_payable: true }
       })
     ])
 
@@ -401,6 +409,8 @@ async function getMediator360 (mediatorId, { page = 1, perPage = 20 } = {}) {
     rewardOrders,
     subscriptions,
     courtTrackers: trackers,
+    bankAccount: decryptBankAccount(bankAccount),
+    totalIncomeFromKadr: Number(incomeAgg._sum.net_payable || 0),
     readOnly: true
   }
 }
