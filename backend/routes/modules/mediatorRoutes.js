@@ -7,7 +7,7 @@ const financeController = require('../../controller/financeController')
 const blogController = require('../../controller/blogController')
 const videoReelController = require('../../controller/videoReelController')
 const authMiddleware = require('../../middleware/authMiddleware')
-const { requireMediator } = require('../../middleware/requireRole')
+const { requireMediator, requireRole } = require('../../middleware/requireRole')
 
 const router = express.Router()
 
@@ -32,7 +32,10 @@ router.get('/mediator/private-invoices', requireMediator, privateInvoiceControll
 router.post('/mediator/private-invoices', requireMediator, privateInvoiceController.createPrivateInvoice)
 router.put('/mediator/private-invoices/:id', requireMediator, privateInvoiceController.updatePrivateInvoice)
 router.get('/mediator/private-invoices/:id/pdf', requireMediator, privateInvoiceController.downloadPrivateInvoicePdf)
-router.get('/mediator-bank-account', requireMediator, financeController.getMediatorBankAccount)
+// GET also serves admins viewing a mediator's bank details (?mediatorId=) —
+// the controller itself gates that with assertAdminPage(req, 'invoices').
+// Only the mediator can edit their own, so POST stays mediator-only.
+router.get('/mediator-bank-account', requireRole('ADMIN', 'MEDIATOR'), financeController.getMediatorBankAccount)
 router.post('/mediator-bank-account', requireMediator, financeController.saveMediatorBankAccount)
 
 router.get('/getMyBlogs', requireMediator, blogController.getMyBlogs)

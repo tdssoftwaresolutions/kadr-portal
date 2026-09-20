@@ -89,8 +89,20 @@ function createApp (options = {}) {
     })
   })
 
-  app.use(express.json({ limit: bodyLimit }))
-  app.use(express.urlencoded({ limit: bodyLimit, extended: true }))
+  // express.json()/urlencoded() would otherwise try to re-read the request
+  // stream for every request, including the webhook above whose body was
+  // already consumed and manually parsed into req.body/req.rawBody — raw-body
+  // throws "stream encoding should not be set" when that happens, so every
+  // Cashfree webhook call 500'd unconditionally. Skip re-parsing whenever the
+  // body has already been captured upstream.
+  app.use((req, res, next) => {
+    if (req.rawBody !== undefined) return next()
+    express.json({ limit: bodyLimit })(req, res, next)
+  })
+  app.use((req, res, next) => {
+    if (req.rawBody !== undefined) return next()
+    express.urlencoded({ limit: bodyLimit, extended: true })(req, res, next)
+  })
   app.use(cookieParser())
   app.use(verifyCsrfToken)
   app.use(setCsrfCookie)

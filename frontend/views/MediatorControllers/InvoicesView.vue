@@ -540,24 +540,26 @@ export default {
   },
   mounted () {
     sofbox.index()
-    if (!this.$store.state.mediatorFeatures.length && !this.isAdmin) {
-      this.$store.dispatch('loadMediatorSubscription')
-    }
-    this.hasPrivateInvoices = this.$store.getters.mediatorHasFeature('enhanced_invoices')
-    if (this.isAdmin) {
-      // loadInvoices() already triggers loadTransactions() itself at the end
-      // (same as the filter-apply path does) — calling it again on mount
-      // fired getTransactions twice on every admin page load. loading was
-      // previously never set true for this path, so the tables showed their
-      // "no data yet" empty state (misleading — implies there's nothing,
-      // not that it hasn't loaded) instead of a loading indicator.
-      this.loading = true
-      Promise.all([this.loadMeta(), this.loadInvoices()]).finally(() => {
-        this.loading = false
-      })
+    // On a hard reload / direct URL open, StandardLayout's own created() hook
+    // is still resolving getUserData -> verifySignature -> commit('setUser')
+    // when this mounts (Vue doesn't wait for a parent's async created() before
+    // mounting children) — so currentUser can still be null here and isAdmin
+    // would read false, firing the mediator-only calls below for an actual
+    // admin (they then 403). Navigating here via the SPA nav works fine
+    // because currentUser is already hydrated by then. Wait for it instead of
+    // guessing the role from incomplete state.
+    if (this.$store.state.currentUser) {
+      this.initForRole()
     } else {
-      this.loadIncome()
-      this.loadBankDetails()
+      const unwatch = this.$store.watch(
+        (state) => state.currentUser,
+        (user) => {
+          if (user) {
+            unwatch()
+            this.initForRole()
+          }
+        }
+      )
     }
   },
   watch: {
@@ -568,6 +570,27 @@ export default {
     }
   },
   methods: {
+    initForRole () {
+      if (!this.$store.state.mediatorFeatures.length && !this.isAdmin) {
+        this.$store.dispatch('loadMediatorSubscription')
+      }
+      this.hasPrivateInvoices = this.$store.getters.mediatorHasFeature('enhanced_invoices')
+      if (this.isAdmin) {
+        // loadInvoices() already triggers loadTransactions() itself at the end
+        // (same as the filter-apply path does) — calling it again on mount
+        // fired getTransactions twice on every admin page load. loading was
+        // previously never set true for this path, so the tables showed their
+        // "no data yet" empty state (misleading — implies there's nothing,
+        // not that it hasn't loaded) instead of a loading indicator.
+        this.loading = true
+        Promise.all([this.loadMeta(), this.loadInvoices()]).finally(() => {
+          this.loading = false
+        })
+      } else {
+        this.loadIncome()
+        this.loadBankDetails()
+      }
+    },
     formatMoney (v) {
       return Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     },
