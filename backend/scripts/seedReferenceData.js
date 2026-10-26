@@ -701,6 +701,24 @@ const NOTIFICATION_TEMPLATES = [
     'active': true
   },
   {
+    'template_key': 'meetingCancelledCaseClosed',
+    'channel': 'EMAIL',
+    'name': 'Meeting cancelled — case closed',
+    'description': 'Sent to the mediator/parties when a scheduled meeting is cancelled because the case was closed before it happened',
+    'subject': 'Meeting cancelled — Case {caseId}',
+    'title': null,
+    'greeting': 'Hello {recipientName},',
+    'body_html': '\n      <p>Case <strong>{caseId}</strong> has been closed, so the following scheduled meeting has been cancelled:</p>\n      <p><strong>{title}</strong><br />{scheduleRange}</p>\n      <p>No action is needed from you regarding this meeting.</p>\n    ',
+    'body_text': 'Case {caseId} has been closed. The scheduled meeting "{title}" ({scheduleRange}) has been cancelled. No action is needed.',
+    'variables': [
+      'recipientName',
+      'caseId',
+      'title',
+      'scheduleRange'
+    ],
+    'active': true
+  },
+  {
     'template_key': 'legacyCustomContent',
     'channel': 'EMAIL',
     'name': 'Legacy Custom Content',

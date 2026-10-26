@@ -1,101 +1,106 @@
-// jQuery itself stays eager — ripple/sidebar-toggle/fullscreen/loader below
-// all call $(...) directly and run on every authenticated page via
-// StandardLayout, so scoping it further would need rewriting those to
-// vanilla DOM APIs (out of scope here). owl.carousel and smooth-scrollbar
-// are only ever used by owlCarousel()/SmoothScrollbar() below, which already
-// gate on the target element existing — loading them dynamically, only when
-// that element is actually present, keeps two real dependencies (a carousel
-// library and a scrollbar library) out of the bundle every page pays for
-// today regardless of whether it has a carousel or a custom scrollbar.
-const $ = require('jquery')
+// Plain DOM helpers left over from the sofbox admin template. These used to
+// depend on jQuery (~97 KB in the vendor bundle) for a loader fade, a click
+// ripple and a fullscreen toggle; they're small enough to do with native DOM
+// APIs, so jQuery is no longer shipped at all. The owl.carousel jQuery plugin
+// that used to drive the sign-in page slider is replaced by AuthCarousel.vue.
+// smooth-scrollbar is still loaded dynamically, only when its target exists.
 
-if (typeof window !== 'undefined') {
-  window.$ = $
-  window.jQuery = $
-}
+// Document-level listeners are delegated, so register them once per page
+// load rather than on every layout mount (the jQuery version stacked a new
+// handler each time StandardLayout mounted).
+let rippleBound = false
+let fullscreenBound = false
+
+const LOADER_FADE_MS = 150
 
 export const sofbox = {
   async index () {
     this.loaderInit()
-    await this.owlCarousel()
     await this.SmoothScrollbar()
   },
   mainIndex () {
     this.wrapperMenuToggle()
-    this.sideBarToggle()
     this.ripple()
     this.fullscreen()
   },
   loaderInit () {
-    $('#load').fadeOut()
-    $('#loading').delay(1000).fadeOut('slow')
+    // Hide the full-screen boot loader as soon as the page has mounted. This
+    // used to wait a fixed 1s and then run a 600ms jQuery fade, which held a
+    // spinner over every freshly loaded page (and after login) for ~1.6s
+    // regardless of how fast the page was actually ready.
+    const load = document.getElementById('load')
+    if (load) load.style.display = 'none'
+    const loading = document.getElementById('loading')
+    if (!loading || loading.style.display === 'none') return
+    loading.style.transition = `opacity ${LOADER_FADE_MS}ms ease`
+    loading.style.opacity = '0'
+    setTimeout(() => { loading.style.display = 'none' }, LOADER_FADE_MS)
   },
   ripple () {
-    $(document).on('click', '.iq-waves-effect', function (e) {
+    if (rippleBound) return
+    rippleBound = true
+    document.addEventListener('click', function (e) {
+      const target = e.target instanceof Element ? e.target.closest('.iq-waves-effect') : null
+      if (!target) return
       // Remove any old one
-      $('.ripple').remove()
-      // Setup
-      const posX = $(this).offset().left
-      const posY = $(this).offset().top
-      let buttonWidth = $(this).width()
-      let buttonHeight = $(this).height()
+      document.querySelectorAll('.ripple').forEach((el) => el.remove())
 
-      // Add the element
-      $(this).prepend("<span class='ripple'></span>")
-
+      const rect = target.getBoundingClientRect()
       // Make it round!
-      if (buttonWidth >= buttonHeight) {
-        buttonHeight = buttonWidth
-      } else {
-        buttonWidth = buttonHeight
-      }
-
+      const size = Math.max(rect.width, rect.height)
       // Get the center of the element
-      const x = e.pageX - posX - buttonWidth / 2
-      const y = e.pageY - posY - buttonHeight / 2
+      const x = e.clientX - rect.left - size / 2
+      const y = e.clientY - rect.top - size / 2
 
-      // Add the ripples CSS and start the animation
-      $('.ripple').css({
-        width: buttonWidth,
-        height: buttonHeight,
+      const ripple = document.createElement('span')
+      ripple.className = 'ripple'
+      Object.assign(ripple.style, {
+        width: size + 'px',
+        height: size + 'px',
         top: y + 'px',
         left: x + 'px'
-      }).addClass('rippleEffect')
+      })
+      target.prepend(ripple)
+      ripple.classList.add('rippleEffect')
     })
   },
 
   fullscreen () {
-    const elementExist = this.checkElement('class', 'iq-full-screen')
-    if (elementExist) {
-      $(document).on('click', '.iq-full-screen', function () {
-        const elem = $(this)
-        if (!document.fullscreenElement &&
-          !document.mozFullScreenElement &&
-          !document.webkitFullscreenElement &&
-          !document.msFullscreenElement) {
-          if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen()
-          } else if (document.documentElement.mozRequestFullScreen) {
-            document.documentElement.mozRequestFullScreen()
-          } else if (document.documentElement.webkitRequestFullscreen) {
-            document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT)
-          } else if (document.documentElement.msRequestFullscreen) {
-            document.documentElement.msRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT)
-          }
-        } else {
-          if (document.cancelFullScreen) {
-            document.cancelFullScreen()
-          } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen()
-          } else if (document.webkitCancelFullScreen) {
-            document.webkitCancelFullScreen()
-          } else if (document.msExitFullscreen) {
-            document.msExitFullscreen()
-          }
+    if (fullscreenBound || !this.checkElement('class', 'iq-full-screen')) return
+    fullscreenBound = true
+    document.addEventListener('click', function (e) {
+      const elem = e.target instanceof Element ? e.target.closest('.iq-full-screen') : null
+      if (!elem) return
+      const docEl = document.documentElement
+      if (!document.fullscreenElement &&
+        !document.mozFullScreenElement &&
+        !document.webkitFullscreenElement &&
+        !document.msFullscreenElement) {
+        if (docEl.requestFullscreen) {
+          docEl.requestFullscreen()
+        } else if (docEl.mozRequestFullScreen) {
+          docEl.mozRequestFullScreen()
+        } else if (docEl.webkitRequestFullscreen) {
+          docEl.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT)
+        } else if (docEl.msRequestFullscreen) {
+          docEl.msRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT)
         }
-        elem.find('i').toggleClass('ri-fullscreen-line').toggleClass('ri-fullscreen-exit-line')
+      } else {
+        if (document.cancelFullScreen) {
+          document.cancelFullScreen()
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen()
+        } else if (document.webkitCancelFullScreen) {
+          document.webkitCancelFullScreen()
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen()
+        }
+      }
+      elem.querySelectorAll('i').forEach((icon) => {
+        icon.classList.toggle('ri-fullscreen-line')
+        icon.classList.toggle('ri-fullscreen-exit-line')
       })
-    }
+    })
   },
 
   wrapperMenuToggle () {
@@ -109,15 +114,6 @@ export const sofbox = {
           body.classList.toggle('sidebar-main')
         })
       }
-    }
-  },
-
-  sideBarToggle () {
-    const elementExist = this.checkElement('class', 'iq-sidebar-menu')
-    if (elementExist) {
-      $(document).on('click', '.iq-sidebar-menu li', function () {
-
-      })
     }
   },
 
@@ -141,51 +137,6 @@ export const sofbox = {
         break
     }
     return found
-  },
-
-  async owlCarousel () {
-    const elementExist = this.checkElement('class', 'owl-carousel')
-    if (elementExist) {
-      // Side-effect module — attaches $.fn.owlCarousel once loaded.
-      await import(/* webpackChunkName: "owl-carousel" */ 'owl.carousel/dist/owl.carousel')
-      // eslint-disable-next-line no-undef
-      $('.owl-carousel').each(function () {
-        // eslint-disable-next-line no-undef
-        const $carousel = $(this)
-        $carousel.owlCarousel({
-          items: $carousel.data('items'),
-          loop: $carousel.data('loop'),
-          margin: $carousel.data('margin'),
-          nav: $carousel.data('nav'),
-          dots: $carousel.data('dots'),
-          autoplay: $carousel.data('autoplay'),
-          autoplayTimeout: $carousel.data('autoplay-timeout'),
-          navText: ['<i class="fas fa-angle-left fa-2x"></i>', '<i class="fas fa-angle-right fa-2x"></i>'],
-          responsiveClass: true,
-          responsive: {
-            // breakpoint from 0 up
-            0: {
-              items: $carousel.data('items-mobile-sm')
-            },
-            // breakpoint from 480 up
-            480: {
-              items: $carousel.data('items-mobile')
-            },
-            // breakpoint from 786 up
-            786: {
-              items: $carousel.data('items-tab')
-            },
-            // breakpoint from 1023 up
-            1023: {
-              items: $carousel.data('items-laptop')
-            },
-            1199: {
-              items: $carousel.data('items')
-            }
-          }
-        })
-      })
-    }
   },
 
   async SmoothScrollbar () {

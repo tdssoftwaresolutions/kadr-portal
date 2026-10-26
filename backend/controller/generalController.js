@@ -1421,6 +1421,13 @@ module.exports = {
         }
       })
 
+      try {
+        const { cancelFutureMeetingsForCase } = require('../services/case/caseClosureService')
+        await cancelFutureMeetingsForCase(prisma, caseId)
+      } catch (cancelErr) {
+        console.error('Cancel future meetings on case closed:', cancelErr)
+      }
+
       analytics.trackCaseStatusChanged({
         req,
         actorUserId: req.user?.id,

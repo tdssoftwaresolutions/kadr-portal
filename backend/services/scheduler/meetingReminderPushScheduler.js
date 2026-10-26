@@ -9,6 +9,7 @@
 const cron = require('node-cron')
 const prisma = require('../../lib/prisma')
 const pushEvents = require('../push/pushEvents')
+const { CLOSED_CASE_STATUSES } = require('../../utils/caseConstants')
 const { withSchedulerLock } = require('./schedulerLockService')
 
 const REMINDER_WINDOW_MIN = Number(process.env.MEETING_REMINDER_WINDOW_MIN || 30)
@@ -48,7 +49,9 @@ async function runMeetingReminderPushJob () {
     const meetings = await prisma.events.findMany({
       where: {
         type: 'KADR',
-        start_datetime: { gte: now, lte: windowEnd }
+        start_datetime: { gte: now, lte: windowEnd },
+        // Don't push a meeting reminder for a case that's already closed.
+        cases: { status: { notIn: CLOSED_CASE_STATUSES } }
       },
       select: {
         id: true,

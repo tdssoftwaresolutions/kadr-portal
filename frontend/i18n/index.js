@@ -1,6 +1,5 @@
-import { reactive } from 'vue'
+import { reactive, shallowReactive } from 'vue'
 import en from './locales/en.json'
-import hi from './locales/hi.json'
 
 /**
  * Simple i18n plugin for Hindi/English support in the admin portal.
@@ -17,7 +16,26 @@ const DEFAULT_LOCALE = 'en'
 const SUPPORTED_LOCALES = ['en', 'hi']
 const STORAGE_KEY = 'kadr_locale'
 
-const messages = { en, hi }
+// English is the default and the fallback for missing keys, so it ships in
+// the main bundle. Other locales (~75 KB each) are split into their own chunk
+// and only downloaded for users who actually pick them. `shallowReactive` so
+// that adding a locale's messages re-renders anything already translated
+// with the English fallback.
+const messages = shallowReactive({ en })
+const localeLoaders = {
+  hi: () => import(/* webpackChunkName: "locale-hi" */ './locales/hi.json')
+}
+
+async function loadLocaleMessages (locale) {
+  if (messages[locale] || !localeLoaders[locale]) return
+  try {
+    const mod = await localeLoaders[locale]()
+    messages[locale] = mod.default || mod
+  } catch (e) {
+    // Network failure: keep rendering with the English fallback.
+    console.warn(`Failed to load "${locale}" translations`, e)
+  }
+}
 
 function getStoredLocale () {
   try {
@@ -76,8 +94,11 @@ function translate (locale, key, params = {}) {
 const i18n = reactive({
   locale: getStoredLocale(),
   availableLocales: SUPPORTED_LOCALES,
-  setLocale (locale) {
+  async setLocale (locale) {
     if (SUPPORTED_LOCALES.includes(locale) && locale !== this.locale) {
+      // Fetch the messages first so the UI switches language in one step
+      // instead of flashing English fallbacks while the chunk downloads.
+      await loadLocaleMessages(locale)
       this.locale = locale
       setStoredLocale(locale)
     }
@@ -103,4 +124,4 @@ const i18nPlugin = {
 }
 
 export default i18nPlugin
-export { i18n, SUPPORTED_LOCALES, DEFAULT_LOCALE }
+export { i18n, SUPPORTED_LOCALES, DEFAULT_LOCALE, loadLocaleMessages }

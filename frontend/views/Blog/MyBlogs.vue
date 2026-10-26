@@ -227,8 +227,7 @@ import { sofbox } from '../../config/pluginInit'
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import Spinner from '../../components/sofbox/spinner/spinner.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
-import '../../plugins/tinymce'
-import Editor from '@tinymce/tinymce-vue'
+import Editor from '../../plugins/tinymceEditor'
 
 export default {
   name: 'MyBlogs',

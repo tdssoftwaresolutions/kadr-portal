@@ -1295,6 +1295,28 @@ class Helper {
     }
   }
 
+  /**
+   * Cancel a previously scheduled Zoom meeting (e.g. when the case it was
+   * scheduled for is closed). Returns true on success or if the meeting was
+   * already gone (Zoom 404s a meeting that's already been deleted/ended) —
+   * only a genuine failure returns false, and callers should treat that as
+   * non-fatal (local cleanup should proceed either way).
+   */
+  static async cancelZoomMeeting (meetingId) {
+    if (!meetingId) return false
+    try {
+      const accessToken = await getZoomAccessToken()
+      await axios.delete(`https://api.zoom.us/v2/meetings/${meetingId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      })
+      return true
+    } catch (error) {
+      if (error.response?.status === 404) return true
+      console.error('Error cancelling Zoom meeting:', error.response?.data || error.message)
+      return false
+    }
+  }
+
   static async getGoogleAccessToken (prisma, code) {
     try {
       const { tokens } = await oauth2Client.getToken(code)

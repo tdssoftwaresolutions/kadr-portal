@@ -22,9 +22,10 @@ Font
 /*---------------------------------------------------------------------
 import Css
 -----------------------------------------------------------------------*/
-/* dripicons / line-awesome / ionicons removed from global load (unused outside demos) */
+/* dripicons / line-awesome / ionicons removed from global load (unused outside demos).
+   Font Awesome comes from @fortawesome/fontawesome-free (v5) in assets/scss/style.scss;
+   the old v4.7 copy (./fontawesome.css) duplicated it — every fa-* icon in use exists in v5. */
 @import url("./remixicon.css");
-@import url("./fontawesome.css");
 
 /*---------------------------------------------------------------------
 General

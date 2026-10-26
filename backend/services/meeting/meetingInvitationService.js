@@ -315,7 +315,12 @@ async function createAndInviteCaseMeeting ({
         type: 'KADR',
         meeting_link: meetingLink,
         created_by: createdBy || null,
-        case_id: caseId
+        case_id: caseId,
+        // Zoom meeting id, namespaced so external_ref stays disambiguated from
+        // other event types that use it (see courtCaseCalendarSync.js). Lets
+        // a later cancellation (e.g. case closure) actually cancel the Zoom
+        // meeting instead of only removing the local record.
+        external_ref: scheduledMeeting?.meetingId ? `zoom:${scheduledMeeting.meetingId}` : null
       }
     })
 

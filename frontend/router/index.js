@@ -5,25 +5,28 @@ import StandardLayout from '../layouts/StandardLayout.vue'
 import Default from '../layouts/BlankLayout'
 import AuthLayout from '../layouts/AuthLayout.vue'
 
-/* Lazy-loaded views */
-const AdminUsersListView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminUsersListView.vue')
-const AdminEmailCorrectionsView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminEmailCorrectionsView.vue')
-const AdminCasesManagementView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminCasesManagementView.vue')
-const GoogleAccountManagement = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/GoogleAccountManagement.vue')
-const AdminBlogTaxonomyView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminBlogTaxonomyView.vue')
-const AdminManagementView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminManagementView.vue')
-const AdminSettingsView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminSettingsView.vue')
-const AdminNotificationsView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminNotificationsView.vue')
-const AdminWebsiteContentView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminWebsiteContentView.vue')
-const AdminCalendar = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminCalendar.vue')
-const AdminCorrespondenceInbox = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminCorrespondenceInbox.vue')
-const AdminRewardOrdersView = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminRewardOrdersView.vue')
-const AdminMediator360View = () => import(/* webpackChunkName: "admin" */ '../views/AdminControllers/AdminMediator360View.vue')
+/* Lazy-loaded views.
+   Admin and mediator pages each get their own chunk: grouping them under one
+   name meant the first click on any admin page downloaded every admin page
+   (~280 KB) before it could render. */
+const AdminUsersListView = () => import(/* webpackChunkName: "admin-users-list-view" */ '../views/AdminControllers/AdminUsersListView.vue')
+const AdminEmailCorrectionsView = () => import(/* webpackChunkName: "admin-email-corrections-view" */ '../views/AdminControllers/AdminEmailCorrectionsView.vue')
+const AdminCasesManagementView = () => import(/* webpackChunkName: "admin-cases-management-view" */ '../views/AdminControllers/AdminCasesManagementView.vue')
+const GoogleAccountManagement = () => import(/* webpackChunkName: "admin-google-account-management" */ '../views/AdminControllers/GoogleAccountManagement.vue')
+const AdminBlogTaxonomyView = () => import(/* webpackChunkName: "admin-blog-taxonomy-view" */ '../views/AdminControllers/AdminBlogTaxonomyView.vue')
+const AdminManagementView = () => import(/* webpackChunkName: "admin-management-view" */ '../views/AdminControllers/AdminManagementView.vue')
+const AdminSettingsView = () => import(/* webpackChunkName: "admin-settings-view" */ '../views/AdminControllers/AdminSettingsView.vue')
+const AdminNotificationsView = () => import(/* webpackChunkName: "admin-notifications-view" */ '../views/AdminControllers/AdminNotificationsView.vue')
+const AdminWebsiteContentView = () => import(/* webpackChunkName: "admin-website-content-view" */ '../views/AdminControllers/AdminWebsiteContentView.vue')
+const AdminCalendar = () => import(/* webpackChunkName: "admin-calendar" */ '../views/AdminControllers/AdminCalendar.vue')
+const AdminCorrespondenceInbox = () => import(/* webpackChunkName: "admin-correspondence-inbox" */ '../views/AdminControllers/AdminCorrespondenceInbox.vue')
+const AdminRewardOrdersView = () => import(/* webpackChunkName: "admin-reward-orders-view" */ '../views/AdminControllers/AdminRewardOrdersView.vue')
+const AdminMediator360View = () => import(/* webpackChunkName: "admin-mediator360-view" */ '../views/AdminControllers/AdminMediator360View.vue')
 
-const InvoicesView = () => import(/* webpackChunkName: "mediator" */ '../views/MediatorControllers/InvoicesView.vue')
-const MediatorRewardsView = () => import(/* webpackChunkName: "mediator" */ '../views/MediatorControllers/MediatorRewardsView.vue')
-const MediatorCalendar = () => import(/* webpackChunkName: "mediator" */ '../views/MediatorControllers/Calendar.vue')
-const MyVideoReels = () => import(/* webpackChunkName: "mediator" */ '../views/MediatorControllers/MyVideoReels.vue')
+const InvoicesView = () => import(/* webpackChunkName: "mediator-invoices-view" */ '../views/MediatorControllers/InvoicesView.vue')
+const MediatorRewardsView = () => import(/* webpackChunkName: "mediator-rewards-view" */ '../views/MediatorControllers/MediatorRewardsView.vue')
+const MediatorCalendar = () => import(/* webpackChunkName: "mediator-calendar" */ '../views/MediatorControllers/Calendar.vue')
+const MyVideoReels = () => import(/* webpackChunkName: "mediator-my-video-reels" */ '../views/MediatorControllers/MyVideoReels.vue')
 
 const Dashboard = () => import(/* webpackChunkName: "dashboard" */ '../views/Standard/Dashboard.vue')
 const PastMediationsView = () => import(/* webpackChunkName: "dashboard" */ '../views/Standard/PastMediationsView.vue')

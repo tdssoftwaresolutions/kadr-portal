@@ -1,7 +1,7 @@
 const cron = require('node-cron')
 const prisma = require('../../lib/prisma')
 const helper = require('../../utils/helper')
-const { CaseSubTypes } = require('../../utils/caseConstants')
+const { CaseSubTypes, CLOSED_CASE_STATUSES } = require('../../utils/caseConstants')
 const { withSchedulerLock } = require('./schedulerLockService')
 const { alertSchedulerFailure } = require('../alerting/criticalAlertService')
 
@@ -151,7 +151,9 @@ const buildDailyReminders = async () => {
     prisma.events.findMany({
       where: {
         type: 'KADR',
-        start_datetime: { gte: todayStart, lte: todayEnd }
+        start_datetime: { gte: todayStart, lte: todayEnd },
+        // Don't remind anyone about a meeting on a case that's already closed.
+        cases: { status: { notIn: CLOSED_CASE_STATUSES } }
       },
       select: {
         id: true,
@@ -173,7 +175,9 @@ const buildDailyReminders = async () => {
     prisma.events.findMany({
       where: {
         type: 'KADR',
-        end_datetime: { gte: yesterdayStart, lte: yesterdayEnd }
+        end_datetime: { gte: yesterdayStart, lte: yesterdayEnd },
+        // Don't chase feedback for a meeting on a case that's already closed.
+        cases: { status: { notIn: CLOSED_CASE_STATUSES } }
       },
       select: {
         id: true,
@@ -196,7 +200,9 @@ const buildDailyReminders = async () => {
     prisma.signature_tracking.findMany({
       where: {
         signed: false,
-        signature_expiry: { gte: new Date() }
+        signature_expiry: { gte: new Date() },
+        // Don't chase a signature on a case that's already closed.
+        cases: { status: { notIn: CLOSED_CASE_STATUSES } }
       },
       select: {
         user_id: true,

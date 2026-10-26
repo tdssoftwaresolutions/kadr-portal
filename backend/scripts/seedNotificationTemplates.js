@@ -90,6 +90,20 @@ const TEMPLATES = [
     variables: ['recipientName', 'caseId', 'title', 'meetingType', 'description', 'scheduleRange', 'googleCalendarLink', 'meetingLink']
   },
   {
+    template_key: 'meetingCancelledCaseClosed',
+    name: 'Meeting cancelled — case closed',
+    description: 'Sent to the mediator/parties when a scheduled meeting is cancelled because the case was closed before it happened',
+    subject: 'Meeting cancelled — Case {caseId}',
+    greeting: 'Hello {recipientName},',
+    body_html: `
+      <p>Case <strong>{caseId}</strong> has been closed, so the following scheduled meeting has been cancelled:</p>
+      <p><strong>{title}</strong><br />{scheduleRange}</p>
+      <p>No action is needed from you regarding this meeting.</p>
+    `,
+    body_text: 'Case {caseId} has been closed. The scheduled meeting "{title}" ({scheduleRange}) has been cancelled. No action is needed.',
+    variables: ['recipientName', 'caseId', 'title', 'scheduleRange']
+  },
+  {
     template_key: 'representativeInvite',
     name: 'Representative invite to join',
     description: 'Sent to a representative (a party\'s lawyer) who is not yet on the platform, inviting them to join and be tagged to a case',

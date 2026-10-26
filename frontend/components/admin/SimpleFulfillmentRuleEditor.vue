@@ -57,8 +57,7 @@
 </template>
 
 <script>
-import '../../plugins/tinymce'
-import Editor from '@tinymce/tinymce-vue'
+import Editor from '../../plugins/tinymceEditor'
 import { defaultSimpleRule, validateSimpleRule } from '../../utils/fulfillmentRuleSimple'
 
 export default {

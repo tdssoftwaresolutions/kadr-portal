@@ -1,6 +1,6 @@
 const cron = require('node-cron')
 const prisma = require('../../lib/prisma')
-const { CaseSubTypes } = require('../../utils/caseConstants')
+const { CaseSubTypes, CLOSED_CASE_STATUSES } = require('../../utils/caseConstants')
 const { withSchedulerLock } = require('./schedulerLockService')
 const { alertSchedulerFailure } = require('../alerting/criticalAlertService')
 const { sendNoticeEmailsToSecondParty } = require('../case/noticeEmailService')
@@ -38,7 +38,13 @@ async function getSentCount (caseId) {
 async function runNoticeReminderJob () {
   return withSchedulerLock('notice-reminder', async () => {
     const cases = await prisma.cases.findMany({
-      where: { sub_status: CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY },
+      where: {
+        sub_status: CaseSubTypes.NOTICE_SENT_TO_OPPOSITE_PARTY,
+        // Closing a case already nulls sub_status (see markCaseResolved), so
+        // this is normally self-excluding — kept explicit so it stays true
+        // even if a future closure path doesn't clear sub_status.
+        status: { notIn: CLOSED_CASE_STATUSES }
+      },
       select: {
         id: true,
         caseId: true,

@@ -397,8 +397,7 @@ import CaseWorkspaceLayout from '../../components/kadr/CaseWorkspaceLayout.vue'
 import KadrEmptyState from '../../components/kadr/KadrEmptyState.vue'
 import KadrDateTimePicker from '../../components/kadr/KadrDateTimePicker.vue'
 import SignaturePad from 'signature_pad'
-import '../../plugins/tinymce'
-import Editor from '@tinymce/tinymce-vue'
+import Editor from '../../plugins/tinymceEditor'
 import { CASES } from '../../constants/messages'
 
 import {

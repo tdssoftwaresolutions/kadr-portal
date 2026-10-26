@@ -37,12 +37,17 @@ import createStore from './store'
 import VueCookies from 'vue-cookies'
 import VueSignaturePad from 'vue-signature-pad'
 import datetimePlugin from './plugins/datetime'
-import i18nPlugin from './i18n'
+import i18nPlugin, { i18n, loadLocaleMessages } from './i18n'
 import KadrSpinner from './components/kadr/KadrSpinner.vue'
 
 async function startApp () {
   const { bootstrapMobileSession, initCapacitorPlugins } = await import('./plugins/capacitor')
-  await bootstrapMobileSession()
+  // Fetch a non-English stored locale before the first render (no-op for
+  // English) so Hindi users don't see an English flash on load.
+  await Promise.all([
+    bootstrapMobileSession(),
+    loadLocaleMessages(i18n.locale)
+  ])
 
   const store = createStore(router)
 

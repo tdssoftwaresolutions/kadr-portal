@@ -20,7 +20,14 @@ const CaseTypes = Object.freeze({
   PENDING: 'pending'
 })
 
+// The only statuses a case is ever actually closed to (see generalController.
+// markCaseResolved — the sole place a case is closed). FAILED/CANCELLED/
+// ESCALATED/ON_HOLD are not written anywhere in the codebase today and are
+// deliberately excluded — reminders should keep firing for them.
+const CLOSED_CASE_STATUSES = Object.freeze([CaseTypes.CLOSED_SUCCESS, CaseTypes.CLOSED_NO_SUCCESS])
+
 module.exports = {
   CaseSubTypes,
-  CaseTypes
+  CaseTypes,
+  CLOSED_CASE_STATUSES
 }

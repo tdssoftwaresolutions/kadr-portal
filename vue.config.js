@@ -87,8 +87,7 @@ module.exports = {
       // conventional `@` alias at it explicitly.
       '@': path.resolve(__dirname, 'frontend'),
       // Pure Vue 3 (migration complete; @vue/compat removed).
-      'vue$': 'vue/dist/vue.runtime.esm-bundler.js',
-      'jquery': 'jquery/src/jquery.js'
+      'vue$': 'vue/dist/vue.runtime.esm-bundler.js'
     }
 
     // ANALYZE=1 npm run build:analyze — opens an interactive treemap of what's
