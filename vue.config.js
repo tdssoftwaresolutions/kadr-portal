@@ -18,6 +18,19 @@ module.exports = {
     : (process.env.NODE_ENV === 'production'
         ? process.env.BASE_URL + '/admin/'
         : '/admin/'),
+  css: {
+    loaderOptions: {
+      sass: {
+        // In production sass-loader compiles with `style: 'compressed'`, which
+        // prefixes Bootstrap's output with a UTF-8 BOM. Once chunks are
+        // concatenated that BOM lands mid-file, the `/*! Bootstrap */` banner is
+        // parsed as part of the `:root` selector, and cssnano emits an invalid
+        // `:root,[data-bs-theme=light],/*!...*/{...}` rule — dropping every
+        // --bs-* variable (transparent modals, missing borders, etc.).
+        sassOptions: { charset: false }
+      }
+    }
+  },
   devServer: {
     // Keep Vue off Express's PORT (.env PORT=3000). 8081 avoids common 8080 clashes.
     port: 8081,

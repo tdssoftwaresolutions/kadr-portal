@@ -90,6 +90,7 @@ open "release/mac-arm64/Kadr Portal.app"
 
 ## Documentation
 
+- **[EC2 deployment runbook](docs/EC2_DEPLOYMENT.md)** — how kadr.live is deployed (pm2 + nginx), shipping code, moving to a new server
 - **[Get started](docs/GET_STARTED.md)** — local Docker, ngrok, AWS EC2, database, first admin
 - [Implementation status](docs/IMPLEMENTATION_STATUS.md)
 - [App review / roadmap](docs/APP_REVIEW.md)
