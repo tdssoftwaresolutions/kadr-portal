@@ -21,15 +21,15 @@
   }
 
   function goToLogin () {
-    let adminBase = localStorage.getItem('adminUrl') || '/admin'
-    if (adminBase.endsWith('/')) adminBase = adminBase.slice(0, -1)
-    window.location.href = adminBase + '/auth/sign-in'
+    let portalBase = localStorage.getItem('portalUrl') || localStorage.getItem('adminUrl') || '/portal'
+    if (portalBase.endsWith('/')) portalBase = portalBase.slice(0, -1)
+    window.location.href = portalBase + '/sign-in'
   }
 
   function goToSignUp () {
-    let adminBase = localStorage.getItem('adminUrl') || '/admin'
-    if (adminBase.endsWith('/')) adminBase = adminBase.slice(0, -1)
-    window.location.href = adminBase + '/auth/sign-up'
+    let portalBase = localStorage.getItem('portalUrl') || localStorage.getItem('adminUrl') || '/portal'
+    if (portalBase.endsWith('/')) portalBase = portalBase.slice(0, -1)
+    window.location.href = portalBase + '/sign-up'
   }
 
   function setLanguage (lang, ev) {

@@ -1,7 +1,25 @@
 <template>
-  <div class="signup-root">
+  <div class="signup-root" :class="{ 'signup-root--mediator-only': mediatorOnly }">
+    <header v-if="mediatorOnly" class="mediator-signup-brand">
+      <div class="mediator-signup-lockup">
+        <img :src="logo" alt="" class="mediator-signup-logo" />
+        <span class="mediator-signup-wordmark">
+          <strong>KADR</strong>
+          <span>Online Mediation Platform</span>
+        </span>
+      </div>
+      <nav class="mediator-signup-actions" aria-label="Page actions">
+        <a href="/terms_of_use_experts.html" target="_blank" rel="noopener noreferrer">
+          Mediator Terms &amp; Conditions
+        </a>
+        <button type="button" class="mediator-signup-language" @click="toggleLocale">
+          <i class="ri-translate-2" aria-hidden="true"></i>
+          {{ $i18n.locale === 'hi' ? 'English' : 'हिन्दी' }}
+        </button>
+      </nav>
+    </header>
     <!-- Step 0: role selection -->
-    <div v-if="step === 0" class="signup-step-zero">
+    <div v-if="step === 0 && !mediatorOnly" class="signup-step-zero">
       <header class="signup-intro">
         <h1 class="signup-title">{{ $t('auth.signup.createTitle') }}</h1>
         <p class="signup-lead">
@@ -54,7 +72,7 @@
         :states="states"
         @onBack="onClickBack"
       />
-      <Sign-up-mediator v-else :states="states" @onBack="onClickBack" />
+      <Sign-up-mediator v-else :states="states" :allow-back="!mediatorOnly" :show-login-link="!mediatorOnly" @onBack="onClickBack" />
     </div>
   </div>
 </template>
@@ -63,17 +81,25 @@
 import SignUpClient from '../ClientControllers/SignUpClient.vue'
 import SignUpMediator from '../MediatorControllers/SignUpMediator.vue'
 import { sofbox } from '../../config/pluginInit'
+import logo from '../../assets/images/logo.png'
 
 export default {
   name: 'SignUp',
+  props: {
+    mediatorOnly: {
+      type: Boolean,
+      default: false
+    }
+  },
   components: {
     SignUpClient, SignUpMediator
   },
   data () {
     return {
       states: [],
-      step: 0,
-      userType: '',
+      step: this.mediatorOnly ? 1 : 0,
+      userType: this.mediatorOnly ? 'mediator' : '',
+      logo,
       defaultUser: null
     }
   },
@@ -130,7 +156,12 @@ export default {
       }
     },
     onClickLogin () {
-      this.$router.push({ path: '/auth/sign-in' })
+      this.$router.push({ path: '/sign-in' })
+    },
+    toggleLocale () {
+      if (this.$i18n) {
+        this.$i18n.setLocale(this.$i18n.locale === 'en' ? 'hi' : 'en')
+      }
     },
     selectUserType (type) {
       this.userType = type
@@ -145,6 +176,104 @@ export default {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.signup-root--mediator-only :deep(.signup-form) {
+  max-height: none;
+}
+
+.signup-root--mediator-only :deep(.signup-form-body) {
+  flex: 0 0 auto;
+  overflow: visible;
+  margin-right: 0;
+}
+
+.mediator-signup-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: #e8f2f0;
+  border-bottom: 3px solid #1f625b;
+  margin: 0 0 1.5rem;
+}
+
+.mediator-signup-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.mediator-signup-logo {
+  display: block;
+  width: auto;
+  height: 2.75rem;
+  object-fit: contain;
+}
+
+.mediator-signup-wordmark {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  color: #173b39;
+  line-height: 1.2;
+}
+
+.mediator-signup-wordmark strong {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.mediator-signup-wordmark > span {
+  font-size: 0.76rem;
+}
+
+.mediator-signup-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.25rem;
+}
+
+.mediator-signup-actions a {
+  color: #174f4b;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.mediator-signup-language {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.75rem;
+  color: #174f4b;
+  background: #fff;
+  border: 1px solid #b8d0cc;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 575.98px) {
+  .mediator-signup-brand {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .mediator-signup-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .mediator-signup-actions a {
+    text-align: left;
+  }
 }
 
 .signup-step-zero {

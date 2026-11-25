@@ -31,7 +31,7 @@ No Node.js at runtime.
 
 Endpoints when running:
 - `http://localhost:8080/api/v1/**` — REST API
-- `http://localhost:8080/admin/` — Angular app
+- `http://localhost:8080/portal/` — Vue portal
 - `http://localhost:8080/` — public website (Thymeleaf, once migrated)
 - `http://localhost:8080/actuator/health` — health
 - `http://localhost:8080/swagger-ui.html` — OpenAPI UI

@@ -4,7 +4,7 @@
  * Mounted just before the website static handler so it sees every request to
  * the site, including successful page hits. We fire a `website_page_viewed`
  * event only for meaningful HTML page views — not for every JS/CSS/image asset,
- * and never for /api, /admin or /health — so the visitor count stays clean and
+ * and never for /api, /portal, legacy /admin or /health — so the visitor count stays clean and
  * the event volume stays low.
  *
  * Anonymous by design (no logged-in user on the public site); PostHog still
@@ -27,7 +27,7 @@ function isPageView (req) {
   if (req.method !== 'GET') return false
 
   const p = req.path || '/'
-  if (p.startsWith('/api') || p.startsWith('/admin') || p.startsWith('/health')) return false
+  if (p.startsWith('/api') || p.startsWith('/portal') || p.startsWith('/admin') || p.startsWith('/health')) return false
 
   const ext = path.extname(p).toLowerCase()
   // Root, extensionless (pretty URLs / directory index), and .html are pages.

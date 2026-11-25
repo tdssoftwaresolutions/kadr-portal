@@ -116,7 +116,7 @@ See **[GET_STARTED.md](./GET_STARTED.md)** for full instructions. Summary:
 
 1. Generate production secrets: `node scripts/generateSecrets.js` and copy into `.env`
 2. Copy `.env.docker.example` to `.env` and set production secrets (`SECRET_KEY`, `REFRESH_SECRET_KEY`, `SIGN_SECRET_KEY` — must be unique, 32+ chars)
-3. Set `BASE_URL` and `COOKIE_SECURE=1` for HTTPS deployments (the admin portal is served at `BASE_URL/admin`)
+3. Set `BASE_URL` and `COOKIE_SECURE=1` for HTTPS deployments (the portal is served at `BASE_URL/portal`)
 4. Add payment credentials from `.env.payment.example` if using live checkout
 5. Set `S3_BUCKET_NAME` and AWS keys for production uploads (ensure bucket is private)
 6. Set `WEBSITE_CONTACT_API_KEY` for the public contact form
@@ -125,7 +125,7 @@ See **[GET_STARTED.md](./GET_STARTED.md)** for full instructions. Summary:
 9. Run `docker compose up --build -d`
 10. Create master admin: `docker compose exec api node scripts/createMasterAdmin.js admin@domain.com 'Password123'`
 11. Verify: `GET /health/ready` returns `{ "status": "ready", "database": "ok" }`
-12. Open `/admin/` for the portal and `/` for the marketing site
+12. Open `/portal/` for the portal and `/` for the marketing site
 
 ## Deploy checklist (manual / legacy)
 

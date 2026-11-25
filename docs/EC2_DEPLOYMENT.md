@@ -33,7 +33,7 @@ rebuild the whole server from scratch on a new EC2 instance.
                               │  nginx  │  TLS (Let's Encrypt), gzip, HTTP/2
                               └────┬────┘
         ┌───────────────┬──────────┼──────────────────────┬──────────────┐
-        │ /admin/*      │ /        │ /blog/*              │ /api/*       │
+        │ /portal/*     │ /        │ /blog/*              │ /api/*       │
         ▼               ▼          ▼                      ▼              │
   dist/ (built     public/website  public/website,   Node/Express :3000  │
   Vue admin SPA,   (marketing      falls back to     (pm2: kadr-api)     │
@@ -48,7 +48,7 @@ rebuild the whole server from scratch on a new EC2 instance.
 |---|---|---|
 | App code | `/var/www/kadr-portal` (git clone) | Repo `github.com/tdssoftwaresolutions/kadr-portal` |
 | Backend | `node backend/server.js` under **pm2**, name `kadr-api`, port 3000 | Reads `.env` from the app folder |
-| Admin SPA | `/var/www/kadr-portal/dist/` | Built on the server with `npm run build`; served by nginx at `/admin/` |
+| Portal SPA | `/var/www/kadr-portal/dist/` | Built on the server with `npm run build`; served by nginx at `/portal/` |
 | Marketing site | `/var/www/kadr-portal/public/website/` | Static HTML served by nginx at `/` |
 | Database | MySQL 8 | Schema managed by Prisma (`db/prisma/schema.prisma`) — no migration files, uses `prisma db push` |
 | Schedulers | Inside the backend process | Reminders/notices (node-cron). Guarded by a DB lock, so a second instance won't double-send |
@@ -413,19 +413,23 @@ server {
     # default is 1 MB.
     client_max_body_size 5m;
 
-    # ---------- ADMIN SPA ----------
+    # ---------- PORTAL SPA ----------
     location = /admin {
-        return 301 /admin/;
+      return 301 /portal/;
+    }
+
+    location ^~ /admin/ {
+      rewrite ^/admin/(.*)$ /portal/$1 permanent;
     }
 
     # Never serve source maps publicly (they expose the original source).
-    location ~ ^/admin/.*\.map$ {
+    location ~ ^/portal/.*\.map$ {
         return 404;
     }
 
-    location /admin/ {
+    location /portal/ {
         alias /var/www/kadr-portal/dist/;
-        try_files $uri $uri/ /admin/index.html;
+      try_files $uri $uri/ /portal/index.html;
         # Hashed js/css/fonts: cache 1 year. index.html & the rest: no-cache.
         add_header Cache-Control $kadr_admin_cache_control;
     }
@@ -560,12 +564,12 @@ curl -s https://kadr.live/health/ready        # {"status":"ready","database":"ok
 pm2 status                                    # kadr-api: online, low restart count
 pm2 logs kadr-api --lines 50                  # no startup errors
 
-# Admin is the production build (hashed filename, not plain index.js)
-curl -s https://kadr.live/admin/ | grep -oE 'js/index\.[0-9a-f]+\.js'
+# Portal is the production build (hashed filename, not plain index.js)
+curl -s https://kadr.live/portal/ | grep -oE 'js/index\.[0-9a-f]+\.js'
 
 # gzip + long cache on assets
 curl -sI -H 'Accept-Encoding: gzip' \
-  "https://kadr.live/admin/$(curl -s https://kadr.live/admin/ | grep -oE 'js/index\.[0-9a-f]+\.js' | head -1)" \
+  "https://kadr.live/portal/$(curl -s https://kadr.live/portal/ | grep -oE 'js/index\.[0-9a-f]+\.js' | head -1)" \
   | grep -iE 'content-encoding|cache-control'
 # → Content-Encoding: gzip / Cache-Control: public, max-age=31536000, immutable
 

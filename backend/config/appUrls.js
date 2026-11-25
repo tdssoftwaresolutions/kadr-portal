@@ -6,11 +6,11 @@ function getBaseUrl (fallback = 'http://localhost:3000') {
   return String(process.env.BASE_URL || fallback).replace(/\/$/, '')
 }
 
-// The desktop build serves the portal at its own root, not under /admin.
+// The desktop build serves the portal at its own root, not under /portal.
 function getPortalUrl (fallback) {
   const base = getBaseUrl(fallback)
   if (!base) return ''
-  return isDesktopMode() ? base : `${base}/admin`
+  return isDesktopMode() ? base : `${base}/portal`
 }
 
 module.exports = { isDesktopMode, getBaseUrl, getPortalUrl }

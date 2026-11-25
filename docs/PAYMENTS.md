@@ -81,7 +81,7 @@ Creates `payment_orders` and `scheduler_locks` tables.
 3. `npm run serve`
 4. Client case → Pay notice/mediation fee, or Mediator profile → Upgrade to Pro
 5. Complete payment on gateway sandbox
-6. Return URL: `/admin/app/payment/return?order_id=KADR-...`
+6. Return URL: `/portal/payment/return?order_id=KADR-...`
 
 ## Legacy fake payments
 

@@ -34,7 +34,7 @@ registerTableTrigger('user', async ({ previous, current }) => {
     category: 'case_updates',
     title: 'Your account is approved',
     body: 'Welcome to Kadr. You can now sign in and access the portal.',
-    data: { url: '/admin/' }
+    data: { url: '/portal/' }
   })
   return null
 })
@@ -63,7 +63,7 @@ registerTableTrigger('cases', async ({ previous, current }) => {
     category: 'case_updates',
     title: `Update on case ${caseLabel}`,
     body: 'There is a new update on your case. Open the portal to view details.',
-    data: { url: '/admin/cases', caseId: current?.caseId }
+    data: { url: '/portal/cases', caseId: current?.caseId }
   })
   return null
 })
@@ -93,7 +93,7 @@ registerTableTrigger('website_contact_messages', async ({ current, data }) => {
         category: 'case_updates',
         title: 'New reply on your support ticket',
         body: thread.title ? `Re: ${thread.title}` : 'You have a new reply from support.',
-        data: { url: '/admin/support', threadId: thread.id }
+        data: { url: '/portal/support', threadId: thread.id }
       })
     }
     return null
@@ -109,7 +109,7 @@ registerTableTrigger('website_contact_messages', async ({ current, data }) => {
     category: 'admin_support',
     title: 'New support ticket activity',
     body: thread.title ? `New message: ${thread.title}` : 'A user posted a new support message.',
-    data: { url: '/admin/website-contact/inbox', threadId: thread.id }
+    data: { url: '/portal/website-contact/inbox', threadId: thread.id }
   })
   return null
 })
@@ -128,7 +128,7 @@ registerTableTrigger('website_contact_threads', async ({ current, data }) => {
     category: 'admin_support',
     title: 'New support ticket',
     body: current?.title ? `Subject: ${current.title}` : 'A new support ticket was opened.',
-    data: { url: '/admin/website-contact/inbox', threadId: current?.id }
+    data: { url: '/portal/website-contact/inbox', threadId: current?.id }
   })
   return null
 })

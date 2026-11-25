@@ -125,7 +125,7 @@ function createApp (options = {}) {
   const websitePath = resolveWebsitePath(options.websitePath)
 
   if (serveAdmin) {
-    app.use('/admin', express.static(distPath, {
+    app.use('/portal', express.static(distPath, {
       index: false,
       // Webpack build output is content-hashed (chunk-vendors.<hash>.js etc.),
       // so it's safe to cache those forever — except index.html itself, which
@@ -139,12 +139,15 @@ function createApp (options = {}) {
         }
       }
     }))
-    app.get(/^\/admin(\/.*)?$/, (req, res, next) => {
+    app.get(/^\/portal(\/.*)?$/, (req, res, next) => {
       if (req.method !== 'GET') return next()
       res.setHeader('Cache-Control', 'no-cache')
       res.sendFile(path.join(distPath, 'index.html'), (err) => {
         if (err) next(err)
       })
+    })
+    app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
+      res.redirect(301, req.originalUrl.replace(/^\/admin(?=\/|$)/, '/portal'))
     })
   }
 
@@ -167,7 +170,7 @@ function createApp (options = {}) {
 
   app.use((req, res, next) => {
     if (!req.path.startsWith('/api') && req.method === 'GET') {
-      if (serveAdmin && req.path.startsWith('/admin')) {
+      if (serveAdmin && req.path.startsWith('/portal')) {
         return res.sendFile(path.join(distPath, 'index.html'))
       }
       if (serveWebsite) {

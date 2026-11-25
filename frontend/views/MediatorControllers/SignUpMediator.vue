@@ -34,7 +34,7 @@
         <div class="field-item">
           <label for="email" class="field-label">{{ $t('auth.signup.emailAddress') }} <span class="req">*</span></label>
           <div class="otp-inline-row">
-            <input type="email" class="app-input" id="email" v-model="formData.email" placeholder="you@example.com" />
+            <EmailDomainInput id="email" v-model="formData.email" placeholder="you@example.com" />
             <button
               v-if="!emailOtpVerified"
               type="button"
@@ -238,12 +238,12 @@
 
     <div class="signup-form-footer">
       <div class="footer-left">
-        <button type="button" class="btn-ghost" @click="prevStep(step)">
+        <button v-if="allowBack || step > 1" type="button" class="btn-ghost" @click="prevStep(step)">
           <i class="ri-arrow-left-line" aria-hidden="true"></i> {{ step === 1 ? $t('auth.signup.back') : $t('auth.signup.previous') }}
         </button>
       </div>
       <div class="footer-right">
-        <span class="footer-login">
+        <span v-if="showLoginLink" class="footer-login">
           {{ $t('auth.signup.alreadyHaveAccount') }} <a href="#" @click.prevent="onClickLogin">{{ $t('auth.signup.logIn') }}</a>
         </span>
         <button v-if="step === 1" type="button" class="btn-primary-cta" @click="nextStep(1)">
@@ -262,6 +262,7 @@
 <script>
 import Alert from '../../components/sofbox/alert/Alert.vue'
 import CouponField from '../../components/shared/CouponField.vue'
+import EmailDomainInput from '../../components/shared/EmailDomainInput.vue'
 import { uploadSignupFile } from '../../utils/directUpload'
 import { notifyRequestStart, notifyRequestEnd } from '../../utils/loadingBridge'
 const allowedTypes = [
@@ -277,10 +278,19 @@ export default {
   name: 'SignUpClient',
   components: {
     Alert,
-    CouponField
+    CouponField,
+    EmailDomainInput
   },
   props: {
-    states: []
+    states: [],
+    allowBack: {
+      type: Boolean,
+      default: true
+    },
+    showLoginLink: {
+      type: Boolean,
+      default: true
+    }
   },
   data () {
     return {
@@ -429,7 +439,7 @@ export default {
       }
     },
     onClickLogin () {
-      this.$router.push({ path: '/auth/sign-in' })
+      this.$router.push({ path: '/sign-in' })
     },
     showAlertWithTimeout (message, type, timeout) {
       this.alert = {

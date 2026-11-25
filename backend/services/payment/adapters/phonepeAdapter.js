@@ -19,7 +19,7 @@ module.exports = {
     }
 
     const amountPaise = Math.round(Number(order.amount) * 100)
-    const redirectUrl = `${getPortalBaseUrl()}/app/payment/return?gateway=phonepe&order_id=${encodeURIComponent(order.order_id)}`
+    const redirectUrl = `${getPortalBaseUrl()}/payment/return?gateway=phonepe&order_id=${encodeURIComponent(order.order_id)}`
     const payload = {
       merchantId: cfg.merchantId,
       merchantTransactionId: order.order_id,

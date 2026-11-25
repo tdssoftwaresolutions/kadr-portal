@@ -41,12 +41,12 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://kadr.live/admin/auth/sign-in</loc>
+    <loc>https://kadr.live/portal/sign-in</loc>
     <changefreq>yearly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://kadr.live/admin/auth/sign-up</loc>
+    <loc>https://kadr.live/portal/sign-up</loc>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
   </url>

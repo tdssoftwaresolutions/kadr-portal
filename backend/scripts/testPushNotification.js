@@ -96,7 +96,7 @@ async function main () {
   const body = typeof args.body === 'string'
     ? args.body
     : `Kadr web push test at ${new Date().toLocaleString()}`
-  const url = typeof args.url === 'string' ? args.url : '/admin'
+  const url = typeof args.url === 'string' ? args.url : '/portal'
   const payload = JSON.stringify({ title, body, data: { url } })
 
   let sent = 0

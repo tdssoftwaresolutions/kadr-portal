@@ -88,7 +88,7 @@ module.exports = {
           category: 'case_assignment',
           title: 'New case assigned',
           body: `You have been assigned to case ${caseDetails.caseId}.`,
-          data: { url: '/admin/cases', caseId: caseDetails.caseId }
+          data: { url: '/portal/cases', caseId: caseDetails.caseId }
         }).catch((err) => console.error('[assignMediator] mediator push failed', err.message))
       ])
 

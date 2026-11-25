@@ -63,7 +63,7 @@ module.exports = {
   name: 'cashfree',
 
   async createCheckout ({ order, user }) {
-    const returnUrl = `${getPortalBaseUrl()}/app/payment/return?gateway=cashfree&order_id=${encodeURIComponent(order.order_id)}`
+    const returnUrl = `${getPortalBaseUrl()}/payment/return?gateway=cashfree&order_id=${encodeURIComponent(order.order_id)}`
     const payload = {
       order_id: order.order_id,
       order_amount: Number(order.amount),

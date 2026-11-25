@@ -131,23 +131,23 @@ module.exports = {
   cashfreeReturn: async function (req, res, next) {
     // Cashfree redirects the customer to the return_url we supplied when
     // creating the order. Because we set return_url to the frontend
-    // (/app/payment/return?...), this server-side handler is only reachable if
+    // (/payment/return?...), this server-side handler is only reachable if
     // something routes the customer here instead of to the SPA. We treat it as
     // a simple passthrough — verify the order and redirect to the SPA result
     // page so the user sees a proper confirmation screen.
     try {
       const orderId = req.query.order_id || req.query.orderId
       if (!orderId) {
-        return res.redirect(`${getPortalBaseUrl()}/app/payment/return?status=failed&gateway=cashfree`)
+        return res.redirect(`${getPortalBaseUrl()}/payment/return?status=failed&gateway=cashfree`)
       }
       try {
         await verifyAndCompleteOrder(orderId, {})
         return res.redirect(
-          `${getPortalBaseUrl()}/app/payment/return?status=success&order_id=${encodeURIComponent(orderId)}&gateway=cashfree`
+          `${getPortalBaseUrl()}/payment/return?status=success&order_id=${encodeURIComponent(orderId)}&gateway=cashfree`
         )
       } catch (err) {
         return res.redirect(
-          `${getPortalBaseUrl()}/app/payment/return?status=failed&order_id=${encodeURIComponent(orderId)}&gateway=cashfree`
+          `${getPortalBaseUrl()}/payment/return?status=failed&order_id=${encodeURIComponent(orderId)}&gateway=cashfree`
         )
       }
     } catch (error) {
@@ -160,13 +160,13 @@ module.exports = {
       const payload = { ...req.body, ...req.query }
       const orderId = payload.txnid
       if (!orderId) {
-        return res.redirect(`${getPortalBaseUrl()}/app/payment/return?status=failed`)
+        return res.redirect(`${getPortalBaseUrl()}/payment/return?status=failed`)
       }
       try {
         await verifyAndCompleteOrder(orderId, payload)
-        return res.redirect(`${getPortalBaseUrl()}/app/payment/return?status=success&order_id=${encodeURIComponent(orderId)}&gateway=payu`)
+        return res.redirect(`${getPortalBaseUrl()}/payment/return?status=success&order_id=${encodeURIComponent(orderId)}&gateway=payu`)
       } catch (err) {
-        return res.redirect(`${getPortalBaseUrl()}/app/payment/return?status=failed&order_id=${encodeURIComponent(orderId)}&gateway=payu`)
+        return res.redirect(`${getPortalBaseUrl()}/payment/return?status=failed&order_id=${encodeURIComponent(orderId)}&gateway=payu`)
       }
     } catch (error) {
       next(error)

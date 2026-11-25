@@ -16,8 +16,8 @@ module.exports = {
   publicPath: isCapacitorBuild
     ? './'
     : (process.env.NODE_ENV === 'production'
-        ? process.env.BASE_URL + '/admin/'
-        : '/admin/'),
+        ? process.env.BASE_URL + '/portal/'
+        : '/portal/'),
   css: {
     loaderOptions: {
       sass: {

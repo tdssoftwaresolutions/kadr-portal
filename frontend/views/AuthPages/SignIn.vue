@@ -276,10 +276,10 @@ export default {
       }
     },
     onClickSignUp () {
-      this.$router.push({ path: '/auth/sign-up' }).catch(() => {})
+      this.$router.push({ path: '/sign-up' }).catch(() => {})
     },
     onClickForgotPassword () {
-      this.$router.push({ path: '/auth/password-reset' }).catch(() => {})
+      this.$router.push({ path: '/password-reset' }).catch(() => {})
     },
     loadGoogleIdentityServices () {
       if (window.google && window.google.accounts) {

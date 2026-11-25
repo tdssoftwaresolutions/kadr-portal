@@ -512,7 +512,7 @@ module.exports = {
         data: shouldSendWelcomeEmail
           ? {
               password: generatedPassword,
-              loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
+              loginUrl: `${process.env.BASE_URL}/portal/sign-in`
             }
           : {}
       },
@@ -763,7 +763,7 @@ module.exports = {
         recipientName: party1,
         caseId: kadrCaseId,
         caseTitle: `${party1} vs ${party2}`,
-        signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
+        signUrl: `${process.env.BASE_URL}/portal/signature?requestId=${newSignatureRecord.id}`,
         partyRole: 'first party'
       }, [], { caseId: newCaseRecord.id })
 
@@ -1150,7 +1150,7 @@ module.exports = {
         recipientName: admin.name,
         email: admin.email,
         password: generatedPassword,
-        loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`,
+        loginUrl: `${process.env.BASE_URL}/portal/sign-in`,
         createdBy: requester.name || 'KADR Team'
       })
       success(res, { admin }, 'Admin user created successfully')
@@ -1447,7 +1447,7 @@ module.exports = {
       const firstPartyAgreementVars = {
         recipientName: caseRecord.user_cases_first_partyTouser.name,
         caseId: caseRecord.caseId,
-        signUrl: `${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}`,
+        signUrl: `${process.env.BASE_URL}/portal/agreement-signature?requestId=${newSignatureRecord.id}`,
         partyRole: 'first party'
       }
       await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_first_partyTouser.email, firstPartyAgreementVars, [], { caseId })

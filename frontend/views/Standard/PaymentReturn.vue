@@ -73,7 +73,7 @@ export default {
   },
   computed: {
     redirectTo () {
-      if (this.purpose === 'MEDIATOR_PRO') return '/user/profile-edit'
+      if (this.purpose === 'MEDIATOR_PRO') return '/profile-edit'
       return '/'
     }
   },

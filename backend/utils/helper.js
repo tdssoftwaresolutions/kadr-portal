@@ -64,7 +64,7 @@ class Helper {
 
   static generateUniqueSignUpLink (userId) {
     const token = jwt.sign({ id: userId }, process.env.SECRET_KEY, { expiresIn: '30d' })
-    return `${getPortalUrl()}/auth/sign-up?id=${token}`
+    return `${getPortalUrl()}/sign-up?id=${token}`
   }
 
   static async getMediatorCasesCount (prisma, mediatorId, statuses = Helper.getActiveCaseStatuses()) {
@@ -1611,7 +1611,7 @@ class Helper {
       qs.set('lead', leadId)
     }
     const q = qs.toString()
-    return `${origin}/app/messages${q ? `?${q}` : ''}`
+    return `${origin}/messages${q ? `?${q}` : ''}`
   }
 
   /** Logged-in user general support screen (mediator/client). */
@@ -1621,7 +1621,7 @@ class Helper {
     const qs = new URLSearchParams()
     if (threadId) qs.set('thread', String(threadId))
     const q = qs.toString()
-    return `${origin}/app/support${q ? `?${q}` : ''}`
+    return `${origin}/support${q ? `?${q}` : ''}`
   }
 
   static async sendTemplatedEmail (templateName, to, variables = {}, attachments = [], { caseId, cc } = {}) {

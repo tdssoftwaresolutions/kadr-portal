@@ -34,7 +34,7 @@ self.addEventListener('push', (event) => {
     tag: data.tag || undefined,
     renotify: Boolean(data.tag),
     data: {
-      url: data.url || data.link || '/admin/',
+      url: data.url || data.link || '/portal/',
       ...data
     }
   }
@@ -44,7 +44,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const targetUrl = (event.notification.data && event.notification.data.url) || '/admin/'
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/portal/'
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

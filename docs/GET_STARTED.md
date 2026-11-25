@@ -76,9 +76,9 @@ Open in browser:
 
 | URL | Purpose |
 |-----|---------|
-| http://localhost:3000/admin/ | Admin / client / mediator portal |
+| http://localhost:3000/portal/ | Admin / client / mediator portal |
 | http://localhost:3000/ | Marketing website |
-| http://localhost:3000/admin/auth/sign-in | Sign in |
+| http://localhost:3000/portal/sign-in | Sign in |
 
 ### Step 4 — Create the first admin user
 
@@ -97,7 +97,7 @@ ADMIN_NAME=Master Admin
 npm run docker:create-admin
 ```
 
-Sign in at http://localhost:3000/admin/auth/sign-in with that email and password.
+Sign in at http://localhost:3000/portal/sign-in with that email and password.
 
 ### Step 5 — Stop / restart
 
@@ -347,7 +347,7 @@ curl https://yourdomain.com/health/ready
 
 Open:
 
-- https://yourdomain.com/admin/
+- https://yourdomain.com/portal/
 - https://yourdomain.com/
 
 ### EC2 maintenance commands
@@ -399,7 +399,7 @@ Copy payment keys from `.env.payment.example` into `.env`.
 
 | Variable | Description |
 |----------|-------------|
-| `BASE_URL` | Public API/site root (used in emails, webhooks, builds). The admin portal is served at `BASE_URL/admin`. |
+| `BASE_URL` | Public API/site root (used in emails, webhooks, builds). The portal is served at `BASE_URL/portal`. |
 
 ### Docker-specific
 

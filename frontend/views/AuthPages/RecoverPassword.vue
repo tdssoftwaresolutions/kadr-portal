@@ -264,7 +264,7 @@ export default {
       }
     },
     onClickBack () {
-      this.$router.push({ path: '/auth/sign-in' })
+      this.$router.push({ path: '/sign-in' })
     }
   }
 }

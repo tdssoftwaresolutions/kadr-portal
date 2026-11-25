@@ -4,9 +4,9 @@
     <section class="sign-in-page bg-white">
       <div class="container-fluid p-0">
         <div class="row g-0">
-          <div class="col-12 col-md-6 auth-form-col">
+          <div :class="[isMediatorSignup ? 'col-12' : 'col-12 col-md-6', 'auth-form-col', { 'auth-form-col--wide': isMediatorSignup }]">
             <div class="sign-in-from auth-form-inner">
-              <div class="auth-language-switcher">
+              <div v-if="!isMediatorSignup" class="auth-language-switcher">
                 <button
                   type="button"
                   class="btn btn-sm btn-outline-secondary"
@@ -19,7 +19,7 @@
               <router-view></router-view>
             </div>
           </div>
-          <div class="col-12 col-md-6 text-center" style="height: 100vh;">
+          <div v-if="!isMediatorSignup" class="col-12 col-md-6 text-center" style="height: 100vh;">
             <div class="sign-in-detail text-white" :style="'background: url('+bgImageURL+') no-repeat 0 0; background-size: cover;'">
               <a class="sign-in-logo mb-5" href="#" style="color:white;font-size:2rem;"><img style="margin-right:0.4rem;" :src="logo" class="img-fluid" alt="logo">KADR.live</a>
               <div class="auth-carousel" @mouseenter="stopCarousel" @mouseleave="startCarousel">
@@ -60,6 +60,11 @@ export default {
   name: 'AuthLayout',
   components: {
     Loader
+  },
+  computed: {
+    isMediatorSignup () {
+      return this.$route.name === 'auth1.mediator-sign-up'
+    }
   },
   mounted () {
     sofbox.index()
@@ -183,6 +188,24 @@ export default {
   justify-content: center;
   padding-top: 3rem;
   padding-bottom: 1.5rem;
+}
+
+.auth-form-col--wide {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+  align-items: flex-start;
+}
+
+.auth-form-col--wide .auth-form-inner {
+  width: 100%;
+  max-width: 1440px;
+  min-height: 100vh;
+  max-height: none;
+  margin: 0 auto;
+  overflow: visible;
+  justify-content: flex-start;
+  padding: 2rem clamp(1.25rem, 5vw, 5rem);
 }
 
 /* Tame the very large default side padding so wider two-column forms fit

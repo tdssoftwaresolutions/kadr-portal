@@ -190,39 +190,17 @@ const appChildRoute = (prop) => [
   }
 ]
 
-const blogChildRoutes = (prop) => [
-  {
-    path: 'list',
-    name: prop + '.list',
-    component: MyBlogs
-  }
-]
+const authRoute = (path, name, component, props) => {
+  const childRoute = { path: '', name, component }
+  if (props) childRoute.props = props
+  return { path, component: AuthLayout, children: [childRoute] }
+}
 
-const reelsChildRoutes = (prop) => [
-  {
-    path: 'list',
-    name: prop + '.list',
-    component: MyVideoReels
-  }
-]
-
-const authChildRoutes = (prop) => [
-  {
-    path: 'sign-in',
-    name: prop + '.sign-in',
-    component: SignIn
-  },
-  {
-    path: 'sign-up',
-    name: prop + '.sign-up',
-    component: SignUp
-  },
-  {
-    path: 'password-reset',
-    name: prop + '.password-reset',
-    component: RecoverPassword
-  }
-]
+const blankRoute = (path, name, component, props) => ({
+  path,
+  component: Default,
+  children: [{ path: '', name, component, props }]
+})
 
 const userChildRoute = (prop) => [
   {
@@ -238,38 +216,19 @@ const userChildRoute = (prop) => [
   }
 ]
 
-const defaultlayout = (prop) => [
-  {
-    path: 'blank-page',
-    name: prop + '.blank-page',
-    component: BlankPage
-  }
-]
-
-const pagesChildRoutes = (prop) => [
-  {
-    path: 'error/:code',
-    name: prop + '.error',
-    component: ErrorPage
-  },
-  {
-    path: 'coming-soon',
-    name: prop + '.coming-soon',
-    component: ComingSoon
-  },
-  {
-    path: 'maintenance',
-    name: prop + '.maintenance',
-    component: Maintenance
-  }
-]
-
 const routes = [
   {
     path: '/',
-    name: 'dashboard',
+    name: 'portal',
     component: StandardLayout,
-    children: childRoutes('dashboard')
+    children: [
+      ...childRoutes('dashboard'),
+      ...appChildRoute('app'),
+      ...userChildRoute('user'),
+      { path: 'blog', name: 'blog.list', component: MyBlogs },
+      { path: 'reels', name: 'reels.list', component: MyVideoReels },
+      { path: 'blank-page', name: 'extra-pages.blank-page', component: BlankPage }
+    ]
   },
   {
     path: '/signature',
@@ -281,51 +240,24 @@ const routes = [
     name: 'agreement-signature',
     component: AgreementSignature
   },
-  {
-    path: '/auth',
-    name: 'auth1',
-    component: AuthLayout,
-    children: authChildRoutes('auth1')
-  },
-  {
-    path: '/blog',
-    name: 'blog',
-    component: StandardLayout,
-    children: blogChildRoutes('blog')
-  },
-  {
-    path: '/reels',
-    name: 'reels',
-    component: StandardLayout,
-    children: reelsChildRoutes('reels')
-  },
-  {
-    path: '/pages',
-    name: 'pages',
-    component: Default,
-    children: pagesChildRoutes('default')
-  },
-  {
-    path: '/extra-pages',
-    name: 'extra-pages',
-    component: StandardLayout,
-    children: defaultlayout('extra-pages')
-  },
-  {
-    path: '/app',
-    name: 'app',
-    component: StandardLayout,
-    children: appChildRoute('app')
-  },
-  {
-    path: '/user',
-    name: 'user',
-    component: StandardLayout,
-    children: userChildRoute('user')
-  }
+  authRoute('/sign-in', 'auth1.sign-in', SignIn),
+  authRoute('/sign-up', 'auth1.sign-up', SignUp),
+  authRoute('/mediator-sign-up', 'auth1.mediator-sign-up', SignUp, { mediatorOnly: true }),
+  authRoute('/password-reset', 'auth1.password-reset', RecoverPassword),
+  blankRoute('/error/:code', 'default.error', ErrorPage, true),
+  blankRoute('/coming-soon', 'default.coming-soon', ComingSoon),
+  blankRoute('/maintenance', 'default.maintenance', Maintenance),
+  { path: '/auth/:pathMatch(.*)*', redirect: to => ({ path: to.path.replace(/^\/auth/, '') || '/sign-in', query: to.query, hash: to.hash }) },
+  { path: '/app/:pathMatch(.*)*', redirect: to => ({ path: to.path.replace(/^\/app/, '') || '/', query: to.query, hash: to.hash }) },
+  { path: '/user/:pathMatch(.*)*', redirect: to => ({ path: to.path.replace(/^\/user/, '') || '/', query: to.query, hash: to.hash }) },
+  { path: '/pages/:pathMatch(.*)*', redirect: to => ({ path: to.path.replace(/^\/pages/, '') || '/', query: to.query, hash: to.hash }) },
+  { path: '/extra-pages/:pathMatch(.*)*', redirect: to => ({ path: to.path.replace(/^\/extra-pages/, '') || '/', query: to.query, hash: to.hash }) },
+  { path: '/blog/list', redirect: { name: 'blog.list' } },
+  { path: '/reels/list', redirect: { name: 'reels.list' } },
+  { path: '/:pathMatch(.*)*', name: 'not-found', component: ErrorPage, props: { code: 404 } }
 ]
 
-const routerBase = process.env.VUE_APP_CAPACITOR === '1' ? './' : '/admin/'
+const routerBase = process.env.VUE_APP_CAPACITOR === '1' ? './' : '/portal/'
 
 const router = createRouter({
   history: createWebHistory(routerBase),

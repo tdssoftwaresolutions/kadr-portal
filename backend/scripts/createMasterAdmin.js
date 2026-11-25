@@ -61,7 +61,7 @@ async function main () {
   console.log(`  Email: ${admin.email}`)
   console.log(`  Name:  ${admin.name}`)
   console.log(`  ID:    ${admin.id}`)
-  console.log(`Sign in at ${getPortalUrl()}/auth/sign-in`)
+  console.log(`Sign in at ${getPortalUrl()}/sign-in`)
 }
 
 main()

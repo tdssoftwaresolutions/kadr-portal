@@ -101,7 +101,7 @@ module.exports = {
           recipientName: name,
           email,
           password: generatedPassword,
-          loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
+          loginUrl: `${process.env.BASE_URL}/portal/sign-in`
         })
         analytics.trackRegistration({
           req,

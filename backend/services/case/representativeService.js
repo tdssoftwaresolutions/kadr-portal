@@ -150,7 +150,7 @@ async function notifyRepresentativeTagged ({ representative, isNewToPlatform, ca
       category: category || 'your case',
       representedPartyName: representedPartyName || 'your client',
       partyLabel,
-      loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
+      loginUrl: `${process.env.BASE_URL}/portal/sign-in`
     })
   } catch (err) {
     console.error('[representative] tag notification failed', err.message)
@@ -231,7 +231,7 @@ async function activateRepresentativeById (representativeUserId) {
       userId: rep.id,
       data: {
         password: generatedPassword,
-        loginUrl: `${process.env.BASE_URL}/admin/auth/sign-in`
+        loginUrl: `${process.env.BASE_URL}/portal/sign-in`
       }
     },
     () => prisma.user.update({

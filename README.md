@@ -17,7 +17,7 @@ When the containers are healthy:
 
 | URL | Description |
 |-----|-------------|
-| http://localhost:3000/admin/ | Admin / client / mediator portal |
+| http://localhost:3000/portal/ | Admin / client / mediator portal |
 | http://localhost:3000/ | Marketing website |
 | http://localhost:3000/health/ready | Readiness check (includes DB) |
 

@@ -100,7 +100,7 @@ module.exports = {
           recipientName: caseRecord.user_cases_second_partyTouser.name,
           caseId: caseRecord.caseId,
           caseTitle: `${caseRecord.user_cases_first_partyTouser.name} vs ${caseRecord.user_cases_second_partyTouser.name}`,
-          signUrl: `${process.env.BASE_URL}/admin/signature?requestId=${newSignatureRecord.id}`,
+          signUrl: `${process.env.BASE_URL}/portal/signature?requestId=${newSignatureRecord.id}`,
           partyRole: 'second party'
         }
         await helper.sendTemplatedEmail('signatureVerificationRequest', caseRecord.user_cases_second_partyTouser.email, secondPartySignVars, [], { caseId: caseRecord.id })
@@ -311,7 +311,7 @@ module.exports = {
         const secondPartyAgreementVars = {
           recipientName: caseRecord.user_cases_second_partyTouser.name,
           caseId: caseRecord.caseId,
-          signUrl: `${process.env.BASE_URL}/admin/agreement-signature?requestId=${newSignatureRecord.id}`,
+          signUrl: `${process.env.BASE_URL}/portal/agreement-signature?requestId=${newSignatureRecord.id}`,
           partyRole: 'second party'
         }
         await helper.sendTemplatedEmail('finalAgreementSignatureRequest', caseRecord.user_cases_second_partyTouser.email, secondPartyAgreementVars, [], { caseId: caseRecord.id })

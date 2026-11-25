@@ -6,8 +6,8 @@ import {
 } from '../store/endpoints'
 
 // Path is relative to the site root. The build serves public/service-worker.js
-// from the deploy root; publicPath is '/admin/' so the SW lives under it.
-const SERVICE_WORKER_URL = `${process.env.BASE_URL || '/admin/'}service-worker.js`
+// from the deploy root; publicPath is '/portal/' so the SW lives under it.
+const SERVICE_WORKER_URL = `${process.env.BASE_URL || '/portal/'}service-worker.js`
 
 /** True when the browser supports the Web Push stack (excludes native app shells). */
 export function isWebPushSupported () {
@@ -37,7 +37,7 @@ function urlBase64ToUint8Array (base64String) {
 }
 
 async function registerServiceWorker () {
-  const existing = await navigator.serviceWorker.getRegistration(process.env.BASE_URL || '/admin/')
+  const existing = await navigator.serviceWorker.getRegistration(process.env.BASE_URL || '/portal/')
   if (existing) return existing
   return navigator.serviceWorker.register(SERVICE_WORKER_URL)
 }

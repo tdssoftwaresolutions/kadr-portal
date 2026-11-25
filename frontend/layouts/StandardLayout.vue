@@ -169,7 +169,7 @@ export default {
     const { hasStoredSession } = await import('../utils/tokenStorage')
     const sessionOk = await hasStoredSession()
     if (!sessionOk) {
-      this.$router.push({ path: '/auth/sign-in' }).catch(() => {})
+      this.$router.push({ path: '/sign-in' }).catch(() => {})
     } else {
       // Prefetch dashboard content in parallel with getUserData, not after
       // it — login always redirects to dashboard.home, so this turns what
@@ -293,7 +293,7 @@ export default {
 
       if (!verifyResponse.success) {
         this.user = null
-        this.$router.push({ path: '/auth/sign-in' }).catch(() => {})
+        this.$router.push({ path: '/sign-in' }).catch(() => {})
         return
       }
 
@@ -328,14 +328,14 @@ export default {
     handleComplete () {},
     onClickEditProfile () {
       this.isMobileNavOpen = false
-      this.$router.push({ path: '/user/profile-edit' }).catch(() => {})
+      this.$router.push({ path: '/profile-edit' }).catch(() => {})
     },
     async onClickSignOut () {
       const response = await this.$store.dispatch('logout')
       if (!response.errorCode) {
         this.$store.commit('clearMediatorSubscription')
         this.isMobileNavOpen = false
-        this.$router.push({ path: '/auth/sign-in' }).catch(() => {})
+        this.$router.push({ path: '/sign-in' }).catch(() => {})
       }
     },
     toggleLocale () {

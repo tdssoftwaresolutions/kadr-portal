@@ -85,7 +85,7 @@ async function runMeetingReminderPushJob () {
           title: 'Upcoming mediation meeting',
           body: `Your meeting for case ${caseLabel} is starting soon.`,
           data: {
-            url: meeting.meeting_link || '/admin/calendar',
+            url: meeting.meeting_link || '/portal/calendar',
             caseId: meeting.cases?.caseId,
             eventId: meeting.id
           }

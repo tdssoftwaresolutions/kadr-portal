@@ -32,7 +32,7 @@ export default {
   mounted () {
     sofbox.index()
     if (!this.isSessionAvailable()) {
-      this.$router.push({ path: '/auth/sign-in' })
+      this.$router.push({ path: '/sign-in' })
     } else {
       this.getDashboardContent()
     }
